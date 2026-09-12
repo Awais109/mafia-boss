@@ -2,6 +2,7 @@ import { StatusBar } from 'expo-status-bar'
 import { useEffect, useState, type ReactNode } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import { AwayModal } from './app/components/AwayModal'
 import { Header } from './app/components/Header'
 import { NoticeBar } from './app/components/NoticeBar'
 import { TutorialBanner } from './app/components/TutorialBanner'
@@ -61,6 +62,7 @@ export default function App() {
             <TutorialBanner game={game} go={setTab} />
             <NoticeBar notice={game.notice} realNow={game.realNow} />
             <View style={styles.body}>{TABS.find((t) => t.id === tab)?.render({ game, go: setTab })}</View>
+            {game.away && <AwayModal summary={game.away} game={game} />}
           </>
         )}
       </SafeAreaView>

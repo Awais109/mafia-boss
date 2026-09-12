@@ -7,7 +7,7 @@ The React Native layer: `App.tsx` and `app/`. It renders state and dispatches ac
 ## Entry and shell
 
 - `index.ts` registers `App`.
-- `App.tsx` wraps everything in `SafeAreaProvider`, calls `store.start()` once, and renders a loading spinner until the first snapshot exists. Then: `Header`, a scrollable tab bar, `TutorialBanner`, `NoticeBar`, and the active screen.
+- `App.tsx` wraps everything in `SafeAreaProvider`, calls `store.start()` once, and renders a loading spinner until the first snapshot exists. Then: `Header`, a scrollable tab bar, `TutorialBanner`, `NoticeBar`, the active screen, and `AwayModal` while a "while you were away" summary is pending.
 - Tabs: Home, Rackets, Fronts, Ops, Crew, Heat, Turf, Log, and Debug (only when `debug.enabled`).
 - A dot on a tab means it wants attention: Home when the vault is full or Tolya has a demand, Fronts when there's Dirty and buffer room, Ops when crew are idle, Heat at or above `heat.inspectThreshold`.
 - Screens receive `{ game, go }` (`app/screens/types.ts`): the current snapshot, and a function to switch tabs.
@@ -22,9 +22,9 @@ The React Native layer: `App.tsx` and `app/`. It renders state and dispatches ac
 - Game time is `Date.now() + state.debugOffsetMs`.
 
 **Actions and ticks**
-- `dispatch(action)`: `apply` at game time, append an `action` line to the log, write the save, append any events. A rejected action shows its error in the notice bar. After a time-offset action it ticks immediately.
-- The 1 s `tick`: reconciles to now. If anything happened (events), it commits and persists. Otherwise it only refreshes the displayed snapshot, so nothing is written while idle.
-- `Snapshot` = `{ state, derived, config, settings, configErrors, now, realNow, notice }`.
+- `dispatch(action)`: tick first (so a gap becomes an away summary and `apply` only sees the action), then `apply` at game time, append an `action` line to the log, write the save, append any events. A rejected action shows its error in the notice bar. After a time-offset action it ticks immediately.
+- The 1 s `tick`: reconciles to now. If anything happened (events), or the gap counted as being away, it commits and persists. Otherwise it only refreshes the displayed snapshot, so nothing is written while idle.
+- `Snapshot` = `{ state, derived, config, settings, configErrors, now, realNow, notice, away }`.
 
 **Sessions:** `SESSION_START` and `SESSION_END` (with real duration and action count) are dispatched as actions, so they're in both the save stats and the log.
 
@@ -35,6 +35,24 @@ The React Native layer: `App.tsx` and `app/`. It renders state and dispatches ac
 - `importSave(json)` validates with `migrate` and writes a new `meta` line.
 - `exportSave()` and `exportLog()` share a JSON file via `expo-sharing`. Sharing isn't available on web.
 - `runBot(days)` plays the save with the sim's casual bot (`sim/driver.ts`), appends the bot's actions to the log, and moves `debugOffsetMs` forward by the days played. The notice names any act reached or cleared during the run.
+
+## While you were away
+
+([ADR 0023](decisions/0023-away-summary.md)) When a tick finds the save 15 game minutes or more behind now (`AWAY_MIN_GAME_MINUTES` in `app/store.ts`, the shortest job), it builds an `AwaySummary` from the catch-up reconcile and `AwayModal` shows it until dismissed. That happens on launch, on returning from the background, after a Debug time skip, and after importing an old save; the Bot commits its own end state, so it doesn't trigger one. On the `fast` preset the threshold is 15 real seconds.
+
+`app/away.ts` is pure: `buildAway(before, after, events, config, to)` and `mergeAway(pending, next)`, which extends a summary that hasn't been dismissed when another gap arrives. The summary holds:
+
+| Field | From |
+|---|---|
+| `jobs` | `OP_RESOLVED` events: job name, crew (named from the state at the gap's start), outcome, Dirty, Influence, Rep |
+| `racketsEarned`, `lostToCap`, `vaultFull` | `stats.dirtyEarned` delta minus job rewards; `stats.dirtyLostToCap` delta; the vault against its cap |
+| `fronts` | Each front's buffer delta (nothing is deposited offline) and the Clean it made at the front's rate |
+| `cleanEarned`, `tributeLost`, `seized`, `influenceEarned` | Stats and state deltas |
+| `wagesPaid`, `wagesShort` | `WAGES_PAID` and `WAGES_MISSED` events |
+| `heatFrom`, `heatTo` | Heat before and after |
+| `events` | Everything else except bookkeeping; the modal runs them through `describeEvent` and drops quiet lines |
+
+The summary is not saved: closing the app loses it, and the Log still has every event.
 
 ## Storage
 
@@ -68,6 +86,7 @@ The React Native layer: `App.tsx` and `app/`. It renders state and dispatches ac
 - `app/components/ui.tsx`: the palette and primitives (`Screen`, `Section`, `Card`, `Row`, `T`, `Btn`, `BtnRow`, `Bar` with threshold marks, `Tag`, `Money`). Each resource has one colour and glyph everywhere: Dirty ◆ amber, Clean ● green, Influence ✦ blue, Rep ★ purple, Heat ▲ red.
 - `Header.tsx`: game clock, act (`Act II cleared` once it is), preset name when not default, the five resources, and the Rep line, which always names its target: `x/80 to Act II`, `x/480 to clear Act II`, or `x · Act II cleared on Day N` ([ADR 0022](decisions/0022-end-of-prototype-state.md)).
 - `NoticeBar.tsx`: the latest notice for 4 s; tap to dismiss.
+- `AwayModal.tsx`: the "while you were away" popup: jobs finished and what each earned, the money breakdown (rackets into the vault and what a full vault lost, per-front laundering into Clean, wages, tribute, seizures, Influence, heat), and any other notable events. Got it dismisses it.
 - `TutorialBanner.tsx`: copy for each tutorial step ([systems/progression.md](systems/progression.md#tutorial)), a button to the right tab, and Skip.
 - `app/eventText.ts`: `describeEvent(event, state, config)` → `{ text, color, quiet }`. `quiet` marks bookkeeping lines that Home hides and Log shows on request. `WAGES_PAID` is deliberately not quiet: it's the only sign a payday happened.
 - `app/format.ts`: `fmt`, `fmtRate`, `pct`, `fmtDuration` (in game time, so `fast` still reads "2h"), `fmtClock` (device clock for real-time presets, game clock otherwise).

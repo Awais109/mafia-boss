@@ -35,6 +35,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0020](0020-sim-report-metrics.md) | How the sim report measures the dev manual's targets | Accepted; act clear rows superseded by 0022 |
 | [0021](0021-environment-doctor-and-native-env.md) | Environment doctor, per-command toolchain wrapper, default app IDs | Accepted |
 | [0022](0022-end-of-prototype-state.md) | The end of the prototype is a cleared Act II, said in words; reports measure from game start | Accepted |
+| [0023](0023-away-summary.md) | "While you were away" is built in the app from the catch-up reconcile | Accepted |
 
 ## Template
 

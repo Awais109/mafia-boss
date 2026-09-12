@@ -20,7 +20,13 @@ import {
 } from '../engine'
 import { botPlay, type Trace } from '../sim/driver'
 import type { LogExport, LogLine } from '../sim/replay'
+import { buildAway, mergeAway, type AwaySummary } from './away'
 import { FILES, storage } from './storage'
+
+// A gap of this many game minutes since the save was last caught up counts as being away, and
+// gets a "while you were away" summary. It's the shortest job, so a job that finished while
+// the player was gone always gets the popup (ADR 0023).
+const AWAY_MIN_GAME_MINUTES = 15
 
 // Thin wrapper around the engine (plan §2.3–2.4): load once, apply + persist on every
 // action, reconcile on foreground, and a 1 s display tick that never writes unless
@@ -39,6 +45,7 @@ export type Snapshot = {
   now: number // game time
   realNow: number
   notice: Notice | null
+  away: AwaySummary | null // pending "while you were away" popup
 }
 
 const DEFAULT_SETTINGS: Settings = { preset: 'default', overrides: {} }
@@ -57,6 +64,7 @@ class GameStore {
   private configErrors: string[] = []
   private listeners = new Set<() => void>()
   private notice: Notice | null = null
+  private away: AwaySummary | null = null
   private session = { open: false, startedAt: 0, actions: 0 }
   private started = false
 
@@ -91,6 +99,8 @@ class GameStore {
 
   dispatch = (action: Action): string | null => {
     if (!this.committed) return 'Still loading'
+    // Catch up first, so a gap becomes an away summary and `apply` only sees the action.
+    this.tick()
     const t = this.gameNow()
     const r = apply(this.committed, action, t, this.config)
     this.appendLog([{ kind: 'action', t, action }])
@@ -108,6 +118,11 @@ class GameStore {
 
   clearNotice = (): void => {
     this.notice = null
+    this.refresh()
+  }
+
+  dismissAway = (): void => {
+    this.away = null
     this.refresh()
   }
 
@@ -271,8 +286,12 @@ class GameStore {
 
   private tick(): void {
     if (!this.committed) return
-    const r = reconcile(this.committed, this.gameNow(), this.config)
-    if (r.events.length) this.commit(r.state, r.events)
+    const now = this.gameNow()
+    const r = reconcile(this.committed, now, this.config)
+    const away = now - this.committed.updatedAt >= AWAY_MIN_GAME_MINUTES * (this.config.time.hourMs / 60)
+    if (away) this.away = mergeAway(this.away, buildAway(this.committed, r.state, r.events, this.config, now))
+    // A gap is committed even without events, or the next tick would summarise it again.
+    if (r.events.length || away) this.commit(r.state, r.events)
     else this.refresh(r.state)
   }
 
@@ -294,6 +313,7 @@ class GameStore {
       now: this.gameNow(),
       realNow: Date.now(),
       notice: this.notice,
+      away: this.away,
     }
     for (const listener of this.listeners) listener()
   }
