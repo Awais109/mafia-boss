@@ -133,7 +133,7 @@ export const defaults: Config = {
     // full: score ≥ diff + fullMargin · partial: score ≥ diff · else fail
     fullMargin: 15, // with noise ±15 and a typical +10 margin: ~33% full, ~50% partial, ~17% fail
     partialRewardPct: 0.6,
-    partialSpikePct: 0.5, // partial = backed off early: 60% reward, 50% noise
+    partialSpikePct: 0.5, // partial = backed off early: 60% reward, half the heat spike
     failSpikePct: 1.5,
     failLoyalty: -5,
     noise: 15,
