@@ -145,8 +145,10 @@ function runPersona(initial: PlayerState, c: Config, persona: PersonaOptions, fr
     t = target
     if (t === nextSession) {
       const r = playSession(state, t, c, persona, nextSessionAfter(state, c, persona, t))
-      const ended = apply(r.state, { type: 'SESSION_END', durationMs: 0, actions: r.actions.length }, t, c).state
-      rec.session(state, ended, t, r.actions)
+      // SESSION_END is an action like any other: without it in the record, a replayed log never closes a session.
+      const end = { type: 'SESSION_END' as const, durationMs: 0, actions: r.actions.length }
+      const ended = apply(r.state, end, t, c).state
+      rec.session(state, ended, t, [...r.actions, { t, action: end }])
       state = ended
       nextSession = nextSessionAfter(state, c, persona, t)
     }

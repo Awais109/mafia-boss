@@ -1,11 +1,13 @@
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ConfigError, PRESET_NAMES, tryBuildConfig, type Overrides, type PresetName } from '../engine'
-import { simulate } from './driver'
+import { simulate, type Trace } from './driver'
 import { CASUAL, withSessions } from './persona'
+import { isLogExport, replayLog } from './replay'
 import { checkOk, formatSummary, summarize, toCsv, type Summary } from './report'
 
 // npm run sim -- --preset default --days 5 --seed 42 [--sessions 3] [--runs 10] [--set heat.baseControl=6]
+// npm run sim -- --replay path/to/tester-log.json
 
 type Args = {
   preset: string
@@ -16,6 +18,7 @@ type Args = {
   out: string
   csv: boolean
   set: Overrides
+  replay?: string
 }
 
 const USAGE = `Usage: npm run sim -- [options]
@@ -25,6 +28,7 @@ const USAGE = `Usage: npm run sim -- [options]
   --sessions <n>      n evenly spaced sessions a day instead of the casual schedule
   --runs <n>          run n seeds (seed, seed+1, …) and print the mean of each target
   --set path=value    override a config value, repeatable (e.g. --set heat.baseControl=6)
+  --replay <file>     report on a tester's exported log instead of the bot
   --out <dir>         CSV directory (default: sim/out)
   --no-csv            skip the CSV`
 
@@ -45,6 +49,7 @@ function parseArgs(argv: string[]): Args {
       case '--runs': args.runs = Number(value()); break
       case '--out': args.out = value(); break
       case '--no-csv': args.csv = false; break
+      case '--replay': args.replay = value(); break
       case '--set': {
         const [path, raw] = value().split('=')
         args.set[path] = raw === 'true' ? true : raw === 'false' ? false : Number(raw)
@@ -68,8 +73,32 @@ function fail(msg: string): never {
   process.exit(1)
 }
 
+function writeCsv(args: Args, trace: Trace, name: string) {
+  if (!args.csv) return
+  mkdirSync(args.out, { recursive: true })
+  const file = join(args.out, `${new Date().toISOString().slice(0, 10)}-${name}.csv`)
+  writeFileSync(file, toCsv(trace))
+  console.log(`\nCSV → ${file}`)
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2))
+
+  if (args.replay) {
+    // Same report over a real tester's game (manual §7). The log carries its own preset and overrides.
+    let doc: unknown
+    try {
+      doc = JSON.parse(readFileSync(args.replay, 'utf8'))
+    } catch (e) {
+      fail(`could not read ${args.replay}: ${(e as Error).message}`)
+    }
+    if (!isLogExport(doc)) fail(`${args.replay} is not a Sevgorod log export (Debug → Save & log → Export log)`)
+    const trace = replayLog(doc)
+    console.log(formatSummary(summarize(trace)))
+    writeCsv(args, trace, `replay-${trace.label.seed}`)
+    return
+  }
+
   if (!PRESET_NAMES.includes(args.preset as PresetName)) fail(`unknown preset ${args.preset}`)
   const { config, errors } = tryBuildConfig(args.preset as PresetName, args.set)
   if (errors.length) {
@@ -90,15 +119,8 @@ function main() {
   }
 
   const trace = simulate({ config, preset: label, days: args.days, seed: args.seed, persona })
-  const summary = summarize(trace)
-  console.log(formatSummary(summary))
-  if (args.csv) {
-    mkdirSync(args.out, { recursive: true })
-    const date = new Date().toISOString().slice(0, 10)
-    const file = join(args.out, `${date}-${args.preset}-${args.seed}.csv`)
-    writeFileSync(file, toCsv(trace))
-    console.log(`\nCSV → ${file}`)
-  }
+  console.log(formatSummary(summarize(trace)))
+  writeCsv(args, trace, `${args.preset}-${args.seed}`)
 }
 
 function printRuns(summaries: Summary[]) {

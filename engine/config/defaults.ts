@@ -31,11 +31,12 @@ export const defaults: Config = {
     types: {
       kiosk: { name: 'Kiosk', act: 1, baseYield: 6, baseHeat: 0.8, unlockRep: 0 },
       marketStall: { name: 'Market Stall', act: 1, baseYield: 10, baseHeat: 1.3, unlockRep: 0 },
-      autoShop: { name: 'Auto Shop', act: 2, baseYield: 18, baseHeat: 2.5, unlockRep: 150 },
-      cafe: { name: 'Café', act: 2, baseYield: 14, baseHeat: 1.8, unlockRep: 250 },
-      bathhouse: { name: 'Bathhouse', act: 2, baseYield: 24, baseHeat: 3.2, unlockRep: 400 },
-      petrol: { name: 'Petrol Station', act: 2, baseYield: 34, baseHeat: 4.5, unlockRep: 600 },
-      cargoBay: { name: 'Cargo Bay', act: 2, baseYield: 55, baseHeat: 8.0, unlockRep: 850 },
+      // Ladder sits under the Act II clear threshold (reputation.actThresholds[3]) so every spot opens in the act.
+      autoShop: { name: 'Auto Shop', act: 2, baseYield: 18, baseHeat: 2.5, unlockRep: 110 },
+      cafe: { name: 'Café', act: 2, baseYield: 14, baseHeat: 1.8, unlockRep: 170 },
+      bathhouse: { name: 'Bathhouse', act: 2, baseYield: 24, baseHeat: 3.2, unlockRep: 250 },
+      petrol: { name: 'Petrol Station', act: 2, baseYield: 34, baseHeat: 4.5, unlockRep: 330 },
+      cargoBay: { name: 'Cargo Bay', act: 2, baseYield: 55, baseHeat: 8.0, unlockRep: 420 },
     },
     // 16 Dirty/hr: exactly fills the 40 floor cap in the Act I vault target of 2.5 h.
     starting: [
@@ -46,7 +47,7 @@ export const defaults: Config = {
 
   costs: {
     // spec §6.2: purchase = baseYield × payback hours for the racket's act
-    paybackHoursByAct: { 1: 12, 2: 18 },
+    paybackHoursByAct: { 1: 10, 2: 18 }, // Act I 12 → 10: Act I cleared at 2.1 d (TUNING.md)
     upgradeBaseFactor: 0.5, // upgrade from tier t = purchase × 0.5 × upgradeTierMult^(t−1)
     upgradeTierMult: 1.4,
     overrides: {}, // { kiosk: { purchase: 40 } } — wins over the formula
@@ -184,7 +185,8 @@ export const defaults: Config = {
     perCleanSpent: 0.1,
     perOpSuccess: 2, // partial success earns partialRewardPct of this. Ops season Rep; spending drives it
     perDistrict: 20,
-    actThresholds: { 2: 80, 3: 1000 }, // 3 = Act II cleared (Act III is stubbed)
+    // 3 = Act II cleared (Act III is stubbed). 480 ≈ Rep the casual bot holds 4 days after Act I (TUNING.md).
+    actThresholds: { 2: 80, 3: 480 },
   },
 
   tutorial: { enabled: true, firstConversionInstant: true },

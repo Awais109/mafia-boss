@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { apply, derive, reconcile, type GameEvent } from '../engine'
+import { apply, derive, formulas, reconcile, type GameEvent } from '../engine'
 import { act, config, crewNamed, fresh, H, T0 } from './helpers'
 
 const find = <K extends GameEvent['type']>(events: GameEvent[], type: K) =>
@@ -17,7 +17,7 @@ describe('first session', () => {
     expect(s.fronts[0].buffer).toBe(0)
     s = act(s, [{ type: 'UPGRADE_RACKET', racketId: s.rackets[0].id }], T0)
     expect(s.rackets[0].tier).toBe(2)
-    expect(s.reputation).toBeCloseTo(3.6)
+    expect(s.reputation).toBeCloseTo(formulas.racketUpgradeCost(config, 'kiosk', 1) * config.reputation.perCleanSpent)
     s = act(s, [{ type: 'START_OP', opType: 'shakeDown', crewIds: [crewNamed(s, 'Vitya').id] }], T0)
     expect(s.tutorial.step).toBe(4)
     s = act(s, [{ type: 'TUTORIAL_ADVANCE' }], T0)
