@@ -2,7 +2,7 @@
 
 The React Native layer: `App.tsx` and `app/`. It renders state and dispatches actions; all game rules live in the engine ([architecture.md](architecture.md)). Built with Expo SDK 57, no navigation library, no custom fonts or assets ([ADR 0008](decisions/0008-app-shell-and-ui.md)).
 
-**Status:** typechecks, lints, and bundles for Android (`npx expo export --platform android`). It has not been launched on a device or simulator in development so far; use `/start-android` or `/start-ios`.
+**Status:** typechecks, lints, and bundles for Android (`npx expo export --platform android`). It has not been launched on a device or simulator in development so far. `/start-android` and `/start-ios` run it in Expo Go; `/install-android` and `/install-ios` install a standalone build ([native-builds.md](native-builds.md)).
 
 ## Entry and shell
 

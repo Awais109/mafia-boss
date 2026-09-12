@@ -88,8 +88,10 @@ Persistence lives in the app ([app.md](app.md)): the save, settings, and a JSON-
 
 | File | Role |
 |---|---|
-| `package.json` scripts | `start`/`android`/`ios`/`web` (Expo), `test`, `typecheck`, `lint`, `check` (all three), `sim` |
+| `package.json` scripts | `start`/`android`/`ios`/`web` (Expo Go), `doctor`, `android:install`/`ios:install`/`ios:xcode` (native builds), `test`, `typecheck`, `lint`, `check` (all three), `sim` |
+| `scripts/doctor.ts` | Environment doctor ([native-builds.md](native-builds.md)) |
+| `scripts/with-native-env.sh` | Runs a command with JDK 17, the Android SDK and a UTF-8 locale; used by the native npm scripts |
 | `eslint.config.js` | `eslint-config-expo` plus the engine boundary rules |
 | `vitest.config.mts` | Runs `tests/**/*.test.ts` in Node |
 | `tsconfig.json` | Expo base, `strict` |
-| `.claude/skills/` | Slash commands: `/setup-project`, `/start-android`, `/start-ios`, `/check` |
+| `.claude/skills/` | Slash commands: `/setup-project`, `/start-android`, `/start-ios`, `/install-android`, `/install-ios`, `/check` |

@@ -8,8 +8,11 @@ Design and plan live in [docs/](docs/): the [implementation plan](docs/sevgorod-
 
 ```sh
 npm install
+npm run doctor        # what this machine can run, and how to fix the rest
 npx expo start        # scan the QR code with Expo Go
 ```
+
+In Claude Code, `/setup-project` does this for you; `/start-android` and `/start-ios` run the app in Expo Go, and `/install-android` and `/install-ios` install a standalone build on a device. Requirements and install steps: [docs/native-builds.md](docs/native-builds.md).
 
 The **Debug** tab holds the time skip, a config editor with presets (`fast` runs 1 game hour per real minute), save and log export, save import, and a Bot that plays the current save.
 
@@ -21,6 +24,10 @@ The **Debug** tab holds the time skip, a config editor with presets (`fast` runs
 | `npm run typecheck` | TypeScript, whole project |
 | `npm run lint` | ESLint, including the engine boundary rule |
 | `npm run check` | All three |
+| `npm run doctor` | Checks this machine for running and installing the app, with a fix for each problem |
+| `npm run android:install` | Builds a standalone release and installs it on a connected Android device |
+| `npm run ios:install -- --device "<name>"` | Builds a standalone release and installs it on a connected iPhone (Xcode 26.4+) |
+| `npm run ios:xcode` | Generates the iOS project and opens it in Xcode |
 | `npm run sim -- --days 8 --seed 42` | One bot game, summary against the dev manual §3 targets, hourly CSV in `sim/out/` |
 | `npm run sim -- --days 8 --runs 10` | Mean of each target over 10 seeds |
 | `npm run sim -- --set heat.baseControl=6` | Try a config change before a human plays it |

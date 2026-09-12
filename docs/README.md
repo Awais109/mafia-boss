@@ -19,6 +19,7 @@ What is built, how it works, and why. Written so a person or an LLM new to the r
 | [app.md](app.md) | The React Native app: store, storage, screens, Debug tab, export |
 | [sim.md](sim.md) | The headless bot, report metrics, CLI, log replay, baseline |
 | [testing.md](testing.md) | What each test file guards |
+| [native-builds.md](native-builds.md) | Running on devices: requirements, the doctor, Expo Go vs standalone installs, signing |
 | [decisions/](decisions/README.md) | One record per design decision, including deviations from the plan |
 | [../TUNING.md](../TUNING.md) | Every number change, kept or rejected, with sim results |
 | [sevgorod-implementation-plan.md](sevgorod-implementation-plan.md) | Original plan (input; don't edit) |
@@ -48,7 +49,8 @@ When you change a path on the left, update the doc on the right in the same comm
 | `App.tsx`, `app/` | [app.md](app.md) |
 | `sim/` | [sim.md](sim.md) |
 | `tests/`, `vitest.config.mts` | [testing.md](testing.md) |
-| `eslint.config.js`, `package.json` scripts, `.claude/skills/` | [architecture.md](architecture.md) and the root [README](../README.md) |
+| `eslint.config.js`, `package.json` scripts | [architecture.md](architecture.md) and the root [README](../README.md) |
+| `scripts/`, `app.json`, `.claude/skills/` | [native-builds.md](native-builds.md), [architecture.md](architecture.md) and the root [README](../README.md) |
 
 ## Writing docs here
 

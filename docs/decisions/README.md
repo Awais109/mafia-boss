@@ -33,6 +33,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0018](0018-crew-rules.md) | Crew rules: wages, loyalty, walkouts, the nephew, traits, slots | Accepted |
 | [0019](0019-reputation-sources.md) | Rep comes from all Clean spending, jobs and districts | Accepted |
 | [0020](0020-sim-report-metrics.md) | How the sim report measures the dev manual's targets | Accepted |
+| [0021](0021-environment-doctor-and-native-env.md) | Environment doctor, per-command toolchain wrapper, default app IDs | Accepted |
 
 ## Template
 

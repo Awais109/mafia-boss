@@ -6,7 +6,7 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
 
 A fun-test prototype of an idle crime game (Acts I–II), built with Expo SDK 57 and TypeScript. **Start at [docs/README.md](docs/README.md)**: it maps every part of the code to the doc that explains what's built and why.
 
-Slash commands: `/setup-project`, `/start-android`, `/start-ios`, `/check`.
+Slash commands: `/setup-project`, `/start-android`, `/start-ios`, `/install-android`, `/install-ios`, `/check`. `npm run doctor` checks this machine; device requirements and install steps are in [docs/native-builds.md](docs/native-builds.md).
 
 ## Documentation rule
 
