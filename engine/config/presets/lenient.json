@@ -1,0 +1,5 @@
+{
+  "meta": { "name": "lenient" },
+  "heat": { "baseControl": 14, "bribe": { "controlPct": 0.8 } },
+  "crew": { "loyalty": { "perMissedWageDay": -8 } }
+}

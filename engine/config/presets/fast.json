@@ -1,0 +1,6 @@
+{
+  "meta": { "name": "fast" },
+  "time": { "hourMs": 60000, "maxOfflineHours": 9999 },
+  "officials": { "cooldownDays": 0.05 },
+  "crew": { "poolRefreshHours": 0.4 }
+}

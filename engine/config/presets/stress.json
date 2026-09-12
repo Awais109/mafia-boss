@@ -1,0 +1,6 @@
+{
+  "meta": { "name": "stress" },
+  "heat": { "baseControl": 2 },
+  "rivals": { "tolya": { "tickHours": 2, "tickHoursEscalated": 1.5 } },
+  "costs": { "paybackHoursByAct": { "1": 6, "2": 9 } }
+}
