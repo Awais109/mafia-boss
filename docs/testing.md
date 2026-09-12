@@ -19,6 +19,7 @@ npx vitest run tests/ops.test.ts   # one file
 | `tests/apply.test.ts` | The first-session path; front buffering and throughput; reaching Act II; one business of each kind per district; job lifecycle; three pressure jobs flip a district; bribe duration; heat convergence; official cooldown; missed wages cost loyalty; the nephew can't be fired; enforcer multipliers; Tolya's refused and paid demands |
 | `tests/replay.test.ts` | A bot game rebuilt as an exported log replays to the same state, with the same sessions; a log with no game start is rejected |
 | `tests/sim.test.ts` | **Pacing guard**: the casual bot over seeds 42–46 for 8 days keeps Act I at a mean of ≤ 2.1 days, Act II 3–5 days after Act I, heat 25–35, at most one raid, no missed wages, partial outcomes 40–60% |
+| `tests/report.test.ts` | A bot run over a save that already cleared Act I measures the clear from game start, prints it as `before this run` without scoring it, and scores the Act II clear that happens inside the run |
 
 ## Writing tests
 

@@ -59,7 +59,7 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 
 | Metric | Definition |
 |---|---|
-| Act I clear | Days from start to `stats.actClearedAt[1]` |
+| Act I clear | Days from the game's start (`createdAt`) to `stats.actClearedAt[1]` |
 | Act II clear | Days from Act I clear to `stats.actClearedAt[2]` |
 | Heat mean, min, max | Over hourly rows |
 | hours ≥40 | Hourly rows with heat at or above `heat.inspectThreshold` |
@@ -68,6 +68,8 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 | Vault fill | `vaultCap ÷ yield` at session end. Act I uses day-1 sessions; Act II uses day-4+ Act II sessions |
 | Op outcomes | Shares of `stats.opOutcomes` |
 | Tiers | Final rackets, abbreviated (`K5 M4 A3 …`) |
+
+Clear times count from the game's `createdAt`, not the run's start, so the Debug Bot's report on an existing save reads like the CLI's. A clear that happened before the run is printed with `before this run` and not scored (`actClear1InRun`, `actClear2InRun`; [ADR 0022](decisions/0022-end-of-prototype-state.md)).
 
 Where the bot stands against the targets, and every number change behind it, is in [TUNING.md](../TUNING.md).
 

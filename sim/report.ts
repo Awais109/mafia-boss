@@ -7,8 +7,11 @@ export type Check = { name: string; value: number | null; min: number; max: numb
 
 export type Summary = {
   title: string
-  actClear1: number | null // days from start
+  actClear1: number | null // days from game start (createdAt), not from the run's start
   actClear2: number | null // days after Act I
+  // A run over an existing save (the Debug Bot) can start after a clear. Those are shown, not scored.
+  actClear1InRun: boolean
+  actClear2InRun: boolean
   raids: number
   arrests: number
   missedWages: number
@@ -49,6 +52,7 @@ export function summarize(trace: Trace): Summary {
   const st = final.stats
   const clear1 = st.actClearedAt[1]
   const clear2 = st.actClearedAt[2]
+  const inRun = (t: number | undefined): boolean => t !== undefined && t >= start
 
   const heats = hours.map((h) => h.heat)
   const outcomes = st.opOutcomes
@@ -77,8 +81,10 @@ export function summarize(trace: Trace): Summary {
 
   const summary: Summary = {
     title: `Sevgorod sim · preset=${trace.label.preset} · persona=${trace.label.persona} · seed=${trace.label.seed} · ${trace.label.days} days${trace.label.source === 'replay' ? ' · replay' : ''}`,
-    actClear1: clear1 !== undefined ? (clear1 - start) / D : null,
+    actClear1: clear1 !== undefined ? (clear1 - final.createdAt) / D : null,
     actClear2: clear1 !== undefined && clear2 !== undefined ? (clear2 - clear1) / D : null,
+    actClear1InRun: inRun(clear1),
+    actClear2InRun: inRun(clear2),
     raids: st.raids,
     arrests: st.arrests,
     missedWages: st.missedWages,
@@ -101,8 +107,8 @@ export function summarize(trace: Trace): Summary {
     checks: [],
   }
   summary.checks = [
-    { name: 'Act I clear (d)', value: summary.actClear1, min: 1, max: 2 },
-    { name: 'Act II clear (d after Act I)', value: summary.actClear2, min: 3, max: 5 },
+    { name: 'Act I clear (d)', value: summary.actClear1InRun ? summary.actClear1 : null, min: 1, max: 2 },
+    { name: 'Act II clear (d after Act I)', value: summary.actClear2InRun ? summary.actClear2 : null, min: 3, max: 5 },
     { name: 'Vault fill Act I (h)', value: summary.vaultFillAct1, min: 2, max: 3 },
     { name: 'Vault fill Act II, day 4+ (h)', value: summary.vaultFillAct2, min: 4.5, max: 6.5 },
     { name: 'Heat mean', value: summary.heatMean, min: 25, max: 35 },
@@ -125,11 +131,13 @@ const pad = (s: string, n: number) => s.padEnd(n)
 
 export function formatSummary(s: Summary): string {
   const ok = (name: string) => mark(checkOk(s.checks.find((ch) => ch.name.startsWith(name))!))
+  const actLine = (check: string, value: number | null, inRun: boolean, target: string) =>
+    `${pad(`${check}:`, 18)}${pad(value === null ? 'not reached' : `${f1(value)} d`, 14)}${pad(target, 18)}${value !== null && !inRun ? '· before this run' : ok(check)}`
   const lines = [
     s.title,
     '',
-    `${pad('Act I clear:', 18)}${pad(s.actClear1 === null ? 'not reached' : `${f1(s.actClear1)} d`, 14)}(target 1–2)      ${ok('Act I clear')}`,
-    `${pad('Act II clear:', 18)}${pad(s.actClear2 === null ? 'not reached' : `${f1(s.actClear2)} d`, 14)}(3–5 after Act I) ${ok('Act II clear')}`,
+    actLine('Act I clear', s.actClear1, s.actClear1InRun, '(target 1–2)'),
+    actLine('Act II clear', s.actClear2, s.actClear2InRun, '(3–5 after Act I)'),
     `${pad('Raids:', 18)}${pad(String(s.raids), 8)}Arrests: ${pad(String(s.arrests), 4)}Missed wages: ${s.missedWages}  Walkouts: ${s.walkouts}   ${ok('Raids')}${ok('Missed wages')}`,
     `${pad('Heat mean:', 18)}${pad(String(Math.round(s.heatMean)), 8)}min ${Math.round(s.heatMin)}  max ${Math.round(s.heatMax)}   hours ≥40: ${s.hoursAbove40}   ${ok('Heat mean')}`,
     `${pad('Front util:', 18)}${pad(pc(s.frontUtil), 8)}Dirty idle @ session end: ${pc(s.dirtyIdlePct)}   ${ok('Front util')}${ok('Dirty idle')}`,

@@ -1,7 +1,7 @@
 import { dayMs } from '../../engine'
 import { Bar, Btn, BtnRow, Card, colors, Money, Row, Screen, Section, T } from '../components/ui'
 import { describeEvent } from '../eventText'
-import { fmt, fmtDuration, fmtRate } from '../format'
+import { fmt, fmtClock, fmtDuration, fmtRate } from '../format'
 import { store } from '../store'
 import type { ScreenProps } from './types'
 
@@ -15,6 +15,10 @@ export function HomeScreen({ game, go }: ScreenProps) {
   const buffered = s.fronts.reduce((sum, f) => sum + f.buffer, 0)
   const demand = s.rival.tolya.demand
   const nextAct = s.act === 1 ? c.reputation.actThresholds[2] : c.reputation.actThresholds[3]
+  // Milestones come from stats, which persist; the ACT_* events fall out of the 200-event log.
+  const reachedActII = s.stats.actClearedAt[1]
+  const clearedActII = s.stats.actClearedAt[2]
+  const cleared = clearedActII !== undefined
   const recent = s.log
     .slice()
     .reverse()
@@ -81,18 +85,32 @@ export function HomeScreen({ game, go }: ScreenProps) {
         </Card>
       </Section>
 
-      <Section title="Next">
+      <Section title={cleared ? 'The end of the prototype' : 'Next'}>
         <Card>
           {s.act === 1 ? (
             <T small muted>
               Act II at ★{fmt(nextAct)}: the Restaurant front, two more crew slots, the Port Quarter and Sovietsky Blocks.
             </T>
-          ) : s.stats.actClearedAt[2] === undefined ? (
-            <T small muted>Act II ends at ★{fmt(nextAct)}. Bigger rackets unlock as your Reputation grows.</T>
+          ) : !cleared ? (
+            <T small muted>
+              Act II is cleared at ★{fmt(nextAct)}, the end of the prototype. Bigger rackets unlock as your Reputation grows.
+            </T>
           ) : (
-            <T small color={colors.rep}>Act II complete. That’s the prototype. Thank you for playing.</T>
+            <T small color={colors.rep}>
+              Act II cleared. Acts I–II are all that’s built: nothing more unlocks, and Reputation keeps counting. Keep playing to see how
+              the late game holds up, or export the log and start over from Debug.
+            </T>
           )}
           <Bar value={s.reputation} max={nextAct} color={colors.rep} />
+          <Row label="Reputation" value={cleared ? `★${fmt(s.reputation)}` : `★${fmt(s.reputation)} / ${fmt(nextAct)}`} color={colors.rep} />
+          {reachedActII !== undefined && <Row label="Act II reached" value={fmtClock(reachedActII, s.createdAt, c)} />}
+          {clearedActII !== undefined && <Row label="Act II cleared" value={fmtClock(clearedActII, s.createdAt, c)} />}
+          {cleared && (
+            <BtnRow>
+              <Btn small title="Export log" onPress={() => void store.exportLog()} />
+              {c.debug.enabled && <Btn small kind="ghost" title="Debug →" onPress={() => go('debug')} />}
+            </BtnRow>
+          )}
         </Card>
       </Section>
 

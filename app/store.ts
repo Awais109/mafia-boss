@@ -5,6 +5,7 @@ import {
   apply,
   dayMs,
   derive,
+  gameDay,
   migrate,
   newGame,
   reconcile,
@@ -159,12 +160,21 @@ class GameStore {
 
   runBot(days: number): Trace | null {
     if (!this.committed) return null
-    const trace = botPlay(this.committed, this.config, this.gameNow(), days)
+    const from = this.gameNow()
+    const trace = botPlay(this.committed, this.config, from, days)
     this.appendLog(trace.actions.map((a) => ({ kind: 'action' as const, t: a.t, action: a.action })))
     // The bot played `days` into the future: move the clock with it.
     const final = { ...trace.final, debugOffsetMs: trace.final.debugOffsetMs + days * dayMs(this.config) }
     this.commit(final, [])
-    this.flash(`Bot played ${days} day${days === 1 ? '' : 's'}: ${trace.sessions.length} sessions, ${trace.actions.length} actions`)
+    // Name the act milestones the run passed: the events themselves scroll out of the log.
+    const at = final.stats.actClearedAt
+    const milestones = [
+      at[1] !== undefined && at[1] >= from ? `reached Act II on Day ${gameDay(this.config, final, at[1])}` : null,
+      at[2] !== undefined && at[2] >= from ? `cleared Act II on Day ${gameDay(this.config, final, at[2])}` : null,
+    ].filter((m): m is string => m !== null)
+    this.flash(
+      `Bot played ${days} day${days === 1 ? '' : 's'}: ${trace.sessions.length} sessions, ${trace.actions.length} actions${milestones.map((m) => ` · ${m}`).join('')}`,
+    )
     return trace
   }
 

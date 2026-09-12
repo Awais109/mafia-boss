@@ -1,11 +1,19 @@
 import { StyleSheet, Text, View } from 'react-native'
+import { gameDay } from '../../engine'
 import { fmt, fmtClock } from '../format'
 import type { Snapshot } from '../store'
 import { Bar, colors, glyph } from './ui'
 
 export function Header({ game }: { game: Snapshot }) {
   const { state: s, derived: d, config: c, now } = game
+  const clearedAt = s.stats.actClearedAt[2]
   const nextAct = s.act === 1 ? c.reputation.actThresholds[2] : c.reputation.actThresholds[3]
+  // Rep always says what the number is for: the Act II threshold, the Act II clear, or, once
+  // that's done, the day it happened. A bare "1,646/480" reads as a target that never fired.
+  const rep =
+    clearedAt !== undefined
+      ? `${fmt(s.reputation)} · Act II cleared on Day ${gameDay(c, s, clearedAt)}`
+      : `${fmt(s.reputation)}/${fmt(nextAct)} ${s.act === 1 ? 'to Act II' : 'to clear Act II'}`
   const heatColor = s.heat >= c.heat.raidThreshold ? colors.heat : s.heat >= c.heat.inspectThreshold ? colors.warn : colors.text
   const vaultFull = s.vault >= d.vaultCap - 1e-6
 
@@ -15,7 +23,7 @@ export function Header({ game }: { game: Snapshot }) {
         <Text style={styles.title}>SEVGOROD</Text>
         <Text style={styles.clock}>
           {fmtClock(now, s.createdAt, c)} · Act {s.act === 1 ? 'I' : 'II'}
-          {s.stats.actClearedAt[2] !== undefined ? ' ✓' : ''}
+          {clearedAt !== undefined ? ' cleared' : ''}
           {c.meta.name !== 'default' ? ` · ${c.meta.name}` : ''}
         </Text>
       </View>
@@ -28,7 +36,7 @@ export function Header({ game }: { game: Snapshot }) {
       </View>
       <View style={styles.repRow}>
         <Text style={styles.repText}>
-          {glyph.rep} Rep {fmt(s.reputation)}/{fmt(nextAct)}
+          {glyph.rep} Rep {rep}
         </Text>
         <View style={styles.repBar}>
           <Bar value={s.reputation} max={nextAct} color={colors.rep} />

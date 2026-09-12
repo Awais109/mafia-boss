@@ -26,7 +26,7 @@ Reputation is the progress currency: it opens Act II, unlocks bigger rackets and
   - the Port Quarter and Sovietsky Blocks, the Precinct Captain, and the Move a Shipment job;
   - `crew.slotsByAct[2]` crew slots, and recruits from `crew.statBandByAct[2]`;
   - recruit and raise costs scaled by act, and job Dirty × `2^ops.rewardActScaling`.
-- **Act II is cleared** at `reputation.actThresholds[3]`: `stats.actClearedAt[2]` and `ACT_CLEARED`. The game carries on in Act II. **Act III and later are not built**; the threshold is named 3 only to mark the end of Act II ([ADR 0015](../decisions/0015-act-ii-pacing.md)).
+- **Act II is cleared** at `reputation.actThresholds[3]`: `stats.actClearedAt[2]` and `ACT_CLEARED`. The game carries on in Act II. **Act III and later are not built**; the threshold is named 3 only to mark the end of Act II ([ADR 0015](../decisions/0015-act-ii-pacing.md)). The app says so in words: the header reads `Act II cleared`, and Home lists both act milestones from `stats.actClearedAt`, since the events themselves fall out of the 200-event log ([ADR 0022](../decisions/0022-end-of-prototype-state.md)).
 
 The unlock ladder (`rackets.types.*.unlockRep`) sits below the Act II clear threshold, so every business opens within the act.
 

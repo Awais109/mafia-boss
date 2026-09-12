@@ -1,6 +1,6 @@
 # 0020. How the sim report measures the dev manual's targets
 
-- **Status:** Accepted
+- **Status:** Accepted; the two act clear rows are superseded by [0022](0022-end-of-prototype-state.md)
 - **Date:** 2026-09-12
 
 ## Context
