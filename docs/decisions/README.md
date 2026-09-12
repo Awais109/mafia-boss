@@ -22,7 +22,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0007](0007-local-file-persistence.md) | Save, settings and a JSON-lines log on the local file system | Accepted |
 | [0008](0008-app-shell-and-ui.md) | Custom tab shell, no navigation library, one colour per resource | Accepted |
 | [0009](0009-districts-one-of-each-business.md) | Districts host one of each business they allow | Accepted |
-| [0010](0010-starting-position.md) | Start with a Kiosk and a Market Stall, 60 Clean, Vitya and nephew Dima | Accepted |
+| [0010](0010-starting-position.md) | Start with a Kiosk and a Market Stall, 60 Clean, Vitya and nephew Dima | Accepted; a starting Tobacco Factory added by 0033 |
 | [0011](0011-heat-target-formula.md) | Heat target = 100 × exposure ÷ (exposure + control) | Accepted |
 | [0012](0012-op-resolution.md) | Jobs score the team's best stats plus a team bonus, with uniform noise | Accepted |
 | [0013](0013-front-suspicion-smoothing.md) | Front suspicion reads smoothed utilization | Accepted |
@@ -36,13 +36,16 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0021](0021-environment-doctor-and-native-env.md) | Environment doctor, per-command toolchain wrapper, default app IDs | Accepted |
 | [0022](0022-end-of-prototype-state.md) | The end of the prototype is a cleared Act II, said in words; reports measure from game start | Accepted |
 | [0023](0023-away-summary.md) | "While you were away" is built in the app from the catch-up reconcile | Accepted |
-| [0024](0024-inbox.md) | Pending decisions: crew reports and incidents with baked options and a default | Accepted |
+| [0024](0024-inbox.md) | Pending decisions: crew reports and incidents with baked options and a default | Accepted; the default-option rule amended by 0032 |
 | [0025](0025-opportunities-board.md) | An opportunities board of generated, expiring job variants | Accepted |
 | [0026](0026-ledger-and-money-flow.md) | The daily ledger is stat snapshots; the Money flow card reads derive | Accepted |
 | [0027](0027-tier-3-specialization.md) | The upgrade to tier 3 is a choice between greed and stealth | Accepted |
 | [0028](0028-front-modes-and-capacity.md) | Fronts have a push / lay low dial and a capacity upgrade track | Accepted |
 | [0029](0029-tolya-negotiation.md) | Tolya's demands can be paid, haggled once, or refused | Accepted |
 | [0030](0030-crew-experience.md) | Crew grow with work: XP, ceilings, ranks, perks and training | Accepted |
+| [0031](0031-business-kinds.md) | Joints, rackets and premises: four questions, spots and lots, upkeep | Accepted |
+| [0032](0032-supply-chain.md) | One city-wide cigarette stock: factories make, joints sell, warehouses keep | Accepted |
+| [0033](0033-bigger-act-i.md) | A bigger Act I: four new businesses, Station Square, a third crew slot | Accepted |
 
 ## Template
 

@@ -46,7 +46,14 @@ export type EventBody =
       districtId?: DistrictId
       name?: string // an offer's own name
       offerId?: string
+      cigarettes?: number // packs a smuggling run put in stock
     }
+  | { type: 'UPKEEP_PAID'; amount: number }
+  | { type: 'UPKEEP_MISSED'; owed: number; paid: number }
+  | { type: 'STOCK_OUT' }
+  | { type: 'STOCK_CAPPED'; cap: number }
+  | { type: 'SHORTAGE_STARTED'; demand: number; made: number }
+  | { type: 'SHORTAGE_ENDED' }
   | { type: 'REPORT_FILED'; itemId: string; opId: string; opType: OpType; outcome: OpOutcome; expiresAt: number }
   | { type: 'INCIDENT_RAISED'; itemId: string; incidentType: IncidentType; crewId?: string; racketId?: string; expiresAt: number }
   | { type: 'INBOX_RESOLVED'; itemId: string; kind: InboxItem['kind']; ref: string; optionId: string; optionName: string; auto: boolean; effects: InboxEffects }

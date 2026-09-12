@@ -7,6 +7,7 @@ import {
   influenceRoom,
   jobXp,
   opDirtyRewardFor,
+  opConfigAt,
   opMinutesFor,
   opUnlocked,
   OP_TYPES,
@@ -157,11 +158,13 @@ function JobCard({
   const { state: s, config: c, now } = game
   const ready = team.length === cfg.crew
   const training = cfg.training
-  const odds = ready && !training ? outcomeOdds(c, cfg, team) : null
+  const live = opConfigAt(c, s, cfg) // smuggling gets harder with heat
+  const odds = ready && !training ? outcomeOdds(c, live, team) : null
   const weights = STATS.filter((st) => cfg.w[st]).map((st) => `${STAT_SHORT[st]} ${pct(cfg.w[st]!)}`).join(' · ')
   const rewards = [
     cfg.dirty ? `◆${fmt(opDirtyRewardFor(c, s, cfg, 'full', ready ? team : []))}` : '',
     cfg.influence ? `✦${cfg.influence}` : '',
+    cfg.cigarettes ? `▮${cfg.cigarettes}` : '',
     `★${fmt(c.reputation.perOpSuccess)}`,
   ].filter(Boolean)
   const minutes = opMinutesFor(c, cfg, ready ? team : [])
@@ -186,7 +189,8 @@ function JobCard({
         <T small>{`Costs ◆${fmt((cfg.costDirty ?? 0) * s.act)} · +${fmt(cfg.xp ?? 0)} ${STAT_LONG[training]} XP`}</T>
       ) : (
         <>
-          <T small muted>{`Needs ${weights} · difficulty ${cfg.diff} · +▲${fmt(cfg.spike)} heat`}</T>
+          <T small muted>{`Needs ${weights} · difficulty ${live.diff}${live.diff !== cfg.diff ? ` (${cfg.diff} + heat)` : ''} · +▲${fmt(cfg.spike)} heat`}</T>
+          {cfg.costClean ? <T small color={colors.clean}>{`Costs ●${fmt(cfg.costClean)} up front: no Rep, and it’s gone if the run fails`}</T> : null}
           <T small>{`Pays ${rewards.join(' ')} on a clean job, ${pct(c.ops.partialRewardPct)} if partial`}</T>
         </>
       )}
@@ -202,7 +206,7 @@ function JobCard({
         small
         kind={ready ? 'primary' : 'normal'}
         title={ready ? (offer ? 'Take it' : training ? 'Train' : 'Send them') : `Select ${cfg.crew} idle crew`}
-        disabled={!ready}
+        disabled={!ready || (cfg.costClean ?? 0) > s.clean}
         onPress={() => onStart(type, cfg, offer?.id)}
       />
     </Card>

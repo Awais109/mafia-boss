@@ -1,6 +1,6 @@
 # 0024. Pending decisions: crew reports and incidents with baked options and a default
 
-- **Status:** Accepted
+- **Status:** Accepted; the rule that a default can't cost cigarettes is amended by [0032](0032-supply-chain.md)
 - **Date:** 2026-09-13
 
 ## Context

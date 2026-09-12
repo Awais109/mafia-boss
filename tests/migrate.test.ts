@@ -6,6 +6,7 @@ import { config, fresh, H } from './helpers'
 
 const V2_STATS = ['opsByType', 'jobDirty', 'offerDirty', 'inboxDirty', 'wagesPaid', 'repairsPaid', 'bribesPaid', 'trainingPaid', 'upkeepPaid', 'smugglingPaid', 'shipmentsPaid', 'surplusSold', 'inbox']
 const V3_STATS = ['specializations', 'frontModeChanges', 'haggles', 'statPointsGained']
+const V4_STATS = ['missedUpkeep', 'packsMade', 'packsSold', 'packsLostToCap', 'shortageHours']
 const PROGRESS = ['xp', 'potential', 'gained', 'rank', 'perks']
 
 // A fresh save stripped back to the schema 1 shape.
@@ -14,13 +15,18 @@ function asV1(): Record<string, unknown> {
   delete s.inbox
   delete s.offers
   delete s.ledger
-  for (const k of [...V2_STATS, ...V3_STATS]) delete s.stats[k]
+  for (const k of [...V2_STATS, ...V3_STATS, ...V4_STATS]) delete s.stats[k]
   for (const m of [...s.crew, ...s.recruitPool.candidates]) for (const k of PROGRESS) delete m[k]
   for (const f of s.fronts) {
     delete f.mode
     delete f.capacityLevel
   }
   delete s.rival.tolya.haggledTick
+  delete s.inventory
+  delete s.stockEmpty
+  delete s.upkeepOwed
+  s.districts = s.districts.filter((d: { id: string }) => d.id !== 'stationSquare')
+  s.rackets = s.rackets.filter((r: { type: string }) => r.type === 'kiosk' || r.type === 'marketStall')
   s.stats.sessions = 3
   return { ...s, schemaVersion: 1 }
 }
@@ -36,6 +42,7 @@ describe('migrate', () => {
     expect(m.stats.jobDirty).toBe(0)
     expect(m.stats.inbox).toEqual({ filed: 0, resolved: 0, auto: 0 })
     expect(m.stats.haggles).toEqual({ won: 0, lost: 0 })
+    expect(m.stats.packsMade).toBe(0)
   })
 
   it('gives existing crew room to grow and fronts the default dial', () => {
@@ -48,6 +55,14 @@ describe('migrate', () => {
     }
     expect(m.fronts.every((f) => f.mode === 'normal' && f.capacityLevel === 0)).toBe(true)
     expect(m.rival.tolya.haggledTick).toBeNull()
+  })
+
+  it('stocks the tobacco chain and opens Station Square', () => {
+    const m = migrate(asV1())
+    expect(m.inventory.cigarettes).toBe(config.supply.startingStock)
+    expect(m.stockEmpty).toBe(false)
+    expect(m.upkeepOwed).toBe(0)
+    expect(m.districts.find((d) => d.id === 'stationSquare')).toEqual({ id: 'stationSquare', controller: 'none', pressureCount: 0 })
   })
 
   it('a migrated save keeps playing: the board fills on the next catch-up', () => {

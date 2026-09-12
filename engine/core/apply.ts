@@ -3,11 +3,11 @@ import { PASSIVE_ACTIONS, type Action } from '../model/actions'
 import type { GameEvent } from '../model/events'
 import type { CrewMember, PlayerState } from '../model/state'
 import { changeLoyalty, crewSlots, regeneratePool, unassignEnforcer } from '../systems/crew'
-import { canPressure, getDistrict, takeDistrict } from '../systems/districts'
+import { canPressure, getDistrict, premisesBlocked, takeDistrict } from '../systems/districts'
 import { arrest, raid } from '../systems/heat'
 import { canAffordEffects, incidentNeedHolds, raiseIncident, resolveInboxItem } from '../systems/inbox'
 import { regenerateOffers } from '../systems/offers'
-import { opMinutesFor, opUnlocked, resolveOp } from '../systems/ops'
+import { opConfigAt, opMinutesFor, opUnlocked, resolveOp } from '../systems/ops'
 import { checkActs, spendClean } from '../systems/reputation'
 import { bestHaggler, canHaggle, changeDisposition, haggle, refuseDemand, tolyaTick } from '../systems/rivals'
 import { tutorialOnAction } from '../systems/tutorial'
@@ -99,9 +99,15 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       if (!c.rackets.types[a.racketType]) return 'Unknown racket'
       if (!d.unlocked.racket[a.racketType]) return 'Not unlocked yet'
       if (!c.districts.list[a.districtId] || !d.unlocked.district[a.districtId]) return 'That district is not open yet'
-      if (!c.districts.list[a.districtId].allows.includes(a.racketType)) return "That kind of business doesn't fit there"
-      if (state.rackets.some((r) => r.districtId === a.districtId && r.type === a.racketType)) {
-        return `You already run a ${c.rackets.types[a.racketType].name} there`
+      if (F.isPremises(c, a.racketType)) {
+        // Premises go on a free lot in any open district (ADR 0031).
+        const blocked = premisesBlocked(state, c, a.districtId, a.racketType)
+        if (blocked) return blocked
+      } else {
+        if (!c.districts.list[a.districtId].allows.includes(a.racketType)) return "That kind of business doesn't fit there"
+        if (state.rackets.some((r) => r.districtId === a.districtId && r.type === a.racketType)) {
+          return `You already run a ${c.rackets.types[a.racketType].name} there`
+        }
       }
       const cost = d.costs.racket[a.racketType]
       if (state.clean < cost - EPS) return 'Not enough Clean'
@@ -115,9 +121,11 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
     case 'UPGRADE_RACKET': {
       const r = state.rackets.find((x) => x.id === a.racketId)
       if (!r) return 'No such racket'
-      if (r.tier >= c.rackets.maxTierByAct[state.act]) return 'Already at max tier'
+      if (r.tier >= F.racketMaxTier(c, r.type, state.act)) return 'Already at max tier'
       const atTier = c.rackets.specialization.atTier
-      if (r.tier + 1 === atTier) {
+      if (F.isPremises(c, r.type)) {
+        if (a.specialization) return 'Premises don’t specialize'
+      } else if (r.tier + 1 === atTier) {
         if (a.specialization !== 'greed' && a.specialization !== 'stealth') return 'Pick greed or stealth'
       } else if (a.specialization) {
         return `Businesses specialize on the way to tier ${atTier}`
@@ -161,6 +169,7 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       if (m.status !== 'idle') return `${m.name} is busy`
       const r = state.rackets.find((x) => x.id === a.racketId)
       if (!r) return 'No such racket'
+      if (F.isPremises(c, r.type)) return 'Premises don’t need minding'
       if (r.enforcerId) return 'That racket already has an enforcer'
       r.enforcerId = m.id
       m.status = 'enforcer'
@@ -176,8 +185,9 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
         if (offer.expiresAt <= t) return 'That offer has expired'
         if (offer.opType !== a.opType) return 'That offer is for a different job'
       }
-      const cfg = offer ? offer.cfg : c.ops.list[a.opType]
-      if (!cfg) return 'Unknown op'
+      const listed = offer ? offer.cfg : c.ops.list[a.opType]
+      if (!listed) return 'Unknown op'
+      const cfg = opConfigAt(c, state, listed)
       if (!opUnlocked(state, c, a.opType)) return 'Not unlocked yet'
       const ids = [...new Set(a.crewIds)]
       if (ids.length !== cfg.crew) return `Needs ${cfg.crew} crew`
@@ -188,11 +198,17 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
         const err = canPressure(state, c, a.districtId)
         if (err) return err
       }
+      if (cfg.costDirty && state.dirty < cfg.costDirty * state.act - EPS) return 'Not enough Dirty'
+      if (cfg.costClean && state.clean < cfg.costClean - EPS) return 'Not enough Clean'
       if (cfg.costDirty) {
         const cost = cfg.costDirty * state.act
-        if (state.dirty < cost - EPS) return 'Not enough Dirty'
         state.dirty -= cost
         if (cfg.training) state.stats.trainingPaid += cost
+      }
+      // Smuggling's Clean buys goods, not standing: it earns no Rep and isn't Clean spent (plan (o)).
+      if (cfg.costClean) {
+        state.clean -= cfg.costClean
+        state.stats.smugglingPaid += cfg.costClean
       }
       const minutes = opMinutesFor(c, cfg, team as CrewMember[])
       const opId = newId(state, 'op')
@@ -203,7 +219,8 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
         startedAt: t,
         completesAt: t + minutesToMs(c, minutes),
         ...(cfg.districtPressure && a.districtId ? { districtId: a.districtId } : {}),
-        ...(offer ? { offerId: offer.id, cfg: offer.cfg, name: offer.name } : {}),
+        ...(offer ? { offerId: offer.id, name: offer.name } : {}),
+        ...(offer || cfg !== listed ? { cfg } : {}),
       })
       if (offer) state.offers.items = state.offers.items.filter((o) => o.id !== offer.id)
       for (const m of team as CrewMember[]) {
@@ -428,7 +445,8 @@ function handleDebug(state: PlayerState, ctx: Ctx, a: Action, t: number): string
       state.dirty += a.dirty ?? 0
       state.clean += a.clean ?? 0
       state.influence += a.influence ?? 0
-      note(JSON.stringify({ dirty: a.dirty, clean: a.clean, influence: a.influence }))
+      if (a.cigarettes) state.inventory.cigarettes = Math.max(0, state.inventory.cigarettes + a.cigarettes)
+      note(JSON.stringify({ dirty: a.dirty, clean: a.clean, influence: a.influence, cigarettes: a.cigarettes }))
       return null
     case 'DEBUG_SET_HEAT':
       state.heat = Math.max(0, Math.min(100, a.heat))

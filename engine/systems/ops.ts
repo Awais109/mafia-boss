@@ -1,5 +1,6 @@
 import { STATS, type Config, type OpConfig, type OpOutcome, type OpType } from '../config/schema'
 import { emit, type Ctx } from '../core/ctx'
+import { derive } from '../core/derive'
 import { opRewardMult } from '../core/formulas'
 import type { Rand } from '../core/rng'
 import { dayIndex } from '../core/time'
@@ -9,6 +10,7 @@ import { addPressure } from './districts'
 import { grantXp, hasPerk, jobXp } from './experience'
 import { fileReport } from './inbox'
 import { gainRep } from './reputation'
+import { addStock } from './supply'
 
 // Resolution:
 //   score = Σ w·(best effective stat on the team) / Σ w + teamBonus·(crew − 1) + U(−noise, noise)
@@ -78,6 +80,15 @@ export function opConfigOf(c: Config, op: OpInstance): OpConfig {
   return op.cfg ?? c.ops.list[op.type]
 }
 
+// The terms a job starts on right now. Smuggling gets harder with heat (plan (o)); START_OP stores
+// the result on the job, so the odds shown are the odds rolled.
+export function opConfigAt(c: Config, state: PlayerState, cfg: OpConfig): OpConfig {
+  if (!cfg.heatDiffPerPoint) return cfg
+  const out: OpConfig = { ...cfg, diff: cfg.diff + Math.round(cfg.heatDiffPerPoint * state.heat) }
+  delete out.heatDiffPerPoint
+  return out
+}
+
 // Dirty a job pays; an Earner on the team adds their perk.
 export function opDirtyRewardFor(c: Config, state: PlayerState, cfg: OpConfig, outcome: OpOutcome, team: CrewMember[] = []): number {
   const earner = hasPerk(team, 'earner') ? (c.crew.experience.perks.earner.jobDirtyMult ?? 1) : 1
@@ -143,6 +154,9 @@ export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: numbe
     state.influence += influence
   }
 
+  // A smuggling run lands its packs: what fits in stock goes in (ADR 0032).
+  const cigarettes = cfg.cigarettes && share > 0 ? addStock(state, derive(state, c).supply.cap, Math.round(cfg.cigarettes * share)) : 0
+
   // Spikes land on displayed heat immediately and feed the next hour's raid roll (spec §10).
   const ghost = hasPerk(team, 'ghost') ? (c.crew.experience.perks.ghost.jobSpikeMult ?? 1) : 1
   const spike = cfg.spike * spikeShare(c, outcome) * ghost
@@ -175,6 +189,7 @@ export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: numbe
     districtId: op.districtId,
     ...(op.name ? { name: op.name } : {}),
     ...(op.offerId ? { offerId: op.offerId } : {}),
+    ...(cigarettes > 0 ? { cigarettes } : {}),
   })
   gainRep(state, ctx, t, rep)
   if (cfg.districtPressure && op.districtId && outcome !== 'fail') addPressure(state, ctx, t, op.districtId)

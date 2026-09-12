@@ -1,6 +1,7 @@
 import { dayMs } from '../../engine'
 import { InboxCard } from '../components/InboxCard'
 import { MoneyFlow } from '../components/MoneyFlow'
+import { SupplyCard } from '../components/SupplyCard'
 import { TributeCard } from '../components/TributeCard'
 import { Bar, Btn, BtnRow, Card, colors, Row, Screen, Section, T } from '../components/ui'
 import { describeEvent } from '../eventText'
@@ -70,6 +71,10 @@ export function HomeScreen({ game, go }: ScreenProps) {
         <MoneyFlow game={game} />
       </Section>
 
+      <Section title="Cigarettes" right={<Btn small kind="ghost" title="Business →" onPress={() => go('rackets')} />}>
+        <SupplyCard game={game} />
+      </Section>
+
       <Section title="Operation">
         <Card>
           <Row label="Crew idle" value={`${idle} of ${s.crew.length}`} color={idle ? colors.dirty : undefined} />
@@ -109,7 +114,7 @@ export function HomeScreen({ game, go }: ScreenProps) {
         <Card>
           {s.act === 1 ? (
             <T small muted>
-              Act II at ★{fmt(nextAct)}: the Restaurant front, two more crew slots, the Port Quarter and Sovietsky Blocks.
+              Act II at ★{fmt(nextAct)}: the Restaurant front, more crew slots, the Port Quarter and Sovietsky Blocks.
             </T>
           ) : !cleared ? (
             <T small muted>

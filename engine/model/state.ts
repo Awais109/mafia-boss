@@ -16,7 +16,7 @@ import type {
 } from '../config/schema'
 import type { GameEvent } from './events'
 
-export const SCHEMA_VERSION = 3
+export const SCHEMA_VERSION = 4
 export const LOG_CAP = 200
 export const LEDGER_ROWS = 8 // 7 closed days plus today's opening snapshot
 
@@ -172,9 +172,14 @@ export type PlaytestStats = {
   seized: number
   trainingPaid: number
   upkeepPaid: number
+  missedUpkeep: number // day starts when upkeep couldn't be covered
   smugglingPaid: number // Clean
   shipmentsPaid: number
   surplusSold: number // Dirty received
+  packsMade: number
+  packsSold: number
+  packsLostToCap: number // made or brought in with no room in stock
+  shortageHours: number // whole hours that found stock empty with joints selling
   inbox: { filed: number; resolved: number; auto: number }
   specializations: { greed: number; stealth: number }
   frontModeChanges: number
@@ -203,6 +208,9 @@ export type PlayerState = {
   heat: number // displayed value; converges toward the target
   inspected: boolean // heat ≥ inspectThreshold at the last whole hour
 
+  inventory: { cigarettes: number } // the city-wide stock (ADR 0032)
+  stockEmpty: boolean // stock at zero with joints selling, at the last whole hour
+
   rackets: Racket[]
   fronts: Front[]
   crew: CrewMember[]
@@ -216,6 +224,7 @@ export type PlayerState = {
   bribeControl: number
 
   wagesOwed: number // accrues continuously, settled at each day boundary
+  upkeepOwed: number // premises upkeep: accrues continuously, settled after wages
   influenceToday: { day: number; amount: number } // ops Influence, for the daily cap
   rival: { tolya: TolyaState }
   tutorial: { step: number; done: boolean }
@@ -255,9 +264,14 @@ export function emptyStats(): PlaytestStats {
     seized: 0,
     trainingPaid: 0,
     upkeepPaid: 0,
+    missedUpkeep: 0,
     smugglingPaid: 0,
     shipmentsPaid: 0,
     surplusSold: 0,
+    packsMade: 0,
+    packsSold: 0,
+    packsLostToCap: 0,
+    shortageHours: 0,
     inbox: { filed: 0, resolved: 0, auto: 0 },
     specializations: { greed: 0, stealth: 0 },
     frontModeChanges: 0,

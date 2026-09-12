@@ -25,6 +25,23 @@ export function openSpots(state: PlayerState, c: Config, id: DistrictId): Racket
   return c.districts.list[id].allows.filter((t) => !built.has(t))
 }
 
+// Premises lots still free in a district (ADR 0031): any premises type, one of each type per district.
+export function openLots(state: PlayerState, c: Config, id: DistrictId): number {
+  const used = state.rackets.filter((r) => r.districtId === id && c.rackets.types[r.type].kind === 'premises').length
+  return Math.max(0, c.districts.list[id].premisesLots - used)
+}
+
+// Why a premises of this type can't go in this district right now, or null if it can.
+export function premisesBlocked(state: PlayerState, c: Config, id: DistrictId, type: RacketType): string | null {
+  const max = c.rackets.types[type].maxInCity
+  if (state.rackets.some((r) => r.districtId === id && r.type === type)) return 'You already have one there'
+  if (max !== undefined && state.rackets.filter((r) => r.type === type).length >= max) {
+    return max === 1 ? 'Only one in the city' : `Only ${max} in the city`
+  }
+  if (openLots(state, c, id) <= 0) return 'No free lot there'
+  return null
+}
+
 export function canPressure(state: PlayerState, c: Config, id: DistrictId): string | null {
   if (!districtUnlocked(state, c, id)) return 'That district is not open yet'
   if (getDistrict(state, id).controller === 'player') return 'Already yours'

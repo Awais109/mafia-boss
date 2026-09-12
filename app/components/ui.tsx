@@ -17,12 +17,13 @@ export const colors = {
   influence: '#6fa8dc',
   rep: '#b48ee6',
   heat: '#e0604f',
+  packs: '#c79a6b', // cigarettes
   warn: '#e8a33d',
   good: '#5fbf7f',
   accent: '#c9a86a',
 }
 
-export const glyph = { dirty: '◆', clean: '●', influence: '✦', rep: '★', heat: '▲' } as const
+export const glyph = { dirty: '◆', clean: '●', influence: '✦', rep: '★', heat: '▲', packs: '▮' } as const
 
 export function Screen({ children }: { children: ReactNode }) {
   return (

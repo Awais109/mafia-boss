@@ -35,7 +35,7 @@ Reports always file, even during the tutorial. They expire after `inbox.reportHo
 `rollIncident` runs at every whole hour, after the heat checks, on `rng.derive('incident', hourIndex)`:
 
 1. Skipped while the tutorial isn't done, before `createdAt + incidents.startAfterHours`, or when `inbox.maxPending` incidents are already waiting. Reports and perk choices don't count toward that limit.
-2. With chance `incidents.chancePerHr`, pick uniformly among `incidents.types` whose `act ≤ state.act` and whose `needs` holds: `idleCrew`, `joint` (a business that sells), `factory` (always false until the supply chain), `inspected`.
+2. With chance `incidents.chancePerHr`, pick uniformly among `incidents.types` whose `act ≤ state.act` and whose `needs` holds: `idleCrew`, `joint` (any joint), `factory` (a premises that makes packs), `inspected`.
 3. `raiseIncident` files it. An `idleCrew` incident names one idle crew member, who takes its loyalty effects.
 
 Incidents expire after `inbox.incidentHours`.
@@ -48,9 +48,9 @@ When a crew member reaches Soldier or Made, `filePerkChoice` in `engine/systems/
 
 - `RESOLVE_INBOX { itemId, optionId }` applies the option. It's rejected with "You can’t cover that" when the option costs more Dirty or Clean than the player holds.
 - `autoResolveInbox` runs in `processDue` and applies each expired item's default, oldest first. Every `expiresAt` is a reconcile boundary, so splits agree.
-- Validation (`validateConfig`) requires 2–3 options per list, unique ids, exactly one default, and a default that never costs Dirty or cigarettes, so an unanswered item can't hurt a player who can't pay.
+- Validation (`validateConfig`) requires 2–3 options per list, unique ids, exactly one default, and a default that never costs Dirty, so an unanswered item never asks for money a player may not have. A default may lose packs (the Bad batch burns them), because stock only falls to zero ([ADR 0032](../decisions/0032-supply-chain.md) amends ADR 0024 here).
 
-Effect rules: Dirty can't go below zero (the change is recorded in `stats.inboxDirty`); heat is clamped to 0–100; loyalty applies to each named crew member still on the crew; condition to the named business; `disposition` is Tolya's; Rep only adds.
+Effect rules: Dirty can't go below zero (the change is recorded in `stats.inboxDirty`); heat is clamped to 0–100; packs go into or out of stock, never below zero or above the cap; loyalty applies to each named crew member still on the crew; condition to the named business; `disposition` is Tolya's; Rep only adds.
 
 ## Events
 
@@ -63,7 +63,7 @@ Effect rules: Dirty can't go below zero (the change is recorded in `stats.inboxD
 
 ## The bot
 
-Right after `COLLECT`, the casual bot answers every item with the affordable option of highest value: `dirty + clean × 2 + rep × repValue + influence × influenceValue − heat × heatCost + loyalty × loyaltyValue` (×3 for someone below `raiseBelow`). `influenceValue` and `heatCost` are the same numbers it uses to value jobs ([sim.md](../sim.md)). Perk choices go by a fixed preference: Earner, Ghost, Fixer, Steady, Mentor, Bargainer.
+Right after `COLLECT`, the casual bot answers every item with the affordable option of highest value: `dirty + clean × 2 + packs × pack value + rep × repValue + influence × influenceValue − heat × heatCost + loyalty × loyaltyValue` (×3 for someone below `raiseBelow`). A pack is worth the Dirty it sells for while stock would run out within `stockReserveHours`, and a fifth of that otherwise. `influenceValue` and `heatCost` are the same numbers it uses to value jobs ([sim.md](../sim.md)). Perk choices go by a fixed preference: Earner, Ghost, Fixer, Steady, Mentor, Bargainer.
 
 ## The app
 

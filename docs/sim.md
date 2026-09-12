@@ -35,16 +35,18 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 5. Deposit Dirty into fronts, best rate first, up to buffer caps, keeping a reserve of 12 h of wages and upkeep plus one bribe.
 6. Bribe if heat is above 55.
 7. Buy an official if affordable and heat or heat target is above 30.
-8. Buy any unlocked front. Recruit into empty slots (highest stat total). Raise anyone under 35 loyalty.
-9. Dispatch idle crew, one job at a time, greedily by value per crew member, over the fixed jobs and the offers on the board (below).
+8. Buy any unlocked front. Recruit into empty slots (highest stat total); past two crew, only while wages after the hire stay under `maxWageShare` (25%) of yield. Raise anyone under 35 loyalty.
+9. Dispatch idle crew, one job at a time, greedily by value per crew member, over the fixed jobs and the offers on the board (below). Smuggling is a candidate only when stock would run out within `stockReserveHours` (12) and the Clean it costs isn't needed for the next planned purchase.
 10. Anyone still idle trains the stat with the most room under its ceiling, if Dirty after the lesson stays above the reserve.
-11. Buy a district when affordable and its tribute over 48 h exceeds the buy-out. It never saves Clean for one.
-12. Spend Clean, repeatedly, on the best gain ÷ cost: a new front first; front rate and capacity upgrades when utilization is at least `fronts.suspicionStartUtil`; a new racket in the district with the best yield multiplier; or a tier upgrade. The upgrade to tier 3 is offered twice, greed and stealth, and the heat-budget filter leaves stealth when greed runs too hot. It skips anything that pushes the heat target above 55, unless an official is affordable right now.
+11. Buy a district when affordable and its tribute plus perks (yield bonuses on what the bot runs there, cheaper wages) over 48 h exceed the buy-out. It never saves Clean for one.
+12. Spend Clean, repeatedly, on the best gain ÷ cost: a new front first; front rate and capacity upgrades when utilization is at least `fronts.suspicionStartUtil`; a new joint or racket in the district with the best yield multiplier; premises on the lot where they help most (below); or a tier upgrade. Joints and joint tiers are discounted by the shortage they would cause. The upgrade to tier 3 is offered twice, greed and stealth, and the heat-budget filter leaves stealth when greed runs too hot. It skips anything that pushes the heat target above 55, unless an official is affordable right now.
 13. `SESSION_END`.
 
-**Job value** (`bestDispatch`) = expected Dirty + expected Rep × 10 + expected Influence × (3 h of yield × urgency) + P(success) × district flip value + growth − expected heat spike × heat cost. Growth is, per member and stat, the expected XP ÷ that stat's point cost × `xpValue` (3), skipping stats at their ceiling. The total is divided by the number of sessions the job blocks. Urgency rises as heat or heat target climbs past 30, so the bot runs Influence jobs when it needs an official. Offers on the board are candidates too, valued with their own terms (`opDirtyRewardFor` on the offer's `cfg`). Training jobs aren't dispatch candidates; step 10 handles them.
+**Job value** (`bestDispatch`) = expected Dirty + expected Rep × 10 + expected Influence × (3 h of yield × urgency) + P(success) × district flip value + growth + goods − expected heat spike × heat cost. Growth is, per member and stat, the expected XP ÷ that stat's point cost × `xpValue` (3), skipping stats at their ceiling. The total is divided by the number of sessions the job blocks. Urgency rises as heat or heat target climbs past 30, so the bot runs Influence jobs when it needs an official. Offers on the board are candidates too, valued with their own terms (`opDirtyRewardFor` on the offer's `cfg`). Training jobs aren't dispatch candidates; step 10 handles them.
 
-**Decision value** (`valueOf`) = Dirty + Clean × 2 + Rep × `repValue` + Influence × the same Influence value + loyalty × `loyaltyValue` for each named crew member (×3 for anyone below `raiseBelow`) − heat × the same heat cost. `valuation()` computes the Influence value and heat cost once for both.
+**Supply value.** A pack is worth the joints' `atStake` over the packs they sell. A new factory or factory tier is worth `0.6 × Σ atStake × (shortfall before − shortfall after)`, with `shortfall = max(0, 1 − made ÷ demand)`, but only while stock would run out within `supplyHorizonHours` (24): a casual player reacts to the Supply card, not to a deficit days away. A new factory also counts the joint bonus it switches on in its district. A warehouse or warehouse tier is worth half the surplus it would bank over a day, while production outruns sales and stock is within 10% of the cap. Upkeep comes off both. Smuggling's goods are its expected packs, up to the room in stock, × Dirty per pack, minus its Clean × 2.
+
+**Decision value** (`valueOf`) = Dirty + Clean × 2 + packs × pack value (full while stock would run out within `stockReserveHours`, a fifth otherwise) + Rep × `repValue` + Influence × the same Influence value + loyalty × `loyaltyValue` for each named crew member (×3 for anyone below `raiseBelow`) − heat × the same heat cost. `valuation()` computes the Influence value and heat cost once for both.
 
 ## Driver
 
@@ -55,7 +57,7 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 - `SESSION_END` is recorded like any other action, so a bot's action list is a faithful log.
 
 `Recorder` rows:
-- `HourRow`: `hour`, `day`, `act`, `dirty`, `clean`, `vault`, `vaultCap`, `heat`, `heatTarget`, `exposure`, `control`, `yield`, `rep`, `influence`, `frontUtil`, `cleanEarned`, `dirtyEarned` (the CSV columns).
+- `HourRow`: `hour`, `day`, `act`, `dirty`, `clean`, `vault`, `vaultCap`, `heat`, `heatTarget`, `exposure`, `control`, `yield`, `rep`, `influence`, `frontUtil`, `cleanEarned`, `dirtyEarned`, `stock` (the CSV columns), plus `crew`, `opPartial`, `opResolved`, `statPoints`, `stockCap` and `packDemand` for the report.
 - `SessionRow`: `day`, `act`, `actions`, `decisions` (successful `RESOLVE_INBOX`), `income` (Dirty earned since the last session ended), `dirtyAfter`, `vaultFillHrs`.
 - `Trace.startStats`: the stats when the run began. Per-run metrics subtract them, because the Debug Bot starts from a save with history.
 
@@ -73,13 +75,14 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 | Dirty idle | Mean over sessions of `min(1, dirtyAfter ÷ income)` |
 | Vault fill | `vaultCap ÷ yield` at session end. Act I uses day-1 sessions; Act II uses day-4+ Act II sessions |
 | Op outcomes | Shares of `stats.opOutcomes` |
-| Tiers | Final rackets, abbreviated (`K5 M4 A3 …`) |
+| Tiers | Final businesses, abbreviated (`K5 M4 BT3 VS2 TF2 WH1 A3 …`) |
 | Decisions per session | Mean over sessions of `SessionRow.decisions` |
 | Auto-resolved | `stats.inbox.auto` ÷ (answered + auto) over the run |
 | Offer share | `stats.offerDirty` ÷ `stats.jobDirty` over the run |
 | Wage share | (`stats.wagesPaid` + `stats.upkeepPaid`) ÷ `stats.dirtyEarned` over the run; a check at 10–25% (manual §5) |
 | Crew growth | `stats.statPointsGained` over the run ÷ mean crew size ÷ days |
 | Partial d1–2, d7–8 | Partial outcomes ÷ resolved jobs between the first and last hourly rows of those days (training never counts); blank when the run is too short. The plan's gate is d7–8 ≥ 40%: crew growth must not erase partials |
+| Cigarettes | `stats.shortageHours` over the run; the share of Act I hours with stock out and joints selling; the share of selling hours with stock at its cap; packs lost to the cap. The plan's gate is some shortage, under 10% of Act I |
 
 Clear times count from the game's `createdAt`, not the run's start, so the Debug Bot's report on an existing save reads like the CLI's. A clear that happened before the run is printed with `before this run` and not scored (`actClear1InRun`, `actClear2InRun`; [ADR 0022](decisions/0022-end-of-prototype-state.md)).
 

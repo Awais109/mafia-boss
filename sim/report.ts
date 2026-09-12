@@ -38,12 +38,22 @@ export type Summary = {
   statPointsPerCrewDay: number
   partialEarly: number // partial share of jobs resolved on days 1–2
   partialLate: number // … on days 7–8 (NaN for shorter runs)
+  shortageHours: number // whole hours with joints short of cigarettes
+  shortagePctAct1: number // share of Act I hours with stock out and joints selling
+  stockIdlePct: number // hours stock sat at its cap ÷ hours joints were selling
+  packsLostToCap: number
   checks: Check[]
 }
 
 const ABBREV: Record<RacketType, string> = {
   kiosk: 'K',
   marketStall: 'M',
+  beerTent: 'BT',
+  videoSalon: 'VS',
+  taxiRank: 'TR',
+  slotHall: 'SL',
+  tobaccoFactory: 'TF',
+  warehouse: 'WH',
   autoShop: 'A',
   cafe: 'C',
   bathhouse: 'B',
@@ -94,6 +104,8 @@ export function summarize(trace: Trace): Summary {
     const resolved = rows[rows.length - 1].opResolved - rows[0].opResolved
     return resolved > 0 ? (rows[rows.length - 1].opPartial - rows[0].opPartial) / resolved : NaN
   }
+  const selling = hours.filter((h) => h.packDemand > 0)
+  const act1Hours = hours.filter((h) => h.act === 1)
   const crewMean = mean(hours.map((h) => h.crew))
   const statPoints = hours.length ? hours[hours.length - 1].statPoints - hours[0].statPoints : 0
   const tiers = [...final.rackets]
@@ -133,6 +145,10 @@ export function summarize(trace: Trace): Summary {
     statPointsPerCrewDay: crewMean > 0 && days > 0 ? statPoints / crewMean / days : NaN,
     partialEarly: partialIn(1, 2),
     partialLate: partialIn(7, 8),
+    shortageHours: delta((x) => x.shortageHours),
+    shortagePctAct1: act1Hours.length ? act1Hours.filter((h) => h.packDemand > 0 && h.stock <= 1e-9).length / act1Hours.length : NaN,
+    stockIdlePct: selling.length ? selling.filter((h) => h.stock >= h.stockCap - 1e-6).length / selling.length : NaN,
+    packsLostToCap: delta((x) => x.packsLostToCap),
     checks: [],
   }
   summary.checks = [
@@ -177,6 +193,7 @@ export function formatSummary(s: Summary): string {
     `${pad('Sessions:', 18)}${pad(String(s.sessions), 8)}actions/session: ${f1(s.actionsPerSession)}  decisions/session: ${f1(s.decisionsPerSession)}`,
     `${pad('Decisions:', 18)}auto-resolved ${pc(s.inboxAutoPct)}  offer share ${pc(s.offerShare)}  wage share ${pc(s.wageShare)}   ${ok('Wage share')}`,
     `${pad('Crew growth:', 18)}${f1(s.statPointsPerCrewDay)} pts/crew/day  partial d1–2 ${pc(s.partialEarly)}  d7–8 ${pc(s.partialLate)}`,
+    `${pad('Cigarettes:', 18)}shortage ${s.shortageHours} h (${pc(s.shortagePctAct1)} of Act I)  stock at cap ${pc(s.stockIdlePct)}  lost ${Math.round(s.packsLostToCap)} packs`,
     `${pad('Tiers @ end:', 18)}${s.tiers}`,
   ]
   const passed = s.checks.filter((ch) => checkOk(ch) === true).length
@@ -186,7 +203,7 @@ export function formatSummary(s: Summary): string {
 
 const CSV_COLUMNS = [
   'hour', 'day', 'act', 'dirty', 'clean', 'vault', 'vaultCap', 'heat', 'heatTarget', 'exposure', 'control',
-  'yield', 'rep', 'influence', 'frontUtil', 'cleanEarned', 'dirtyEarned',
+  'yield', 'rep', 'influence', 'frontUtil', 'cleanEarned', 'dirtyEarned', 'stock',
 ] as const
 
 export function toCsv(trace: Trace): string {

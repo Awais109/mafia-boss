@@ -20,6 +20,13 @@ export type AwaySummary = {
   cleanEarned: number
   wagesPaid: number
   wagesShort: number // owed at a payday but not covered
+  upkeepPaid: number
+  upkeepShort: number
+  packsMade: number
+  packsSold: number
+  packsLost: number // made or brought in with no room in stock
+  stockFrom: number
+  stockTo: number
   tributeLost: number
   seized: number
   influenceEarned: number
@@ -34,6 +41,9 @@ const FOLDED = new Set<GameEvent['type']>([
   'OP_RESOLVED',
   'WAGES_PAID',
   'WAGES_MISSED',
+  'UPKEEP_PAID',
+  'UPKEEP_MISSED',
+  'STOCK_CAPPED',
   'VAULT_CAPPED',
   'OP_STARTED',
   'REPORT_FILED', // counted in pendingDecisions
@@ -54,6 +64,8 @@ export function buildAway(before: PlayerState, after: PlayerState, events: GameE
   const jobs: AwayJob[] = []
   let wagesPaid = 0
   let wagesShort = 0
+  let upkeepPaid = 0
+  let upkeepShort = 0
   for (const e of events) {
     if (e.type === 'OP_RESOLVED') {
       jobs.push({
@@ -69,6 +81,11 @@ export function buildAway(before: PlayerState, after: PlayerState, events: GameE
     } else if (e.type === 'WAGES_MISSED') {
       wagesPaid += e.paid
       wagesShort += e.owed - e.paid
+    } else if (e.type === 'UPKEEP_PAID') {
+      upkeepPaid += e.amount
+    } else if (e.type === 'UPKEEP_MISSED') {
+      upkeepPaid += e.paid
+      upkeepShort += e.owed - e.paid
     }
   }
   // stats.dirtyEarned counts vault accrual and job rewards together.
@@ -94,6 +111,13 @@ export function buildAway(before: PlayerState, after: PlayerState, events: GameE
     cleanEarned: delta((s) => s.stats.cleanEarned),
     wagesPaid,
     wagesShort,
+    upkeepPaid,
+    upkeepShort,
+    packsMade: delta((s) => s.stats.packsMade),
+    packsSold: delta((s) => s.stats.packsSold),
+    packsLost: delta((s) => s.stats.packsLostToCap),
+    stockFrom: before.inventory.cigarettes,
+    stockTo: after.inventory.cigarettes,
     tributeLost: delta((s) => s.stats.tributeLost),
     seized: delta((s) => s.stats.seized),
     influenceEarned: delta((s) => s.influence),
@@ -128,6 +152,13 @@ export function mergeAway(pending: AwaySummary | null, next: AwaySummary): AwayS
     cleanEarned: pending.cleanEarned + next.cleanEarned,
     wagesPaid: pending.wagesPaid + next.wagesPaid,
     wagesShort: pending.wagesShort + next.wagesShort,
+    upkeepPaid: pending.upkeepPaid + next.upkeepPaid,
+    upkeepShort: pending.upkeepShort + next.upkeepShort,
+    packsMade: pending.packsMade + next.packsMade,
+    packsSold: pending.packsSold + next.packsSold,
+    packsLost: pending.packsLost + next.packsLost,
+    stockFrom: pending.stockFrom,
+    stockTo: next.stockTo,
     tributeLost: pending.tributeLost + next.tributeLost,
     seized: pending.seized + next.seized,
     influenceEarned: pending.influenceEarned + next.influenceEarned,

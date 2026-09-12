@@ -1,3 +1,4 @@
+import { defaults } from '../config/defaults'
 import { emptyStats, ledgerSnapshot, SCHEMA_VERSION, type PlayerState } from './state'
 
 // Bring an older save up to the current schema, so a model change mid-playtest doesn't
@@ -44,7 +45,24 @@ function v2to3(doc: Doc): Doc {
   }
 }
 
-const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3 }
+// v4 (M3): the tobacco chain, premises upkeep, Station Square. There's no config here, so the
+// starting stock and the new district's controller come from the defaults.
+function v3to4(doc: Doc): Doc {
+  const districts = doc.districts as { id: string; controller: string; pressureCount: number }[]
+  return {
+    ...doc,
+    schemaVersion: 4,
+    stats: { ...emptyStats(), ...(doc.stats as object) },
+    upkeepOwed: doc.upkeepOwed ?? 0,
+    inventory: doc.inventory ?? { cigarettes: defaults.supply.startingStock },
+    stockEmpty: doc.stockEmpty ?? false,
+    districts: districts.some((d) => d.id === 'stationSquare')
+      ? districts
+      : [...districts, { id: 'stationSquare', controller: defaults.districts.list.stationSquare.startsAs, pressureCount: 0 }],
+  }
+}
+
+const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3, 3: v3to4 }
 
 export function migrate(doc: unknown): PlayerState {
   if (typeof doc !== 'object' || doc === null) throw new Error('Save is not an object')

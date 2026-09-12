@@ -89,6 +89,7 @@ function StatePanel({ game }: { game: Snapshot }) {
           <Btn small title="+●100" onPress={() => d({ type: 'DEBUG_GRANT', clean: 100 })} />
           <Btn small title="+●1000" onPress={() => d({ type: 'DEBUG_GRANT', clean: 1000 })} />
           <Btn small title="+✦5" onPress={() => d({ type: 'DEBUG_GRANT', influence: 5 })} />
+          <Btn small title="+▮40" onPress={() => d({ type: 'DEBUG_GRANT', cigarettes: 40 })} />
         </BtnRow>
       </Card>
       <Card>
@@ -249,6 +250,8 @@ function InspectPanel({ game }: { game: Snapshot }) {
     ['heat → target', `${n(s.heat)} → ${n(d.heatTarget)}`],
     ['inspected', String(s.inspected)],
     ['wagesPerHr (owed)', `${n(d.wagesPerHr)} (${n(s.wagesOwed)})`],
+    ['upkeepPerHr (owed)', `${n(d.upkeepPerHr)} (${n(s.upkeepOwed)})`],
+    ['stock / cap (made − demand)', `${n(d.supply.stock)} / ${n(d.supply.cap)} (${n(d.supply.madePerHr)} − ${n(d.supply.demandPerHr)})${s.stockEmpty ? ' SHORT' : ''}`],
     ['influencePerHr', n(d.influencePerHr)],
     ['throughput / clean max', `${n(d.throughputPerHr)} / ${n(d.cleanPerHrMax)}`],
     ['crewSlots / maxTier', `${d.crewSlots} / ${d.maxTier}`],
@@ -268,7 +271,7 @@ function InspectPanel({ game }: { game: Snapshot }) {
           const rd = d.perRacket[i]
           return (
             <T key={r.id} small style={styles.mono}>
-              {`${r.id} ${r.type} T${r.tier} @${r.districtId} y=${n(rd.yield)} trib=${n(rd.tribute)} exp=${n(rd.exposure)} cond=${r.condition.toFixed(1)}${r.enforcerId ? ' +enf' : ''}`}
+              {`${r.id} ${r.type} (${rd.kind}) T${r.tier} @${r.districtId} y=${n(rd.yield)} up=${n(rd.upkeep)} packs=${n(rd.packsPerHr)} served=${n(rd.served)} trib=${n(rd.tribute)} exp=${n(rd.exposure)} cond=${r.condition.toFixed(1)}${r.enforcerId ? ' +enf' : ''}`}
             </T>
           )
         })}

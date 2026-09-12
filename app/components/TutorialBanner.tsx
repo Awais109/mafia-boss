@@ -8,7 +8,7 @@ import { Btn, colors } from './ui'
 const COPY: Record<TutorialStepId, { title: string; body: string; tab?: TabId; cta?: string }> = {
   collect: {
     title: '1 · Collect',
-    body: 'Your rackets fill the vault with Dirty money. The vault has a cap: once it’s full, income stops until you collect.',
+    body: 'Your businesses fill the vault with Dirty money. The vault has a cap: once it’s full, income stops until you collect.',
     tab: 'home',
     cta: 'Go to Home',
   },
@@ -20,9 +20,9 @@ const COPY: Record<TutorialStepId, { title: string; body: string; tab?: TabId; c
   },
   spend: {
     title: '3 · Invest',
-    body: 'Clean buys and upgrades businesses, and every Clean you spend earns Reputation. Upgrade a racket or open a new one.',
+    body: 'Clean buys and upgrades businesses, and every Clean you spend earns Reputation. Upgrade a business or open a new one.',
     tab: 'rackets',
-    cta: 'Go to Rackets',
+    cta: 'Go to Business',
   },
   op: {
     title: '4 · Put the crew to work',

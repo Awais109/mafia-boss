@@ -35,6 +35,11 @@ describe('config', () => {
     expect(errors.some((e) => e.startsWith('ops.list.shakeDown.minutes'))).toBe(true)
   })
 
+  it('keeps premises off district spots', () => {
+    const { errors } = tryBuildConfig({ districts: { list: { zarechye: { allows: ['kiosk', 'tobaccoFactory'] } } } } as never)
+    expect(errors.some((e) => e.startsWith('districts.list.zarechye.allows') && e.includes('premises'))).toBe(true)
+  })
+
   it('applies user overrides on top of the preset', () => {
     const c = buildConfig('lenient', { 'heat.baseControl': 3, 'vault.targetHoursByAct.1': 2 })
     expect(c.heat.baseControl).toBe(3)

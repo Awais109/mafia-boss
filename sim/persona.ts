@@ -1,5 +1,6 @@
 import {
   apply,
+  baseWage,
   canAffordEffects,
   canHaggle,
   canPressure,
@@ -12,11 +13,13 @@ import {
   jobXp,
   OFFICIAL_IDS,
   openSpots,
+  opConfigAt,
   opDirtyRewardFor,
   opUnlocked,
   OP_OUTCOMES,
   OP_TYPES,
   outcomeOdds,
+  premisesBlocked,
   RACKET_TYPES,
   STATS,
   type Action,
@@ -31,6 +34,7 @@ import {
   type OpType,
   type PerkId,
   type PlayerState,
+  type RacketType,
 } from '../engine'
 
 // The bot's perk order: money first, then heat, speed, loyalty, teaching, haggling.
@@ -56,6 +60,9 @@ export type PersonaOptions = {
   pushBacklogHours: number // push a front when Dirty waiting to be washed exceeds this many hours of its throughput
   xpValue: number // Dirty-equivalents per stat point a job would earn
   haggleAbove: number // haggle with Tolya when the odds are at least this
+  stockReserveHours: number // smuggle when cigarettes would run out sooner than this
+  maxWageShare: number // past two crew, hire only while wages stay under this share of yield
+  supplyHorizonHours: number // more factory output is worth buying only when stock would run out within this many hours
 }
 
 export const CASUAL: PersonaOptions = {
@@ -75,6 +82,9 @@ export const CASUAL: PersonaOptions = {
   pushBacklogHours: 6,
   xpValue: 3,
   haggleAbove: 0.6,
+  stockReserveHours: 12,
+  maxWageShare: 0.25,
+  supplyHorizonHours: 24,
 }
 
 // N sessions spread evenly between 08:00 and 22:00, for both acts.
@@ -210,6 +220,9 @@ export function playSession(
   // Crew upkeep: fill empty slots, raise anyone close to walking.
   while (state.crew.length < d().crewSlots && state.clean >= d().costs.recruit && state.recruitPool.candidates.length) {
     const best = [...state.recruitPool.candidates].sort((a, b) => statSum(b) - statSum(a))[0]
+    // Past two crew, hire only while wages stay a modest share of what the businesses make (plan (s)).
+    const now = d()
+    if (state.crew.length >= 2 && now.wagesPerHr + baseWage(c, best) * now.wageMult > p.maxWageShare * now.yieldPerHr) break
     if (!tryAct({ type: 'RECRUIT', candidateId: best.id })) break
   }
   for (const m of state.crew) {
@@ -242,7 +255,7 @@ export function playSession(
     const now = d()
     if (!now.unlocked.district[id] || controllerOf(state, id) === 'player') continue
     const buyout = c.districts.list[id].buyout
-    if (state.clean >= buyout && districtTributePerHr(state, now, id) * p.districtPaybackHours > buyout) {
+    if (state.clean >= buyout && (districtTributePerHr(state, now, id) + districtPerkPerHr(state, c, now, id)) * p.districtPaybackHours > buyout) {
       tryAct({ type: 'BUY_DISTRICT', districtId: id })
     }
   }
@@ -252,7 +265,7 @@ export function playSession(
     const now = d()
     const budget = state.clean
     const controlBuyable = canBuyControl(state, c, now, t)
-    const options = spendOptions(state, c, now).filter((o) => {
+    const options = spendOptions(state, c, now, p).filter((o) => {
       if (o.cost > budget) return false
       if (o.heatGain <= 0 || controlBuyable) return true
       return formulas.heatTarget(now.exposure + o.heatGain, now.control) <= p.heatBudget
@@ -273,6 +286,58 @@ function districtTributePerHr(state: PlayerState, d: Derived, id: DistrictId): n
   return d.perRacket.reduce((sum, r, i) => (state.rackets[i].districtId === id ? sum + r.tribute : sum), 0)
 }
 
+// What taking a district adds per hour beyond the tribute it stops: its yield perks on what you
+// already run there, and cheaper wages (plan (s)).
+function districtPerkPerHr(state: PlayerState, c: Config, d: Derived, id: DistrictId): number {
+  if (controllerOf(state, id) === 'player') return 0
+  const dc = c.districts.list[id]
+  const perks = d.perRacket.reduce((sum, rd, i) => {
+    const mult = state.rackets[i].districtId === id ? dc.mod.yieldMult?.[state.rackets[i].type] : undefined
+    return mult ? sum + rd.grossYield * (mult - 1) : sum
+  }, 0)
+  return perks + (1 - (dc.mod.wageMult ?? 1)) * d.wagesPerHr
+}
+
+const shortfall = (made: number, demand: number) => (demand > 0 ? Math.max(0, 1 - made / demand) : 0)
+
+// Dirty per pack sold: the cigarette share of joints' yield over what they sell.
+function packValue(d: Derived): number {
+  return d.supply.demandPerHr > 0 ? d.perRacket.reduce((sum, r) => sum + r.atStake, 0) / d.supply.demandPerHr : 0
+}
+
+// A joint's income, discounted for running short once it sells `extraDemand` more packs an hour.
+function jointRisk(d: Derived, share: number, extraDemand: number): number {
+  return 1 - share * shortfall(d.supply.madePerHr, d.supply.demandPerHr + extraDemand)
+}
+
+// The upkeep multiplier a new premises of this type would get in this district.
+function upkeepMultIf(state: PlayerState, c: Config, id: DistrictId, type: RacketType): number {
+  const here = [...state.rackets.filter((r) => r.districtId === id).map((r) => r.type), type]
+  let mult = 1
+  for (const syn of c.rackets.synergies) {
+    const m = syn.effect.upkeepMultOf?.[type]
+    if (m === undefined || (syn.district !== undefined && syn.district !== id) || !here.includes(syn.a)) continue
+    const hasB = syn.b === undefined || (syn.b === 'joints' ? here.some((t) => c.rackets.types[t].kind === 'joint') : here.includes(syn.b))
+    if (hasB) mult *= m
+  }
+  return mult
+}
+
+// Yield a new premises would add through a synergy it switches on in this district.
+function synergyYieldIf(state: PlayerState, c: Config, d: Derived, id: DistrictId, type: RacketType): number {
+  let gain = 0
+  for (const syn of c.rackets.synergies) {
+    if (syn.a !== type || syn.effect.yieldMult === undefined) continue
+    if ((syn.district !== undefined && syn.district !== id) || d.synergies.some((x) => x.districtId === id && x.id === syn.id)) continue
+    const mult = syn.effect.yieldMult
+    d.perRacket.forEach((rd, i) => {
+      const r = state.rackets[i]
+      if (r.districtId === id && (syn.b === 'joints' ? rd.kind === 'joint' : syn.b === r.type)) gain += rd.yield * (mult - 1)
+    })
+  }
+  return gain
+}
+
 // Permanent control only. A bribe is the emergency lever, not a licence to keep tiering.
 function canBuyControl(state: PlayerState, c: Config, d: Derived, t: number): boolean {
   return OFFICIAL_IDS.some(
@@ -286,7 +351,17 @@ function canBuyControl(state: PlayerState, c: Config, d: Derived, t: number): bo
 
 type SpendOption = { action: Action; cost: number; gain: number; heatGain: number }
 
-function spendOptions(state: PlayerState, c: Config, d: Derived): SpendOption[] {
+// What the spend loop would buy next, affordable or not: a smuggling run won't eat into it.
+function plannedPurchaseCost(state: PlayerState, c: Config, d: Derived, p: PersonaOptions, t: number): number {
+  const controlBuyable = canBuyControl(state, c, d, t)
+  const options = spendOptions(state, c, d, p).filter(
+    (o) => o.heatGain <= 0 || controlBuyable || formulas.heatTarget(d.exposure + o.heatGain, d.control) <= p.heatBudget,
+  )
+  options.sort((a, b) => b.gain / Math.max(1, b.cost) - a.gain / Math.max(1, a.cost))
+  return options[0]?.cost ?? 0
+}
+
+function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptions): SpendOption[] {
   const out: SpendOption[] = []
 
   for (const type of FRONT_TYPES) {
@@ -311,8 +386,39 @@ function spendOptions(state: PlayerState, c: Config, d: Derived): SpendOption[] 
     }
   }
 
+  const sup = d.supply
+  const atStake = d.perRacket.reduce((sum, r) => sum + r.atStake, 0)
+  // A casual player adds output when the Supply card warns, not days ahead.
+  const urgent = sup.hoursToEmpty < p.supplyHorizonHours ? 1 : 0
+  const perPack = packValue(d)
+  // Packs that would otherwise be wasted at the cap, valued at half their trade spread over a day.
+  const surplusValue = (extraCap: number) =>
+    sup.madePerHr > sup.demandPerHr && sup.stock >= 0.9 * sup.cap
+      ? ((Math.min(extraCap, (sup.madePerHr - sup.demandPerHr) * 24) * perPack) / 24) * 0.5
+      : 0
+
   for (const type of RACKET_TYPES) {
     if (!d.unlocked.racket[type]) continue
+    const rt = c.rackets.types[type]
+    if (rt.kind === 'premises') {
+      // The lot where it helps most: a factory beside joints, a warehouse beside a factory.
+      let best: { id: DistrictId; gain: number } | null = null
+      for (const id of DISTRICT_IDS) {
+        if (!d.unlocked.district[id] || premisesBlocked(state, c, id, type)) continue
+        let gain = -formulas.premisesUpkeep(c, type, 1) * upkeepMultIf(state, c, id, type)
+        if (rt.makesPerHr) {
+          const made = formulas.factoryOutput(c, type, 1)
+          gain += urgent * 0.6 * atStake * (shortfall(sup.madePerHr, sup.demandPerHr) - shortfall(sup.madePerHr + made, sup.demandPerHr))
+          gain += synergyYieldIf(state, c, d, id, type)
+        }
+        if (rt.capPerTier) gain += surplusValue(formulas.warehouseCapacity(c, type, 1))
+        if (!best || gain > best.gain) best = { id, gain }
+      }
+      if (best && best.gain > 0) {
+        out.push({ action: { type: 'BUY_RACKET', racketType: type, districtId: best.id }, cost: d.costs.racket[type], gain: best.gain, heatGain: rt.baseHeat })
+      }
+      continue
+    }
     let bestMult = 0
     let bestDistrict: DistrictId | null = null
     for (const id of DISTRICT_IDS) {
@@ -326,17 +432,36 @@ function spendOptions(state: PlayerState, c: Config, d: Derived): SpendOption[] 
       }
     }
     if (!bestDistrict) continue
+    const risk = rt.kind === 'joint' ? jointRisk(d, rt.cigaretteShare ?? 0, formulas.jointSales(c, type, 1)) : 1
     out.push({
       action: { type: 'BUY_RACKET', racketType: type, districtId: bestDistrict },
       cost: d.costs.racket[type],
-      gain: c.rackets.types[type].baseYield * bestMult * d.inspectionMult,
-      heatGain: c.rackets.types[type].baseHeat,
+      gain: rt.baseYield * bestMult * d.inspectionMult * risk,
+      heatGain: rt.baseHeat,
     })
   }
 
   state.rackets.forEach((r, i) => {
     const rd = d.perRacket[i]
     if (rd.upgradeCost === null) return
+    const rt = c.rackets.types[r.type]
+    if (rd.kind === 'premises') {
+      const cond = r.condition / 100
+      const upkeepNow = formulas.premisesUpkeep(c, r.type, r.tier)
+      const synergyUpkeep = upkeepNow > 0 ? rd.upkeep / upkeepNow : 1
+      let gain = -(formulas.premisesUpkeep(c, r.type, r.tier + 1) - upkeepNow) * synergyUpkeep
+      if (rt.makesPerHr) {
+        const extra = (formulas.factoryOutput(c, r.type, r.tier + 1) - formulas.factoryOutput(c, r.type, r.tier)) * cond
+        gain += urgent * 0.6 * atStake * (shortfall(sup.madePerHr, sup.demandPerHr) - shortfall(sup.madePerHr + extra, sup.demandPerHr))
+      }
+      if (rt.capPerTier) gain += surplusValue(rt.capPerTier * cond)
+      if (gain > 0) {
+        out.push({ action: { type: 'UPGRADE_RACKET', racketId: r.id }, cost: rd.upgradeCost, gain, heatGain: rd.exposure * (c.rackets.tierHeatMult - 1) })
+      }
+      return
+    }
+    // A bigger joint sells more packs, and loses more when they run short.
+    const risk = rd.kind === 'joint' ? jointRisk(d, rt.cigaretteShare ?? 0, rd.packsPerHr * (c.rackets.tierYieldMult - 1)) : 1
     const spec = c.rackets.specialization
     if (r.tier + 1 === spec.atTier) {
       // Both choices compete on gain ÷ cost; the heat-budget filter falls back to stealth when greed runs hot.
@@ -344,7 +469,7 @@ function spendOptions(state: PlayerState, c: Config, d: Derived): SpendOption[] 
         out.push({
           action: { type: 'UPGRADE_RACKET', racketId: r.id, specialization: choice },
           cost: rd.upgradeCost,
-          gain: rd.yield * (c.rackets.tierYieldMult * spec[choice].yieldMult - 1),
+          gain: rd.yield * (c.rackets.tierYieldMult * spec[choice].yieldMult - 1) * risk,
           heatGain: rd.exposure * (c.rackets.tierHeatMult * spec[choice].exposureMult - 1),
         })
       }
@@ -353,14 +478,14 @@ function spendOptions(state: PlayerState, c: Config, d: Derived): SpendOption[] 
     out.push({
       action: { type: 'UPGRADE_RACKET', racketId: r.id },
       cost: rd.upgradeCost,
-      gain: rd.yield * (c.rackets.tierYieldMult - 1),
+      gain: rd.yield * (c.rackets.tierYieldMult - 1) * risk,
       heatGain: rd.exposure * (c.rackets.tierHeatMult - 1),
     })
   })
   return out
 }
 
-type Valuation = { influenceValue: number; heatCost: number }
+type Valuation = { influenceValue: number; heatCost: number; packValue: number }
 
 // What the bot thinks Influence and heat are worth right now, shared by dispatch and decisions.
 function valuation(state: PlayerState, c: Config, p: PersonaOptions): Valuation {
@@ -372,6 +497,8 @@ function valuation(state: PlayerState, c: Config, p: PersonaOptions): Valuation 
   return {
     influenceValue: officialsLeft ? p.influenceValueHours * hourOfYield * urgency : 0,
     heatCost: state.heat >= c.heat.inspectThreshold - 5 ? 8 : 2,
+    // Packs matter when stock is running out; a surplus is worth little.
+    packValue: packValue(d) * (d.supply.hoursToEmpty < p.stockReserveHours ? 1 : 0.2),
   }
 }
 
@@ -382,7 +509,7 @@ function valueOf(state: PlayerState, p: PersonaOptions, v: Valuation, item: Inbo
     if (m) loyalty += (e.loyalty ?? 0) * p.loyaltyValue * (m.loyalty < p.raiseBelow ? 3 : 1)
   }
   return (
-    (e.dirty ?? 0) + (e.clean ?? 0) * 2 + (e.rep ?? 0) * p.repValue + (e.influence ?? 0) * v.influenceValue - (e.heat ?? 0) * v.heatCost + loyalty
+    (e.dirty ?? 0) + (e.clean ?? 0) * 2 + (e.cigarettes ?? 0) * v.packValue + (e.rep ?? 0) * p.repValue + (e.influence ?? 0) * v.influenceValue - (e.heat ?? 0) * v.heatCost + loyalty
   )
 }
 
@@ -401,15 +528,26 @@ function bestDispatch(state: PlayerState, c: Config, p: PersonaOptions, t: numbe
       .map((o) => ({ type: o.opType, op: o.cfg, offerId: o.id })),
   ]
 
-  for (const { type, op, offerId } of jobs) {
+  const sup = d.supply
+  const perPack = packValue(d)
+  let plannedCost: number | null = null
+
+  for (const { type, op: listed, offerId } of jobs) {
+    const op = opConfigAt(c, state, listed)
+    // Smuggle only when stock is running out, and never with Clean the next purchase needs (plan (o)).
+    if (op.costClean) {
+      if (sup.hoursToEmpty >= p.stockReserveHours || state.clean < op.costClean) continue
+      plannedCost ??= plannedPurchaseCost(state, c, d, p, t)
+      if (state.clean - op.costClean < plannedCost) continue
+    }
     let districtId: DistrictId | undefined
     let flipValue = 0
     if (op.districtPressure) {
       for (const id of DISTRICT_IDS) {
         if (canPressure(state, c, id)) continue
-        const wageSave = (1 - (c.districts.list[id].mod.wageMult ?? 1)) * d.wagesPerHr
         const value =
-          ((districtTributePerHr(state, d, id) + wageSave) * p.districtPaybackHours + c.reputation.perDistrict * p.repValue) /
+          ((districtTributePerHr(state, d, id) + districtPerkPerHr(state, c, d, id)) * p.districtPaybackHours +
+            c.reputation.perDistrict * p.repValue) /
           c.districts.pressureOpsToFlip
         if (value > flipValue) {
           flipValue = value
@@ -441,9 +579,12 @@ function bestDispatch(state: PlayerState, c: Config, p: PersonaOptions, t: numbe
         influence = Math.min(influenceRoom(state, c, t), odds.full * op.influence + odds.partial * partialInfluence)
       }
       const spike = op.spike * (odds.full + odds.partial * c.ops.partialSpikePct + odds.fail * c.ops.failSpikePct)
+      const packs = op.cigarettes ? (odds.full + odds.partial * c.ops.partialRewardPct) * op.cigarettes : 0
+      const goods = Math.min(packs, Math.max(0, sup.cap - sup.stock)) * perPack - (op.costClean ?? 0) * 2
       const sessionsBlocked = Math.max(1, Math.ceil(op.minutes / gapMinutes))
       const value =
-        (dirty + rep * p.repValue + influence * influenceValue + success * flipValue + growth - spike * heatCost) / sessionsBlocked
+        (dirty + rep * p.repValue + influence * influenceValue + success * flipValue + growth + goods - spike * heatCost) /
+        sessionsBlocked
       const score = value / team.length
       if (value > 0 && (!best || score > best.score)) {
         best = {

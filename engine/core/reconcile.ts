@@ -9,8 +9,9 @@ import { autoResolveInbox, rollIncident } from '../systems/inbox'
 import { ledgerDayBoundary } from '../systems/ledger'
 import { refreshOffersIfDue } from '../systems/offers'
 import { resolveOp } from '../systems/ops'
-import { accrueVault, decayCondition } from '../systems/rackets'
+import { accrueVault, decayCondition, settleUpkeep } from '../systems/rackets'
 import { tolyaTick } from '../systems/rivals'
+import { accrueStock, supplyHourBoundary } from '../systems/supply'
 import { clone, emit, type Ctx } from './ctx'
 import { derive } from './derive'
 import { convergeHeat } from './formulas'
@@ -75,13 +76,18 @@ function accrue(state: PlayerState, ctx: Ctx, t: number, hours: number): void {
   if (hours <= 0) return
   const { c } = ctx
   const d = derive(state, c)
+  const from = ctx.events.length
   accrueVault(state, ctx, t, hours, d.yieldPerHr, d.vaultCap)
   state.stats.tributeLost += d.tributePerHr * hours
   convertFronts(state, c, hours)
+  accrueStock(state, ctx, t, hours, d)
   state.heat = convergeHeat(state.heat, d.heatTarget, hours, c.heat.convergePerHr)
   state.wagesOwed += d.wagesPerHr * hours
+  state.upkeepOwed += d.upkeepPerHr * hours
   state.influence += d.influencePerHr * hours
   accrueEnforcerXp(state, c, hours)
+  // The vault and the stock each emit mid-segment instants: keep them in time order, so a split agrees.
+  if (ctx.events.length - from > 1) ctx.events.push(...ctx.events.splice(from).sort((a, b) => a.t - b.t))
 }
 
 function hourBoundary(state: PlayerState, ctx: Ctx, t: number): void {
@@ -89,10 +95,12 @@ function hourBoundary(state: PlayerState, ctx: Ctx, t: number): void {
   decayCondition(state, ctx.c)
   crewXpHourBoundary(state, ctx, t) // enforcers' banked XP becomes stat points on the hour
   heatHourBoundary(state, ctx, t)
+  supplyHourBoundary(state, ctx, t)
   rollIncident(state, ctx, t)
   if (isDayStart(ctx.c, t)) {
     crewDayBoundary(state, ctx, t)
-    ledgerDayBoundary(state, t) // last: the snapshot sees the day's settled wages
+    settleUpkeep(state, ctx, t) // after wages: the crew get paid first
+    ledgerDayBoundary(state, t) // last: the snapshot sees the day's settled costs
   }
 }
 

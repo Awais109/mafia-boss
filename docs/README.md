@@ -9,7 +9,8 @@ What is built, how it works, and why. Written so a person or an LLM new to the r
 | Doc | Covers |
 |---|---|
 | [architecture.md](architecture.md) | Layers and the one rule, reconcile/apply/derive, game time, RNG, config layering, persistence |
-| [systems/economy.md](systems/economy.md) | Vault, rackets, tiers, tier-3 specialization, costs, condition, enforcers, the daily ledger and Money flow |
+| [systems/economy.md](systems/economy.md) | Businesses: the vault; joints, rackets and premises; spots, lots, upkeep and synergies; tiers and tier-3 specialization; costs, condition, enforcers; the daily ledger and Money flow |
+| [systems/supply-chain.md](systems/supply-chain.md) | Cigarettes: factories, joints and warehouses, stock and shortages, smuggling runs |
 | [systems/fronts.md](systems/fronts.md) | Laundering Dirty into Clean, buffers, rates, the push / lay low dial, capacity, suspicion |
 | [systems/heat.md](systems/heat.md) | Exposure, control, heat target, inspections, raids, arrests, bribes, officials, Influence |
 | [systems/crew.md](systems/crew.md) | Crew stats and traits, experience, ranks and perks, wages, loyalty, recruiting, slots, jail |
@@ -41,6 +42,7 @@ When you change a path on the left, update the doc on the right in the same comm
 | `engine/model/actions.ts`, `engine/model/events.ts` | the system doc that owns the action or event |
 | `engine/newGame.ts` | [systems/progression.md](systems/progression.md) |
 | `engine/systems/rackets.ts`, `engine/systems/ledger.ts` | [systems/economy.md](systems/economy.md) |
+| `engine/systems/supply.ts` | [systems/supply-chain.md](systems/supply-chain.md) |
 | `engine/systems/inbox.ts` | [systems/inbox.md](systems/inbox.md) |
 | `engine/systems/offers.ts` | [systems/ops.md](systems/ops.md) |
 | `engine/systems/fronts.ts` | [systems/fronts.md](systems/fronts.md) |
@@ -59,4 +61,4 @@ When you change a path on the left, update the doc on the right in the same comm
 
 - Describe mechanics, formulas, config keys, actions, events and file paths. For the numbers themselves, point at `engine/config/defaults.ts`; copied numbers go stale. Quote a number only when it is the point, and date it or link [TUNING.md](../TUNING.md).
 - Name config keys exactly as in code (`heat.bribe.controlPct`), so they can be searched.
-- Say what isn't built when it matters (for example, Zhanna's supply chain), so no one assumes it exists.
+- Say what isn't built when it matters (for example, Zhanna's shipments), so no one assumes it exists.

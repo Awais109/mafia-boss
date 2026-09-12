@@ -9,11 +9,13 @@ import {
   type PerkId,
 } from '../config/schema'
 import { emit, newId, type Ctx } from '../core/ctx'
+import { derive } from '../core/derive'
 import { hourIndex, hoursToMs } from '../core/time'
 import type { InboxEffects, InboxItem, InboxOption, OpInstance, PlayerState } from '../model/state'
 import { changeLoyalty } from './crew'
 import { gainRep } from './reputation'
 import { changeDisposition } from './rivals'
+import { addStock } from './supply'
 
 // Pending decisions (ADR 0024): crew reports when a job comes back, and incidents that roll
 // at whole hours. Each item has 2–3 options with effects baked in at filing, and a default
@@ -69,9 +71,9 @@ export function incidentNeedHolds(state: PlayerState, c: Config, need: IncidentN
     case 'idleCrew':
       return state.crew.some((m) => m.status === 'idle')
     case 'joint':
-      return state.rackets.some((r) => (c.rackets.types[r.type].kind ?? 'joint') === 'joint')
+      return state.rackets.some((r) => c.rackets.types[r.type].kind === 'joint')
     case 'factory':
-      return false // no premises make anything until the supply chain lands (M3)
+      return state.rackets.some((r) => (c.rackets.types[r.type].makesPerHr ?? 0) > 0)
     case 'inspected':
       return state.inspected
   }
@@ -128,6 +130,8 @@ function applyEffects(state: PlayerState, ctx: Ctx, t: number, item: InboxItem, 
   if (e.clean) state.clean = Math.max(0, state.clean + e.clean)
   if (e.influence) state.influence = Math.max(0, state.influence + e.influence)
   if (e.heat) state.heat = Math.max(0, Math.min(100, state.heat + e.heat))
+  // Packs in or out of stock: never below zero, never above the cap.
+  if (e.cigarettes) addStock(state, derive(state, ctx.c).supply.cap, e.cigarettes)
   if (e.loyalty) {
     for (const id of item.crewIds ?? []) {
       const m = state.crew.find((x) => x.id === id)

@@ -29,7 +29,7 @@ export type Action =
 export type DebugAction =
   | { type: 'DEBUG_ADD_OFFSET'; ms: number }
   | { type: 'DEBUG_RESET_OFFSET' }
-  | { type: 'DEBUG_GRANT'; dirty?: number; clean?: number; influence?: number }
+  | { type: 'DEBUG_GRANT'; dirty?: number; clean?: number; influence?: number; cigarettes?: number }
   | { type: 'DEBUG_SET_HEAT'; heat: number }
   | { type: 'DEBUG_SET_REP'; reputation: number }
   | { type: 'DEBUG_FORCE_RAID' }

@@ -38,7 +38,8 @@ The unlock ladder (`rackets.types.*.unlockRep`) sits below the Act II clear thre
 |---|---|
 | Vault, Clean, Influence | `vault.startingDirty`, `vault.startingClean`, `vault.startingInfluence` |
 | Heat | `heat.startHeat` (inspected already if that's above the threshold) |
-| Rackets | `rackets.starting` (tier 1, condition 100) |
+| Businesses | `rackets.starting` (tier 1, condition 100; premises included) |
+| Cigarettes | `supply.startingStock` |
 | Fronts | every front type with `cost` 0 and `unlockRep` 0 |
 | Crew | `crew.starting` |
 | Districts | controllers from `startsAs` |

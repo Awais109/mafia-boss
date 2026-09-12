@@ -58,12 +58,28 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
         e.dirty ? `+${d}${fmt(e.dirty)}` : '',
         e.influence ? `+${glyph.influence}${e.influence}` : '',
         e.influenceLostToCap ? `(${glyph.influence} daily cap)` : '',
+        e.cigarettes ? `+${glyph.packs}${fmt(e.cigarettes)}` : '',
         e.rep ? `+${glyph.rep}${fmt(e.rep)}` : '',
         `+${glyph.heat}${fmt(e.spike)}`,
       ].filter(Boolean)
       const color = e.outcome === 'full' ? colors.good : e.outcome === 'partial' ? colors.text : colors.heat
       return { text: `${e.name ?? c.ops.list[e.opType].name}: ${OUTCOME[e.outcome]} · ${gains.join(' ')}`, color }
     }
+    case 'UPKEEP_PAID':
+      return { text: `Paid premises upkeep ${d}${fmt(e.amount)}`, quiet: true }
+    case 'UPKEEP_MISSED':
+      return { text: `Couldn't cover upkeep (${d}${fmt(e.paid)} of ${fmt(e.owed)}). Your premises are falling apart.`, color: colors.heat }
+    case 'STOCK_OUT':
+      return { text: 'The last pack of cigarettes is gone', color: colors.warn }
+    case 'STOCK_CAPPED':
+      return { text: `Cigarette stock full at ${glyph.packs}${fmt(e.cap)}: more is wasted`, quiet: true }
+    case 'SHORTAGE_STARTED':
+      return {
+        text: `Shortage: joints want ${glyph.packs}${e.demand.toFixed(1)}/h and the factories make ${e.made.toFixed(1)}/h`,
+        color: colors.heat,
+      }
+    case 'SHORTAGE_ENDED':
+      return { text: 'Cigarettes are back on the shelves', color: colors.good }
     case 'REPORT_FILED':
       return { text: `Report in from ${c.ops.list[e.opType].name}: your call`, quiet: true }
     case 'INCIDENT_RAISED':

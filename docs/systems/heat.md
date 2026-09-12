@@ -8,7 +8,7 @@ Everything you run draws police attention. Heat drifts toward a target set by yo
 ## Exposure, control, target
 
 ```
-exposure = Σ racket exposure (economy.md, including tier-3 specialization)
+exposure = Σ business exposure (economy.md: joints, rackets and premises, with tier-3 specialization)
            + Σ front suspicion (fronts.md, which depends on each front's mode)
 
 control  = (heat.baseControl + Σ owned officials' control + bribeControl)

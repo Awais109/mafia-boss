@@ -27,6 +27,9 @@ export type HourRow = {
   opPartial: number // cumulative partial outcomes
   opResolved: number // cumulative resolved jobs (training excluded)
   statPoints: number // cumulative stat points gained
+  stock: number
+  stockCap: number
+  packDemand: number // packs/h joints would sell
 }
 
 export type SessionRow = {
@@ -94,6 +97,9 @@ export class Recorder {
       opPartial: state.stats.opOutcomes.partial,
       opResolved: state.stats.opOutcomes.full + state.stats.opOutcomes.partial + state.stats.opOutcomes.fail,
       statPoints: state.stats.statPointsGained ?? 0,
+      stock: d.supply.stock,
+      stockCap: d.supply.cap,
+      packDemand: d.supply.demandPerHr,
     })
   }
 

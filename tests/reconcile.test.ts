@@ -4,7 +4,8 @@ import { act, config, crewNamed, expectClose, fresh, H, T0 } from './helpers'
 
 // A state with everything moving at once: ops out (one taken from the board), a bribe running,
 // rackets paying tribute, fronts converting, heat high enough for raids and arrests, a tribute
-// demand pending, decisions waiting to expire, and incidents free to roll.
+// demand pending, decisions waiting to expire, incidents free to roll, a warehouse drawing upkeep,
+// a smuggling run out, and cigarette stock about to run out.
 function busy(): PlayerState {
   let s = fresh('busy-player')
   s.tutorial.done = true
@@ -24,7 +25,6 @@ function busy(): PlayerState {
       { type: 'DEPOSIT', frontId: kiosk, amount: 240 },
       { type: 'BUY_RACKET', racketType: 'marketStall', districtId: 'kioskRow' },
       { type: 'BUY_RACKET', racketType: 'kiosk', districtId: 'kioskRow' },
-      { type: 'START_OP', opType: 'shakeDown', crewIds: [crewNamed(s, 'Vitya').id] },
       { type: 'START_OP', opType: 'collectDebt', crewIds: [crewNamed(s, 'Dima').id], offerId: 'offer-test' },
       { type: 'DEBUG_FORCE_INCIDENT', incidentType: 'copFavour' },
       { type: 'DEBUG_FORCE_INCIDENT', incidentType: 'shopkeeperLead' },
@@ -32,6 +32,8 @@ function busy(): PlayerState {
       { type: 'BRIBE' },
       { type: 'DEBUG_SET_REP', reputation: 90 },
       { type: 'BUY_FRONT', frontType: 'restaurant' },
+      { type: 'BUY_RACKET', racketType: 'warehouse', districtId: 'stationSquare' },
+      { type: 'BUY_CREW_SLOT' },
     ],
     T0,
   )
@@ -43,16 +45,18 @@ function busy(): PlayerState {
       { type: 'SET_FRONT_MODE', frontId: restaurant, mode: 'push' },
       { type: 'RECRUIT', candidateId: s.recruitPool.candidates[0].id },
       { type: 'RECRUIT', candidateId: s.recruitPool.candidates[1].id },
+      { type: 'RECRUIT', candidateId: s.recruitPool.candidates[2].id },
     ],
     T0,
   )
   // A trainee and an enforcer, each close to a stat point, so XP spending lands inside the windows.
-  const [trainee, minder] = s.crew.slice(2)
+  const [trainee, minder, runner] = s.crew.slice(2)
   s = act(
     s,
     [
       { type: 'START_OP', opType: 'trainNerve', crewIds: [trainee.id] },
       { type: 'ASSIGN_ENFORCER', crewId: minder.id, racketId: s.rackets[0].id },
+      { type: 'START_OP', opType: 'smuggleCigarettes', crewIds: [crewNamed(s, 'Vitya').id, runner.id] },
       { type: 'DEBUG_SET_HEAT', heat: 92 },
     ],
     T0,
@@ -61,6 +65,7 @@ function busy(): PlayerState {
   m.xp.muscle = formulas.statPointCost(config, m.muscle) - 0.3
   s.rival.tolya.demand = 25
   s.crew[0].loyalty = 10 // walkout rolls at day boundaries
+  s.inventory.cigarettes = 4 // joints outsell the factory: stock runs out and the shortage starts inside the windows
   return s
 }
 

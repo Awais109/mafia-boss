@@ -50,9 +50,15 @@ export function homeAlerts(game: Snapshot): HomeAlert[] {
   const out: HomeAlert[] = []
   if (s.vault >= d.vaultCap - 1e-6) out.push({ key: 'vault', text: 'The vault is full: income has stopped.', color: colors.heat, tab: 'home' })
   const nextPayday = (Math.floor(now / dayMs(c)) + 1) * dayMs(c)
-  const costsDue = s.wagesOwed + d.wagesPerHr * ((nextPayday - now) / c.time.hourMs)
+  const costsDue = s.wagesOwed + s.upkeepOwed + (d.wagesPerHr + d.upkeepPerHr) * ((nextPayday - now) / c.time.hourMs)
   if (costsDue > 0 && s.dirty + s.vault < costsDue) {
     out.push({ key: 'costs', text: `Dirty on hand won’t cover the ◆${fmt(costsDue)} due at payday.`, color: colors.heat, tab: 'fronts', cta: 'Fronts →' })
+  }
+  if (s.stockEmpty) {
+    out.push({ key: 'stock', text: 'Out of cigarettes: joints are losing trade.', color: colors.heat, tab: 'rackets', cta: 'Business →' })
+  } else if (d.supply.hoursToEmpty < 6) {
+    const left = fmtDuration(d.supply.hoursToEmpty * c.time.hourMs, c)
+    out.push({ key: 'stock', text: `Cigarettes run out in ${left}.`, color: colors.warn, tab: 'rackets', cta: 'Business →' })
   }
   const soon = s.offers.items.filter((o) => o.expiresAt > now && o.expiresAt - now <= c.time.hourMs)
   if (soon.length && s.crew.some((m) => m.status === 'idle')) {

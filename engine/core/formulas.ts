@@ -5,11 +5,42 @@ type FrontLike = { type: FrontType; capacityLevel?: number; mode?: FrontMode }
 // Pure curves. Every cost the UI shows or an action charges comes through here.
 
 // spec §6.2: purchase = baseYield × payback hours for the racket's act, unless overridden.
+// Premises earn nothing, so they carry a set price (ADR 0031).
 export function racketPurchaseCost(c: Config, type: RacketType): number {
   const override = c.costs.overrides[type]?.purchase
   if (override !== undefined) return override
   const t = c.rackets.types[type]
+  if (t.purchase !== undefined) return t.purchase
   return Math.round(t.baseYield * c.costs.paybackHoursByAct[t.act])
+}
+
+export const isPremises = (c: Config, type: RacketType): boolean => c.rackets.types[type].kind === 'premises'
+
+// Premises tier up to their own cap in any act; joints and rackets follow the act.
+export function racketMaxTier(c: Config, type: RacketType, act: Act): number {
+  return isPremises(c, type) ? c.rackets.premises.maxTier : c.rackets.maxTierByAct[act]
+}
+
+// Dirty per hour a premises costs to run at this tier (before synergies).
+export function premisesUpkeep(c: Config, type: RacketType, tier: number): number {
+  const t = c.rackets.types[type]
+  return (t.upkeepPerHr ?? 0) * Math.pow(t.upkeepTierMult ?? 1, tier - 1)
+}
+
+// Packs per hour a factory makes at full condition.
+export function factoryOutput(c: Config, type: RacketType, tier: number): number {
+  const t = c.rackets.types[type]
+  return (t.makesPerHr ?? 0) * Math.pow(t.tierMakeMult ?? 1, tier - 1)
+}
+
+// Packs per hour a joint sells at full condition: more trade per tier, at the yield curve.
+export function jointSales(c: Config, type: RacketType, tier: number): number {
+  return (c.rackets.types[type].sellsPerHr ?? 0) * Math.pow(c.rackets.tierYieldMult, tier - 1)
+}
+
+// Stock cap a warehouse adds at full condition.
+export function warehouseCapacity(c: Config, type: RacketType, tier: number): number {
+  return (c.rackets.types[type].capPerTier ?? 0) * tier
 }
 
 // Cost to go from `tier` to `tier + 1`.

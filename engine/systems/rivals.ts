@@ -22,7 +22,9 @@ export function tolyaHostile(state: PlayerState, c: Config): boolean {
 
 export function tolyaIntervalHours(state: PlayerState, c: Config): number {
   const cfg = c.rivals.tolya
-  const base = state.rackets.length >= cfg.escalateAtRackets ? cfg.tickHoursEscalated : cfg.tickHours
+  // Joints and rackets draw him; premises don't (ADR 0033).
+  const run = state.rackets.filter((r) => c.rackets.types[r.type].kind !== 'premises').length
+  const base = run >= cfg.escalateAtRackets ? cfg.tickHoursEscalated : cfg.tickHours
   return tolyaHostile(state, c) ? base * cfg.hostileTickMult : base
 }
 

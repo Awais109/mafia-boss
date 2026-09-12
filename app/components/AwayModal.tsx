@@ -71,7 +71,7 @@ export function AwayModal({ summary: a, game }: { summary: AwaySummary; game: Sn
               Money
             </T>
             <Row
-              label="Rackets → vault"
+              label="Businesses → vault"
               hint={a.lostToCap > 0 ? `${d}${fmt(a.lostToCap)} lost to a full vault` : undefined}
               value={`+${d}${fmt(a.racketsEarned)}`}
               color={colors.dirty}
@@ -82,6 +82,18 @@ export function AwayModal({ summary: a, game }: { summary: AwaySummary; game: Sn
             <Row label="Clean earned" value={`+${cl}${fmt(a.cleanEarned)}`} color={colors.clean} />
             {a.wagesPaid > 0 && <Row label="Wages paid" value={`−${d}${fmt(a.wagesPaid)}`} />}
             {a.wagesShort > 0 && <Row label="Wages short" value={`${d}${fmt(a.wagesShort)} unpaid`} color={colors.heat} />}
+            {a.upkeepPaid > 0 && <Row label="Upkeep paid" value={`−${d}${fmt(a.upkeepPaid)}`} />}
+            {a.upkeepShort > 0 && (
+              <Row label="Upkeep short" hint="premises lost condition" value={`${d}${fmt(a.upkeepShort)} unpaid`} color={colors.heat} />
+            )}
+            {(a.packsMade > 0 || a.packsSold > 0) && (
+              <Row
+                label="Cigarettes"
+                hint={`made ${fmt(a.packsMade)} · sold ${fmt(a.packsSold)}${a.packsLost >= 1 ? ` · ${fmt(a.packsLost)} wasted` : ''}`}
+                value={`${glyph.packs}${fmt(a.stockFrom)} → ${fmt(a.stockTo)}`}
+                color={colors.packs}
+              />
+            )}
             {a.tributeLost > 0 && <Row label="Tribute skimmed" value={`−${d}${fmt(a.tributeLost)}`} />}
             {a.seized > 0 && <Row label="Seized in a raid" value={`−${d}${fmt(a.seized)}`} color={colors.heat} />}
             {a.influenceEarned > 0 && (

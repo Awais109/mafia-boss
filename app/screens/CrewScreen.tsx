@@ -147,7 +147,7 @@ export function CrewScreen({ game }: ScreenProps) {
                   <BtnRow>
                     {s.rackets
                       .map((r, i) => ({ r, rd: d.perRacket[i] }))
-                      .filter(({ r }) => !r.enforcerId)
+                      .filter(({ r, rd }) => !r.enforcerId && rd.kind !== 'premises')
                       .map(({ r, rd }) => (
                         <Btn
                           key={r.id}

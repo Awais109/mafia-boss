@@ -6,9 +6,13 @@
 export type Act = 1 | 2
 export const ACTS: readonly Act[] = [1, 2]
 
-export type RacketType = 'kiosk' | 'marketStall' | 'autoShop' | 'cafe' | 'bathhouse' | 'petrol' | 'cargoBay'
+// Every business, whatever its kind (ADR 0031): joints, rackets and premises share one list.
+export type RacketType =
+  | 'kiosk' | 'marketStall' | 'beerTent' | 'videoSalon' | 'taxiRank' | 'slotHall' | 'tobaccoFactory' | 'warehouse'
+  | 'autoShop' | 'cafe' | 'bathhouse' | 'petrol' | 'cargoBay'
 export const RACKET_TYPES: readonly RacketType[] = [
-  'kiosk', 'marketStall', 'autoShop', 'cafe', 'bathhouse', 'petrol', 'cargoBay',
+  'kiosk', 'marketStall', 'beerTent', 'videoSalon', 'taxiRank', 'slotHall', 'tobaccoFactory', 'warehouse',
+  'autoShop', 'cafe', 'bathhouse', 'petrol', 'cargoBay',
 ]
 
 export type FrontType = 'currencyKiosk' | 'restaurant'
@@ -18,10 +22,10 @@ export type OfficialId = 'wardCop' | 'precinctCaptain'
 export const OFFICIAL_IDS: readonly OfficialId[] = ['wardCop', 'precinctCaptain']
 
 export type OpType =
-  | 'shakeDown' | 'collectDebt' | 'leanOnWard' | 'pressure' | 'moveShipment' | 'dinner'
+  | 'shakeDown' | 'collectDebt' | 'leanOnWard' | 'pressure' | 'smuggleCigarettes' | 'moveShipment' | 'dinner'
   | 'trainMuscle' | 'trainBrains' | 'trainNerve'
 export const OP_TYPES: readonly OpType[] = [
-  'shakeDown', 'collectDebt', 'leanOnWard', 'pressure', 'moveShipment', 'dinner',
+  'shakeDown', 'collectDebt', 'leanOnWard', 'pressure', 'smuggleCigarettes', 'moveShipment', 'dinner',
   'trainMuscle', 'trainBrains', 'trainNerve',
 ]
 
@@ -44,8 +48,8 @@ export type PerkConfig = {
   noDrift?: boolean // steady: no daily loyalty drift
 }
 
-export type DistrictId = 'zarechye' | 'kioskRow' | 'portQuarter' | 'sovietsky'
-export const DISTRICT_IDS: readonly DistrictId[] = ['zarechye', 'kioskRow', 'portQuarter', 'sovietsky']
+export type DistrictId = 'zarechye' | 'kioskRow' | 'stationSquare' | 'portQuarter' | 'sovietsky'
+export const DISTRICT_IDS: readonly DistrictId[] = ['zarechye', 'kioskRow', 'stationSquare', 'portQuarter', 'sovietsky']
 
 export type Stat = 'muscle' | 'brains' | 'nerve'
 export const STATS: readonly Stat[] = ['muscle', 'brains', 'nerve']
@@ -59,8 +63,8 @@ export const OP_BANDS: readonly OpBand[] = ['quick', 'standard', 'long']
 export type OpOutcome = 'full' | 'partial' | 'fail'
 export const OP_OUTCOMES: readonly OpOutcome[] = ['full', 'partial', 'fail']
 
-export type IncidentType = 'inspector' | 'drunkCrew' | 'shopkeeperLead' | 'copFavour'
-export const INCIDENT_TYPES: readonly IncidentType[] = ['inspector', 'drunkCrew', 'shopkeeperLead', 'copFavour']
+export type IncidentType = 'inspector' | 'drunkCrew' | 'shopkeeperLead' | 'copFavour' | 'badBatch'
+export const INCIDENT_TYPES: readonly IncidentType[] = ['inspector', 'drunkCrew', 'shopkeeperLead', 'copFavour', 'badBatch']
 export type IncidentNeed = 'idleCrew' | 'joint' | 'factory' | 'inspected'
 
 // One option on a pending decision (a crew report or an incident). Effects are materialized
@@ -99,14 +103,41 @@ export type OfferTemplate = {
 }
 
 export type RacketKind = 'joint' | 'racket' | 'premises'
+export const RACKET_KINDS: readonly RacketKind[] = ['joint', 'racket', 'premises']
 
+// One business type (ADR 0031). Joints and rackets earn Dirty; premises earn nothing, cost upkeep,
+// and make, keep or improve something instead.
 export type RacketTypeConfig = {
   name: string
   act: Act
-  kind?: RacketKind // joints sell cigarettes, rackets don't, premises make or keep things (ADR 0031)
-  baseYield: number // dirty/hr at tier 1
+  kind: RacketKind // joints sell cigarettes, rackets don't, premises make or keep things
+  baseYield: number // dirty/hr at tier 1 (0 for premises)
   baseHeat: number // exposure at tier 1
   unlockRep: number
+  sellsPerHr?: number // joints: packs sold per hour at tier 1, × tierYieldMult per tier
+  cigaretteShare?: number // joints: the share of yield that needs cigarettes
+  purchase?: number // premises: Clean price (joints and rackets use the payback formula)
+  upkeepPerHr?: number // premises: Dirty per hour at tier 1
+  upkeepTierMult?: number
+  maxInCity?: number // premises: at most this many in the city
+  makesPerHr?: number // factories: packs per hour at tier 1
+  tierMakeMult?: number
+  capPerTier?: number // warehouses: stock cap added per tier
+}
+
+// Businesses that work better side by side in one district (plan (m)). Active in a district that has
+// an `a`, and a `b` when one is named.
+export type SynergyConfig = {
+  id: string
+  a: RacketType
+  b?: RacketType | 'joints'
+  district?: DistrictId // only in this district
+  effect: {
+    yieldMult?: number // the `b` businesses in the district
+    servedFirst?: boolean // joints in the district get cigarettes first in a shortage
+    upkeepMultOf?: Partial<Record<RacketType, number>> // upkeep of these types in the district
+    influenceMult?: number
+  }
 }
 
 export type FrontTypeConfig = {
@@ -129,7 +160,9 @@ export type OpConfig = {
   spike: number
   dirty?: number
   influence?: number
-  cigarettes?: number // packs added to stock on success
+  cigarettes?: number // packs added to stock on success (× the reward share)
+  costClean?: number // charged when the job starts, earning no Rep (smuggling)
+  heatDiffPerPoint?: number // difficulty + this × heat, fixed when the job starts
   training?: Stat // a training job: no roll, no heat, XP to this stat
   costDirty?: number // charged × act when the job starts (training)
   xp?: number // training XP to `training`
@@ -142,7 +175,8 @@ export type DistrictConfig = {
   act: Act
   startsAs: Controller
   home?: boolean // starting turf: never bought, no control bonus
-  allows: RacketType[] // businesses this district can host, one of each
+  allows: RacketType[] // joints and rackets this district can host, one of each
+  premisesLots: number // lots for premises of any type, one of each type
   buyout: number
   tribute: number // fraction of racket yield paid to the controller while not yours
   mod: {
@@ -184,8 +218,15 @@ export type Config = {
       greed: { yieldMult: number; exposureMult: number }
       stealth: { yieldMult: number; exposureMult: number }
     }
+    premises: { maxTier: number; missedUpkeepConditionHit: number }
+    synergies: SynergyConfig[]
     types: Record<RacketType, RacketTypeConfig>
     starting: { type: RacketType; districtId: DistrictId }[]
+  }
+  supply: {
+    baseCap: number // cigarettes the city holds without a warehouse
+    startingStock: number
+    sellFromAct: Act // joints' cigarette share applies from this act
   }
   costs: {
     paybackHoursByAct: Record<Act, number>
@@ -348,7 +389,7 @@ function range(e: string[], p: string, v: unknown, test: (n: number) => boolean)
   if (!test(v[0]) || !test(v[1]) || v[0] > v[1]) e.push(`${p}: [${v[0]}, ${v[1]}] must satisfy lo <= hi and the value rule`)
 }
 
-// A decision list: 2–3 options, unique ids, exactly one default, and the default never costs anything.
+// A decision list: 2–3 options, unique ids, exactly one default, and the default never asks for money.
 function choices(e: string[], p: string, list: unknown) {
   if (!Array.isArray(list) || list.length < 2 || list.length > 3) {
     e.push(`${p}: list 2–3 options`)
@@ -359,8 +400,9 @@ function choices(e: string[], p: string, list: unknown) {
   const defaults = opts.filter((o) => o.default)
   if (defaults.length !== 1) e.push(`${p}: exactly one option must be the default`)
   const d = defaults[0]
-  if (d && ((d.dirtyPct ?? 0) < 0 || (d.dirtyPerAct ?? 0) < 0 || (d.cigarettes ?? 0) < 0)) {
-    e.push(`${p}.${d.id}: the default option can't cost Dirty or cigarettes`)
+  // Stock only ever falls to zero, so a default may lose packs; it may never cost Dirty (ADR 0032).
+  if (d && ((d.dirtyPct ?? 0) < 0 || (d.dirtyPerAct ?? 0) < 0)) {
+    e.push(`${p}.${d.id}: the default option can't cost Dirty`)
   }
 }
 
@@ -394,13 +436,45 @@ export function validateConfig(c: Config): string[] {
       positive(e, 'rackets.specialization.stealth.yieldMult', sp.stealth.yieldMult)
       // Stealth may cool a tier, but never below the tier it came from: tiering can't lower exposure.
       num(e, 'rackets.specialization.stealth.exposureMult', sp.stealth.exposureMult, (n) => n >= 1 / r.tierHeatMult, '>= 1 / tierHeatMult')
+      int(e, 'rackets.premises.maxTier', r.premises.maxTier, 1)
+      nonNeg(e, 'rackets.premises.missedUpkeepConditionHit', r.premises.missedUpkeepConditionHit)
       for (const t of RACKET_TYPES) {
         const rt = r.types[t]
         if (!rt) { e.push(`rackets.types.${t}: missing`); continue }
-        positive(e, `rackets.types.${t}.baseYield`, rt.baseYield)
-        nonNeg(e, `rackets.types.${t}.baseHeat`, rt.baseHeat)
-        nonNeg(e, `rackets.types.${t}.unlockRep`, rt.unlockRep)
+        const p = `rackets.types.${t}`
+        if (!RACKET_KINDS.includes(rt.kind)) e.push(`${p}.kind: expected joint, racket or premises`)
+        nonNeg(e, `${p}.baseHeat`, rt.baseHeat)
+        nonNeg(e, `${p}.unlockRep`, rt.unlockRep)
+        if (rt.kind === 'premises') {
+          // Premises earn nothing directly: they make, keep or improve (ADR 0031).
+          num(e, `${p}.baseYield`, rt.baseYield, (n) => n === 0, '0 for premises')
+          positive(e, `${p}.purchase`, rt.purchase)
+          nonNeg(e, `${p}.upkeepPerHr`, rt.upkeepPerHr)
+          num(e, `${p}.upkeepTierMult`, rt.upkeepTierMult ?? 1, (n) => n >= 1, '>= 1')
+          if (rt.makesPerHr !== undefined) nonNeg(e, `${p}.makesPerHr`, rt.makesPerHr)
+          if (rt.tierMakeMult !== undefined) num(e, `${p}.tierMakeMult`, rt.tierMakeMult, (n) => n >= 1, '>= 1')
+          if (rt.capPerTier !== undefined) nonNeg(e, `${p}.capPerTier`, rt.capPerTier)
+          if (rt.maxInCity !== undefined) int(e, `${p}.maxInCity`, rt.maxInCity, 1)
+        } else {
+          positive(e, `${p}.baseYield`, rt.baseYield)
+        }
+        if (rt.kind === 'joint') {
+          nonNeg(e, `${p}.sellsPerHr`, rt.sellsPerHr)
+          unit(e, `${p}.cigaretteShare`, rt.cigaretteShare)
+        }
       }
+      for (const syn of r.synergies) {
+        const p = `rackets.synergies.${syn.id}`
+        if (!RACKET_TYPES.includes(syn.a)) e.push(`${p}.a: unknown business ${syn.a}`)
+        if (syn.b !== undefined && syn.b !== 'joints' && !RACKET_TYPES.includes(syn.b)) e.push(`${p}.b: unknown business ${syn.b}`)
+        if (syn.district !== undefined && !DISTRICT_IDS.includes(syn.district)) e.push(`${p}.district: unknown district ${syn.district}`)
+        if (syn.effect.yieldMult !== undefined) positive(e, `${p}.effect.yieldMult`, syn.effect.yieldMult)
+        if (syn.effect.influenceMult !== undefined) positive(e, `${p}.effect.influenceMult`, syn.effect.influenceMult)
+        for (const [k, v] of Object.entries(syn.effect.upkeepMultOf ?? {})) nonNeg(e, `${p}.effect.upkeepMultOf.${k}`, v)
+      }
+      positive(e, 'supply.baseCap', c.supply.baseCap)
+      nonNeg(e, 'supply.startingStock', c.supply.startingStock)
+      if (!ACTS.includes(c.supply.sellFromAct)) e.push('supply.sellFromAct: expected an act')
     },
     (e) => {
       for (const a of ACTS) positive(e, `costs.paybackHoursByAct.${a}`, c.costs.paybackHoursByAct[a])
@@ -534,6 +608,9 @@ export function validateConfig(c: Config): string[] {
           nonNeg(e, `ops.list.${t}.xp`, op.xp ?? 0)
         }
         if (op.costDirty !== undefined) nonNeg(e, `ops.list.${t}.costDirty`, op.costDirty)
+        if (op.costClean !== undefined) nonNeg(e, `ops.list.${t}.costClean`, op.costClean)
+        if (op.cigarettes !== undefined) nonNeg(e, `ops.list.${t}.cigarettes`, op.cigarettes)
+        if (op.heatDiffPerPoint !== undefined) nonNeg(e, `ops.list.${t}.heatDiffPerPoint`, op.heatDiffPerPoint)
       }
       for (const b of o.reports.bands) if (!OP_BANDS.includes(b)) e.push(`ops.reports.bands: unknown band ${b}`)
       for (const outcome of OP_OUTCOMES) choices(e, `ops.reports.byOutcome.${outcome}`, o.reports.byOutcome[outcome])
@@ -572,7 +649,13 @@ export function validateConfig(c: Config): string[] {
       for (const id of DISTRICT_IDS) {
         const d = c.districts.list[id]
         if (!Array.isArray(d.allows) || d.allows.length === 0) e.push(`districts.list.${id}.allows: list at least one racket type`)
-        else for (const t of d.allows) if (!RACKET_TYPES.includes(t)) e.push(`districts.list.${id}.allows: unknown racket type ${t}`)
+        else {
+          for (const t of d.allows) {
+            if (!RACKET_TYPES.includes(t)) e.push(`districts.list.${id}.allows: unknown racket type ${t}`)
+            else if (c.rackets.types[t].kind === 'premises') e.push(`districts.list.${id}.allows: ${t} is premises, which go on lots`)
+          }
+        }
+        int(e, `districts.list.${id}.premisesLots`, d.premisesLots, 0)
         nonNeg(e, `districts.list.${id}.buyout`, d.buyout)
         num(e, `districts.list.${id}.tribute`, d.tribute, (n) => n >= 0 && n < 1, 'in [0, 1)')
       }

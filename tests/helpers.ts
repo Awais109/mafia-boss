@@ -2,6 +2,12 @@ import { expect } from 'vitest'
 import { apply, buildConfig, newGame, type Action, type Config, type PlayerState } from '../engine'
 
 export const config: Config = buildConfig('default')
+// Defaults with nothing wearing down or random from Tolya: no condition decay, no hits, no demands.
+export const quiet: Config = buildConfig('default', {
+  'rackets.conditionDecayPerDay': 0,
+  'rivals.tolya.pConditionHit': 0,
+  'rivals.tolya.pTribute': 0,
+})
 export const H = config.time.hourMs
 // An arbitrary start that is not aligned to an hour, so boundaries land mid-segment.
 export const T0 = Date.UTC(2026, 0, 5, 7, 23, 11)

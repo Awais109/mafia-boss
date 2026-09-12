@@ -75,9 +75,38 @@ New config, starting values from the expansion plan (ADRs 0024–0026):
             Sim (10 seeds): offer share 0.25→0.18; Act I 1.80 d, Act II 3.29 d, heat 34.4, partial 0.50, d7–8 partial 0.47.  Kept.
 ```
 
+## 2026-09-13 — expansion M3: the Act I economy and the tobacco chain
+
+New config, starting values from the expansion plan (ADRs 0031–0033):
+
+```
+2026-09-13  kind on every business; rackets.premises {maxTier 5, missedUpkeepConditionHit 20}; tobaccoFactory {purchase 80, upkeep 0.5 ×1.3/tier,
+            makes 2/h ×1.5/tier, heat 0.6}; warehouse {purchase 120, ★20, upkeep 1 ×1.2/tier, cap +100/tier, heat 0.3};
+            sellsPerHr / cigaretteShare Kiosk 0.5/0.7, Stall 0.8/0.5, Beer Tent 0.6/0.4, Slot Hall 0.4/0.2, Café 1.2/0.3, Bathhouse 1.6/0.3;
+            Beer Tent 8/h heat 1.0 ★15, Video Salon 12/1.6 ★30, Taxi Rank 14/2.0 ★45, Slot Hall 18/2.6 ★60;
+            Station Square {buy-out 200, 2 lots, Taxi Rank and Slot Hall ×1.1}; lots Zarechye 2, Kiosk Row 1, Sovietsky 2, Port 2;
+            synergies factoryJoints ×1.15 and served first, warehouseFactory upkeep ×0.5; smuggleCigarettes {90 min, 2 crew, diff 35 + 0.2/heat,
+            spike 4, ●30, 40 packs} and a board template; badBatch incident; supply {baseCap 50, startingStock 40}; a Tobacco Factory in the start;
+            crew.slotsByAct[1] 2→3; rivals.tolya.escalateAtRackets 3→5 (joints and rackets only); bot stockReserveHours 12, maxWageShare 0.25.
+            Sim (10 seeds): Act I 1.80→1.68 d (8/10), Act II 3.29→3.08 d (7/10), heat 34.4→38.1 (1/10), raids 0, partial 0.51→0.50,
+            front util 0.49→0.54, Dirty idle 0.54→0.61, wage share 0.05; shortage 0 h on 9/10 seeds.  Heat out of range: tuned below.
+2026-09-13  heat.baseControl 8→10
+            Symptom: heat 38.1.  Sim: heat 38.1 (Act I 33.8, Act II 39.6): the bot spends extra control on more businesses.  Reverted.
+2026-09-13  officials.list.precinctCaptain.control 140→200 / 240 / 280
+            Symptom: Act II heat 38.6 once Act I's ten spots tier to 5 there.  Sim: heat 35.3 / 33.8 / 32.7, clears unchanged.  240 kept.
+2026-09-13  supply.baseCap 50→30, supply.startingStock 40→30 (with the Captain at 240)
+            Symptom: no shortages; the cap rarely mattered.  Sim: shortage hours 1→2 per run, stock at cap 13%→32%, Act II 3.08→3.14 d.  Kept.
+2026-09-13  sim bot supplyHorizonHours ∞→24: more factory output is worth buying only when stock would run out within a day
+            Symptom: the bot added output days ahead of any shortage.  Sim with both lines above: shortage 3 h per run (none in Act I),
+            stock at cap 14%, heat 33.5.  Kept.
+            Final (npm run sim, 10 seeds): Act I 1.67 d (8/10), Act II 3.11 d (9/10), heat 33.5 (8/10), raids 0, partial 0.51,
+            front util 0.55, Dirty idle 0.64, missed wages 0, wage share 0.05.
+```
+
 ## Open
 
-- **Front utilization ~49% (target 70–90%) and Dirty idle ~54% (target 20–50%).** The Restaurant now starts at 120 Dirty/hr and grows through its capacity track, but the casual economy's Dirty supply still sits below what fronts can wash. M3's upkeep and supply chain change the Dirty side; measure again there.
-- **Heat mean 34.4 is close to the 35 ceiling** (6/10 seeds in range) after M2. The bot pushes fronts and specializes within its heat budget; watch the mean when M3 adds businesses.
-- **Wage share ~6%** (manual 10–25%). Premises upkeep in M3 is expected to raise it.
-- **Act I clear** is 1.80 d mean, 8/10 seeds inside 1–2 d.
+- **Front utilization ~55% (target 70–90%) and Dirty idle ~64% (target 20–50%).** The bot keeps a large Dirty reserve and the fronts can wash more than it deposits. Dirty idle rose with M3's bigger Act I.
+- **Wage share ~5%** (manual 10–25%). Wages are about a quarter of day-1 income but a few percent of late Act II income, and upkeep doesn't change that. No number fixes both ends: raising wages or upkeep enough for Act II breaks the first day. Running costs that scale with the act would be a new rule, which the expansion plan doesn't have.
+- **Shortages are rare** (about 3 h per 8-day run, none in Act I). The plan's M3 gate asks for some shortage in Act I, under 10% of its hours.
+- **Act II clears at 3.11 d**, near the bottom of 3–5. M5's Rep shift will move it.
+- **Heat mean 33.5**, with Act I around 36 while the bot fills its heat budget.

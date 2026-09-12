@@ -34,21 +34,50 @@ export const defaults: Config = {
       greed: { yieldMult: 1.25, exposureMult: 1.6 },
       stealth: { yieldMult: 1.0, exposureMult: 0.8 },
     },
+    // Premises (ADR 0031) tier up to maxTier in any act; a missed upkeep day knocks this off each one.
+    premises: { maxTier: 5, missedUpkeepConditionHit: 20 },
+    // Side-by-side bonuses, evaluated per district (plan (m)).
+    synergies: [
+      { id: 'factoryJoints', a: 'tobaccoFactory', b: 'joints', effect: { yieldMult: 1.15, servedFirst: true } },
+      { id: 'warehouseFactory', a: 'warehouse', b: 'tobaccoFactory', effect: { upkeepMultOf: { warehouse: 0.5 } } },
+    ],
     types: {
-      kiosk: { name: 'Kiosk', act: 1, baseYield: 6, baseHeat: 0.8, unlockRep: 0 },
-      marketStall: { name: 'Market Stall', act: 1, baseYield: 10, baseHeat: 1.3, unlockRep: 0 },
+      // Joints: cigaretteShare of the yield needs stock (ADR 0032). Purchase = yield × payback hours.
+      kiosk: { name: 'Kiosk', act: 1, kind: 'joint', baseYield: 6, baseHeat: 0.8, unlockRep: 0, sellsPerHr: 0.5, cigaretteShare: 0.7 },
+      marketStall: { name: 'Market Stall', act: 1, kind: 'joint', baseYield: 10, baseHeat: 1.3, unlockRep: 0, sellsPerHr: 0.8, cigaretteShare: 0.5 },
+      beerTent: { name: 'Beer Tent', act: 1, kind: 'joint', baseYield: 8, baseHeat: 1.0, unlockRep: 15, sellsPerHr: 0.6, cigaretteShare: 0.4 },
+      videoSalon: { name: 'Video Salon', act: 1, kind: 'racket', baseYield: 12, baseHeat: 1.6, unlockRep: 30 },
+      taxiRank: { name: 'Taxi Rank', act: 1, kind: 'racket', baseYield: 14, baseHeat: 2.0, unlockRep: 45 },
+      slotHall: { name: 'Slot Hall', act: 1, kind: 'joint', baseYield: 18, baseHeat: 2.6, unlockRep: 60, sellsPerHr: 0.4, cigaretteShare: 0.2 },
+      // Premises earn nothing: the factory rolls packs, the warehouse raises the stock cap.
+      tobaccoFactory: {
+        name: 'Tobacco Factory', act: 1, kind: 'premises', baseYield: 0, baseHeat: 0.6, unlockRep: 0,
+        purchase: 80, upkeepPerHr: 0.5, upkeepTierMult: 1.3, makesPerHr: 2, tierMakeMult: 1.5,
+      },
+      warehouse: {
+        name: 'Warehouse', act: 1, kind: 'premises', baseYield: 0, baseHeat: 0.3, unlockRep: 20,
+        purchase: 120, upkeepPerHr: 1, upkeepTierMult: 1.2, capPerTier: 100,
+      },
       // Ladder sits under the Act II clear threshold (reputation.actThresholds[3]) so every spot opens in the act.
-      autoShop: { name: 'Auto Shop', act: 2, baseYield: 18, baseHeat: 2.5, unlockRep: 110 },
-      cafe: { name: 'Café', act: 2, baseYield: 14, baseHeat: 1.8, unlockRep: 170 },
-      bathhouse: { name: 'Bathhouse', act: 2, baseYield: 24, baseHeat: 3.2, unlockRep: 250 },
-      petrol: { name: 'Petrol Station', act: 2, baseYield: 34, baseHeat: 4.5, unlockRep: 330 },
-      cargoBay: { name: 'Cargo Bay', act: 2, baseYield: 55, baseHeat: 8.0, unlockRep: 420 },
+      autoShop: { name: 'Auto Shop', act: 2, kind: 'racket', baseYield: 18, baseHeat: 2.5, unlockRep: 110 },
+      cafe: { name: 'Café', act: 2, kind: 'joint', baseYield: 14, baseHeat: 1.8, unlockRep: 170, sellsPerHr: 1.2, cigaretteShare: 0.3 },
+      bathhouse: { name: 'Bathhouse', act: 2, kind: 'joint', baseYield: 24, baseHeat: 3.2, unlockRep: 250, sellsPerHr: 1.6, cigaretteShare: 0.3 },
+      petrol: { name: 'Petrol Station', act: 2, kind: 'racket', baseYield: 34, baseHeat: 4.5, unlockRep: 330 },
+      cargoBay: { name: 'Cargo Bay', act: 2, kind: 'racket', baseYield: 55, baseHeat: 8.0, unlockRep: 420 },
     },
-    // 16 Dirty/hr: exactly fills the 40 floor cap in the Act I vault target of 2.5 h.
+    // Kiosk + Stall: 16 Dirty/hr before the factory's synergy. The factory keeps them in stock (ADR 0033).
     starting: [
       { type: 'kiosk', districtId: 'zarechye' },
       { type: 'marketStall', districtId: 'zarechye' },
+      { type: 'tobaccoFactory', districtId: 'zarechye' },
     ],
+  },
+
+  // One city-wide pool of cigarettes (ADR 0032): factories add, joints sell, warehouses raise the cap.
+  supply: {
+    baseCap: 30, // a night away can empty it, so warehouses bank the surplus (TUNING.md, M3)
+    startingStock: 30,
+    sellFromAct: 1,
   },
 
   costs: {
@@ -105,12 +134,13 @@ export const defaults: Config = {
     influencePerHrEach: 1 / 8,
     list: {
       wardCop: { name: 'Ward Cop', control: 6, cost: 4, act: 1 },
-      precinctCaptain: { name: 'Precinct Captain', control: 140, cost: 12, act: 2 },
+      // 140 → 240 with the bigger Act I, whose businesses tier to 5 in Act II (TUNING.md, M3).
+      precinctCaptain: { name: 'Precinct Captain', control: 240, cost: 12, act: 2 },
     },
   },
 
   crew: {
-    slotsByAct: { 1: 2, 2: 4 },
+    slotsByAct: { 1: 3, 2: 4 }, // Act I 2 → 3 with the bigger Act I (ADR 0033)
     extraSlotCostPctOfBudget: 0.05, // of lifetime Clean earned
     extraSlotMinCost: 150,
     extraSlotMax: 2,
@@ -180,6 +210,11 @@ export const defaults: Config = {
       collectDebt: { name: 'Collect a Debt', band: 'quick', minutes: 20, crew: 1, w: { nerve: 0.6, brains: 0.4 }, diff: 40, spike: 1.5, dirty: 20 },
       leanOnWard: { name: 'Lean on the Ward', band: 'standard', minutes: 120, crew: 2, w: { brains: 0.5, nerve: 0.5 }, diff: 45, spike: 4.5, influence: 1 },
       pressure: { name: 'Pressure a District', band: 'standard', minutes: 60, crew: 2, w: { muscle: 0.6, nerve: 0.4 }, diff: 45, spike: 6, dirty: 10, districtPressure: true },
+      // Clean up front with no Rep, packs on success; every point of heat makes the run harder (plan (o)).
+      smuggleCigarettes: {
+        name: 'Smuggle Cigarettes', band: 'standard', minutes: 90, crew: 2, w: { nerve: 0.6, brains: 0.4 }, diff: 35, spike: 4,
+        costClean: 30, cigarettes: 40, heatDiffPerPoint: 0.2,
+      },
       moveShipment: { name: 'Move a Shipment', band: 'standard', minutes: 180, crew: 2, w: { nerve: 0.5, brains: 0.5 }, diff: 50, spike: 3, dirty: 30, act: 2 },
       dinner: { name: 'Dinner with Officials', band: 'long', minutes: 360, crew: 2, w: { brains: 0.7, nerve: 0.3 }, diff: 55, spike: 1.5, influence: 2 },
       // Training (ADR 0030): one crew member, costs Dirty × act, no roll, no heat, no report.
@@ -258,6 +293,15 @@ export const defaults: Config = {
           { id: 'doIt', name: 'Do the favour', dirtyPerAct: -15, influence: 1 },
         ],
       },
+      badBatch: {
+        name: 'A bad batch',
+        text: 'A run of cigarettes came off the line damp and mouldy.',
+        needs: 'factory',
+        options: [
+          { id: 'burn', name: 'Burn it', default: true, cigarettes: -20 },
+          { id: 'sellAnyway', name: 'Sell it anyway', dirtyPerAct: 10, heat: 3 },
+        ],
+      },
     },
   },
 
@@ -268,27 +312,29 @@ export const defaults: Config = {
       stubbornVendor: { base: 'shakeDown', name: 'A vendor who won’t pay', diffAdd: [0, 10], rewardMult: [1.1, 1.5], spikeMult: [1, 1.5], minutesMult: [0.75, 1.25] },
       kioskRowDebt: { base: 'collectDebt', name: 'A debt in Kiosk Row', diffAdd: [0, 10], rewardMult: [1.1, 1.5], spikeMult: [1, 1.5], minutesMult: [0.75, 1.25] },
       wardWord: { base: 'leanOnWard', name: 'A word with the ward', diffAdd: [0, 10], rewardMult: [1.1, 1.5], spikeMult: [1, 1.5], minutesMult: [0.75, 1.25] },
+      minskTruck: { base: 'smuggleCigarettes', name: 'A truck from Minsk', diffAdd: [0, 10], rewardMult: [1.1, 1.5], spikeMult: [1, 1.5], minutesMult: [0.75, 1.25] },
       lateDelivery: { base: 'moveShipment', name: 'A late delivery', act: 2, diffAdd: [0, 10], rewardMult: [1.1, 1.5], spikeMult: [1, 1.5], minutesMult: [0.75, 1.25] },
     },
   },
 
   districts: {
     pressureOpsToFlip: 3,
-    // Each district hosts one of each business it allows, so the map is the portfolio:
-    // Kiosk + Stall twice in Act I, then the blocks (A, C, B) and the port (P, CB) in Act II.
+    // Each district hosts one of each joint or racket it allows, and premises on its lots (ADR 0031).
     list: {
-      zarechye: { name: 'Zarechye', act: 1, startsAs: 'player', home: true, allows: ['kiosk', 'marketStall'], buyout: 0, tribute: 0, mod: {} },
-      kioskRow: { name: 'Kiosk Row', act: 1, startsAs: 'tolya', allows: ['kiosk', 'marketStall'], buyout: 150, tribute: 0.15, mod: { yieldMult: { kiosk: 1.1, marketStall: 1.1 } } },
-      portQuarter: { name: 'Port Quarter', act: 2, startsAs: 'zhanna', allows: ['petrol', 'cargoBay'], buyout: 300, tribute: 0.15, mod: {} },
-      sovietsky: { name: 'Sovietsky Blocks', act: 2, startsAs: 'none', allows: ['autoShop', 'cafe', 'bathhouse'], buyout: 300, tribute: 0, mod: { wageMult: 0.9 } },
+      zarechye: { name: 'Zarechye', act: 1, startsAs: 'player', home: true, allows: ['kiosk', 'marketStall', 'beerTent'], premisesLots: 2, buyout: 0, tribute: 0, mod: {} },
+      kioskRow: { name: 'Kiosk Row', act: 1, startsAs: 'tolya', allows: ['kiosk', 'marketStall', 'videoSalon'], premisesLots: 1, buyout: 150, tribute: 0.15, mod: { yieldMult: { kiosk: 1.1, marketStall: 1.1 } } },
+      // Nobody's yet: buy it out, or take it with three pressure jobs (ADR 0033).
+      stationSquare: { name: 'Station Square', act: 1, startsAs: 'none', allows: ['beerTent', 'videoSalon', 'taxiRank', 'slotHall'], premisesLots: 2, buyout: 200, tribute: 0, mod: { yieldMult: { taxiRank: 1.1, slotHall: 1.1 } } },
+      portQuarter: { name: 'Port Quarter', act: 2, startsAs: 'zhanna', allows: ['petrol', 'cargoBay'], premisesLots: 2, buyout: 300, tribute: 0.15, mod: {} },
+      sovietsky: { name: 'Sovietsky Blocks', act: 2, startsAs: 'none', allows: ['autoShop', 'cafe', 'bathhouse'], premisesLots: 2, buyout: 300, tribute: 0, mod: { wageMult: 0.9 } },
     },
   },
 
   rivals: {
     tolya: {
       tickHours: 8,
-      tickHoursEscalated: 6, // once you own escalateAtRackets rackets
-      escalateAtRackets: 3,
+      tickHoursEscalated: 6, // once you run escalateAtRackets joints and rackets (premises don't count)
+      escalateAtRackets: 5, // 3 → 5 with the bigger Act I (ADR 0033)
       pConditionHit: 0.4,
       conditionHit: 15,
       pTribute: 0.3, // remainder: nothing happens

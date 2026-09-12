@@ -22,7 +22,7 @@ import { store, useGame, type Snapshot } from './app/store'
 
 const TABS: { id: TabId; title: string; debugOnly?: boolean; render: (p: ScreenProps) => ReactNode }[] = [
   { id: 'home', title: 'Home', render: (p) => <HomeScreen {...p} /> },
-  { id: 'rackets', title: 'Rackets', render: (p) => <RacketsScreen {...p} /> },
+  { id: 'rackets', title: 'Business', render: (p) => <RacketsScreen {...p} /> },
   { id: 'fronts', title: 'Fronts', render: (p) => <FrontsScreen {...p} /> },
   { id: 'ops', title: 'Ops', render: (p) => <OpsScreen {...p} /> },
   { id: 'crew', title: 'Crew', render: (p) => <CrewScreen {...p} /> },

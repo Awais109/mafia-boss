@@ -24,6 +24,9 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
     heat: c.heat.startHeat,
     inspected: c.heat.startHeat >= c.heat.inspectThreshold,
 
+    inventory: { cigarettes: c.supply.startingStock },
+    stockEmpty: false,
+
     rackets: [],
     fronts: [],
     crew: [],
@@ -37,6 +40,7 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
     bribeControl: 0,
 
     wagesOwed: 0,
+    upkeepOwed: 0,
     influenceToday: { day: dayIndex(c, now), amount: 0 },
     rival: {
       tolya: { disposition: 0, nextTickAt: now + hoursToMs(c, c.rivals.tolya.tickHours), tickCount: 0, demand: null, haggledTick: null },

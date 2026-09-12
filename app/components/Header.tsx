@@ -32,6 +32,7 @@ export function Header({ game }: { game: Snapshot }) {
         <Resource label={`${glyph.dirty} Dirty`} value={fmt(s.dirty)} color={colors.dirty} />
         <Resource label={`${glyph.clean} Clean`} value={fmt(s.clean)} color={colors.clean} />
         <Resource label={`${glyph.influence} Infl.`} value={fmt(s.influence)} color={colors.influence} />
+        <Resource label={`${glyph.packs} Packs`} value={fmt(s.inventory.cigarettes)} color={s.stockEmpty ? colors.heat : colors.packs} />
         <Resource label={`${glyph.heat} Heat`} value={String(Math.round(s.heat))} color={heatColor} />
       </View>
       <View style={styles.repRow}>

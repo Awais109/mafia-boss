@@ -21,7 +21,8 @@ export function TurfScreen({ game, go }: ScreenProps) {
           const dc = c.districts.list[id]
           const district = s.districts.find((x) => x.id === id)!
           const ours = district.controller === 'player'
-          const count = s.rackets.filter((r) => r.districtId === id).length
+          const count = s.rackets.filter((r) => r.districtId === id && c.rackets.types[r.type].kind !== 'premises').length
+          const lotsUsed = s.rackets.filter((r) => r.districtId === id && c.rackets.types[r.type].kind === 'premises').length
           const tributeHere = d.perRacket.reduce((sum, rd, i) => (s.rackets[i].districtId === id ? sum + rd.tribute : sum), 0)
           const perks = [
             ...Object.entries(dc.mod.yieldMult ?? {}).map(([t, m]) => `${c.rackets.types[t as RacketType].name} yield ×${m}`),
@@ -38,7 +39,7 @@ export function TurfScreen({ game, go }: ScreenProps) {
                 <T small muted>Opens in Act II.</T>
               ) : (
                 <>
-                  <T small muted>{`Hosts ${dc.allows.map((t) => c.rackets.types[t].name).join(', ')} · ${count}/${dc.allows.length} running`}</T>
+                  <T small muted>{`Hosts ${dc.allows.map((t) => c.rackets.types[t].name).join(', ')} · ${count}/${dc.allows.length} running · premises lots ${lotsUsed}/${dc.premisesLots}`}</T>
                   {!ours && dc.tribute > 0 && (
                     <Row label="Tribute" hint={`${pct(dc.tribute)} of yield here`} value={`◆${fmtRate(tributeHere)}`} color={colors.warn} />
                   )}

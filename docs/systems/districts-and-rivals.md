@@ -1,8 +1,8 @@
 # Districts and rivals
 
-The city is four districts. Rivals take a cut of what you run on their turf until you buy them out or push them out, and Tolya, the old boss, keeps sending his boys around.
+The city is five districts. Rivals take a cut of what you run on their turf until you buy them out or push them out, and Tolya, the old boss, keeps sending his boys around.
 
-**Code:** `engine/systems/districts.ts` (`getDistrict`, `districtUnlocked`, `takenDistrictCount`, `openSpots`, `canPressure`, `takeDistrict`, `addPressure`), `engine/systems/rivals.ts` (`changeDisposition`, `tolyaHostile`, `tolyaIntervalHours`, `refuseDemand`, `bestHaggler`, `haggleOdds`, `canHaggle`, `haggle`, `tolyaTick`), tribute in `engine/core/derive.ts`, the `PAY_TRIBUTE` handler in `engine/core/apply.ts`.
+**Code:** `engine/systems/districts.ts` (`getDistrict`, `districtUnlocked`, `takenDistrictCount`, `openSpots`, `openLots`, `premisesBlocked`, `canPressure`, `takeDistrict`, `addPressure`), `engine/systems/rivals.ts` (`changeDisposition`, `tolyaHostile`, `tolyaIntervalHours`, `refuseDemand`, `bestHaggler`, `haggleOdds`, `canHaggle`, `haggle`, `tolyaTick`), tribute in `engine/core/derive.ts`, the `PAY_TRIBUTE` handler in `engine/core/apply.ts`.
 **Config:** `districts.*`, `rivals.tolya.*` (including `rivals.tolya.haggle`).
 
 ## Districts
@@ -11,16 +11,20 @@ Each entry in `districts.list` has:
 - `name` and `act`;
 - `startsAs`: the starting controller (`player`, `tolya`, `zhanna` or `none`);
 - `home`: your starting turf;
-- `allows`: the businesses it can host, one of each ([ADR 0009](../decisions/0009-districts-one-of-each-business.md));
+- `allows`: the joints and rackets it can host, one of each ([ADR 0009](../decisions/0009-districts-one-of-each-business.md));
+- `premisesLots`: lots for premises of any type, one of each type ([economy.md](economy.md#kinds-of-business));
 - `buyout` (Clean) and `tribute` (share of yield);
 - `mod`: perks that apply while you control it. `yieldMult` per racket type for rackets there, and `wageMult` for all crew wages.
 
-| District | Act | Starts as | Hosts | Perk once yours |
-|---|---|---|---|---|
-| Zarechye | I | yours (home) | Kiosk, Market Stall | none |
-| Kiosk Row | I | Tolya | Kiosk, Market Stall | Kiosk and Market Stall yield bonus |
-| Sovietsky Blocks | II | nobody | Auto Shop, Café, Bathhouse | lower crew wages |
-| Port Quarter | II | Zhanna | Petrol Station, Cargo Bay | none |
+| District | Act | Starts as | Hosts | Lots | Perk once yours |
+|---|---|---|---|---|---|
+| Zarechye | I | yours (home) | Kiosk, Market Stall, Beer Tent | 2 | none |
+| Kiosk Row | I | Tolya | Kiosk, Market Stall, Video Salon | 1 | Kiosk and Market Stall yield bonus |
+| Station Square | I | nobody | Beer Tent, Video Salon, Taxi Rank, Slot Hall | 2 | Taxi Rank and Slot Hall yield bonus |
+| Sovietsky Blocks | II | nobody | Auto Shop, Café, Bathhouse | 2 | lower crew wages |
+| Port Quarter | II | Zhanna | Petrol Station, Cargo Bay | 2 | none |
+
+Station Square ([ADR 0033](../decisions/0033-bigger-act-i.md)) is Act I's unclaimed district: nobody takes tribute there, and like Sovietsky it can be bought out or taken with pressure jobs.
 
 **Tribute.** Rackets in a district Tolya or Zhanna controls lose `district.tribute` of their gross yield, tracked in `stats.tributeLost`. Unclaimed and home districts take no tribute.
 
@@ -37,11 +41,11 @@ Either way you get `reputation.perDistrict` Rep, its `mod` perks, and `heat.dist
 
 ([ADR 0017](../decisions/0017-tolya-and-zhanna.md))
 
-Tolya visits on a schedule, all game, and targets any of your rackets.
+Tolya visits on a schedule, all game, and targets any of your businesses, premises included.
 
 ```
 interval = rivals.tolya.tickHours
-           (tickHoursEscalated once you own ≥ escalateAtRackets rackets)
+           (tickHoursEscalated once you run ≥ escalateAtRackets joints and rackets; premises don't count)
            × hostileTickMult while disposition < hostileBelow
 ```
 
@@ -97,4 +101,4 @@ Both emit `TRIBUTE_HAGGLED { crewId, name, won, demand, paid }`. `haggleOdds(sta
 
 Zhanna controls the Port Quarter. Her only effect in this prototype is the Port Quarter's tribute, plus a log note when Act II opens. **Her supply chain is not built.**
 
-**Tests:** `tests/apply.test.ts` (three pressure jobs flip a district and end its tribute, a refused demand damages a racket, paying clears it, a good talker pays the haggled price, a failed haggle insults him once and the demand stands, an explicit refusal breaks a business now).
+**Tests:** `tests/apply.test.ts` (three pressure jobs flip a district and end its tribute, a refused demand damages a racket, paying clears it, a good talker pays the haggled price, a failed haggle insults him once and the demand stands, an explicit refusal breaks a business now, Station Square hosts the new businesses and falls to pressure, Tolya's visits speed up with joints and rackets but not premises).
