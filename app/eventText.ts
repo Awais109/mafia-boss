@@ -85,7 +85,8 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
     case 'RELEASED':
       return { text: `${e.name} is out of jail` }
     case 'WAGES_PAID':
-      return { text: `Paid wages: ${d}${fmt(e.amount)}`, quiet: true }
+      // Once a day, and the only sign a payday happened: keep it on Home.
+      return { text: `Paid wages ${d}${fmt(e.amount)}`, color: colors.dirty }
     case 'WAGES_MISSED':
       return { text: `Couldn't cover wages (${d}${fmt(e.paid)} of ${fmt(e.owed)}). The crew is unhappy.`, color: colors.heat }
     case 'WALKOUT':

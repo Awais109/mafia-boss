@@ -53,7 +53,7 @@ The React Native layer: `App.tsx` and `app/`. It renders state and dispatches ac
 
 | Screen | Shows and does |
 |---|---|
-| Home | Tolya's demand, if any; vault bar with fill time and Collect; Dirty and Clean; crew idle, jobs, wages due; heat and inspections; the act card (Rep against the next threshold, the act milestones from `stats.actClearedAt`, and once Act II is cleared, what's built plus Export log); the latest events |
+| Home | Tolya's demand, if any; vault bar with fill time and Collect; Dirty and Clean; crew idle, jobs, wages owed so far with the rate and time to payday (the projected bill only appears when Dirty can't cover it); heat and inspections; the act card (Rep against the next threshold, the act milestones from `stats.actClearedAt`, and once Act II is cleared, what's built plus Export log); the latest events |
 | Rackets | Per district: owned rackets with yield, tribute, exposure, condition, Upgrade and Repair; open spots for the district's allowed businesses, with cost or unlock Rep |
 | Fronts | Yield against laundering capacity; each front's rate, throughput, buffer, recent utilization, suspicion; Deposit half or max; rate upgrade; locked fronts |
 | Ops | Jobs in progress; a crew picker with effective stats; each job's weights, difficulty, heat, rewards, and odds for the picked team; district picker for Pressure; Influence earned today against the cap |
@@ -69,5 +69,5 @@ The React Native layer: `App.tsx` and `app/`. It renders state and dispatches ac
 - `Header.tsx`: game clock, act (`Act II cleared` once it is), preset name when not default, the five resources, and the Rep line, which always names its target: `x/80 to Act II`, `x/480 to clear Act II`, or `x · Act II cleared on Day N` ([ADR 0022](decisions/0022-end-of-prototype-state.md)).
 - `NoticeBar.tsx`: the latest notice for 4 s; tap to dismiss.
 - `TutorialBanner.tsx`: copy for each tutorial step ([systems/progression.md](systems/progression.md#tutorial)), a button to the right tab, and Skip.
-- `app/eventText.ts`: `describeEvent(event, state, config)` → `{ text, color, quiet }`. `quiet` marks bookkeeping lines that Home hides and Log shows on request.
+- `app/eventText.ts`: `describeEvent(event, state, config)` → `{ text, color, quiet }`. `quiet` marks bookkeeping lines that Home hides and Log shows on request. `WAGES_PAID` is deliberately not quiet: it's the only sign a payday happened.
 - `app/format.ts`: `fmt`, `fmtRate`, `pct`, `fmtDuration` (in game time, so `fast` still reads "2h"), `fmtClock` (device clock for real-time presets, game clock otherwise).

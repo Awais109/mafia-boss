@@ -69,8 +69,13 @@ export function HomeScreen({ game, go }: ScreenProps) {
         <Card>
           <Row label="Crew idle" value={`${idle} of ${s.crew.length}`} color={idle ? colors.dirty : undefined} />
           <Row label="Jobs running" value={String(s.ops.length)} />
-          <Row label="Wages" hint={`payday in ${fmtDuration(nextPayday - now, c)}`} value={`◆${fmt(wagesDue)}`} />
-          {s.dirty + s.vault < wagesDue && <T small color={colors.heat}>Not enough Dirty on hand to cover wages.</T>}
+          {/* Owed so far moves with time; the projected bill at payday doesn't, and read as frozen. */}
+          <Row label="Wages owed" hint={`+◆${fmtRate(d.wagesPerHr)} · paid in ${fmtDuration(nextPayday - now, c)}`} value={`◆${fmt(s.wagesOwed)}`} />
+          {s.dirty + s.vault < wagesDue && (
+            <T small color={colors.heat}>
+              Not enough Dirty on hand to cover the ◆{fmt(wagesDue)} due at payday.
+            </T>
+          )}
           <Row
             label="Heat"
             hint={`heading to ${Math.round(d.heatTarget)}`}
