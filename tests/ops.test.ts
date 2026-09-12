@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { makeRng, opBaseScore, outcomeOdds, type Act, type CrewMember, type OpType } from '../engine'
+import { makeRng, newGame, opBaseScore, outcomeOdds, type Act, type CrewMember, type OpType } from '../engine'
 import { generateCandidates } from '../engine/systems/crew'
 import { rollOp } from '../engine/systems/ops'
 import { config } from './helpers'
@@ -21,13 +21,20 @@ const opsForAct = (act: Act): OpType[] =>
 
 describe('op resolution', () => {
   it('partial success is the modal outcome at default stats (40–60% of 500 resolutions)', () => {
+    // Default stats = the crew the game hands you: Vitya and Dima in Act I, recruits from the Act II
+    // band after that. Random Act I recruits sent on a difficulty-55 Dinner aren't a crew anyone picks.
     const rng = makeRng('ops-distribution')
+    const starting = newGame(config, 'ops-test', 0).crew
     const counts = { full: 0, partial: 0, fail: 0 }
     for (let i = 0; i < 500; i++) {
       const act: Act = i % 2 === 0 ? 1 : 2
       const type = rng.derive('op', i).pick(opsForAct(act))
       const op = config.ops.list[type]
-      const team = generateCandidates(config, act, rng.derive('crew', i), i).slice(0, op.crew)
+      const pool =
+        act === 1
+          ? rng.derive('order', i).chance(0.5) ? starting : [...starting].reverse()
+          : generateCandidates(config, 2, rng.derive('crew', i), i)
+      const team = pool.slice(0, op.crew)
       counts[rollOp(config, op, team, rng.derive('roll', i)).outcome]++
     }
     const partial = counts.partial / 500

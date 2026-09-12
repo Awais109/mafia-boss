@@ -28,7 +28,7 @@ export type Front = {
   level: number
   buffer: number // dirty deposited, not yet converted
   convertedThisHour: number // dirty converted since the last whole hour
-  lastUtil: number // utilization over the last whole hour; drives suspicion
+  util: number // smoothed utilization, updated at each whole hour; drives suspicion
 }
 
 export type CrewStatus = 'idle' | 'on_op' | 'enforcer' | 'jailed'

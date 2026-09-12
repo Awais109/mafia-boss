@@ -16,10 +16,13 @@ export function convertFronts(state: PlayerState, c: Config, hours: number): voi
   }
 }
 
-// Utilization is sampled per whole hour so suspicion (and so exposure) is constant within an hour.
+// Utilization is updated once per whole hour, so suspicion (and exposure) is constant within
+// an hour. It's a moving average: suspicion answers sustained running, not the one busy
+// hour after a big deposit.
 export function frontsHourBoundary(state: PlayerState, c: Config): void {
   for (const f of state.fronts) {
-    f.lastUtil = Math.min(1, f.convertedThisHour / c.fronts.types[f.type].throughput)
+    const hourUtil = Math.min(1, f.convertedThisHour / c.fronts.types[f.type].throughput)
+    f.util += (hourUtil - f.util) / c.fronts.utilSmoothingHours
     f.convertedThisHour = 0
   }
 }

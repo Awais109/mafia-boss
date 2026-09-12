@@ -51,7 +51,7 @@ describe('reputation and acts', () => {
   it('districts only host their own kind of business', () => {
     const s = act(fresh(), [{ type: 'DEBUG_GRANT', clean: 5000 }, { type: 'DEBUG_SET_REP', reputation: 900 }], T0)
     expect(apply(s, { type: 'BUY_RACKET', racketType: 'cargoBay', districtId: 'kioskRow' }, T0, config).error).toMatch(/fit/)
-    expect(apply(s, { type: 'BUY_RACKET', racketType: 'kiosk', districtId: 'zarechye' }, T0, config).error).toMatch(/slot/)
+    expect(apply(s, { type: 'BUY_RACKET', racketType: 'kiosk', districtId: 'zarechye' }, T0, config).error).toMatch(/already/)
     expect(apply(s, { type: 'BUY_RACKET', racketType: 'cargoBay', districtId: 'portQuarter' }, T0, config).error).toBeUndefined()
   })
 })

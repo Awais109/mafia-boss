@@ -1,4 +1,4 @@
-import type { Config, DistrictId } from '../config/schema'
+import type { Config, DistrictId, RacketType } from '../config/schema'
 import { emit, type Ctx } from '../core/ctx'
 import type { District, PlayerState } from '../model/state'
 import { gainRep } from './reputation'
@@ -19,8 +19,10 @@ export function takenDistrictCount(state: PlayerState, c: Config): number {
   return state.districts.filter((d) => d.controller === 'player' && !c.districts.list[d.id].home).length
 }
 
-export function freeSlots(state: PlayerState, c: Config, id: DistrictId): number {
-  return c.districts.list[id].slots - state.rackets.filter((r) => r.districtId === id).length
+// A district hosts at most one of each business it allows; these are the ones not built yet.
+export function openSpots(state: PlayerState, c: Config, id: DistrictId): RacketType[] {
+  const built = new Set(state.rackets.filter((r) => r.districtId === id).map((r) => r.type))
+  return c.districts.list[id].allows.filter((t) => !built.has(t))
 }
 
 export function canPressure(state: PlayerState, c: Config, id: DistrictId): string | null {

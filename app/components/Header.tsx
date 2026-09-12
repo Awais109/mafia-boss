@@ -1,0 +1,62 @@
+import { StyleSheet, Text, View } from 'react-native'
+import { fmt, fmtClock } from '../format'
+import type { Snapshot } from '../store'
+import { Bar, colors, glyph } from './ui'
+
+export function Header({ game }: { game: Snapshot }) {
+  const { state: s, derived: d, config: c, now } = game
+  const nextAct = s.act === 1 ? c.reputation.actThresholds[2] : c.reputation.actThresholds[3]
+  const heatColor = s.heat >= c.heat.raidThreshold ? colors.heat : s.heat >= c.heat.inspectThreshold ? colors.warn : colors.text
+  const vaultFull = s.vault >= d.vaultCap - 1e-6
+
+  return (
+    <View style={styles.wrap}>
+      <View style={styles.top}>
+        <Text style={styles.title}>SEVGOROD</Text>
+        <Text style={styles.clock}>
+          {fmtClock(now, s.createdAt, c)} · Act {s.act === 1 ? 'I' : 'II'}
+          {s.stats.actClearedAt[2] !== undefined ? ' ✓' : ''}
+          {c.meta.name !== 'default' ? ` · ${c.meta.name}` : ''}
+        </Text>
+      </View>
+      <View style={styles.resources}>
+        <Resource label={vaultFull ? 'Vault FULL' : 'Vault'} value={`${fmt(s.vault)}/${fmt(d.vaultCap)}`} color={vaultFull ? colors.heat : colors.dirty} />
+        <Resource label={`${glyph.dirty} Dirty`} value={fmt(s.dirty)} color={colors.dirty} />
+        <Resource label={`${glyph.clean} Clean`} value={fmt(s.clean)} color={colors.clean} />
+        <Resource label={`${glyph.influence} Infl.`} value={fmt(s.influence)} color={colors.influence} />
+        <Resource label={`${glyph.heat} Heat`} value={String(Math.round(s.heat))} color={heatColor} />
+      </View>
+      <View style={styles.repRow}>
+        <Text style={styles.repText}>
+          {glyph.rep} Rep {fmt(s.reputation)}/{fmt(nextAct)}
+        </Text>
+        <View style={styles.repBar}>
+          <Bar value={s.reputation} max={nextAct} color={colors.rep} />
+        </View>
+      </View>
+    </View>
+  )
+}
+
+function Resource({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <View style={styles.resource}>
+      <Text style={styles.resLabel}>{label}</Text>
+      <Text style={[styles.resValue, { color }]}>{value}</Text>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  wrap: { paddingHorizontal: 12, paddingTop: 6, paddingBottom: 8, gap: 6, backgroundColor: colors.bg },
+  top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  title: { color: colors.accent, fontWeight: '800', letterSpacing: 3, fontSize: 15 },
+  clock: { color: colors.muted, fontSize: 12, fontVariant: ['tabular-nums'] },
+  resources: { flexDirection: 'row', justifyContent: 'space-between' },
+  resource: { alignItems: 'flex-start' },
+  resLabel: { color: colors.faint, fontSize: 10, fontWeight: '600' },
+  resValue: { fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  repRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  repText: { color: colors.rep, fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  repBar: { flex: 1 },
+})

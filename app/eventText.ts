@@ -1,0 +1,124 @@
+import type { Config, GameEvent, PlayerState } from '../engine'
+import { colors, glyph } from './components/ui'
+import { fmt } from './format'
+
+export type EventLine = { text: string; color?: string; quiet?: boolean }
+
+const OUTCOME = { full: 'clean job', partial: 'got some of it', fail: 'went wrong' } as const
+
+// Player-facing line for an event. `quiet` lines are bookkeeping, hidden unless the Log asks.
+export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLine {
+  const racketName = (id?: string) => {
+    const r = s.rackets.find((x) => x.id === id)
+    return r ? c.rackets.types[r.type].name : 'a racket'
+  }
+  const crewName = (id: string) => s.crew.find((m) => m.id === id)?.name ?? 'someone'
+  const frontName = (id: string) => {
+    const f = s.fronts.find((x) => x.id === id)
+    return f ? c.fronts.types[f.type].name : 'a front'
+  }
+  const d = glyph.dirty
+  const cl = glyph.clean
+
+  switch (e.type) {
+    case 'OFFLINE_CAPPED':
+      return { text: `Away a long time: only the last ${c.time.maxOfflineHours}h counted`, color: colors.warn }
+    case 'VAULT_CAPPED':
+      return { text: `Vault full at ${d}${fmt(e.cap)}. Income stopped.`, color: colors.warn }
+    case 'COLLECTED':
+      return { text: `Collected ${d}${fmt(e.amount)}`, quiet: true }
+    case 'DEPOSITED':
+      return e.instantClean !== undefined
+        ? { text: `Laundered ${d}${fmt(e.amount)} → ${cl}${fmt(e.instantClean)} on the spot`, color: colors.clean }
+        : { text: `Deposited ${d}${fmt(e.amount)} into the ${frontName(e.frontId)}`, quiet: true }
+    case 'RACKET_BOUGHT':
+      return { text: `Opened a ${c.rackets.types[e.racketType].name} in ${c.districts.list[e.districtId].name} (${cl}${fmt(e.cost)})` }
+    case 'RACKET_UPGRADED':
+      return { text: `${racketName(e.racketId)} → tier ${e.tier} (${cl}${fmt(e.cost)})` }
+    case 'RACKET_REPAIRED':
+      return { text: `Repaired the ${racketName(e.racketId)} (${d}${fmt(e.cost)})`, quiet: true }
+    case 'FRONT_BOUGHT':
+      return { text: `Opened a ${c.fronts.types[e.frontType].name} (${cl}${fmt(e.cost)})`, color: colors.clean }
+    case 'FRONT_UPGRADED':
+      return { text: `${frontName(e.frontId)} upgraded to level ${e.level}` }
+    case 'ENFORCER_ASSIGNED':
+      return { text: `${crewName(e.crewId)} now minds the ${racketName(e.racketId)}` }
+    case 'ENFORCER_REMOVED':
+      return { text: `${crewName(e.crewId)} left the ${racketName(e.racketId)}`, quiet: true }
+    case 'OP_STARTED':
+      return { text: `${e.crewIds.map(crewName).join(' & ')}: ${c.ops.list[e.opType].name}`, quiet: true }
+    case 'OP_RESOLVED': {
+      const gains = [
+        e.dirty ? `+${d}${fmt(e.dirty)}` : '',
+        e.influence ? `+${glyph.influence}${e.influence}` : '',
+        e.influenceLostToCap ? `(${glyph.influence} daily cap)` : '',
+        e.rep ? `+${glyph.rep}${fmt(e.rep)}` : '',
+        `+${glyph.heat}${fmt(e.spike)}`,
+      ].filter(Boolean)
+      const color = e.outcome === 'full' ? colors.good : e.outcome === 'partial' ? colors.text : colors.heat
+      return { text: `${c.ops.list[e.opType].name}: ${OUTCOME[e.outcome]} · ${gains.join(' ')}`, color }
+    }
+    case 'RECRUITED':
+      return { text: `${e.name} joined the crew (${cl}${fmt(e.cost)})` }
+    case 'FIRED':
+      return { text: `${e.name} was let go` }
+    case 'RAISED':
+      return { text: `Gave ${crewName(e.crewId)} a raise: loyalty ${Math.round(e.loyalty)}`, quiet: true }
+    case 'CREW_SLOT_BOUGHT':
+      return { text: `Room for more crew: ${e.slots} slots` }
+    case 'POOL_REFRESHED':
+      return { text: 'New faces are asking for work', quiet: true }
+    case 'OFFICIAL_BOUGHT':
+      return { text: `${c.officials.list[e.officialId].name} is on the payroll (+${fmt(c.officials.list[e.officialId].control)} control)`, color: colors.influence }
+    case 'BRIBED':
+      return { text: `Bribe paid (${d}${fmt(e.cost)}): +${fmt(e.control)} control for ${c.heat.bribe.hours}h`, color: colors.influence }
+    case 'BRIBE_EXPIRED':
+      return { text: 'The bribe has worn off', quiet: true }
+    case 'INSPECTION_STARTED':
+      return { text: `Inspections started: yield ×${c.heat.inspectYieldMult} while heat ≥ ${c.heat.inspectThreshold}`, color: colors.warn }
+    case 'INSPECTION_ENDED':
+      return { text: 'Inspectors backed off', color: colors.good }
+    case 'RAID':
+      return { text: `RAID! Police seized ${d}${fmt(e.seized)} from the vault`, color: colors.heat }
+    case 'ARREST':
+      return { text: `${e.name} was arrested (out in ${c.heat.arrestHours}h)`, color: colors.heat }
+    case 'RELEASED':
+      return { text: `${e.name} is out of jail` }
+    case 'WAGES_PAID':
+      return { text: `Paid wages: ${d}${fmt(e.amount)}`, quiet: true }
+    case 'WAGES_MISSED':
+      return { text: `Couldn't cover wages (${d}${fmt(e.paid)} of ${fmt(e.owed)}). The crew is unhappy.`, color: colors.heat }
+    case 'WALKOUT':
+      return { text: `${e.name} walked out${e.stolen ? ` with ${d}${fmt(e.stolen)}` : ''}`, color: colors.heat }
+    case 'DISTRICT_BOUGHT':
+      return { text: `Bought out ${c.districts.list[e.districtId].name} (${cl}${fmt(e.cost)})`, color: colors.rep }
+    case 'DISTRICT_PRESSURED':
+      return { text: `Pressure on ${c.districts.list[e.districtId].name}: ${e.count}/${e.needed}` }
+    case 'DISTRICT_FLIPPED':
+      return { text: `${c.districts.list[e.districtId].name} is yours now`, color: colors.rep }
+    case 'TOLYA_TICK':
+      if (e.result === 'conditionHit') return { text: `Tolya's boys smashed up your ${racketName(e.racketId)}`, color: colors.heat }
+      if (e.result === 'tribute') return { text: `Tolya wants ${d}${fmt(e.amount ?? 0)} tribute`, color: colors.warn }
+      return { text: 'Tolya kept his distance', quiet: true }
+    case 'TRIBUTE_PAID':
+      return { text: `Paid Tolya ${d}${fmt(e.amount)}`, quiet: true }
+    case 'TRIBUTE_REFUSED':
+      return { text: `Tolya didn't get his ${d}${fmt(e.amount)}. He broke your ${racketName(e.racketId)}.`, color: colors.heat }
+    case 'ACT_UNLOCKED':
+      return { text: 'ACT II — the city opens up: Restaurant, new districts, more crew', color: colors.rep }
+    case 'ACT_CLEARED':
+      return { text: 'ACT II COMPLETE — the prototype ends here. Keep playing if you like.', color: colors.rep }
+    case 'NOTE':
+      return { text: e.text, color: colors.muted }
+    case 'TUTORIAL_STEP':
+      return { text: e.done ? 'Tutorial done' : `Tutorial step ${e.step + 1}`, quiet: true }
+    case 'SESSION_START':
+      return { text: 'Session started', quiet: true }
+    case 'SESSION_END':
+      return { text: `Session ended (${Math.round(e.durationMs / 1000)}s, ${e.actions} actions)`, quiet: true }
+    case 'DEBUG':
+      return { text: `[debug] ${e.action}${e.detail ? ` ${e.detail}` : ''}`, color: colors.faint, quiet: true }
+    case 'CONFIG_CHANGED':
+      return { text: `[config] ${e.path} = ${e.value === null ? 'reset' : String(e.value)} (${e.preset})`, color: colors.faint, quiet: true }
+  }
+}

@@ -121,8 +121,8 @@ export function derive(state: PlayerState, c: Config): Derived {
       rate: F.frontRate(c, f.type, f.level),
       throughput,
       bufferCap: F.frontBufferCap(c, f.type),
-      util: f.lastUtil,
-      suspicion: F.frontSuspicion(c, f.type, f.lastUtil),
+      util: f.util,
+      suspicion: F.frontSuspicion(c, f.type, f.util),
       upgradeCost: f.level < c.fronts.upgrade.levels ? F.frontUpgradeCost(c, f.type, f.level) : null,
       hoursToEmpty: f.buffer / throughput,
     }

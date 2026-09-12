@@ -3,7 +3,7 @@ import { PASSIVE_ACTIONS, type Action } from '../model/actions'
 import type { GameEvent } from '../model/events'
 import type { CrewMember, PlayerState } from '../model/state'
 import { changeLoyalty, crewSlots, regeneratePool, unassignEnforcer } from '../systems/crew'
-import { canPressure, freeSlots, getDistrict, takeDistrict } from '../systems/districts'
+import { canPressure, getDistrict, takeDistrict } from '../systems/districts'
 import { arrest, raid } from '../systems/heat'
 import { opUnlocked, resolveOp } from '../systems/ops'
 import { checkActs, spendClean } from '../systems/reputation'
@@ -98,7 +98,9 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       if (!d.unlocked.racket[a.racketType]) return 'Not unlocked yet'
       if (!c.districts.list[a.districtId] || !d.unlocked.district[a.districtId]) return 'That district is not open yet'
       if (!c.districts.list[a.districtId].allows.includes(a.racketType)) return "That kind of business doesn't fit there"
-      if (freeSlots(state, c, a.districtId) <= 0) return 'No free slot in that district'
+      if (state.rackets.some((r) => r.districtId === a.districtId && r.type === a.racketType)) {
+        return `You already run a ${c.rackets.types[a.racketType].name} there`
+      }
       const cost = d.costs.racket[a.racketType]
       if (state.clean < cost - EPS) return 'Not enough Clean'
       const racketId = newId(state, 'r')
@@ -279,7 +281,7 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       if (state.reputation < ft.unlockRep) return 'Not unlocked yet'
       if (state.clean < ft.cost - EPS) return 'Not enough Clean'
       const frontId = newId(state, 'f')
-      state.fronts.push({ id: frontId, type: a.frontType, level: 0, buffer: 0, convertedThisHour: 0, lastUtil: 0 })
+      state.fronts.push({ id: frontId, type: a.frontType, level: 0, buffer: 0, convertedThisHour: 0, util: 0 })
       emit(ctx, t, { type: 'FRONT_BOUGHT', frontId, frontType: a.frontType, cost: ft.cost })
       spendClean(state, ctx, t, ft.cost)
       return null

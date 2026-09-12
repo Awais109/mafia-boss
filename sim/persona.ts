@@ -5,9 +5,9 @@ import {
   DISTRICT_IDS,
   formulas,
   FRONT_TYPES,
-  freeSlots,
   influenceRoom,
   OFFICIAL_IDS,
+  openSpots,
   opDirtyReward,
   opUnlocked,
   OP_TYPES,
@@ -36,7 +36,7 @@ export type PersonaOptions = {
   repairBelow: number
   raiseBelow: number
   repValue: number // Dirty-equivalents per Rep point, for valuing ops
-  influenceValue: number // Dirty-equivalents per Influence point while an official is left to buy
+  influenceValueHours: number // an Influence point is worth this many hours of yield while an official is left to buy
 }
 
 export const CASUAL: PersonaOptions = {
@@ -46,12 +46,12 @@ export const CASUAL: PersonaOptions = {
   reserveWageHours: 12,
   bribeAboveHeat: 55,
   officialAboveHeat: 30,
-  heatBudget: 45,
+  heatBudget: 55, // lives with inspections, stays clear of raids
   districtPaybackHours: 48,
   repairBelow: 75,
   raiseBelow: 35,
   repValue: 10,
-  influenceValue: 40,
+  influenceValueHours: 3,
 }
 
 // N sessions spread evenly between 08:00 and 22:00, for both acts.
@@ -133,6 +133,14 @@ export function playSession(
     }
   }
 
+  // A new front opens the throttle; nothing else comes first.
+  for (const type of FRONT_TYPES) {
+    const now = d()
+    if (now.unlocked.front[type] && !state.fronts.some((f) => f.type === type) && state.clean >= now.costs.front[type]) {
+      tryAct({ type: 'BUY_FRONT', frontType: type })
+    }
+  }
+
   // Crew upkeep: fill empty slots, raise anyone close to walking.
   while (state.crew.length < d().crewSlots && state.clean >= d().costs.recruit && state.recruitPool.candidates.length) {
     const best = [...state.recruitPool.candidates].sort((a, b) => statSum(b) - statSum(a))[0]
@@ -149,21 +157,21 @@ export function playSession(
     if (!best || !tryAct(best)) break
   }
 
-  // 7 (before spending, so it can be saved for). Districts whose tribute outruns the buy-out.
-  let reserveClean = 0
+  // 7 (before spending, so it gets first claim on Clean). Buy a district when it's affordable and its
+  // tribute over 48 h outruns the buy-out. Never save for one: that stalls every other purchase for days.
   for (const id of DISTRICT_IDS) {
     const now = d()
     if (!now.unlocked.district[id] || controllerOf(state, id) === 'player') continue
     const buyout = c.districts.list[id].buyout
-    if (districtTributePerHr(state, now, id) * p.districtPaybackHours <= buyout) continue
-    if (state.clean >= buyout) tryAct({ type: 'BUY_DISTRICT', districtId: id })
-    else reserveClean = Math.max(reserveClean, buyout)
+    if (state.clean >= buyout && districtTributePerHr(state, now, id) * p.districtPaybackHours > buyout) {
+      tryAct({ type: 'BUY_DISTRICT', districtId: id })
+    }
   }
 
   // 6. Spend Clean on the best yield gain ÷ cost, within the heat budget
   for (let guard = 0; guard < 60; guard++) {
     const now = d()
-    const budget = state.clean - reserveClean
+    const budget = state.clean
     const controlBuyable = canBuyControl(state, c, now, t)
     const options = spendOptions(state, c, now).filter((o) => {
       if (o.cost > budget) return false
@@ -218,7 +226,7 @@ function spendOptions(state: PlayerState, c: Config, d: Derived): SpendOption[] 
     let bestMult = 0
     let bestDistrict: DistrictId | null = null
     for (const id of DISTRICT_IDS) {
-      if (!d.unlocked.district[id] || freeSlots(state, c, id) <= 0 || !c.districts.list[id].allows.includes(type)) continue
+      if (!d.unlocked.district[id] || !openSpots(state, c, id).includes(type)) continue
       const dc = c.districts.list[id]
       const ours = controllerOf(state, id) === 'player'
       const mult = ours ? (dc.mod.yieldMult?.[type] ?? 1) : controllerOf(state, id) === 'none' ? 1 : 1 - dc.tribute
@@ -253,7 +261,11 @@ function bestDispatch(state: PlayerState, c: Config, p: PersonaOptions, t: numbe
   const idle = state.crew.filter((m) => m.status === 'idle')
   if (idle.length === 0) return null
   const d = derive(state, c)
+  // Influence buys officials, and it matters more the hotter things are getting.
   const officialsLeft = OFFICIAL_IDS.some((id) => !state.officials.includes(id))
+  const urgency = 1 + Math.max(0, Math.max(state.heat, d.heatTarget) - p.officialAboveHeat) / 10
+  const hourOfYield = Math.max(d.yieldPerHr, c.vault.floorCap / c.vault.targetHoursByAct[state.act])
+  const influenceValue = officialsLeft ? p.influenceValueHours * hourOfYield * urgency : 0
   const heatCost = state.heat >= c.heat.inspectThreshold - 5 ? 8 : 2
   let best: { action: Action; score: number } | null = null
 
@@ -283,14 +295,14 @@ function bestDispatch(state: PlayerState, c: Config, p: PersonaOptions, t: numbe
       const dirty = odds.full * opDirtyReward(c, state, type, 'full') + odds.partial * opDirtyReward(c, state, type, 'partial')
       const rep = (odds.full + odds.partial * c.ops.partialRewardPct) * c.reputation.perOpSuccess
       let influence = 0
-      if (op.influence && officialsLeft) {
+      if (op.influence && influenceValue > 0) {
         const partialInfluence = Math.max(1, Math.round(op.influence * c.ops.partialRewardPct))
         influence = Math.min(influenceRoom(state, c, t), odds.full * op.influence + odds.partial * partialInfluence)
       }
       const spike = op.spike * (odds.full + odds.partial * c.ops.partialSpikePct + odds.fail * c.ops.failSpikePct)
       const sessionsBlocked = Math.max(1, Math.ceil(op.minutes / gapMinutes))
       const value =
-        (dirty + rep * p.repValue + influence * p.influenceValue + success * flipValue - spike * heatCost) / sessionsBlocked
+        (dirty + rep * p.repValue + influence * influenceValue + success * flipValue - spike * heatCost) / sessionsBlocked
       const score = value / team.length
       if (value > 0 && (!best || score > best.score)) {
         best = {

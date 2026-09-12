@@ -53,7 +53,7 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
   for (const type of FRONT_TYPES) {
     const ft = c.fronts.types[type]
     if (ft.cost === 0 && ft.unlockRep === 0) {
-      state.fronts.push({ id: `f${state.nextId++}`, type, level: 0, buffer: 0, convertedThisHour: 0, lastUtil: 0 })
+      state.fronts.push({ id: `f${state.nextId++}`, type, level: 0, buffer: 0, convertedThisHour: 0, util: 0 })
     }
   }
   for (const seed of c.crew.starting) {

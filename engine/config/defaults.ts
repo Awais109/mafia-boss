@@ -55,6 +55,7 @@ export const defaults: Config = {
   fronts: {
     suspicionStartUtil: 0.7, // utilization above this adds exposure
     suspicionFactor: 0.3, // suspicion = factor × throughput × (util − start)
+    utilSmoothingHours: 6, // util is a moving average over roughly this many hours
     bufferHours: 10, // buffer cap = throughput × this
     upgrade: {
       rateStep: 0.03, // +rate per level
@@ -85,7 +86,7 @@ export const defaults: Config = {
   },
 
   officials: {
-    cooldownDays: 3, // between any two official purchases
+    cooldownDays: 2, // between any two official purchases; puts the Captain ~40% into Act II
     influencePerHrEach: 1 / 8,
     list: {
       wardCop: { name: 'Ward Cop', control: 6, cost: 4, act: 1 },
@@ -129,12 +130,12 @@ export const defaults: Config = {
   ops: {
     // score = Σ w·(best stat on team) + teamBonus·(crew−1) + U(−noise, noise)
     // full: score ≥ diff + fullMargin · partial: score ≥ diff · else fail
-    fullMargin: 15,
+    fullMargin: 15, // with noise ±15 and a typical +10 margin: ~33% full, ~50% partial, ~17% fail
     partialRewardPct: 0.6,
     partialSpikePct: 0.5, // partial = backed off early: 60% reward, 50% noise
     failSpikePct: 1.5,
     failLoyalty: -5,
-    noise: 10,
+    noise: 15,
     teamBonusPerExtra: 5,
     influenceDailyCap: 3, // Influence from ops per game day
     rewardActScaling: 2, // Dirty reward × act^2
@@ -150,13 +151,13 @@ export const defaults: Config = {
 
   districts: {
     pressureOpsToFlip: 3,
-    // Each district hosts its own kind of business, so slots shape the portfolio:
-    // 2 + 2 street rackets in Act I, then the port and the blocks in Act II.
+    // Each district hosts one of each business it allows, so the map is the portfolio:
+    // Kiosk + Stall twice in Act I, then the blocks (A, C, B) and the port (P, CB) in Act II.
     list: {
-      zarechye: { name: 'Zarechye', act: 1, startsAs: 'player', home: true, slots: 2, allows: ['kiosk', 'marketStall'], buyout: 0, tribute: 0, mod: {} },
-      kioskRow: { name: 'Kiosk Row', act: 1, startsAs: 'tolya', slots: 2, allows: ['kiosk', 'marketStall'], buyout: 150, tribute: 0.15, mod: { yieldMult: { kiosk: 1.1, marketStall: 1.1 } } },
-      portQuarter: { name: 'Port Quarter', act: 2, startsAs: 'zhanna', slots: 2, allows: ['petrol', 'cargoBay'], buyout: 300, tribute: 0.15, mod: {} },
-      sovietsky: { name: 'Sovietsky Blocks', act: 2, startsAs: 'none', slots: 3, allows: ['autoShop', 'cafe', 'bathhouse'], buyout: 300, tribute: 0, mod: { wageMult: 0.9 } },
+      zarechye: { name: 'Zarechye', act: 1, startsAs: 'player', home: true, allows: ['kiosk', 'marketStall'], buyout: 0, tribute: 0, mod: {} },
+      kioskRow: { name: 'Kiosk Row', act: 1, startsAs: 'tolya', allows: ['kiosk', 'marketStall'], buyout: 150, tribute: 0.15, mod: { yieldMult: { kiosk: 1.1, marketStall: 1.1 } } },
+      portQuarter: { name: 'Port Quarter', act: 2, startsAs: 'zhanna', allows: ['petrol', 'cargoBay'], buyout: 300, tribute: 0.15, mod: {} },
+      sovietsky: { name: 'Sovietsky Blocks', act: 2, startsAs: 'none', allows: ['autoShop', 'cafe', 'bathhouse'], buyout: 300, tribute: 0, mod: { wageMult: 0.9 } },
     },
   },
 
@@ -181,7 +182,7 @@ export const defaults: Config = {
 
   reputation: {
     perCleanSpent: 0.1,
-    perOpSuccess: 5, // partial success earns partialRewardPct of this
+    perOpSuccess: 2, // partial success earns partialRewardPct of this. Ops season Rep; spending drives it
     perDistrict: 20,
     actThresholds: { 2: 80, 3: 1000 }, // 3 = Act II cleared (Act III is stubbed)
   },

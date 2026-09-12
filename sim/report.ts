@@ -19,7 +19,7 @@ export type Summary = {
   hoursAbove40: number
   frontUtil: number
   dirtyIdlePct: number
-  vaultFillByDay: Array<number | null>
+  vaultFillByDay: (number | null)[]
   vaultFillAct1: number | null
   vaultFillAct2: number | null
   opOutcomes: { full: number; partial: number; fail: number }

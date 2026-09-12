@@ -71,8 +71,7 @@ export type DistrictConfig = {
   act: Act
   startsAs: Controller
   home?: boolean // starting turf: never bought, no control bonus
-  slots: number
-  allows: RacketType[] // the kinds of business this district can host
+  allows: RacketType[] // businesses this district can host, one of each
   buyout: number
   tribute: number // fraction of racket yield paid to the controller while not yours
   mod: {
@@ -120,6 +119,7 @@ export type Config = {
   fronts: {
     suspicionStartUtil: number
     suspicionFactor: number
+    utilSmoothingHours: number
     bufferHours: number
     upgrade: { rateStep: number; levels: number; costPctOfUnlock: number; minCostBasis: number }
     types: Record<FrontType, FrontTypeConfig>
@@ -280,6 +280,7 @@ export function validateConfig(c: Config): string[] {
       const f = c.fronts
       num(e, 'fronts.suspicionStartUtil', f.suspicionStartUtil, (n) => n >= 0 && n < 1, 'in [0, 1)')
       nonNeg(e, 'fronts.suspicionFactor', f.suspicionFactor)
+      num(e, 'fronts.utilSmoothingHours', f.utilSmoothingHours, (n) => n >= 1, '>= 1')
       positive(e, 'fronts.bufferHours', f.bufferHours)
       nonNeg(e, 'fronts.upgrade.rateStep', f.upgrade.rateStep)
       int(e, 'fronts.upgrade.levels', f.upgrade.levels, 0)
@@ -375,7 +376,6 @@ export function validateConfig(c: Config): string[] {
       int(e, 'districts.pressureOpsToFlip', c.districts.pressureOpsToFlip, 1)
       for (const id of DISTRICT_IDS) {
         const d = c.districts.list[id]
-        int(e, `districts.list.${id}.slots`, d.slots, 0)
         if (!Array.isArray(d.allows) || d.allows.length === 0) e.push(`districts.list.${id}.allows: list at least one racket type`)
         else for (const t of d.allows) if (!RACKET_TYPES.includes(t)) e.push(`districts.list.${id}.allows: unknown racket type ${t}`)
         nonNeg(e, `districts.list.${id}.buyout`, d.buyout)
