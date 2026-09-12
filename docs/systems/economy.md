@@ -43,12 +43,22 @@ gross    = baseYield × tierYieldMult^(tier−1)
            × districtYieldMult      (district's mod.yieldMult[type], only while you control the district)
            × inspectYieldMult       (heat.inspectYieldMult while state.inspected)
            × enforcer.yieldMult     (if an enforcer is assigned)
+           × specialization.yieldMult    (greed or stealth, from tier 3)
 tribute  = gross × district.tribute (while Tolya or Zhanna controls the district)
 yield    = gross − tribute
-exposure = baseHeat × tierHeatMult^(tier−1) × enforcer.heatMult (if enforced)
+exposure = baseHeat × tierHeatMult^(tier−1) × enforcer.heatMult (if enforced) × specialization.exposureMult
 ```
 
 `tierHeatMult` must stay above `tierYieldMult`: tiering always costs more heat than it earns ([heat.md](heat.md)).
+
+### Tier-3 specialization
+
+([ADR 0027](../decisions/0027-tier-3-specialization.md)) The upgrade to `rackets.specialization.atTier` is a choice: `UPGRADE_RACKET { racketId, specialization: 'greed' | 'stealth' }`. Without one it's rejected ("Pick greed or stealth"); a specialization on any other upgrade is rejected too. The choice is stored as `Racket.specialization`, multiplies yield and exposure from then on, and counts in `stats.specializations`.
+
+- **Greed** (`greed.yieldMult`, `greed.exposureMult`): more money, much more heat.
+- **Stealth** (`stealth.yieldMult`, `stealth.exposureMult`): the same money, less heat than greed would have.
+
+`validateConfig` keeps both honest: `greed.exposureMult ≥ greed.yieldMult`, and `stealth.exposureMult ≥ 1 / tierHeatMult`, so a stealth tier 3 is never cooler than tier 2. Businesses that were already past tier 3 before specialization existed stay neutral.
 
 ### Costs
 
@@ -68,7 +78,7 @@ Starts at 100. It loses `rackets.conditionDecayPerDay / 24` at every whole game 
 
 ### Enforcers
 
-An idle crew member assigned to a racket multiplies its yield by `rackets.enforcer.yieldMult` and its exposure by `rackets.enforcer.heatMult`. Enforcers can't work jobs but still draw wages. The link is cleared if they're arrested, fired or walk out.
+An idle crew member assigned to a racket multiplies its yield by `rackets.enforcer.yieldMult` and its exposure by `rackets.enforcer.heatMult`. Enforcers can't work jobs but still draw wages, and they slowly earn Muscle XP ([crew.md](crew.md#experience)). The link is cleared if they're arrested, fired or walk out.
 
 ## The daily ledger
 
@@ -84,10 +94,10 @@ Home's **Money flow** card reads `derive` directly: what the businesses put in t
 |---|---|---|
 | `COLLECT` | none | vault → Dirty; `COLLECTED` |
 | `BUY_RACKET { racketType, districtId }` | type unlocked, district open and allows the type, not already built there, enough Clean | new racket at tier 1, condition 100; `RACKET_BOUGHT` |
-| `UPGRADE_RACKET { racketId }` | below max tier, enough Clean | tier +1; `RACKET_UPGRADED` |
+| `UPGRADE_RACKET { racketId, specialization? }` | below max tier, enough Clean, a specialization exactly on the upgrade to `specialization.atTier` | tier +1; `RACKET_UPGRADED { racketId, tier, cost, specialization? }` |
 | `REPAIR_RACKET { racketId }` | condition below 100, enough Dirty | condition 100, `stats.repairsPaid`; `RACKET_REPAIRED` |
 | `ASSIGN_ENFORCER { crewId, racketId \| null }` | crew idle, racket has no enforcer (or `null` to unassign an enforcer) | `ENFORCER_ASSIGNED` / `ENFORCER_REMOVED` |
 
 Also emitted: `VAULT_CAPPED`, and `OFFLINE_CAPPED` from the reconcile walk ([architecture.md](../architecture.md#the-reconcile-walk)).
 
-**Tests:** `tests/apply.test.ts` (first session, districts host one of each, enforcer multipliers), `tests/reconcile.test.ts` (vault stops at its cap, offline cap), `tests/ledger.test.ts` (snapshots at day starts, rows add up to stats).
+**Tests:** `tests/apply.test.ts` (first session, districts host one of each, enforcer multipliers, tier-3 specialization), `tests/reconcile.test.ts` (vault stops at its cap, offline cap), `tests/ledger.test.ts` (snapshots at day starts, rows add up to stats).

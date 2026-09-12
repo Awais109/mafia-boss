@@ -1,10 +1,10 @@
-import type { DistrictId, FrontType, IncidentType, OfficialId, OpType, RacketType } from '../config/schema'
+import type { DistrictId, FrontMode, FrontType, IncidentType, OfficialId, OpType, RacketType, Specialization } from '../config/schema'
 
 export type Action =
   | { type: 'COLLECT' }
   | { type: 'DEPOSIT'; frontId: string; amount: number }
   | { type: 'BUY_RACKET'; racketType: RacketType; districtId: DistrictId }
-  | { type: 'UPGRADE_RACKET'; racketId: string }
+  | { type: 'UPGRADE_RACKET'; racketId: string; specialization?: Specialization }
   | { type: 'REPAIR_RACKET'; racketId: string }
   | { type: 'ASSIGN_ENFORCER'; crewId: string; racketId: string | null } // null = back to idle
   | { type: 'START_OP'; opType: OpType; crewIds: string[]; districtId?: DistrictId; offerId?: string }
@@ -17,8 +17,9 @@ export type Action =
   | { type: 'BRIBE' }
   | { type: 'BUY_DISTRICT'; districtId: DistrictId }
   | { type: 'BUY_FRONT'; frontType: FrontType }
-  | { type: 'UPGRADE_FRONT'; frontId: string }
-  | { type: 'PAY_TRIBUTE' }
+  | { type: 'UPGRADE_FRONT'; frontId: string; track?: 'rate' | 'capacity' }
+  | { type: 'SET_FRONT_MODE'; frontId: string; mode: FrontMode }
+  | { type: 'PAY_TRIBUTE'; choice?: 'pay' | 'haggle' | 'refuse' }
   | { type: 'TUTORIAL_ADVANCE' }
   | { type: 'TUTORIAL_SKIP' }
   | { type: 'SESSION_START' }

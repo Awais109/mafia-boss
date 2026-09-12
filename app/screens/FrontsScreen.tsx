@@ -1,8 +1,10 @@
-import { FRONT_TYPES } from '../../engine'
+import { FRONT_MODES, FRONT_TYPES } from '../../engine'
 import { Bar, Btn, BtnRow, Card, colors, Money, Row, Screen, T, Tag } from '../components/ui'
 import { fmt, fmtDuration, fmtRate, pct } from '../format'
 import { store } from '../store'
 import type { ScreenProps } from './types'
+
+const MODE_LABEL = { push: 'Push', normal: 'Normal', layLow: 'Lay low' } as const
 
 export function FrontsScreen({ game }: ScreenProps) {
   const { state: s, derived: d, config: c } = game
@@ -51,10 +53,26 @@ export function FrontsScreen({ game }: ScreenProps) {
         const half = Math.floor(max / 2)
         return (
           <Card key={f.id}>
-            <Row label="" value={<T bold>{`${name} · level ${front.level}`}</T>} />
+            <Row label="" value={<T bold>{`${name} · rate level ${front.level} · capacity ${front.capacityLevel}`}</T>} />
             {f.suspicion > 0 && <Tag text={`suspicious: +${fmt(f.suspicion)} exposure`} color={colors.warn} />}
+            <BtnRow>
+              {FRONT_MODES.map((mode) => (
+                <Btn
+                  key={mode}
+                  small
+                  kind={front.mode === mode ? 'primary' : 'ghost'}
+                  title={MODE_LABEL[mode]}
+                  onPress={() => {
+                    if (front.mode !== mode) store.dispatch({ type: 'SET_FRONT_MODE', frontId: f.id, mode })
+                  }}
+                />
+              ))}
+            </BtnRow>
+            <T small muted>
+              {`Push: ×${c.fronts.modes.push.throughputMult}, suspicion from ${pct(c.fronts.modes.push.suspicionStartUtil)} running · Lay low: ×${c.fronts.modes.layLow.throughputMult}, no suspicion`}
+            </T>
             <Row label="Rate" hint={`◆100 → ●${fmt(f.rate * 100)}`} value={pct(f.rate)} color={colors.clean} />
-            <Row label="Throughput" value={`◆${fmtRate(f.throughput)}`} />
+            <Row label="Throughput" hint={f.mode !== 'normal' ? `◆${fmtRate(f.baseThroughput)} at normal` : undefined} value={`◆${fmtRate(f.throughput)}`} />
             <Bar value={front.buffer} max={f.bufferCap} color={colors.dirty} marks={[f.throughput]} />
             <Row
               label="Buffer"
@@ -71,6 +89,14 @@ export function FrontsScreen({ game }: ScreenProps) {
                   title={`Rate +${pct(c.fronts.upgrade.rateStep)} (●${fmt(f.upgradeCost)})`}
                   disabled={s.clean < f.upgradeCost}
                   onPress={() => store.dispatch({ type: 'UPGRADE_FRONT', frontId: f.id })}
+                />
+              )}
+              {f.capacityUpgradeCost !== null && (
+                <Btn
+                  small
+                  title={`Capacity +${pct(c.fronts.upgrade.capacity.step)} (●${fmt(f.capacityUpgradeCost)})`}
+                  disabled={s.clean < f.capacityUpgradeCost}
+                  onPress={() => store.dispatch({ type: 'UPGRADE_FRONT', frontId: f.id, track: 'capacity' })}
                 />
               )}
             </BtnRow>

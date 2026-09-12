@@ -1,30 +1,40 @@
 import {
   apply,
   canAffordEffects,
+  canHaggle,
   canPressure,
   derive,
   DISTRICT_IDS,
   formulas,
   FRONT_TYPES,
+  haggleOdds,
   influenceRoom,
+  jobXp,
   OFFICIAL_IDS,
   openSpots,
   opDirtyRewardFor,
   opUnlocked,
+  OP_OUTCOMES,
   OP_TYPES,
   outcomeOdds,
   RACKET_TYPES,
+  STATS,
   type Action,
   type Config,
   type CrewMember,
   type Derived,
   type DistrictId,
+  type FrontMode,
   type InboxEffects,
   type InboxItem,
   type OpConfig,
   type OpType,
+  type PerkId,
   type PlayerState,
 } from '../engine'
+
+// The bot's perk order: money first, then heat, speed, loyalty, teaching, haggling.
+const PERK_PREFERENCE: readonly PerkId[] = ['earner', 'ghost', 'fixer', 'steady', 'mentor', 'bargainer']
 
 // The "engaged casual" policy (plan §11). A persona is a policy, not a person: where
 // humans diverge from it is where the design is more interesting — or more confusing —
@@ -43,6 +53,9 @@ export type PersonaOptions = {
   repValue: number // Dirty-equivalents per Rep point, for valuing ops
   influenceValueHours: number // an Influence point is worth this many hours of yield while an official is left to buy
   loyaltyValue: number // Dirty-equivalents per loyalty point (×3 for someone below raiseBelow)
+  pushBacklogHours: number // push a front when Dirty waiting to be washed exceeds this many hours of its throughput
+  xpValue: number // Dirty-equivalents per stat point a job would earn
+  haggleAbove: number // haggle with Tolya when the odds are at least this
 }
 
 export const CASUAL: PersonaOptions = {
@@ -59,6 +72,9 @@ export const CASUAL: PersonaOptions = {
   repValue: 10,
   influenceValueHours: 3,
   loyaltyValue: 1,
+  pushBacklogHours: 6,
+  xpValue: 3,
+  haggleAbove: 0.6,
 }
 
 // N sessions spread evenly between 08:00 and 22:00, for both acts.
@@ -109,13 +125,31 @@ export function playSession(
     const v = valuation(state, c, p)
     const affordable = item.options.filter((o) => canAffordEffects(state, o.effects))
     if (affordable.length === 0) continue
-    const best = affordable.reduce((a, b) => (valueOf(state, p, v, item, b.effects) > valueOf(state, p, v, item, a.effects) ? b : a))
+    const rankOf = (id: string) => {
+      const i = PERK_PREFERENCE.indexOf(id as PerkId)
+      return i < 0 ? PERK_PREFERENCE.length : i
+    }
+    const best =
+      item.kind === 'perk'
+        ? [...affordable].sort((a, b) => rankOf(a.id) - rankOf(b.id))[0]
+        : affordable.reduce((a, b) => (valueOf(state, p, v, item, b.effects) > valueOf(state, p, v, item, a.effects) ? b : a))
     tryAct({ type: 'RESOLVE_INBOX', itemId: item.id, optionId: best.id })
   }
 
-  // Keep Tolya sweet when it's cheap; fix what he broke.
-  const demand = state.rival.tolya.demand
-  if (demand !== null && state.dirty >= demand) tryAct({ type: 'PAY_TRIBUTE' })
+  // Tolya: talk him down when the odds are good, otherwise pay when it's affordable; fix what he broke.
+  {
+    const demand = state.rival.tolya.demand
+    if (
+      demand !== null &&
+      canHaggle(state) &&
+      haggleOdds(state, c) >= p.haggleAbove &&
+      state.dirty >= demand * c.rivals.tolya.haggle.pricePct
+    ) {
+      tryAct({ type: 'PAY_TRIBUTE', choice: 'haggle' })
+    }
+    const still = state.rival.tolya.demand
+    if (still !== null && state.dirty >= still) tryAct({ type: 'PAY_TRIBUTE' })
+  }
   for (const id of state.rackets.map((r) => r.id)) {
     const r = state.rackets.find((x) => x.id === id)!
     if (r.condition < p.repairBelow && state.dirty >= formulas.racketRepairCost(c, r.type)) {
@@ -123,10 +157,26 @@ export function playSession(
     }
   }
 
-  // 2. Deposit up to buffer caps, keeping a reserve of wages × 12 h + one bribe
+  // Front dial: lie low when hot; push through a backlog when the heat budget allows it.
   {
     const now = d()
-    const reserve = now.wagesPerHr * p.reserveWageHours + now.costs.bribe
+    const reserve = (now.wagesPerHr + now.upkeepPerHr) * p.reserveWageHours + now.costs.bribe
+    const backlog = state.dirty - reserve + state.fronts.reduce((sum, f) => sum + f.buffer, 0)
+    for (const f of now.perFront) {
+      let mode: FrontMode = 'normal'
+      if (state.heat > p.bribeAboveHeat) mode = 'layLow'
+      else if (backlog > p.pushBacklogHours * f.baseThroughput) {
+        const pushed = formulas.frontSuspicion(c, { type: f.type, capacityLevel: f.capacityLevel, mode: 'push' }, 1)
+        if (formulas.heatTarget(now.exposure - f.suspicion + pushed, now.control) <= p.heatBudget) mode = 'push'
+      }
+      if (mode !== f.mode) tryAct({ type: 'SET_FRONT_MODE', frontId: f.id, mode })
+    }
+  }
+
+  // 2. Deposit up to buffer caps, keeping a reserve of running costs × 12 h + one bribe
+  {
+    const now = d()
+    const reserve = (now.wagesPerHr + now.upkeepPerHr) * p.reserveWageHours + now.costs.bribe
     for (const f of [...now.perFront].sort((a, b) => b.rate - a.rate)) {
       const buffer = state.fronts.find((x) => x.id === f.id)!.buffer
       const amount = Math.floor(Math.min(state.dirty - reserve, f.bufferCap - buffer))
@@ -171,6 +221,19 @@ export function playSession(
   for (let guard = 0; guard < 10; guard++) {
     const best = bestDispatch(state, c, p, t, gapMinutes)
     if (!best || !tryAct(best)) break
+  }
+
+  // Anyone still idle trains the stat with the most room to grow, if Dirty covers it above the reserve.
+  for (const m of state.crew.filter((x) => x.status === 'idle')) {
+    const now = d()
+    const reserve = (now.wagesPerHr + now.upkeepPerHr) * p.reserveWageHours + now.costs.bribe
+    const stat = STATS.reduce((best, st) => (m.potential[st] - m[st] > m.potential[best] - m[best] ? st : best), STATS[0])
+    if (m.potential[stat] <= m[stat]) continue
+    const type = OP_TYPES.find((ty) => c.ops.list[ty].training === stat)
+    if (!type) continue
+    const cost = (c.ops.list[type].costDirty ?? 0) * state.act
+    if (state.dirty - cost < reserve) continue
+    tryAct({ type: 'START_OP', opType: type, crewIds: [m.id] })
   }
 
   // 7 (before spending, so it gets first claim on Clean). Buy a district when it's affordable and its
@@ -232,9 +295,20 @@ function spendOptions(state: PlayerState, c: Config, d: Derived): SpendOption[] 
     }
   }
   for (const f of d.perFront) {
-    if (f.upgradeCost === null || f.util < c.fronts.suspicionStartUtil) continue
-    const gain = (f.throughput * f.util * c.fronts.upgrade.rateStep) / f.rate // Dirty-equivalent per hour
-    out.push({ action: { type: 'UPGRADE_FRONT', frontId: f.id }, cost: f.upgradeCost, gain, heatGain: 0 })
+    if (f.util < c.fronts.suspicionStartUtil) continue
+    if (f.upgradeCost !== null) {
+      const gain = (f.throughput * f.util * c.fronts.upgrade.rateStep) / f.rate // Dirty-equivalent per hour
+      out.push({ action: { type: 'UPGRADE_FRONT', frontId: f.id, track: 'rate' }, cost: f.upgradeCost, gain, heatGain: 0 })
+    }
+    if (f.capacityUpgradeCost !== null) {
+      const extra = c.fronts.types[f.type].throughput * c.fronts.upgrade.capacity.step
+      out.push({
+        action: { type: 'UPGRADE_FRONT', frontId: f.id, track: 'capacity' },
+        cost: f.capacityUpgradeCost,
+        gain: extra * f.util,
+        heatGain: c.fronts.suspicionFactor * extra * Math.max(0, f.util - c.fronts.suspicionStartUtil),
+      })
+    }
   }
 
   for (const type of RACKET_TYPES) {
@@ -263,6 +337,19 @@ function spendOptions(state: PlayerState, c: Config, d: Derived): SpendOption[] 
   state.rackets.forEach((r, i) => {
     const rd = d.perRacket[i]
     if (rd.upgradeCost === null) return
+    const spec = c.rackets.specialization
+    if (r.tier + 1 === spec.atTier) {
+      // Both choices compete on gain ÷ cost; the heat-budget filter falls back to stealth when greed runs hot.
+      for (const choice of ['greed', 'stealth'] as const) {
+        out.push({
+          action: { type: 'UPGRADE_RACKET', racketId: r.id, specialization: choice },
+          cost: rd.upgradeCost,
+          gain: rd.yield * (c.rackets.tierYieldMult * spec[choice].yieldMult - 1),
+          heatGain: rd.exposure * (c.rackets.tierHeatMult * spec[choice].exposureMult - 1),
+        })
+      }
+      return
+    }
     out.push({
       action: { type: 'UPGRADE_RACKET', racketId: r.id },
       cost: rd.upgradeCost,
@@ -308,7 +395,7 @@ function bestDispatch(state: PlayerState, c: Config, p: PersonaOptions, t: numbe
 
   // The fixed jobs, plus whatever's on the board.
   const jobs: { type: OpType; op: OpConfig; offerId?: string }[] = [
-    ...OP_TYPES.filter((type) => opUnlocked(state, c, type)).map((type) => ({ type, op: c.ops.list[type] })),
+    ...OP_TYPES.filter((type) => opUnlocked(state, c, type) && !c.ops.list[type].training).map((type) => ({ type, op: c.ops.list[type] })),
     ...state.offers.items
       .filter((o) => o.expiresAt > t && opUnlocked(state, c, o.opType))
       .map((o) => ({ type: o.opType, op: o.cfg, offerId: o.id })),
@@ -335,7 +422,18 @@ function bestDispatch(state: PlayerState, c: Config, p: PersonaOptions, t: numbe
     for (const team of combinations(idle, op.crew)) {
       const odds = outcomeOdds(c, op, team)
       const success = odds.full + odds.partial
-      const dirty = odds.full * opDirtyRewardFor(c, state, op, 'full') + odds.partial * opDirtyRewardFor(c, state, op, 'partial')
+      const dirty = odds.full * opDirtyRewardFor(c, state, op, 'full', team) + odds.partial * opDirtyRewardFor(c, state, op, 'partial', team)
+      // Growth: expected XP, priced per stat point it buys (nothing for a stat at its ceiling).
+      let growth = 0
+      for (const m of team) {
+        for (const outcome of OP_OUTCOMES) {
+          const xp = jobXp(c, op, outcome, m, team)
+          for (const st of STATS) {
+            if (!xp[st] || m[st] >= m.potential[st]) continue
+            growth += (odds[outcome] * xp[st]! * p.xpValue) / formulas.statPointCost(c, m[st])
+          }
+        }
+      }
       const rep = (odds.full + odds.partial * c.ops.partialRewardPct) * c.reputation.perOpSuccess
       let influence = 0
       if (op.influence && influenceValue > 0) {
@@ -345,7 +443,7 @@ function bestDispatch(state: PlayerState, c: Config, p: PersonaOptions, t: numbe
       const spike = op.spike * (odds.full + odds.partial * c.ops.partialSpikePct + odds.fail * c.ops.failSpikePct)
       const sessionsBlocked = Math.max(1, Math.ceil(op.minutes / gapMinutes))
       const value =
-        (dirty + rep * p.repValue + influence * influenceValue + success * flipValue - spike * heatCost) / sessionsBlocked
+        (dirty + rep * p.repValue + influence * influenceValue + success * flipValue + growth - spike * heatCost) / sessionsBlocked
       const score = value / team.length
       if (value > 0 && (!best || score > best.score)) {
         best = {

@@ -1,5 +1,6 @@
 import { View } from 'react-native'
 import { DISTRICT_IDS, tolyaHostile, tolyaIntervalHours, type RacketType } from '../../engine'
+import { TributeCard } from '../components/TributeCard'
 import { Btn, BtnRow, Card, colors, Row, Screen, Section, T, Tag } from '../components/ui'
 import { fmt, fmtDuration, fmtRate, pct } from '../format'
 import { store } from '../store'
@@ -64,20 +65,14 @@ export function TurfScreen({ game, go }: ScreenProps) {
       </Section>
 
       <Section title="Tolya">
+        <TributeCard game={game} />
         <Card>
           <T small muted>
             The old boss of these streets. Every few hours he sends his boys: to break something, to ask for a cut, or just to be seen.
           </T>
           <Row label="Mood" hint={`disposition ${fmt(tol.disposition)}`} value={mood} color={hostile ? colors.heat : tol.disposition < 0 ? colors.warn : colors.good} />
           <Row label="Next visit" hint={`every ${fmt(tolyaIntervalHours(s, c))}h`} value={fmtDuration(tol.nextTickAt - now, c)} />
-          {tol.demand !== null ? (
-            <>
-              <T small color={colors.warn}>{`He wants ◆${fmt(tol.demand)}. If it’s unpaid by his next visit, he breaks a racket.`}</T>
-              <Btn small kind="primary" title={`Pay ◆${fmt(tol.demand)}`} disabled={s.dirty < tol.demand} onPress={() => store.dispatch({ type: 'PAY_TRIBUTE' })} />
-            </>
-          ) : (
-            <T small muted>No demands right now.</T>
-          )}
+          {tol.demand === null && <T small muted>No demands right now.</T>}
           <T small color={colors.faint}>
             Paying keeps him sweet. Pressuring or buying his turf sours him; below {c.rivals.tolya.hostileBelow} he visits more often.
           </T>

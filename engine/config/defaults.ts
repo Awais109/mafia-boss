@@ -28,6 +28,12 @@ export const defaults: Config = {
     conditionDecayPerDay: 2,
     conditionRepairPct: 0.1, // repair = 10% of purchase price, paid in Dirty
     enforcer: { yieldMult: 1.3, heatMult: 0.7 }, // "strictly worth it below tier 4"
+    // The upgrade to tier 3 is a choice (ADR 0027). Stealth at 0.8 keeps T3 hotter than T2 (0.8 × 1.35² > 1.35).
+    specialization: {
+      atTier: 3,
+      greed: { yieldMult: 1.25, exposureMult: 1.6 },
+      stealth: { yieldMult: 1.0, exposureMult: 0.8 },
+    },
     types: {
       kiosk: { name: 'Kiosk', act: 1, baseYield: 6, baseHeat: 0.8, unlockRep: 0 },
       marketStall: { name: 'Market Stall', act: 1, baseYield: 10, baseHeat: 1.3, unlockRep: 0 },
@@ -59,21 +65,28 @@ export const defaults: Config = {
     utilSmoothingHours: 6, // util is a moving average over roughly this many hours
     bufferHours: 10, // buffer cap = throughput × this
     reserveHours: 12, // "launder all but running costs" keeps this many hours of wages + upkeep in Dirty
+    // A dial per front (ADR 0028): push launders faster and draws suspicion sooner; lay low halves it and draws none.
+    modes: {
+      push: { throughputMult: 1.5, suspicionStartUtil: 0.5 },
+      layLow: { throughputMult: 0.5, suspicion: false },
+    },
     upgrade: {
       rateStep: 0.03, // +rate per level
       levels: 3,
       costPctOfUnlock: 0.4, // level L costs basis × pct × L
       minCostBasis: 100, // basis for fronts whose unlock cost is below this (the free Currency Kiosk)
+      capacity: { step: 0.25, levels: 3, costPctOfUnlock: 0.5 }, // +25% throughput (and buffer) per level
     },
     types: {
       currencyKiosk: { name: 'Currency Kiosk', rate: 0.55, throughput: 25, unlockRep: 0, cost: 0 },
-      restaurant: { name: 'Restaurant', rate: 0.65, throughput: 185, unlockRep: 80, cost: 60 },
+      // 185 → 120: Act II laundering grows through capacity upgrades (to 210) instead of arriving oversized (TUNING.md).
+      restaurant: { name: 'Restaurant', rate: 0.65, throughput: 120, unlockRep: 80, cost: 60 },
     },
   },
 
   heat: {
     baseControl: 8, // strongest early-game heat knob (manual §4 Heat)
-    convergePerHr: 0.1, // 10% of the gap per hour
+    convergePerHr: 0.2, // 20% of the gap per hour: job spikes bite, then bleed off (TUNING.md, M2)
     startHeat: 20,
     inspectThreshold: 40,
     inspectYieldMult: 0.85,
@@ -123,9 +136,29 @@ export const defaults: Config = {
       gambler: { nerveBonus: 10, wageMult: 1.5 },
       alcoholic: { randomPenalty: 20, wageMult: 0.6 }, // cheap, unreliable: −U(0, 20) on every op
     },
+    // Crew grow with work (ADR 0030). A job's XP splits by its stat weights; a stat rises when its XP
+    // covers the point cost, up to the member's potential. Wages follow stats, so veterans cost more.
+    experience: {
+      xpByBand: { quick: 2, standard: 5, long: 8 },
+      outcomeMult: { full: 1, partial: 0.75, fail: 0.5 },
+      pointCost: { base: 4, perAbove30: 0.3 }, // Muscle 48 → 49 costs 9.4 XP
+      potentialRoll: [5, 20],
+      mentorBonus: 0.5,
+      enforcerXpPerHr: 0.15,
+      ranks: { soldier: 8, made: 20, capo: 36 }, // stat points gained; Soldier and Made each choose a perk
+      perkChoices: 2,
+      perks: {
+        earner: { name: 'Earner', text: 'jobs pay 15% more Dirty', jobDirtyMult: 1.15 },
+        ghost: { name: 'Ghost', text: 'jobs spike 30% less heat', jobSpikeMult: 0.7 },
+        fixer: { name: 'Fixer', text: 'jobs take 20% less time', jobMinutesMult: 0.8 },
+        mentor: { name: 'Mentor', text: 'partners on a job earn 50% more XP', partnerXpBonus: 0.5 },
+        bargainer: { name: 'Bargainer', text: '+10 when haggling with Tolya', haggleBonus: 10 },
+        steady: { name: 'Steady', text: 'loyalty never drifts', noDrift: true },
+      },
+    },
     starting: [
-      { name: 'Vitya', muscle: 48, brains: 30, nerve: 42, loyalty: 70 },
-      { name: 'Dima', muscle: 30, brains: 50, nerve: 38, loyalty: 70, nephew: true },
+      { name: 'Vitya', muscle: 48, brains: 30, nerve: 42, loyalty: 70, potential: { muscle: 60, brains: 38, nerve: 55 } },
+      { name: 'Dima', muscle: 30, brains: 50, nerve: 38, loyalty: 70, nephew: true, potential: { muscle: 38, brains: 72, nerve: 48 } },
     ],
   },
 
@@ -142,12 +175,17 @@ export const defaults: Config = {
     influenceDailyCap: 3, // Influence from ops per game day
     rewardActScaling: 2, // Dirty reward × act^2
     list: {
-      shakeDown: { name: 'Shake Down', band: 'quick', minutes: 15, crew: 1, w: { muscle: 0.7, nerve: 0.3 }, diff: 35, spike: 2, dirty: 15 },
-      collectDebt: { name: 'Collect a Debt', band: 'quick', minutes: 20, crew: 1, w: { nerve: 0.6, brains: 0.4 }, diff: 40, spike: 1, dirty: 20 },
-      leanOnWard: { name: 'Lean on the Ward', band: 'standard', minutes: 120, crew: 2, w: { brains: 0.5, nerve: 0.5 }, diff: 45, spike: 3, influence: 1 },
-      pressure: { name: 'Pressure a District', band: 'standard', minutes: 60, crew: 2, w: { muscle: 0.6, nerve: 0.4 }, diff: 45, spike: 4, dirty: 10, districtPressure: true },
-      moveShipment: { name: 'Move a Shipment', band: 'standard', minutes: 180, crew: 2, w: { nerve: 0.5, brains: 0.5 }, diff: 50, spike: 2, dirty: 30, act: 2 },
-      dinner: { name: 'Dinner with Officials', band: 'long', minutes: 360, crew: 2, w: { brains: 0.7, nerve: 0.3 }, diff: 55, spike: 1, influence: 2 },
+      // Spikes ×1.5 with heat.convergePerHr 0.2 (M2 heat experiment, TUNING.md).
+      shakeDown: { name: 'Shake Down', band: 'quick', minutes: 15, crew: 1, w: { muscle: 0.7, nerve: 0.3 }, diff: 35, spike: 3, dirty: 15 },
+      collectDebt: { name: 'Collect a Debt', band: 'quick', minutes: 20, crew: 1, w: { nerve: 0.6, brains: 0.4 }, diff: 40, spike: 1.5, dirty: 20 },
+      leanOnWard: { name: 'Lean on the Ward', band: 'standard', minutes: 120, crew: 2, w: { brains: 0.5, nerve: 0.5 }, diff: 45, spike: 4.5, influence: 1 },
+      pressure: { name: 'Pressure a District', band: 'standard', minutes: 60, crew: 2, w: { muscle: 0.6, nerve: 0.4 }, diff: 45, spike: 6, dirty: 10, districtPressure: true },
+      moveShipment: { name: 'Move a Shipment', band: 'standard', minutes: 180, crew: 2, w: { nerve: 0.5, brains: 0.5 }, diff: 50, spike: 3, dirty: 30, act: 2 },
+      dinner: { name: 'Dinner with Officials', band: 'long', minutes: 360, crew: 2, w: { brains: 0.7, nerve: 0.3 }, diff: 55, spike: 1.5, influence: 2 },
+      // Training (ADR 0030): one crew member, costs Dirty × act, no roll, no heat, no report.
+      trainMuscle: { name: 'Boxing Gym', band: 'long', minutes: 240, crew: 1, w: { muscle: 1 }, diff: 0, spike: 0, training: 'muscle', costDirty: 15, xp: 8 },
+      trainBrains: { name: 'Night School', band: 'long', minutes: 240, crew: 1, w: { brains: 1 }, diff: 0, spike: 0, training: 'brains', costDirty: 15, xp: 8 },
+      trainNerve: { name: 'Card Table', band: 'long', minutes: 240, crew: 1, w: { nerve: 1 }, diff: 0, spike: 0, training: 'nerve', costDirty: 15, xp: 8 },
     },
     // Every finished job files a report with a fork (ADR 0024). dirtyPct is a share of the job's
     // Dirty reward, so the options move value around rather than add it.
@@ -227,10 +265,10 @@ export const defaults: Config = {
     count: 3,
     refreshHours: 6, // the board is replaced on this schedule; offers expire with it
     templates: {
-      stubbornVendor: { base: 'shakeDown', name: 'A vendor who won’t pay', diffAdd: [0, 10], rewardMult: [1.2, 1.6], spikeMult: [1, 1.5], minutesMult: [0.75, 1.25] },
-      kioskRowDebt: { base: 'collectDebt', name: 'A debt in Kiosk Row', diffAdd: [0, 10], rewardMult: [1.2, 1.6], spikeMult: [1, 1.5], minutesMult: [0.75, 1.25] },
-      wardWord: { base: 'leanOnWard', name: 'A word with the ward', diffAdd: [0, 10], rewardMult: [1.2, 1.6], spikeMult: [1, 1.5], minutesMult: [0.75, 1.25] },
-      lateDelivery: { base: 'moveShipment', name: 'A late delivery', act: 2, diffAdd: [0, 10], rewardMult: [1.2, 1.6], spikeMult: [1, 1.5], minutesMult: [0.75, 1.25] },
+      stubbornVendor: { base: 'shakeDown', name: 'A vendor who won’t pay', diffAdd: [0, 10], rewardMult: [1.1, 1.5], spikeMult: [1, 1.5], minutesMult: [0.75, 1.25] },
+      kioskRowDebt: { base: 'collectDebt', name: 'A debt in Kiosk Row', diffAdd: [0, 10], rewardMult: [1.1, 1.5], spikeMult: [1, 1.5], minutesMult: [0.75, 1.25] },
+      wardWord: { base: 'leanOnWard', name: 'A word with the ward', diffAdd: [0, 10], rewardMult: [1.1, 1.5], spikeMult: [1, 1.5], minutesMult: [0.75, 1.25] },
+      lateDelivery: { base: 'moveShipment', name: 'A late delivery', act: 2, diffAdd: [0, 10], rewardMult: [1.1, 1.5], spikeMult: [1, 1.5], minutesMult: [0.75, 1.25] },
     },
   },
 
@@ -262,6 +300,8 @@ export const defaults: Config = {
       dispositionOnFlip: -25,
       hostileBelow: -30,
       hostileTickMult: 0.5,
+      // Pay, haggle or refuse (ADR 0029). One haggle per demand: best idle Nerve + U(±noise) vs diff.
+      haggle: { diff: 45, noise: 15, pricePct: 0.5, dispositionOnWin: 5, dispositionOnInsult: -10 },
     },
   },
 

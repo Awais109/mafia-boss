@@ -20,7 +20,31 @@ function v1to2(doc: Doc): Doc {
   }
 }
 
-const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2 }
+// v3 (M2): crew experience, front modes and capacity, haggling, specialization.
+function v2to3(doc: Doc): Doc {
+  type Member = Record<string, unknown> & { muscle: number; brains: number; nerve: number }
+  const withProgress = (m: Member) => ({
+    xp: { muscle: 0, brains: 0, nerve: 0 },
+    potential: { muscle: Math.min(100, m.muscle + 10), brains: Math.min(100, m.brains + 10), nerve: Math.min(100, m.nerve + 10) },
+    gained: 0,
+    rank: 0,
+    perks: [],
+    ...m,
+  })
+  const pool = doc.recruitPool as { candidates: Member[] } & Record<string, unknown>
+  const rival = doc.rival as { tolya: Record<string, unknown> }
+  return {
+    ...doc,
+    schemaVersion: 3,
+    stats: { ...emptyStats(), ...(doc.stats as object) },
+    crew: (doc.crew as Member[]).map(withProgress),
+    recruitPool: { ...pool, candidates: pool.candidates.map(withProgress) },
+    fronts: (doc.fronts as Record<string, unknown>[]).map((f) => ({ mode: 'normal', capacityLevel: 0, ...f })),
+    rival: { ...rival, tolya: { haggledTick: null, ...rival.tolya } },
+  }
+}
+
+const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3 }
 
 export function migrate(doc: unknown): PlayerState {
   if (typeof doc !== 'object' || doc === null) throw new Error('Save is not an object')

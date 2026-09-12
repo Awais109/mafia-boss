@@ -29,18 +29,20 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 
 **Each session, in order** (`playSession`):
 1. `SESSION_START`, skip the tutorial, `COLLECT`.
-2. Answer every pending inbox item with the affordable option of highest decision value (below).
-3. Pay Tolya's demand if affordable; repair rackets below 75 condition.
-4. Deposit Dirty into fronts, best rate first, up to buffer caps, keeping a reserve of 12 h of wages plus one bribe.
-5. Bribe if heat is above 55.
-6. Buy an official if affordable and heat or heat target is above 30.
-7. Buy any unlocked front. Recruit into empty slots (highest stat total). Raise anyone under 35 loyalty.
-8. Dispatch idle crew, one job at a time, greedily by value per crew member, over the fixed jobs and the offers on the board (below).
-9. Buy a district when affordable and its tribute over 48 h exceeds the buy-out. It never saves Clean for one.
-10. Spend Clean, repeatedly, on the best gain ÷ cost: a new front first, front rate upgrades when utilization is at least `fronts.suspicionStartUtil`, a new racket in the district with the best yield multiplier, or a tier upgrade. It skips anything that pushes the heat target above 55, unless an official is affordable right now.
-11. `SESSION_END`.
+2. Answer every pending inbox item with the affordable option of highest decision value (below). Perk choices go by a fixed preference: Earner, Ghost, Fixer, Steady, Mentor, Bargainer.
+3. Tolya: haggle when `haggleOdds` is at least `haggleAbove` (0.6) and Dirty covers the haggled price; otherwise pay the demand if affordable. It never refuses. Repair rackets below 75 condition.
+4. Set each front's dial: lay low while heat is above 55; push when the Dirty waiting to be washed (Dirty above the reserve, plus buffers) exceeds `pushBacklogHours` (6) of the front's base throughput and pushing keeps the heat target within 55; otherwise normal.
+5. Deposit Dirty into fronts, best rate first, up to buffer caps, keeping a reserve of 12 h of wages and upkeep plus one bribe.
+6. Bribe if heat is above 55.
+7. Buy an official if affordable and heat or heat target is above 30.
+8. Buy any unlocked front. Recruit into empty slots (highest stat total). Raise anyone under 35 loyalty.
+9. Dispatch idle crew, one job at a time, greedily by value per crew member, over the fixed jobs and the offers on the board (below).
+10. Anyone still idle trains the stat with the most room under its ceiling, if Dirty after the lesson stays above the reserve.
+11. Buy a district when affordable and its tribute over 48 h exceeds the buy-out. It never saves Clean for one.
+12. Spend Clean, repeatedly, on the best gain ÷ cost: a new front first; front rate and capacity upgrades when utilization is at least `fronts.suspicionStartUtil`; a new racket in the district with the best yield multiplier; or a tier upgrade. The upgrade to tier 3 is offered twice, greed and stealth, and the heat-budget filter leaves stealth when greed runs too hot. It skips anything that pushes the heat target above 55, unless an official is affordable right now.
+13. `SESSION_END`.
 
-**Job value** (`bestDispatch`) = expected Dirty + expected Rep × 10 + expected Influence × (3 h of yield × urgency) + P(success) × district flip value − expected heat spike × heat cost. The total is divided by the number of sessions the job blocks. Urgency rises as heat or heat target climbs past 30, so the bot runs Influence jobs when it needs an official. Offers on the board are candidates too, valued with their own terms (`opDirtyRewardFor` on the offer's `cfg`).
+**Job value** (`bestDispatch`) = expected Dirty + expected Rep × 10 + expected Influence × (3 h of yield × urgency) + P(success) × district flip value + growth − expected heat spike × heat cost. Growth is, per member and stat, the expected XP ÷ that stat's point cost × `xpValue` (3), skipping stats at their ceiling. The total is divided by the number of sessions the job blocks. Urgency rises as heat or heat target climbs past 30, so the bot runs Influence jobs when it needs an official. Offers on the board are candidates too, valued with their own terms (`opDirtyRewardFor` on the offer's `cfg`). Training jobs aren't dispatch candidates; step 10 handles them.
 
 **Decision value** (`valueOf`) = Dirty + Clean × 2 + Rep × `repValue` + Influence × the same Influence value + loyalty × `loyaltyValue` for each named crew member (×3 for anyone below `raiseBelow`) − heat × the same heat cost. `valuation()` computes the Influence value and heat cost once for both.
 
@@ -76,6 +78,8 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 | Auto-resolved | `stats.inbox.auto` ÷ (answered + auto) over the run |
 | Offer share | `stats.offerDirty` ÷ `stats.jobDirty` over the run |
 | Wage share | (`stats.wagesPaid` + `stats.upkeepPaid`) ÷ `stats.dirtyEarned` over the run; a check at 10–25% (manual §5) |
+| Crew growth | `stats.statPointsGained` over the run ÷ mean crew size ÷ days |
+| Partial d1–2, d7–8 | Partial outcomes ÷ resolved jobs between the first and last hourly rows of those days (training never counts); blank when the run is too short. The plan's gate is d7–8 ≥ 40%: crew growth must not erase partials |
 
 Clear times count from the game's `createdAt`, not the run's start, so the Debug Bot's report on an existing save reads like the CLI's. A clear that happened before the run is printed with `before this run` and not scored (`actClear1InRun`, `actClear2InRun`; [ADR 0022](decisions/0022-end-of-prototype-state.md)).
 

@@ -5,6 +5,7 @@ import {
   RACKET_TYPES,
   type Config,
   type DistrictId,
+  type FrontMode,
   type FrontType,
   type OfficialId,
   type RacketType,
@@ -30,12 +31,16 @@ export type RacketDerived = {
 export type FrontDerived = {
   id: string
   type: FrontType
+  mode: FrontMode
   rate: number
-  throughput: number
+  throughput: number // after capacity and mode
+  baseThroughput: number // after capacity, before mode; sizes the buffer
   bufferCap: number
   util: number
   suspicion: number
-  upgradeCost: number | null
+  upgradeCost: number | null // next rate level
+  capacityLevel: number
+  capacityUpgradeCost: number | null
   hoursToEmpty: number
 }
 
@@ -93,12 +98,14 @@ export function derive(state: PlayerState, c: Config): Derived {
     const districtMult = ours ? (district.mod.yieldMult?.[r.type] ?? 1) : 1
     const conditionMult = r.condition / 100
     const enforced = r.enforcerId !== null
+    const spec = r.specialization ? c.rackets.specialization[r.specialization] : null
     const grossYield =
       F.tierYield(c, r.type, r.tier) *
       conditionMult *
       districtMult *
       inspectionMult *
-      (enforced ? c.rackets.enforcer.yieldMult : 1)
+      (enforced ? c.rackets.enforcer.yieldMult : 1) *
+      (spec?.yieldMult ?? 1)
     const tributeRate = ours || controller === 'none' ? 0 : district.tribute
     const tribute = grossYield * tributeRate
     return {
@@ -106,7 +113,7 @@ export function derive(state: PlayerState, c: Config): Derived {
       yield: grossYield - tribute,
       grossYield,
       tribute,
-      exposure: F.tierHeat(c, r.type, r.tier) * (enforced ? c.rackets.enforcer.heatMult : 1),
+      exposure: F.tierHeat(c, r.type, r.tier) * (enforced ? c.rackets.enforcer.heatMult : 1) * (spec?.exposureMult ?? 1),
       conditionMult,
       districtMult,
       upgradeCost: r.tier < maxTier ? F.racketUpgradeCost(c, r.type, r.tier) : null,
@@ -115,16 +122,21 @@ export function derive(state: PlayerState, c: Config): Derived {
   })
 
   const perFront: FrontDerived[] = state.fronts.map((f) => {
-    const throughput = c.fronts.types[f.type].throughput
+    const throughput = F.frontThroughput(c, f)
     return {
       id: f.id,
       type: f.type,
+      mode: f.mode,
       rate: F.frontRate(c, f.type, f.level),
       throughput,
-      bufferCap: F.frontBufferCap(c, f.type),
+      baseThroughput: F.frontBaseThroughput(c, f),
+      bufferCap: F.frontBufferCap(c, f),
       util: f.util,
-      suspicion: F.frontSuspicion(c, f.type, f.util),
+      suspicion: F.frontSuspicion(c, f, f.util),
       upgradeCost: f.level < c.fronts.upgrade.levels ? F.frontUpgradeCost(c, f.type, f.level) : null,
+      capacityLevel: f.capacityLevel,
+      capacityUpgradeCost:
+        f.capacityLevel < c.fronts.upgrade.capacity.levels ? F.frontCapacityUpgradeCost(c, f.type, f.capacityLevel) : null,
       hoursToEmpty: f.buffer / throughput,
     }
   })

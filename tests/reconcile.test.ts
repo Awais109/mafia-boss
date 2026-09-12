@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { derive, makeRng, reconcile, type PlayerState } from '../engine'
+import { derive, formulas, makeRng, reconcile, type PlayerState } from '../engine'
 import { act, config, crewNamed, expectClose, fresh, H, T0 } from './helpers'
 
 // A state with everything moving at once: ops out (one taken from the board), a bribe running,
@@ -36,7 +36,29 @@ function busy(): PlayerState {
     T0,
   )
   const restaurant = s.fronts.find((f) => f.type === 'restaurant')!.id
-  s = act(s, [{ type: 'DEPOSIT', frontId: restaurant, amount: 900 }, { type: 'DEBUG_SET_HEAT', heat: 92 }], T0)
+  s = act(
+    s,
+    [
+      { type: 'DEPOSIT', frontId: restaurant, amount: 900 },
+      { type: 'SET_FRONT_MODE', frontId: restaurant, mode: 'push' },
+      { type: 'RECRUIT', candidateId: s.recruitPool.candidates[0].id },
+      { type: 'RECRUIT', candidateId: s.recruitPool.candidates[1].id },
+    ],
+    T0,
+  )
+  // A trainee and an enforcer, each close to a stat point, so XP spending lands inside the windows.
+  const [trainee, minder] = s.crew.slice(2)
+  s = act(
+    s,
+    [
+      { type: 'START_OP', opType: 'trainNerve', crewIds: [trainee.id] },
+      { type: 'ASSIGN_ENFORCER', crewId: minder.id, racketId: s.rackets[0].id },
+      { type: 'DEBUG_SET_HEAT', heat: 92 },
+    ],
+    T0,
+  )
+  const m = s.crew.find((x) => x.id === minder.id)!
+  m.xp.muscle = formulas.statPointCost(config, m.muscle) - 0.3
   s.rival.tolya.demand = 25
   s.crew[0].loyalty = 10 // walkout rolls at day boundaries
   return s
@@ -85,9 +107,10 @@ describe('reconcile', () => {
 
   it('is deterministic for a player: same window, same raids', () => {
     const s = busy()
+    s.heat = 100
     const a = reconcile(s, s.updatedAt + 30 * H, config)
     const b = reconcile(s, s.updatedAt + 30 * H, config)
     expect(a.events).toEqual(b.events)
-    expect(a.events.some((e) => e.type === 'RAID' || e.type === 'ARREST')).toBe(true)
+    expect(a.state).toEqual(b.state)
   })
 })

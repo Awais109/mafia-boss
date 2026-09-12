@@ -1,10 +1,12 @@
-import type { Config, GameEvent, PlayerState } from '../engine'
+import { RANK_NAMES, type Config, type GameEvent, type PlayerState } from '../engine'
 import { colors, glyph } from './components/ui'
 import { fmt } from './format'
 
 export type EventLine = { text: string; color?: string; quiet?: boolean }
 
 const OUTCOME = { full: 'clean job', partial: 'got some of it', fail: 'went wrong' } as const
+const STAT_NAME = { muscle: 'Muscle', brains: 'Brains', nerve: 'Nerve' } as const
+const MODE_TEXT = { push: 'pushing', normal: 'running normally', layLow: 'lying low' } as const
 
 // Player-facing line for an event. `quiet` lines are bookkeeping, hidden unless the Log asks.
 export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLine {
@@ -34,13 +36,17 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
     case 'RACKET_BOUGHT':
       return { text: `Opened a ${c.rackets.types[e.racketType].name} in ${c.districts.list[e.districtId].name} (${cl}${fmt(e.cost)})` }
     case 'RACKET_UPGRADED':
-      return { text: `${racketName(e.racketId)} → tier ${e.tier} (${cl}${fmt(e.cost)})` }
+      return { text: `${racketName(e.racketId)} → tier ${e.tier}${e.specialization ? `, ${e.specialization}` : ''} (${cl}${fmt(e.cost)})` }
     case 'RACKET_REPAIRED':
       return { text: `Repaired the ${racketName(e.racketId)} (${d}${fmt(e.cost)})`, quiet: true }
     case 'FRONT_BOUGHT':
       return { text: `Opened a ${c.fronts.types[e.frontType].name} (${cl}${fmt(e.cost)})`, color: colors.clean }
     case 'FRONT_UPGRADED':
-      return { text: `${frontName(e.frontId)} upgraded to level ${e.level}` }
+      return e.track === 'capacity'
+        ? { text: `${frontName(e.frontId)} expanded: capacity level ${e.level}` }
+        : { text: `${frontName(e.frontId)} upgraded to level ${e.level}` }
+    case 'FRONT_MODE_SET':
+      return { text: `${frontName(e.frontId)} now ${MODE_TEXT[e.mode]}`, quiet: true }
     case 'ENFORCER_ASSIGNED':
       return { text: `${crewName(e.crewId)} now minds the ${racketName(e.racketId)}` }
     case 'ENFORCER_REMOVED':
@@ -121,7 +127,21 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
     case 'TRIBUTE_PAID':
       return { text: `Paid Tolya ${d}${fmt(e.amount)}`, quiet: true }
     case 'TRIBUTE_REFUSED':
-      return { text: `Tolya didn't get his ${d}${fmt(e.amount)}. He broke your ${racketName(e.racketId)}.`, color: colors.heat }
+      return e.explicit
+        ? { text: `You told Tolya no. His boys broke your ${racketName(e.racketId)}.`, color: colors.heat }
+        : { text: `Tolya didn't get his ${d}${fmt(e.amount)}. He broke your ${racketName(e.racketId)}.`, color: colors.heat }
+    case 'TRIBUTE_HAGGLED':
+      return e.won
+        ? { text: `${e.name} talked Tolya down to ${d}${fmt(e.paid)}`, color: colors.good }
+        : { text: `${e.name} insulted Tolya. He still wants ${d}${fmt(e.demand)}.`, color: colors.warn }
+    case 'TRAINING_DONE':
+      return { text: `${e.name} finished training: +${fmt(e.xp)} ${STAT_NAME[e.stat]} XP`, quiet: true }
+    case 'CREW_STAT_UP':
+      return { text: `${e.name}: ${STAT_NAME[e.stat]} ${e.value}`, color: colors.good }
+    case 'CREW_RANK_UP':
+      return { text: `${e.name} made ${RANK_NAMES[e.rank] ?? 'rank'}`, color: colors.rep }
+    case 'PERK_CHOSEN':
+      return { text: `${e.name} is a ${c.crew.experience.perks[e.perk].name}: ${c.crew.experience.perks[e.perk].text}`, color: colors.rep }
     case 'ACT_UNLOCKED':
       return { text: 'ACT II — the city opens up: Restaurant, new districts, more crew', color: colors.rep }
     case 'ACT_CLEARED':

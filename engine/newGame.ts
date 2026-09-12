@@ -2,7 +2,7 @@ import { DISTRICT_IDS, FRONT_TYPES, type Config } from './config/schema'
 import { makeRng } from './core/rng'
 import { dayIndex, hoursToMs } from './core/time'
 import { emptyStats, ledgerSnapshot, SCHEMA_VERSION, type PlayerState } from './model/state'
-import { generateCandidates } from './systems/crew'
+import { crewFromSeed, generateCandidates } from './systems/crew'
 import { generateOffers } from './systems/offers'
 
 export function newGame(c: Config, playerId: string, now: number): PlayerState {
@@ -39,7 +39,7 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
     wagesOwed: 0,
     influenceToday: { day: dayIndex(c, now), amount: 0 },
     rival: {
-      tolya: { disposition: 0, nextTickAt: now + hoursToMs(c, c.rivals.tolya.tickHours), tickCount: 0, demand: null },
+      tolya: { disposition: 0, nextTickAt: now + hoursToMs(c, c.rivals.tolya.tickHours), tickCount: 0, demand: null, haggledTick: null },
     },
     tutorial: { step: 0, done: !c.tutorial.enabled },
     firstConversionDone: false,
@@ -59,22 +59,10 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
   for (const type of FRONT_TYPES) {
     const ft = c.fronts.types[type]
     if (ft.cost === 0 && ft.unlockRep === 0) {
-      state.fronts.push({ id: `f${state.nextId++}`, type, level: 0, buffer: 0, convertedThisHour: 0, util: 0 })
+      state.fronts.push({ id: `f${state.nextId++}`, type, level: 0, capacityLevel: 0, mode: 'normal', buffer: 0, convertedThisHour: 0, util: 0 })
     }
   }
-  for (const seed of c.crew.starting) {
-    state.crew.push({
-      id: `crew${state.nextId++}`,
-      name: seed.name,
-      muscle: seed.muscle,
-      brains: seed.brains,
-      nerve: seed.nerve,
-      loyalty: seed.loyalty,
-      traits: seed.traits ?? [],
-      status: 'idle',
-      ...(seed.nephew ? { nephew: true } : {}),
-    })
-  }
+  for (const seed of c.crew.starting) state.crew.push(crewFromSeed(seed, `crew${state.nextId++}`))
   state.recruitPool.candidates = generateCandidates(c, 1, makeRng(playerId).derive('pool', 0), 0)
   state.offers.items = generateOffers(c, state, makeRng(playerId).derive('offers', 0), 0, state.offers.refreshAt)
   return state

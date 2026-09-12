@@ -1,4 +1,4 @@
-import { INCIDENT_TYPES, type Config } from '../config/schema'
+import { FRONT_MODES, INCIDENT_TYPES, type Config } from '../config/schema'
 import { PASSIVE_ACTIONS, type Action } from '../model/actions'
 import type { GameEvent } from '../model/events'
 import type { CrewMember, PlayerState } from '../model/state'
@@ -7,9 +7,9 @@ import { canPressure, getDistrict, takeDistrict } from '../systems/districts'
 import { arrest, raid } from '../systems/heat'
 import { canAffordEffects, incidentNeedHolds, raiseIncident, resolveInboxItem } from '../systems/inbox'
 import { regenerateOffers } from '../systems/offers'
-import { opUnlocked, resolveOp } from '../systems/ops'
+import { opMinutesFor, opUnlocked, resolveOp } from '../systems/ops'
 import { checkActs, spendClean } from '../systems/reputation'
-import { changeDisposition, tolyaTick } from '../systems/rivals'
+import { bestHaggler, canHaggle, changeDisposition, haggle, refuseDemand, tolyaTick } from '../systems/rivals'
 import { tutorialOnAction } from '../systems/tutorial'
 import { clone, emit, newId, type Ctx } from './ctx'
 import { derive } from './derive'
@@ -76,7 +76,7 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       if (!f) return 'No such front'
       if (!(a.amount > 0)) return 'Nothing to deposit'
       if (a.amount > state.dirty + EPS) return 'Not enough Dirty'
-      const cap = F.frontBufferCap(c, f.type)
+      const cap = F.frontBufferCap(c, f)
       if (f.buffer + a.amount > cap + EPS) return `The buffer only holds ${Math.floor(cap)}`
       const amount = Math.min(a.amount, state.dirty)
       state.dirty -= amount
@@ -116,10 +116,20 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       const r = state.rackets.find((x) => x.id === a.racketId)
       if (!r) return 'No such racket'
       if (r.tier >= c.rackets.maxTierByAct[state.act]) return 'Already at max tier'
+      const atTier = c.rackets.specialization.atTier
+      if (r.tier + 1 === atTier) {
+        if (a.specialization !== 'greed' && a.specialization !== 'stealth') return 'Pick greed or stealth'
+      } else if (a.specialization) {
+        return `Businesses specialize on the way to tier ${atTier}`
+      }
       const cost = F.racketUpgradeCost(c, r.type, r.tier)
       if (state.clean < cost - EPS) return 'Not enough Clean'
       r.tier++
-      emit(ctx, t, { type: 'RACKET_UPGRADED', racketId: r.id, tier: r.tier, cost })
+      if (a.specialization) {
+        r.specialization = a.specialization
+        state.stats.specializations[a.specialization]++
+      }
+      emit(ctx, t, { type: 'RACKET_UPGRADED', racketId: r.id, tier: r.tier, cost, ...(a.specialization ? { specialization: a.specialization } : {}) })
       spendClean(state, ctx, t, cost)
       return null
     }
@@ -178,13 +188,20 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
         const err = canPressure(state, c, a.districtId)
         if (err) return err
       }
+      if (cfg.costDirty) {
+        const cost = cfg.costDirty * state.act
+        if (state.dirty < cost - EPS) return 'Not enough Dirty'
+        state.dirty -= cost
+        if (cfg.training) state.stats.trainingPaid += cost
+      }
+      const minutes = opMinutesFor(c, cfg, team as CrewMember[])
       const opId = newId(state, 'op')
       state.ops.push({
         id: opId,
         type: a.opType,
         crewIds: ids,
         startedAt: t,
-        completesAt: t + minutesToMs(c, cfg.minutes),
+        completesAt: t + minutesToMs(c, minutes),
         ...(cfg.districtPressure && a.districtId ? { districtId: a.districtId } : {}),
         ...(offer ? { offerId: offer.id, cfg: offer.cfg, name: offer.name } : {}),
       })
@@ -311,7 +328,7 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       if (state.reputation < ft.unlockRep) return 'Not unlocked yet'
       if (state.clean < ft.cost - EPS) return 'Not enough Clean'
       const frontId = newId(state, 'f')
-      state.fronts.push({ id: frontId, type: a.frontType, level: 0, buffer: 0, convertedThisHour: 0, util: 0 })
+      state.fronts.push({ id: frontId, type: a.frontType, level: 0, capacityLevel: 0, mode: 'normal', buffer: 0, convertedThisHour: 0, util: 0 })
       emit(ctx, t, { type: 'FRONT_BOUGHT', frontId, frontType: a.frontType, cost: ft.cost })
       spendClean(state, ctx, t, ft.cost)
       return null
@@ -320,21 +337,57 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
     case 'UPGRADE_FRONT': {
       const f = state.fronts.find((x) => x.id === a.frontId)
       if (!f) return 'No such front'
+      if (a.track === 'capacity') {
+        if (f.capacityLevel >= c.fronts.upgrade.capacity.levels) return 'No room left to expand'
+        const cost = F.frontCapacityUpgradeCost(c, f.type, f.capacityLevel)
+        if (state.clean < cost - EPS) return 'Not enough Clean'
+        f.capacityLevel++
+        emit(ctx, t, { type: 'FRONT_UPGRADED', frontId: f.id, level: f.capacityLevel, cost, track: 'capacity' })
+        spendClean(state, ctx, t, cost)
+        return null
+      }
       if (f.level >= c.fronts.upgrade.levels) return 'Fully upgraded'
       const cost = F.frontUpgradeCost(c, f.type, f.level)
       if (state.clean < cost - EPS) return 'Not enough Clean'
       f.level++
-      emit(ctx, t, { type: 'FRONT_UPGRADED', frontId: f.id, level: f.level, cost })
+      emit(ctx, t, { type: 'FRONT_UPGRADED', frontId: f.id, level: f.level, cost, track: 'rate' })
       spendClean(state, ctx, t, cost)
       return null
     }
 
+    case 'SET_FRONT_MODE': {
+      const f = state.fronts.find((x) => x.id === a.frontId)
+      if (!f) return 'No such front'
+      if (!FRONT_MODES.includes(a.mode)) return 'No such mode'
+      if (f.mode === a.mode) return 'Already running that way'
+      f.mode = a.mode
+      state.stats.frontModeChanges++
+      emit(ctx, t, { type: 'FRONT_MODE_SET', frontId: f.id, mode: a.mode })
+      return null
+    }
+
     case 'PAY_TRIBUTE': {
-      const demand = state.rival.tolya.demand
+      const tol = state.rival.tolya
+      const demand = tol.demand
       if (demand === null) return 'Nobody is asking'
+      const choice = a.choice ?? 'pay'
+      if (choice === 'refuse') {
+        refuseDemand(state, ctx, t, ctx.rng.derive('refuse', tol.tickCount), true)
+        return null
+      }
+      if (choice === 'haggle') {
+        if (!canHaggle(state)) return 'He won’t hear it twice'
+        const m = bestHaggler(state, c)
+        if (!m) return 'Nobody free to talk to him'
+        const price = Math.max(1, Math.round(demand * c.rivals.tolya.haggle.pricePct))
+        if (state.dirty < price - EPS) return 'Not enough Dirty'
+        haggle(state, ctx, t, m)
+        return null
+      }
       if (state.dirty < demand - EPS) return 'Not enough Dirty'
       state.dirty -= demand
-      state.rival.tolya.demand = null
+      tol.demand = null
+      tol.haggledTick = null
       state.stats.tributeLost += demand
       changeDisposition(state, c.rivals.tolya.dispositionPerTribute)
       emit(ctx, t, { type: 'TRIBUTE_PAID', amount: demand })

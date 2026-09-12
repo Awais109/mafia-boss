@@ -2,12 +2,16 @@ import type {
   Act,
   Controller,
   DistrictId,
+  FrontMode,
   FrontType,
   IncidentType,
   OfficialId,
   OpOutcome,
   OpType,
+  PerkId,
   RacketType,
+  Specialization,
+  Stat,
 } from '../config/schema'
 import type { InboxEffects, InboxItem } from './state'
 
@@ -18,10 +22,11 @@ export type EventBody =
   | { type: 'COLLECTED'; amount: number }
   | { type: 'DEPOSITED'; frontId: string; amount: number; instantClean?: number }
   | { type: 'RACKET_BOUGHT'; racketId: string; racketType: RacketType; districtId: DistrictId; cost: number }
-  | { type: 'RACKET_UPGRADED'; racketId: string; tier: number; cost: number }
+  | { type: 'RACKET_UPGRADED'; racketId: string; tier: number; cost: number; specialization?: Specialization }
   | { type: 'RACKET_REPAIRED'; racketId: string; cost: number }
   | { type: 'FRONT_BOUGHT'; frontId: string; frontType: FrontType; cost: number }
-  | { type: 'FRONT_UPGRADED'; frontId: string; level: number; cost: number }
+  | { type: 'FRONT_UPGRADED'; frontId: string; level: number; cost: number; track?: 'rate' | 'capacity' }
+  | { type: 'FRONT_MODE_SET'; frontId: string; mode: FrontMode }
   | { type: 'ENFORCER_ASSIGNED'; crewId: string; racketId: string }
   | { type: 'ENFORCER_REMOVED'; crewId: string; racketId: string }
   | { type: 'OP_STARTED'; opId: string; opType: OpType; crewIds: string[]; districtId?: DistrictId; name?: string; offerId?: string }
@@ -46,6 +51,11 @@ export type EventBody =
   | { type: 'INCIDENT_RAISED'; itemId: string; incidentType: IncidentType; crewId?: string; racketId?: string; expiresAt: number }
   | { type: 'INBOX_RESOLVED'; itemId: string; kind: InboxItem['kind']; ref: string; optionId: string; optionName: string; auto: boolean; effects: InboxEffects }
   | { type: 'OFFERS_REFRESHED'; count: number }
+  | { type: 'TRAINING_DONE'; opId: string; crewId: string; name: string; stat: Stat; xp: number }
+  | { type: 'CREW_STAT_UP'; crewId: string; name: string; stat: Stat; value: number }
+  | { type: 'CREW_RANK_UP'; crewId: string; name: string; rank: number }
+  | { type: 'PERK_CHOSEN'; crewId: string; name: string; perk: PerkId }
+  | { type: 'TRIBUTE_HAGGLED'; crewId: string; name: string; won: boolean; demand: number; paid: number }
   | { type: 'RECRUITED'; crewId: string; name: string; cost: number }
   | { type: 'FIRED'; crewId: string; name: string }
   | { type: 'RAISED'; crewId: string; cost: number; loyalty: number }
@@ -67,7 +77,7 @@ export type EventBody =
   | { type: 'DISTRICT_FLIPPED'; districtId: DistrictId; from: Controller }
   | { type: 'TOLYA_TICK'; result: 'conditionHit' | 'tribute' | 'nothing'; racketId?: string; amount?: number; hostile: boolean }
   | { type: 'TRIBUTE_PAID'; amount: number }
-  | { type: 'TRIBUTE_REFUSED'; amount: number; racketId?: string }
+  | { type: 'TRIBUTE_REFUSED'; amount: number; racketId?: string; explicit?: true }
   | { type: 'ACT_UNLOCKED'; act: Act }
   | { type: 'ACT_CLEARED'; act: Act }
   | { type: 'NOTE'; text: string }

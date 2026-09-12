@@ -2,8 +2,8 @@
 
 The city is four districts. Rivals take a cut of what you run on their turf until you buy them out or push them out, and Tolya, the old boss, keeps sending his boys around.
 
-**Code:** `engine/systems/districts.ts` (`getDistrict`, `districtUnlocked`, `takenDistrictCount`, `openSpots`, `canPressure`, `takeDistrict`, `addPressure`), `engine/systems/rivals.ts` (`changeDisposition`, `tolyaHostile`, `tolyaIntervalHours`, `tolyaTick`), tribute in `engine/core/derive.ts`.
-**Config:** `districts.*`, `rivals.tolya.*`.
+**Code:** `engine/systems/districts.ts` (`getDistrict`, `districtUnlocked`, `takenDistrictCount`, `openSpots`, `canPressure`, `takeDistrict`, `addPressure`), `engine/systems/rivals.ts` (`changeDisposition`, `tolyaHostile`, `tolyaIntervalHours`, `refuseDemand`, `bestHaggler`, `haggleOdds`, `canHaggle`, `haggle`, `tolyaTick`), tribute in `engine/core/derive.ts`, the `PAY_TRIBUTE` handler in `engine/core/apply.ts`.
+**Config:** `districts.*`, `rivals.tolya.*` (including `rivals.tolya.haggle`).
 
 ## Districts
 
@@ -47,23 +47,46 @@ interval = rivals.tolya.tickHours
 
 Each visit (`tolyaTick`, seeded by visit count):
 
-1. **An unpaid demand** from last time is refused. Disposition drops by `dispositionPerTribute` and a random racket loses `refuseConditionHit` condition (`TRIBUTE_REFUSED`).
+1. **An unpaid demand** from last time is refused (`refuseDemand`). Disposition drops by `dispositionPerTribute` and a random racket loses `refuseConditionHit` condition (`TRIBUTE_REFUSED`).
 2. **A roll:**
    - below `pConditionHit`: a random racket loses `conditionHit` condition;
    - below `pConditionHit + pTribute`: he demands `max(1, round(vaultCap × tributePctOfVault))` Dirty;
    - otherwise he does nothing.
 
-   All three emit `TOLYA_TICK` with a `result`.
+   All three emit `TOLYA_TICK` with a `result`. When `tolya.forceResult` is `'tribute'`, this one visit demands tribute without rolling, and the flag clears (for the guided opening).
 3. The next visit is scheduled.
 
-`PAY_TRIBUTE` pays the demand from Dirty, clears it, and raises disposition by `dispositionPerTribute` (`TRIBUTE_PAID`).
+### Answering a demand
+
+([ADR 0029](../decisions/0029-tolya-negotiation.md)) `PAY_TRIBUTE { choice? }`, default `pay`, so old logs replay:
+
+| Choice | Checks | Effect |
+|---|---|---|
+| `pay` | enough Dirty | pays the demand, clears it, disposition + `dispositionPerTribute` (`TRIBUTE_PAID`) |
+| `haggle` | not already haggled over this demand ("He won’t hear it twice"), someone idle ("Nobody free to talk to him"), Dirty for the haggled price | one roll, below |
+| `refuse` | a demand | the visit-time refusal happens now, on `rng.derive('refuse', tickCount)` (`TRIBUTE_REFUSED { explicit: true }`) |
+
+**Haggling.** The best idle talker (`bestHaggler`: highest effective Nerve + the Bargainer perk's `haggleBonus`) rolls once per demand on `rng.derive('haggle', tickCount)`:
+
+```
+score = talker's Nerve + Bargainer bonus + U(−haggle.noise, +haggle.noise)
+won   = score ≥ haggle.diff
+price = max(1, round(demand × haggle.pricePct))
+```
+
+- **Won:** pays `price`, clears the demand, disposition + `dispositionOnWin`, `stats.haggles.won`.
+- **Lost:** the demand stands, disposition + `dispositionOnInsult` (negative), `haggledTick = tickCount` so he won't hear another offer on it, `stats.haggles.lost`. Paying or refusing is still open.
+
+Both emit `TRIBUTE_HAGGLED { crewId, name, won, demand, paid }`. `haggleOdds(state, config)` is the closed form of the same check, shown on the demand card and used by the bot. What's paid counts in `stats.tributeLost`.
 
 **Disposition** runs from −100 to 100 and starts at 0.
 
 | Your move | Disposition change |
 |---|---|
 | Paying a demand | `+dispositionPerTribute` |
-| Refusing a demand | `−dispositionPerTribute` |
+| Haggling him down | `haggle.dispositionOnWin` |
+| A haggle that insults him | `haggle.dispositionOnInsult` |
+| Refusing a demand, or leaving it unpaid until his next visit | `−dispositionPerTribute` |
 | Each Pressure success on his district | `dispositionPerPressure` |
 | Buying out his district | `dispositionOnBuyout` |
 | Flipping his district by pressure | `dispositionOnFlip` |
@@ -74,4 +97,4 @@ Each visit (`tolyaTick`, seeded by visit count):
 
 Zhanna controls the Port Quarter. Her only effect in this prototype is the Port Quarter's tribute, plus a log note when Act II opens. **Her supply chain is not built.**
 
-**Tests:** `tests/apply.test.ts` (three pressure jobs flip a district and end its tribute, a refused demand damages a racket, paying clears it).
+**Tests:** `tests/apply.test.ts` (three pressure jobs flip a district and end its tribute, a refused demand damages a racket, paying clears it, a good talker pays the haggled price, a failed haggle insults him once and the demand stands, an explicit refusal breaks a business now).

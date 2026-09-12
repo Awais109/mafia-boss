@@ -2,6 +2,7 @@ import type { Config } from '../config/schema'
 import type { GameEvent } from '../model/events'
 import { LOG_CAP, type PlayerState } from '../model/state'
 import { crewDayBoundary, refreshPoolIfDue, releaseJailed } from '../systems/crew'
+import { accrueEnforcerXp, crewXpHourBoundary } from '../systems/experience'
 import { convertFronts, frontsHourBoundary } from '../systems/fronts'
 import { heatHourBoundary } from '../systems/heat'
 import { autoResolveInbox, rollIncident } from '../systems/inbox'
@@ -80,11 +81,13 @@ function accrue(state: PlayerState, ctx: Ctx, t: number, hours: number): void {
   state.heat = convergeHeat(state.heat, d.heatTarget, hours, c.heat.convergePerHr)
   state.wagesOwed += d.wagesPerHr * hours
   state.influence += d.influencePerHr * hours
+  accrueEnforcerXp(state, c, hours)
 }
 
 function hourBoundary(state: PlayerState, ctx: Ctx, t: number): void {
   frontsHourBoundary(state, ctx.c)
   decayCondition(state, ctx.c)
+  crewXpHourBoundary(state, ctx, t) // enforcers' banked XP becomes stat points on the hour
   heatHourBoundary(state, ctx, t)
   rollIncident(state, ctx, t)
   if (isDayStart(ctx.c, t)) {

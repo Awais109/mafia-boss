@@ -13,11 +13,17 @@ const member = (stats: Partial<CrewMember>): CrewMember => ({
   loyalty: 50,
   traits: [],
   status: 'idle',
+  xp: { muscle: 0, brains: 0, nerve: 0 },
+  potential: { muscle: 100, brains: 100, nerve: 100 },
+  gained: 0,
+  rank: 0,
+  perks: [],
   ...stats,
 })
 
+// Training jobs never roll (ADR 0030), so they aren't part of the outcome distribution.
 const opsForAct = (act: Act): OpType[] =>
-  (Object.keys(config.ops.list) as OpType[]).filter((t) => (config.ops.list[t].act ?? 1) <= act)
+  (Object.keys(config.ops.list) as OpType[]).filter((t) => (config.ops.list[t].act ?? 1) <= act && !config.ops.list[t].training)
 
 describe('op resolution', () => {
   it('partial success is the modal outcome at default stats (40–60% of 500 resolutions)', () => {

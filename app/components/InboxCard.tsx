@@ -23,7 +23,7 @@ export function InboxCard({ item, game }: { item: InboxItem; game: Snapshot }) {
       </T>
       <View style={{ gap: 6 }}>
         {item.options.map((o) => {
-          const effects = effectsText(o.effects)
+          const effects = effectsText(o.effects, c)
           const affordable = canAffordEffects(s, o.effects)
           return (
             <Btn

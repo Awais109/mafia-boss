@@ -35,13 +35,13 @@ All three core functions clone their input; callers keep immutable snapshots. `r
 1. If `now <= state.updatedAt`, return unchanged.
 2. **Offline cap.** If the gap exceeds `time.maxOfflineHours`, skip to `now − maxOfflineHours`, emit `OFFLINE_CAPPED`, and resolve anything overdue at that point.
 3. Loop until `now`. Each segment ends at the earliest of: `now`, the next whole game hour, an op's `completesAt`, `bribeUntil` (while a bribe is active), `recruitPool.refreshAt`, `offers.refreshAt`, `rival.tolya.nextTickAt`, a jailed crew member's `jailedUntil`, or an inbox item's `expiresAt`.
-4. **Accrue over the segment**, using `derive` at the segment's start: vault accrual up to the cap, tribute stats, front conversion, heat convergence (closed form), wages owed, Influence from officials.
-5. **At a whole hour:** update front utilization and racket condition, then the inspection flag and the raid and arrest rolls, then the incident roll ([systems/inbox.md](systems/inbox.md)). At a day start, also settle wages, drift loyalty, roll walkouts, and take the ledger snapshot.
+4. **Accrue over the segment**, using `derive` at the segment's start: vault accrual up to the cap, tribute stats, front conversion, heat convergence (closed form), wages owed, Influence from officials, enforcers' Muscle XP.
+5. **At a whole hour:** update front utilization and racket condition, then spend banked crew XP on stat points ([systems/crew.md](systems/crew.md#experience)), then the inspection flag and the raid and arrest rolls, then the incident roll ([systems/inbox.md](systems/inbox.md)). At a day start, also settle wages, drift loyalty, roll walkouts, and take the ledger snapshot.
 6. **Then events due at the boundary**, in fixed order: ops completing (by time, then id; each files its report), expired inbox items taking their default, bribe expiry, jail releases, recruit pool refresh, offers refresh, Tolya's visit.
 
 Whole-hour rolls run before events at the same instant, so an op's heat spike feeds the *next* hour's raid roll.
 
-**Split invariance.** `reconcile(s, t2)` equals `reconcile(reconcile(s, t1), t2)` for any `t1 < t2` (within the offline cap). It holds because every rate is constant within a segment: condition, the inspection flag, and front utilization only change at whole hours, and heat convergence composes exactly (`(1−k)^a · (1−k)^b = (1−k)^(a+b)`). `tests/reconcile.test.ts` checks it on 1,000 random splits.
+**Split invariance.** `reconcile(s, t2)` equals `reconcile(reconcile(s, t1), t2)` for any `t1 < t2` (within the offline cap). It holds because every rate is constant within a segment: condition, the inspection flag, front utilization and enforcers' stats only change at whole hours, front modes only change on an action, and heat convergence composes exactly (`(1−k)^a · (1−k)^b = (1−k)^(a+b)`). `tests/reconcile.test.ts` checks it on 1,000 random splits.
 
 Events are appended to `state.log`, a ring buffer of the latest `LOG_CAP` (200) events.
 
@@ -61,7 +61,7 @@ Actions are listed in `engine/model/actions.ts`, events in `engine/model/events.
 
 ## Randomness
 
-`engine/core/rng.ts`. `makeRng(seed).derive(...parts)` hashes `seed|part|part…` (xmur3) into a seeded sfc32 generator ([ADR 0005](decisions/0005-seeded-rng-streams.md)). The seed is the player id. Streams in use: `raid`/`arrest` + hour index, `op` + op id, `pool` + refresh count, `offers` + refresh count, `incident` + hour index, `tolya` + visit count, `walkout` + day + crew id, `debug-arrest`, `debug-incident`. The same state and times always roll the same outcomes, so reloading can't dodge a raid, and a log replays exactly.
+`engine/core/rng.ts`. `makeRng(seed).derive(...parts)` hashes `seed|part|part…` (xmur3) into a seeded sfc32 generator ([ADR 0005](decisions/0005-seeded-rng-streams.md)). The seed is the player id. Streams in use: `raid`/`arrest` + hour index, `op` + op id, `pool` + refresh count, `offers` + refresh count, `incident` + hour index, `tolya` + visit count, `haggle` + visit count, `refuse` + visit count, `perk` + crew id + rank, `walkout` + day + crew id, `debug-arrest`, `debug-incident`. The same state and times always roll the same outcomes, so reloading can't dodge a raid, and a log replays exactly.
 
 Ids come from `state.nextId` with prefixes `r` (racket), `f` (front), `crew`, `op`; recruit candidates are `cand<refresh>-<n>`.
 
@@ -80,9 +80,9 @@ effective = defaults.ts  ←  presets/<name>.json  ←  user overrides
 
 ## State and saves
 
-`engine/model/state.ts` defines `PlayerState`: currencies (`vault`, `dirty`, `clean`, `influence`, `reputation`), `act`, `heat` and `inspected`, `rackets`, `fronts`, `crew`, `recruitPool`, `ops`, `districts`, `officials`, bribe fields, `wagesOwed`, `influenceToday`, `rival.tolya`, `tutorial`, the `inbox` of pending decisions, the `offers` board, the daily `ledger`, the event `log`, and playtest `stats`.
+`engine/model/state.ts` defines `PlayerState`: currencies (`vault`, `dirty`, `clean`, `influence`, `reputation`), `act`, `heat` and `inspected`, `rackets` (with tier-3 `specialization`), `fronts` (with `mode` and `capacityLevel`), `crew` (with experience: `xp`, `potential`, `gained`, `rank`, `perks`), `recruitPool`, `ops`, `districts`, `officials`, bribe fields, `wagesOwed`, `influenceToday`, `rival.tolya` (with `haggledTick`), `tutorial`, the `inbox` of pending decisions, the `offers` board, the daily `ledger`, the event `log`, and playtest `stats`.
 
-`SCHEMA_VERSION` is 2. `engine/model/migrate.ts` holds one step per version (`STEPS[1]` = `v1to2`); `migrate()` runs them in order and refuses a save from a newer build. A step only fills what's missing: new stat counters default to 0, and anything timed is seeded from `updatedAt`, so it catches up on the next reconcile (v2 adds an empty inbox, an empty board that refreshes immediately, and one ledger snapshot). `sim/replay.ts` migrates a log's starting snapshot, so logs from older builds still replay. Every new timestamp must also be shifted in `shiftTimes` (`engine/core/time.ts`).
+`SCHEMA_VERSION` is 3. `engine/model/migrate.ts` holds one step per version (`STEPS[1]` = `v1to2`, `STEPS[2]` = `v2to3`); `migrate()` runs them in order and refuses a save from a newer build. A step only fills what's missing: new stat counters default to 0, and anything timed is seeded from `updatedAt`, so it catches up on the next reconcile. v2 adds an empty inbox, an empty board that refreshes immediately, and one ledger snapshot. v3 gives crew and candidates no XP, a ceiling 10 above each stat (at most 100), rank 0 and no perks; sets every front to `normal` at capacity 0; and clears haggle state. `sim/replay.ts` migrates a log's starting snapshot, so logs from older builds still replay. Every new timestamp must also be shifted in `shiftTimes` (`engine/core/time.ts`).
 
 Persistence lives in the app ([app.md](app.md)): the save, settings, and a JSON-lines event log in the app's document directory ([ADR 0007](decisions/0007-local-file-persistence.md)).
 

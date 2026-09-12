@@ -35,6 +35,9 @@ export type Summary = {
   inboxAutoPct: number // items that expired unanswered ÷ items resolved
   offerShare: number // job Dirty from the opportunities board ÷ all job Dirty
   wageShare: number // (wages + upkeep paid) ÷ Dirty earned
+  statPointsPerCrewDay: number
+  partialEarly: number // partial share of jobs resolved on days 1–2
+  partialLate: number // … on days 7–8 (NaN for shorter runs)
   checks: Check[]
 }
 
@@ -84,6 +87,15 @@ export function summarize(trace: Trace): Summary {
   const answered = delta((x) => x.inbox?.resolved) + delta((x) => x.inbox?.auto)
   const jobDirty = delta((x) => x.jobDirty)
   const earned = delta((x) => x.dirtyEarned)
+  // Crew growth erodes partial outcomes over a week; compare the start and the end of a run.
+  const partialIn = (fromDay: number, toDay: number) => {
+    const rows = hours.filter((h) => h.day >= fromDay && h.day <= toDay)
+    if (rows.length < 2) return NaN
+    const resolved = rows[rows.length - 1].opResolved - rows[0].opResolved
+    return resolved > 0 ? (rows[rows.length - 1].opPartial - rows[0].opPartial) / resolved : NaN
+  }
+  const crewMean = mean(hours.map((h) => h.crew))
+  const statPoints = hours.length ? hours[hours.length - 1].statPoints - hours[0].statPoints : 0
   const tiers = [...final.rackets]
     .sort((a, b) => RACKET_TYPES.indexOf(a.type) - RACKET_TYPES.indexOf(b.type) || b.tier - a.tier)
     .map((r) => `${ABBREV[r.type]}${r.tier}`)
@@ -118,6 +130,9 @@ export function summarize(trace: Trace): Summary {
     inboxAutoPct: answered > 0 ? delta((x) => x.inbox?.auto) / answered : NaN,
     offerShare: jobDirty > 0 ? delta((x) => x.offerDirty) / jobDirty : 0,
     wageShare: earned > 0 ? (delta((x) => x.wagesPaid) + delta((x) => x.upkeepPaid)) / earned : NaN,
+    statPointsPerCrewDay: crewMean > 0 && days > 0 ? statPoints / crewMean / days : NaN,
+    partialEarly: partialIn(1, 2),
+    partialLate: partialIn(7, 8),
     checks: [],
   }
   summary.checks = [
@@ -161,6 +176,7 @@ export function formatSummary(s: Summary): string {
     `${pad('Clean/hr by day:', 18)}${s.cleanPerHrByDay.map((v, i) => `d${i + 1} ${Math.round(v)}`).join('  ')}`,
     `${pad('Sessions:', 18)}${pad(String(s.sessions), 8)}actions/session: ${f1(s.actionsPerSession)}  decisions/session: ${f1(s.decisionsPerSession)}`,
     `${pad('Decisions:', 18)}auto-resolved ${pc(s.inboxAutoPct)}  offer share ${pc(s.offerShare)}  wage share ${pc(s.wageShare)}   ${ok('Wage share')}`,
+    `${pad('Crew growth:', 18)}${f1(s.statPointsPerCrewDay)} pts/crew/day  partial d1–2 ${pc(s.partialEarly)}  d7–8 ${pc(s.partialLate)}`,
     `${pad('Tiers @ end:', 18)}${s.tiers}`,
   ]
   const passed = s.checks.filter((ch) => checkOk(ch) === true).length

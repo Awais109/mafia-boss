@@ -5,7 +5,9 @@ import {
   DISTRICT_IDS,
   effectiveStat,
   influenceRoom,
+  jobXp,
   opDirtyRewardFor,
+  opMinutesFor,
   opUnlocked,
   OP_TYPES,
   outcomeOdds,
@@ -22,6 +24,7 @@ import { store, type Snapshot } from '../store'
 import type { ScreenProps } from './types'
 
 const STAT_SHORT = { muscle: 'M', brains: 'B', nerve: 'N' } as const
+const STAT_LONG = { muscle: 'Muscle', brains: 'Brains', nerve: 'Nerve' } as const
 
 export function OpsScreen({ game }: ScreenProps) {
   const { state: s, config: c, now } = game
@@ -90,8 +93,14 @@ export function OpsScreen({ game }: ScreenProps) {
         ))}
       </Section>
 
+      <Section title="Training" right={<T small muted>no roll, no heat, no report</T>}>
+        {OP_TYPES.filter((type) => c.ops.list[type].training).map((type) => (
+          <JobCard key={type} game={game} type={type} cfg={c.ops.list[type]} team={team} onStart={start} />
+        ))}
+      </Section>
+
       <Section title="Jobs">
-        {OP_TYPES.map((type) => {
+        {OP_TYPES.filter((type) => !c.ops.list[type].training).map((type) => {
           const op = c.ops.list[type]
           if (!opUnlocked(s, c, type)) {
             return (
@@ -147,25 +156,42 @@ function JobCard({
 }) {
   const { state: s, config: c, now } = game
   const ready = team.length === cfg.crew
-  const odds = ready ? outcomeOdds(c, cfg, team) : null
+  const training = cfg.training
+  const odds = ready && !training ? outcomeOdds(c, cfg, team) : null
   const weights = STATS.filter((st) => cfg.w[st]).map((st) => `${STAT_SHORT[st]} ${pct(cfg.w[st]!)}`).join(' · ')
   const rewards = [
-    cfg.dirty ? `◆${fmt(opDirtyRewardFor(c, s, cfg, 'full'))}` : '',
+    cfg.dirty ? `◆${fmt(opDirtyRewardFor(c, s, cfg, 'full', ready ? team : []))}` : '',
     cfg.influence ? `✦${cfg.influence}` : '',
     `★${fmt(c.reputation.perOpSuccess)}`,
   ].filter(Boolean)
+  const minutes = opMinutesFor(c, cfg, ready ? team : [])
+  const xpLine = ready
+    ? team
+        .map((m) => {
+          const xp = jobXp(c, cfg, 'full', m, team)
+          return `${m.name.split(' ')[0]} ${STATS.filter((st) => xp[st]).map((st) => `${STAT_SHORT[st]}+${fmt(xp[st]!)}`).join(' ')}`
+        })
+        .join(' · ')
+    : null
   return (
     <Card style={offer ? { borderColor: colors.accent } : undefined}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <T bold style={{ flexShrink: 1 }}>
           {cfg.name}
         </T>
-        <Tag text={`${fmtDuration((cfg.minutes / 60) * c.time.hourMs, c)} · ${cfg.crew} crew`} />
+        <Tag text={`${fmtDuration((minutes / 60) * c.time.hourMs, c)} · ${cfg.crew} crew`} />
       </View>
       {offer && <T small color={colors.accent}>{`${c.ops.list[type].name}, but better paid and harder · gone in ${fmtDuration(offer.expiresAt - now, c)}`}</T>}
-      <T small muted>{`Needs ${weights} · difficulty ${cfg.diff} · +▲${fmt(cfg.spike)} heat`}</T>
-      <T small>{`Pays ${rewards.join(' ')} on a clean job, ${pct(c.ops.partialRewardPct)} if partial`}</T>
+      {training ? (
+        <T small>{`Costs ◆${fmt((cfg.costDirty ?? 0) * s.act)} · +${fmt(cfg.xp ?? 0)} ${STAT_LONG[training]} XP`}</T>
+      ) : (
+        <>
+          <T small muted>{`Needs ${weights} · difficulty ${cfg.diff} · +▲${fmt(cfg.spike)} heat`}</T>
+          <T small>{`Pays ${rewards.join(' ')} on a clean job, ${pct(c.ops.partialRewardPct)} if partial`}</T>
+        </>
+      )}
       {children}
+      {xpLine && !training && <T small color={colors.accent}>{`XP on a clean job: ${xpLine}`}</T>}
       {odds && (
         <T small color={colors.muted}>
           {`Odds: clean ${pct(odds.full)} · partial ${pct(odds.partial)} · `}
@@ -175,7 +201,7 @@ function JobCard({
       <Btn
         small
         kind={ready ? 'primary' : 'normal'}
-        title={ready ? (offer ? 'Take it' : 'Send them') : `Select ${cfg.crew} idle crew`}
+        title={ready ? (offer ? 'Take it' : training ? 'Train' : 'Send them') : `Select ${cfg.crew} idle crew`}
         disabled={!ready}
         onPress={() => onStart(type, cfg, offer?.id)}
       />

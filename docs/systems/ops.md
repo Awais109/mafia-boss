@@ -2,8 +2,8 @@
 
 Crew go out on timed jobs for Dirty, Influence and Rep, at the cost of a heat spike. How well a job goes depends on who you send.
 
-**Code:** `engine/systems/ops.ts` (`opUnlocked`, `opBaseScore`, `outcomeFor`, `rollOp`, `outcomeOdds`, `rewardShare`, `spikeShare`, `influenceRoom`, `opConfigOf`, `opDirtyRewardFor`, `opDirtyReward`, `resolveOp`), `engine/systems/offers.ts` (the opportunities board), the `START_OP` handler in `engine/core/apply.ts`. Jobs resolve inside the reconcile walk at their exact completion time.
-**Config:** `ops.*` (including `ops.reports`, see [inbox.md](inbox.md)), `offers.*`, plus `reputation.perOpSuccess` and `crew.loyalty.perOpSuccess`.
+**Code:** `engine/systems/ops.ts` (`opUnlocked`, `opBaseScore`, `outcomeFor`, `rollOp`, `outcomeOdds`, `rewardShare`, `spikeShare`, `influenceRoom`, `opConfigOf`, `opDirtyRewardFor`, `opDirtyReward`, `opMinutesFor`, `resolveOp`), `engine/systems/offers.ts` (the opportunities board), `engine/systems/experience.ts` (`jobXp`, `grantXp`), the `START_OP` handler in `engine/core/apply.ts`. Jobs resolve inside the reconcile walk at their exact completion time.
+**Config:** `ops.*` (including `ops.reports`, see [inbox.md](inbox.md)), `offers.*`, `crew.experience.*` (XP and perks, see [crew.md](crew.md#experience)), plus `reputation.perOpSuccess` and `crew.loyalty.perOpSuccess`.
 
 ## The jobs
 
@@ -17,6 +17,7 @@ Crew go out on timed jobs for Dirty, Influence and Rep, at the cost of a heat sp
 | `pressure` | 2 | Muscle, Nerve | Dirty + district pressure | standard; needs a target district |
 | `moveShipment` | 2 | Nerve, Brains | Dirty | standard; Act II |
 | `dinner` | 2 | Brains, Nerve | Influence | long |
+| `trainMuscle`, `trainBrains`, `trainNerve` | 1 | the stat trained | XP only | long; training, costs Dirty (below) |
 
 ## Starting a job
 
@@ -24,9 +25,10 @@ Crew go out on timed jobs for Dirty, Influence and Rep, at the cost of a heat sp
 - with `offerId`: the offer is still on the board, hasn't expired, and is for `opType`; its `cfg` replaces `ops.list[opType]` for everything below;
 - the job is unlocked (`act ≤ state.act`);
 - exactly `crew` distinct crew members are chosen, and all are idle;
-- for Pressure, a `districtId` that's open and not already yours.
+- for Pressure, a `districtId` that's open and not already yours;
+- for a job with `costDirty`, at least `costDirty × act` Dirty, which is charged now (`stats.trainingPaid` for training).
 
-The chosen crew become `on_op`, `stats.opsByCrew` and `stats.opsByType` count the dispatch, and the job completes `minutes` of game time later (`OP_STARTED`). A job taken from the board stores `offerId`, its `name`, and a snapshot of its `cfg`, and the offer leaves the board.
+The chosen crew become `on_op`, `stats.opsByCrew` and `stats.opsByType` count the dispatch, and the job completes `opMinutesFor(team)` of game time later: `minutes`, × the Fixer perk's `jobMinutesMult` when a Fixer is on the team (`OP_STARTED`). A job taken from the board stores `offerId`, its `name`, and a snapshot of its `cfg`, and the offer leaves the board.
 
 ## The opportunities board
 
@@ -36,7 +38,7 @@ The chosen crew become `on_op`, `stats.opsByCrew` and `stats.opsByType` count th
 2. Each offer copies its base job and rolls: `diff + round(U(diffAdd))`, `spike × U(spikeMult)` (one decimal), `minutes × U(minutesMult)` (rounded to 5), Dirty `× U(rewardMult)` (rounded), Influence `× U(rewardMult)` (rounded up), and the template's `name`.
 3. Every offer expires at the next refresh (`expiresAt = refreshAt`). Expiry is lazy: nothing happens at the instant, the next refresh replaces the board, and `START_OP` rejects a stale id.
 
-`refreshOffersIfDue` runs in `processDue` after the recruit pool and walks the fixed schedule, so a long gap refreshes the board once per interval it crossed. `newGame` generates the first board (refresh 0). `DEBUG_REFRESH_OFFERS` replaces it now and restarts the schedule. Resolution uses `opConfigOf(c, op)`: the snapshot if there is one, otherwise `ops.list`. `stats.offerDirty` counts Dirty earned from offers.
+Training jobs are never offers. `refreshOffersIfDue` runs in `processDue` after the recruit pool and walks the fixed schedule, so a long gap refreshes the board once per interval it crossed. `newGame` generates the first board (refresh 0). `DEBUG_REFRESH_OFFERS` replaces it now and restarts the schedule. Resolution uses `opConfigOf(c, op)`: the snapshot if there is one, otherwise `ops.list`. `stats.offerDirty` counts Dirty earned from offers.
 
 ## Resolution
 
@@ -62,20 +64,26 @@ The roll is seeded by the job's id. `outcomeOdds` computes the exact probabiliti
 | Heat spike | `spike` × 1 | `spike × partialSpikePct` | `spike × failSpikePct` |
 | Crew loyalty | `crew.loyalty.perOpSuccess` | `round(perOpSuccess × partialRewardPct)` | `ops.failLoyalty` |
 
-- **Dirty:** `round(dirty × share × act^ops.rewardActScaling)`, straight into Dirty (not the vault).
+- **Dirty:** `round(dirty × share × act^ops.rewardActScaling × Earner's jobDirtyMult if an Earner is on the team)`, straight into Dirty (not the vault).
 - **Influence:** `max(1, round(influence × share))` on any success, limited by the room left under `ops.influenceDailyCap` for the current game day. Anything over the cap is reported as `influenceLostToCap`.
 - **Rep:** `reputation.perOpSuccess × share`.
-- **Heat:** the spike lands on heat immediately and feeds the next hour's raid roll ([heat.md](heat.md)).
+- **Heat:** the spike (× Ghost's `jobSpikeMult` if a Ghost is on the team) lands on heat immediately and feeds the next hour's raid roll ([heat.md](heat.md)).
 - **Pressure:** a full or partial success adds one pressure to the target district ([districts-and-rivals.md](districts-and-rivals.md)).
+- **XP:** every member earns XP split by the job's weights, scaled by band and outcome ([crew.md](crew.md#experience)). The whole team's XP is worked out before anyone levels, so a promotion mid-resolution can't change a partner's mentor bonus.
 - **Report:** the crew's report is filed in the inbox with 2–3 choices ([inbox.md](inbox.md)).
 - `stats.opOutcomes` counts each outcome; `stats.jobDirty` the Dirty.
+
+## Training
+
+([ADR 0030](../decisions/0030-crew-experience.md)) A job with `training: <stat>` is a paid lesson: `costDirty × act` up front, `xp` of that stat when it ends. There's no roll (`outcomeOdds` returns full = 1), no heat, Dirty, Influence, Rep, loyalty change or report, and it doesn't count in `stats.opOutcomes`, so the partial-share target only measures real jobs. `resolveOp` frees the member, grants the XP and emits `TRAINING_DONE { opId, crewId, name, stat, xp }`. Validation requires `crew: 1` and a known stat.
 
 ## Events
 
 - `OP_STARTED { opId, opType, crewIds, districtId?, name?, offerId? }`
 - `OP_RESOLVED { opId, opType, crewIds, outcome, score, diff, dirty, influence, influenceLostToCap, spike, rep, districtId?, name?, offerId? }`
 - `OFFERS_REFRESHED { count }` (quiet)
+- `TRAINING_DONE { opId, crewId, name, stat, xp }`
 
 `DEBUG_COMPLETE_OPS` resolves every job in progress immediately.
 
-**Tests:** `tests/ops.test.ts` (partial success is the most common outcome, odds match rolls, team scoring, traits), `tests/apply.test.ts` (job lifecycle, pressure flips a district), `tests/offers.test.ts` (the board's schedule, taking an offer, stale offers), `tests/sim.test.ts` (the bot's partial share stays 40–60%).
+**Tests:** `tests/ops.test.ts` (partial success is the most common outcome among rolled jobs, odds match rolls, team scoring, traits), `tests/apply.test.ts` (job lifecycle, pressure flips a district), `tests/offers.test.ts` (the board's schedule, taking an offer, stale offers), `tests/crew.test.ts` (training cost and XP, perks on jobs), `tests/sim.test.ts` (the bot's partial share stays 40–60%).

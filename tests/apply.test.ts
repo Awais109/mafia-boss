@@ -142,6 +142,81 @@ describe('crew', () => {
   })
 })
 
+describe('tier-3 specialization', () => {
+  it('the upgrade to tier 3 needs a choice, and no other upgrade takes one', () => {
+    let s = act(fresh(), [{ type: 'DEBUG_GRANT', clean: 5000 }], T0)
+    const id = s.rackets[0].id
+    expect(apply(s, { type: 'UPGRADE_RACKET', racketId: id, specialization: 'greed' }, T0, config).error).toMatch(/specialize/)
+    s = act(s, [{ type: 'UPGRADE_RACKET', racketId: id }], T0)
+    expect(apply(s, { type: 'UPGRADE_RACKET', racketId: id }, T0, config).error).toMatch(/greed or stealth/)
+    const before = derive(s, config).perRacket[0]
+    const spec = config.rackets.specialization
+    const greed = derive(act(s, [{ type: 'UPGRADE_RACKET', racketId: id, specialization: 'greed' }], T0), config).perRacket[0]
+    expect(greed.grossYield).toBeCloseTo(before.grossYield * config.rackets.tierYieldMult * spec.greed.yieldMult)
+    expect(greed.exposure).toBeCloseTo(before.exposure * config.rackets.tierHeatMult * spec.greed.exposureMult)
+    const stealth = derive(act(s, [{ type: 'UPGRADE_RACKET', racketId: id, specialization: 'stealth' }], T0), config).perRacket[0]
+    expect(stealth.exposure).toBeGreaterThan(before.exposure) // never cooler than the tier below
+  })
+})
+
+describe('front modes and capacity', () => {
+  const withBuffer = () => {
+    const s = act(fresh(), [{ type: 'DEBUG_GRANT', dirty: 1000, clean: 1000 }], T0)
+    const f = s.fronts[0].id
+    return { s: act(s, [{ type: 'DEPOSIT', frontId: f, amount: 1 }, { type: 'DEPOSIT', frontId: f, amount: 200 }], T0), f }
+  }
+  const washedInAnHour = (s: ReturnType<typeof fresh>) => s.fronts[0].buffer - reconcile(s, T0 + H, config).state.fronts[0].buffer
+  const tp = config.fronts.types.currencyKiosk.throughput
+
+  it('push launders faster, lay low slower and without suspicion', () => {
+    const { s, f } = withBuffer()
+    expect(washedInAnHour(act(s, [{ type: 'SET_FRONT_MODE', frontId: f, mode: 'push' }], T0))).toBeCloseTo(tp * config.fronts.modes.push.throughputMult)
+    const low = act(s, [{ type: 'SET_FRONT_MODE', frontId: f, mode: 'layLow' }], T0)
+    expect(washedInAnHour(low)).toBeCloseTo(tp * config.fronts.modes.layLow.throughputMult)
+    low.fronts[0].util = 1
+    expect(derive(low, config).perFront[0].suspicion).toBe(0)
+    expect(apply(s, { type: 'SET_FRONT_MODE', frontId: f, mode: 'normal' }, T0, config).error).toMatch(/Already/)
+  })
+
+  it('capacity raises throughput and the buffer with it', () => {
+    const { s, f } = withBuffer()
+    const fd = derive(act(s, [{ type: 'UPGRADE_FRONT', frontId: f, track: 'capacity' }], T0), config).perFront[0]
+    expect(fd.throughput).toBeCloseTo(tp * (1 + config.fronts.upgrade.capacity.step))
+    expect(fd.bufferCap).toBeCloseTo(fd.throughput * config.fronts.bufferHours)
+    expect(fd.capacityLevel).toBe(1)
+  })
+})
+
+describe('Tolya negotiation', () => {
+  const withDemand = (nerve: number) => {
+    const s = act(fresh(), [{ type: 'DEBUG_GRANT', dirty: 100 }], T0)
+    s.rival.tolya.demand = 20
+    for (const m of s.crew) m.nerve = nerve
+    return s
+  }
+
+  it('a good talker pays the haggled price', () => {
+    const s = act(withDemand(95), [{ type: 'PAY_TRIBUTE', choice: 'haggle' }], T0)
+    expect(s.rival.tolya.demand).toBeNull()
+    expect(s.dirty).toBe(100 - Math.round(20 * config.rivals.tolya.haggle.pricePct))
+    expect(s.stats.haggles.won).toBe(1)
+  })
+
+  it('a poor one insults him once, and the demand stands', () => {
+    const s = act(withDemand(5), [{ type: 'PAY_TRIBUTE', choice: 'haggle' }], T0)
+    expect(s.rival.tolya.demand).toBe(20)
+    expect(s.rival.tolya.disposition).toBe(config.rivals.tolya.haggle.dispositionOnInsult)
+    expect(apply(s, { type: 'PAY_TRIBUTE', choice: 'haggle' }, T0, config).error).toMatch(/twice/)
+    expect(act(s, [{ type: 'PAY_TRIBUTE' }], T0).rival.tolya.demand).toBeNull()
+  })
+
+  it('refusing breaks a business now', () => {
+    const s = act(withDemand(40), [{ type: 'PAY_TRIBUTE', choice: 'refuse' }], T0)
+    expect(s.rival.tolya.demand).toBeNull()
+    expect(Math.min(...s.rackets.map((r) => r.condition))).toBe(100 - config.rivals.tolya.refuseConditionHit)
+  })
+})
+
 describe('Tolya', () => {
   it('an unpaid demand is refused at the next tick and damages a racket', () => {
     const s = fresh()

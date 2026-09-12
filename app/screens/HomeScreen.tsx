@@ -1,6 +1,7 @@
 import { dayMs } from '../../engine'
 import { InboxCard } from '../components/InboxCard'
 import { MoneyFlow } from '../components/MoneyFlow'
+import { TributeCard } from '../components/TributeCard'
 import { Bar, Btn, BtnRow, Card, colors, Row, Screen, Section, T } from '../components/ui'
 import { describeEvent } from '../eventText'
 import { fmt, fmtClock, fmtDuration, fmtRate } from '../format'
@@ -33,17 +34,7 @@ export function HomeScreen({ game, go }: ScreenProps) {
 
   return (
     <Screen>
-      {demand !== null && (
-        <Card style={{ borderColor: colors.heat }}>
-          <T bold color={colors.heat}>Tolya wants his cut</T>
-          <T small muted>
-            Pay ◆{fmt(demand)} before his next visit in {fmtDuration(s.rival.tolya.nextTickAt - now, c)}, or his boys break something.
-          </T>
-          <BtnRow>
-            <Btn small kind="primary" title={`Pay ◆${fmt(demand)}`} disabled={s.dirty < demand} onPress={() => store.dispatch({ type: 'PAY_TRIBUTE' })} />
-          </BtnRow>
-        </Card>
-      )}
+      {demand !== null && <TributeCard game={game} />}
 
       {inbox.length > 0 && (
         <Section title={`Waiting for you · ${inbox.length}`}>

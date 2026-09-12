@@ -17,10 +17,32 @@ export const FRONT_TYPES: readonly FrontType[] = ['currencyKiosk', 'restaurant']
 export type OfficialId = 'wardCop' | 'precinctCaptain'
 export const OFFICIAL_IDS: readonly OfficialId[] = ['wardCop', 'precinctCaptain']
 
-export type OpType = 'shakeDown' | 'collectDebt' | 'leanOnWard' | 'pressure' | 'moveShipment' | 'dinner'
+export type OpType =
+  | 'shakeDown' | 'collectDebt' | 'leanOnWard' | 'pressure' | 'moveShipment' | 'dinner'
+  | 'trainMuscle' | 'trainBrains' | 'trainNerve'
 export const OP_TYPES: readonly OpType[] = [
   'shakeDown', 'collectDebt', 'leanOnWard', 'pressure', 'moveShipment', 'dinner',
+  'trainMuscle', 'trainBrains', 'trainNerve',
 ]
+
+export type FrontMode = 'push' | 'normal' | 'layLow'
+export const FRONT_MODES: readonly FrontMode[] = ['push', 'normal', 'layLow']
+
+export type Specialization = 'greed' | 'stealth'
+
+export type PerkId = 'earner' | 'ghost' | 'fixer' | 'mentor' | 'bargainer' | 'steady'
+export const PERK_IDS: readonly PerkId[] = ['earner', 'ghost', 'fixer', 'mentor', 'bargainer', 'steady']
+
+export type PerkConfig = {
+  name: string
+  text: string
+  jobDirtyMult?: number // earner: a job with this member pays ×
+  jobSpikeMult?: number // ghost: a job with this member spikes heat ×
+  jobMinutesMult?: number // fixer: a job with this member takes ×
+  partnerXpBonus?: number // mentor: everyone else on the job earns this much more XP
+  haggleBonus?: number // bargainer: added to the haggle score
+  noDrift?: boolean // steady: no daily loyalty drift
+}
 
 export type DistrictId = 'zarechye' | 'kioskRow' | 'portQuarter' | 'sovietsky'
 export const DISTRICT_IDS: readonly DistrictId[] = ['zarechye', 'kioskRow', 'portQuarter', 'sovietsky']
@@ -109,6 +131,8 @@ export type OpConfig = {
   influence?: number
   cigarettes?: number // packs added to stock on success
   training?: Stat // a training job: no roll, no heat, XP to this stat
+  costDirty?: number // charged × act when the job starts (training)
+  xp?: number // training XP to `training`
   districtPressure?: boolean
   act?: Act
 }
@@ -135,6 +159,7 @@ export type CrewSeed = {
   loyalty: number
   traits?: TraitId[]
   nephew?: boolean
+  potential?: Record<Stat, number> // ceilings; stat + 10 when omitted
 }
 
 export type Config = {
@@ -154,6 +179,11 @@ export type Config = {
     conditionDecayPerDay: number
     conditionRepairPct: number
     enforcer: { yieldMult: number; heatMult: number }
+    specialization: {
+      atTier: number // the upgrade to this tier asks for greed or stealth
+      greed: { yieldMult: number; exposureMult: number }
+      stealth: { yieldMult: number; exposureMult: number }
+    }
     types: Record<RacketType, RacketTypeConfig>
     starting: { type: RacketType; districtId: DistrictId }[]
   }
@@ -169,7 +199,17 @@ export type Config = {
     utilSmoothingHours: number
     bufferHours: number
     reserveHours: number // "launder all but running costs" keeps this many hours of wages and upkeep
-    upgrade: { rateStep: number; levels: number; costPctOfUnlock: number; minCostBasis: number }
+    modes: {
+      push: { throughputMult: number; suspicionStartUtil: number }
+      layLow: { throughputMult: number; suspicion: boolean }
+    }
+    upgrade: {
+      rateStep: number
+      levels: number
+      costPctOfUnlock: number
+      minCostBasis: number
+      capacity: { step: number; levels: number; costPctOfUnlock: number }
+    }
     types: Record<FrontType, FrontTypeConfig>
   }
   heat: {
@@ -219,6 +259,17 @@ export type Config = {
       gambler: { nerveBonus: number; wageMult: number }
       alcoholic: { randomPenalty: number; wageMult: number }
     }
+    experience: {
+      xpByBand: Record<OpBand, number> // split across stats by the job's weights
+      outcomeMult: Record<OpOutcome, number>
+      pointCost: { base: number; perAbove30: number } // XP for +1 = base + perAbove30 × max(0, stat − 30)
+      potentialRoll: [number, number] // recruits' ceilings: stat + U(lo, hi)
+      mentorBonus: number // the lower-ranked member of a team earns this much more XP
+      enforcerXpPerHr: number // Muscle
+      ranks: { soldier: number; made: number; capo: number } // stat points gained
+      perkChoices: number
+      perks: Record<PerkId, PerkConfig>
+    }
     starting: CrewSeed[]
   }
   ops: {
@@ -257,6 +308,7 @@ export type Config = {
       dispositionOnFlip: number
       hostileBelow: number
       hostileTickMult: number
+      haggle: { diff: number; noise: number; pricePct: number; dispositionOnWin: number; dispositionOnInsult: number }
     }
   }
   reputation: {
@@ -335,6 +387,13 @@ export function validateConfig(c: Config): string[] {
       nonNeg(e, 'rackets.conditionRepairPct', r.conditionRepairPct)
       positive(e, 'rackets.enforcer.yieldMult', r.enforcer.yieldMult)
       positive(e, 'rackets.enforcer.heatMult', r.enforcer.heatMult)
+      const sp = r.specialization
+      int(e, 'rackets.specialization.atTier', sp.atTier, 2)
+      positive(e, 'rackets.specialization.greed.yieldMult', sp.greed.yieldMult)
+      num(e, 'rackets.specialization.greed.exposureMult', sp.greed.exposureMult, (n) => n >= sp.greed.yieldMult, '>= greed.yieldMult')
+      positive(e, 'rackets.specialization.stealth.yieldMult', sp.stealth.yieldMult)
+      // Stealth may cool a tier, but never below the tier it came from: tiering can't lower exposure.
+      num(e, 'rackets.specialization.stealth.exposureMult', sp.stealth.exposureMult, (n) => n >= 1 / r.tierHeatMult, '>= 1 / tierHeatMult')
       for (const t of RACKET_TYPES) {
         const rt = r.types[t]
         if (!rt) { e.push(`rackets.types.${t}: missing`); continue }
@@ -363,6 +422,12 @@ export function validateConfig(c: Config): string[] {
       nonNeg(e, 'fronts.upgrade.costPctOfUnlock', f.upgrade.costPctOfUnlock)
       nonNeg(e, 'fronts.upgrade.minCostBasis', f.upgrade.minCostBasis)
       nonNeg(e, 'fronts.reserveHours', f.reserveHours)
+      positive(e, 'fronts.modes.push.throughputMult', f.modes.push.throughputMult)
+      num(e, 'fronts.modes.push.suspicionStartUtil', f.modes.push.suspicionStartUtil, (n) => n >= 0 && n < 1, 'in [0, 1)')
+      positive(e, 'fronts.modes.layLow.throughputMult', f.modes.layLow.throughputMult)
+      nonNeg(e, 'fronts.upgrade.capacity.step', f.upgrade.capacity.step)
+      int(e, 'fronts.upgrade.capacity.levels', f.upgrade.capacity.levels, 0)
+      nonNeg(e, 'fronts.upgrade.capacity.costPctOfUnlock', f.upgrade.capacity.costPctOfUnlock)
       for (const t of FRONT_TYPES) {
         const ft = f.types[t]
         rate(e, `fronts.types.${t}.rate`, ft.rate)
@@ -424,6 +489,22 @@ export function validateConfig(c: Config): string[] {
       positive(e, 'crew.traits.alcoholic.wageMult', cr.traits.alcoholic.wageMult)
       nonNeg(e, 'crew.traits.alcoholic.randomPenalty', cr.traits.alcoholic.randomPenalty)
       if (cr.starting.length > cr.slotsByAct[1]) e.push('crew.starting: more starting crew than act 1 slots')
+      for (const seed of cr.starting) {
+        for (const st of STATS) {
+          if (seed.potential && !(seed.potential[st] >= seed[st])) e.push(`crew.starting.${seed.name}.potential.${st}: below the stat`)
+        }
+      }
+      const x = cr.experience
+      for (const b of OP_BANDS) nonNeg(e, `crew.experience.xpByBand.${b}`, x.xpByBand[b])
+      for (const o of OP_OUTCOMES) nonNeg(e, `crew.experience.outcomeMult.${o}`, x.outcomeMult[o])
+      positive(e, 'crew.experience.pointCost.base', x.pointCost.base)
+      nonNeg(e, 'crew.experience.pointCost.perAbove30', x.pointCost.perAbove30)
+      range(e, 'crew.experience.potentialRoll', x.potentialRoll, (n) => n >= 0)
+      nonNeg(e, 'crew.experience.mentorBonus', x.mentorBonus)
+      nonNeg(e, 'crew.experience.enforcerXpPerHr', x.enforcerXpPerHr)
+      num(e, 'crew.experience.ranks', x.ranks.soldier, (n) => n > 0 && n < x.ranks.made && x.ranks.made < x.ranks.capo, 'soldier < made < capo, all > 0')
+      int(e, 'crew.experience.perkChoices', x.perkChoices, 1)
+      for (const p of PERK_IDS) if (!x.perks[p]) e.push(`crew.experience.perks.${p}: missing`)
     },
     (e) => {
       const o = c.ops
@@ -447,6 +528,12 @@ export function validateConfig(c: Config): string[] {
         for (const k of Object.keys(op.w)) {
           if (!STATS.includes(k as Stat)) e.push(`ops.list.${t}.w.${k}: unknown stat`)
         }
+        if (op.training !== undefined) {
+          if (!STATS.includes(op.training)) e.push(`ops.list.${t}.training: unknown stat`)
+          if (op.crew !== 1) e.push(`ops.list.${t}.crew: training takes one crew member`)
+          nonNeg(e, `ops.list.${t}.xp`, op.xp ?? 0)
+        }
+        if (op.costDirty !== undefined) nonNeg(e, `ops.list.${t}.costDirty`, op.costDirty)
       }
       for (const b of o.reports.bands) if (!OP_BANDS.includes(b)) e.push(`ops.reports.bands: unknown band ${b}`)
       for (const outcome of OP_OUTCOMES) choices(e, `ops.reports.byOutcome.${outcome}`, o.reports.byOutcome[outcome])
@@ -499,6 +586,9 @@ export function validateConfig(c: Config): string[] {
       num(e, 'rivals.tolya.pConditionHit + pTribute', t.pConditionHit + t.pTribute, (n) => n <= 1, '<= 1')
       unit(e, 'rivals.tolya.tributePctOfVault', t.tributePctOfVault)
       positive(e, 'rivals.tolya.hostileTickMult', t.hostileTickMult)
+      nonNeg(e, 'rivals.tolya.haggle.diff', t.haggle.diff)
+      nonNeg(e, 'rivals.tolya.haggle.noise', t.haggle.noise)
+      rate(e, 'rivals.tolya.haggle.pricePct', t.haggle.pricePct)
     },
     (e) => {
       const r = c.reputation

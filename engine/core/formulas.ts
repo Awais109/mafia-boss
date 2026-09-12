@@ -1,4 +1,6 @@
-import type { Act, Config, FrontType, RacketType } from '../config/schema'
+import type { Act, Config, FrontMode, FrontType, RacketType } from '../config/schema'
+
+type FrontLike = { type: FrontType; capacityLevel?: number; mode?: FrontMode }
 
 // Pure curves. Every cost the UI shows or an action charges comes through here.
 
@@ -34,8 +36,24 @@ export function frontRate(c: Config, type: FrontType, level: number): number {
   return c.fronts.types[type].rate + level * c.fronts.upgrade.rateStep
 }
 
-export function frontBufferCap(c: Config, type: FrontType): number {
-  return c.fronts.types[type].throughput * c.fronts.bufferHours
+// Throughput after capacity upgrades, before the mode dial. The buffer is sized from this.
+export function frontBaseThroughput(c: Config, f: FrontLike): number {
+  return c.fronts.types[f.type].throughput * (1 + c.fronts.upgrade.capacity.step * (f.capacityLevel ?? 0))
+}
+
+export function frontModeMult(c: Config, mode: FrontMode | undefined): number {
+  if (mode === 'push') return c.fronts.modes.push.throughputMult
+  if (mode === 'layLow') return c.fronts.modes.layLow.throughputMult
+  return 1
+}
+
+// What the front actually launders per hour.
+export function frontThroughput(c: Config, f: FrontLike): number {
+  return frontBaseThroughput(c, f) * frontModeMult(c, f.mode)
+}
+
+export function frontBufferCap(c: Config, f: FrontLike): number {
+  return frontBaseThroughput(c, f) * c.fronts.bufferHours
 }
 
 // Cost to go from `level` to `level + 1`.
@@ -44,9 +62,23 @@ export function frontUpgradeCost(c: Config, type: FrontType, level: number): num
   return Math.round(basis * c.fronts.upgrade.costPctOfUnlock * (level + 1))
 }
 
+export function frontCapacityUpgradeCost(c: Config, type: FrontType, level: number): number {
+  const basis = Math.max(c.fronts.types[type].cost, c.fronts.upgrade.minCostBasis)
+  return Math.round(basis * c.fronts.upgrade.capacity.costPctOfUnlock * (level + 1))
+}
+
 // A front running hot draws attention: exposure grows with utilization past the start point.
-export function frontSuspicion(c: Config, type: FrontType, util: number): number {
-  return c.fronts.suspicionFactor * c.fronts.types[type].throughput * Math.max(0, util - c.fronts.suspicionStartUtil)
+// Pushing starts it sooner; lying low draws none.
+export function frontSuspicion(c: Config, f: FrontLike, util: number): number {
+  if (f.mode === 'layLow' && !c.fronts.modes.layLow.suspicion) return 0
+  const start = f.mode === 'push' ? c.fronts.modes.push.suspicionStartUtil : c.fronts.suspicionStartUtil
+  return c.fronts.suspicionFactor * frontThroughput(c, f) * Math.max(0, util - start)
+}
+
+// XP a stat needs for its next point.
+export function statPointCost(c: Config, value: number): number {
+  const p = c.crew.experience.pointCost
+  return p.base + p.perAbove30 * Math.max(0, value - 30)
 }
 
 // Heat equilibrium = share of pressure that control doesn't cover.

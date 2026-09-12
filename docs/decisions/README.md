@@ -39,6 +39,10 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0024](0024-inbox.md) | Pending decisions: crew reports and incidents with baked options and a default | Accepted |
 | [0025](0025-opportunities-board.md) | An opportunities board of generated, expiring job variants | Accepted |
 | [0026](0026-ledger-and-money-flow.md) | The daily ledger is stat snapshots; the Money flow card reads derive | Accepted |
+| [0027](0027-tier-3-specialization.md) | The upgrade to tier 3 is a choice between greed and stealth | Accepted |
+| [0028](0028-front-modes-and-capacity.md) | Fronts have a push / lay low dial and a capacity upgrade track | Accepted |
+| [0029](0029-tolya-negotiation.md) | Tolya's demands can be paid, haggled once, or refused | Accepted |
+| [0030](0030-crew-experience.md) | Crew grow with work: XP, ceilings, ranks, perks and training | Accepted |
 
 ## Template
 

@@ -9,13 +9,13 @@ What is built, how it works, and why. Written so a person or an LLM new to the r
 | Doc | Covers |
 |---|---|
 | [architecture.md](architecture.md) | Layers and the one rule, reconcile/apply/derive, game time, RNG, config layering, persistence |
-| [systems/economy.md](systems/economy.md) | Vault, rackets, tiers, costs, condition, enforcers, the daily ledger and Money flow |
-| [systems/fronts.md](systems/fronts.md) | Laundering Dirty into Clean, buffers, rates, suspicion |
+| [systems/economy.md](systems/economy.md) | Vault, rackets, tiers, tier-3 specialization, costs, condition, enforcers, the daily ledger and Money flow |
+| [systems/fronts.md](systems/fronts.md) | Laundering Dirty into Clean, buffers, rates, the push / lay low dial, capacity, suspicion |
 | [systems/heat.md](systems/heat.md) | Exposure, control, heat target, inspections, raids, arrests, bribes, officials, Influence |
-| [systems/crew.md](systems/crew.md) | Crew stats and traits, wages, loyalty, recruiting, slots, jail |
-| [systems/ops.md](systems/ops.md) | Jobs, resolution formula, rewards, district pressure, the opportunities board |
-| [systems/inbox.md](systems/inbox.md) | Pending decisions: crew reports, incidents, defaults and expiry |
-| [systems/districts-and-rivals.md](systems/districts-and-rivals.md) | Districts, tribute, buy-outs and flips, Tolya, Zhanna |
+| [systems/crew.md](systems/crew.md) | Crew stats and traits, experience, ranks and perks, wages, loyalty, recruiting, slots, jail |
+| [systems/ops.md](systems/ops.md) | Jobs, training, resolution formula, rewards, district pressure, the opportunities board |
+| [systems/inbox.md](systems/inbox.md) | Pending decisions: crew reports, incidents, perk choices, defaults and expiry |
+| [systems/districts-and-rivals.md](systems/districts-and-rivals.md) | Districts, tribute, buy-outs and flips, Tolya and answering his demands, Zhanna |
 | [systems/progression.md](systems/progression.md) | Reputation, acts, the unlock ladder, the tutorial |
 | [app.md](app.md) | The React Native app: store, storage, screens, Debug tab, export |
 | [sim.md](sim.md) | The headless bot, report metrics, CLI, log replay, baseline |
@@ -45,7 +45,7 @@ When you change a path on the left, update the doc on the right in the same comm
 | `engine/systems/offers.ts` | [systems/ops.md](systems/ops.md) |
 | `engine/systems/fronts.ts` | [systems/fronts.md](systems/fronts.md) |
 | `engine/systems/heat.ts` | [systems/heat.md](systems/heat.md) |
-| `engine/systems/crew.ts` | [systems/crew.md](systems/crew.md) |
+| `engine/systems/crew.ts`, `engine/systems/experience.ts` | [systems/crew.md](systems/crew.md) |
 | `engine/systems/ops.ts` | [systems/ops.md](systems/ops.md) |
 | `engine/systems/districts.ts`, `engine/systems/rivals.ts` | [systems/districts-and-rivals.md](systems/districts-and-rivals.md) |
 | `engine/systems/reputation.ts`, `engine/systems/tutorial.ts` | [systems/progression.md](systems/progression.md) |

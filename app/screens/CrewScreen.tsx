@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { View } from 'react-native'
-import { baseWage, effectiveStat, STATS, type Config, type CrewMember, type TraitId } from '../../engine'
+import { baseWage, effectiveStat, formulas, RANK_NAMES, STATS, type Config, type CrewMember, type TraitId } from '../../engine'
 import { Bar, Btn, BtnRow, Card, colors, Row, Screen, Section, T, Tag } from '../components/ui'
 import { fmt, fmtDuration, fmtRate } from '../format'
 import { store } from '../store'
@@ -15,14 +15,24 @@ function traitText(c: Config, t: TraitId): string {
   return `drinks: wage ×${tr.alcoholic.wageMult}, −0–${tr.alcoholic.randomPenalty} on jobs`
 }
 
-function Stats({ c, m }: { c: Config; m: CrewMember }) {
+// Each stat against its ceiling; for your own crew, the XP toward the next point.
+function Stats({ c, m, growth }: { c: Config; m: CrewMember; growth?: boolean }) {
   return (
-    <T small>
+    <View style={{ gap: 3 }}>
       {STATS.map((stat) => {
         const eff = effectiveStat(c, m, stat)
-        return `${STAT_LABEL[stat]} ${eff}${eff !== m[stat] ? ` (+${eff - m[stat]})` : ''}`
-      }).join('   ')}
-    </T>
+        const capped = m[stat] >= m.potential[stat]
+        const cost = formulas.statPointCost(c, m[stat])
+        const bonus = eff !== m[stat] ? ` (+${eff - m[stat]})` : ''
+        const xp = growth ? (capped ? ' · at its ceiling' : ` · ${fmt(m.xp[stat])}/${fmt(cost)} XP`) : ''
+        return (
+          <View key={stat} style={{ gap: 2 }}>
+            <T small>{`${STAT_LABEL[stat]} ${eff}${bonus} of ${m.potential[stat]}${xp}`}</T>
+            {growth && !capped && <Bar value={m.xp[stat]} max={cost} color={colors.accent} />}
+          </View>
+        )
+      })}
+    </View>
   )
 }
 
@@ -60,6 +70,9 @@ export function CrewScreen({ game }: ScreenProps) {
           Wage = (Muscle + Brains + Nerve) ÷ {c.crew.wageDivisor} per hour. A missed payday costs everyone{' '}
           {Math.abs(c.crew.loyalty.perMissedWageDay)} loyalty; below {low}, people walk.
         </T>
+        <T small muted>
+          {`Crew grow with work: jobs, training and enforcing earn XP, each stat stops at its ceiling, and ${c.crew.experience.ranks.soldier} and ${c.crew.experience.ranks.made} points earned bring a promotion with a perk. Better stats mean higher wages.`}
+        </T>
         {s.crewSlotsBought < c.crew.extraSlotMax && (
           <Btn
             small
@@ -81,15 +94,17 @@ export function CrewScreen({ game }: ScreenProps) {
                   {st.text}
                 </T>
               </View>
-              {(m.nephew || m.traits.length > 0) && (
-                <BtnRow>
-                  {m.nephew && <Tag text="your nephew" color={colors.rep} />}
-                  {m.traits.map((t) => (
-                    <Tag key={t} text={traitText(c, t)} color={colors.accent} />
-                  ))}
-                </BtnRow>
-              )}
-              <Stats c={c} m={m} />
+              <BtnRow>
+                <Tag text={RANK_NAMES[m.rank] ?? 'Associate'} color={colors.rep} />
+                {m.nephew && <Tag text="your nephew" color={colors.rep} />}
+                {m.traits.map((t) => (
+                  <Tag key={t} text={traitText(c, t)} color={colors.accent} />
+                ))}
+                {m.perks.map((p) => (
+                  <Tag key={p} text={`${c.crew.experience.perks[p].name}: ${c.crew.experience.perks[p].text}`} color={colors.good} />
+                ))}
+              </BtnRow>
+              <Stats c={c} m={m} growth />
               <Row
                 label="Loyalty"
                 hint={m.loyalty < low ? 'might walk out' : undefined}

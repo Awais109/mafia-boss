@@ -11,7 +11,7 @@ export function generateOffers(c: Config, state: PlayerState, rand: Rand, refres
   const pool = Object.keys(c.offers.templates).filter((id) => {
     const tpl = c.offers.templates[id]
     const base = c.ops.list[tpl.base]
-    return base !== undefined && !base.districtPressure && (tpl.act ?? base.act ?? 1) <= state.act
+    return base !== undefined && !base.districtPressure && !base.training && (tpl.act ?? base.act ?? 1) <= state.act
   })
   const out: Offer[] = []
   for (let n = 0; n < c.offers.count && pool.length > 0; n++) {

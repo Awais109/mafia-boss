@@ -1,4 +1,4 @@
-import { TRAIT_IDS, type Act, type Config, type Stat, type TraitId } from '../config/schema'
+import { TRAIT_IDS, type Act, type Config, type CrewSeed, type PerkId, type Stat, type TraitId } from '../config/schema'
 import { emit, type Ctx } from '../core/ctx'
 import type { Rand } from '../core/rng'
 import { dayIndex, hoursToMs } from '../core/time'
@@ -39,19 +39,53 @@ const NICKNAMES = [
   'Crane', 'Lighter', 'Samovar', 'Pike', 'Quiet', 'Lucky', 'Stamp', 'Gauge', 'Volga', 'Radio',
 ]
 
+// A crew member's growth fields, fresh. Ceilings default to stat + 10.
+export function freshProgress(stats: Record<Stat, number>, potential?: Record<Stat, number>) {
+  return {
+    xp: { muscle: 0, brains: 0, nerve: 0 },
+    potential: potential ?? {
+      muscle: Math.min(100, stats.muscle + 10),
+      brains: Math.min(100, stats.brains + 10),
+      nerve: Math.min(100, stats.nerve + 10),
+    },
+    gained: 0,
+    rank: 0,
+    perks: [] as PerkId[],
+  }
+}
+
+export function crewFromSeed(seed: CrewSeed, id: string): CrewMember {
+  return {
+    id,
+    name: seed.name,
+    muscle: seed.muscle,
+    brains: seed.brains,
+    nerve: seed.nerve,
+    loyalty: seed.loyalty,
+    traits: seed.traits ?? [],
+    status: 'idle',
+    ...(seed.nephew ? { nephew: true } : {}),
+    ...freshProgress(seed, seed.potential),
+  }
+}
+
 export function generateCandidates(c: Config, act: Act, rand: Rand, refreshCount: number): CrewMember[] {
   const [lo, hi] = c.crew.statBandByAct[act]
+  const [plo, phi] = c.crew.experience.potentialRoll
   return Array.from({ length: c.crew.poolSize }, (_, i) => {
     const traits: TraitId[] = rand.chance(c.crew.traitChance) ? [rand.pick(TRAIT_IDS)] : []
+    const name = `${rand.pick(FIRST_NAMES)} "${rand.pick(NICKNAMES)}"`
+    const stats = { muscle: rand.int(lo, hi), brains: rand.int(lo, hi), nerve: rand.int(lo, hi) }
+    const ceiling = (v: number) => Math.min(100, v + rand.int(plo, phi))
+    const potential = { muscle: ceiling(stats.muscle), brains: ceiling(stats.brains), nerve: ceiling(stats.nerve) }
     return {
       id: `cand${refreshCount}-${i}`,
-      name: `${rand.pick(FIRST_NAMES)} "${rand.pick(NICKNAMES)}"`,
-      muscle: rand.int(lo, hi),
-      brains: rand.int(lo, hi),
-      nerve: rand.int(lo, hi),
+      name,
+      ...stats,
       loyalty: c.crew.recruitLoyalty,
       traits,
       status: 'idle' as const,
+      ...freshProgress(stats, potential),
     }
   })
 }
@@ -114,7 +148,7 @@ export function crewDayBoundary(state: PlayerState, ctx: Ctx, t: number): void {
     }
   }
 
-  for (const m of state.crew) changeLoyalty(m, c.crew.loyalty.driftPerDay)
+  for (const m of state.crew) if (!m.perks.includes('steady')) changeLoyalty(m, c.crew.loyalty.driftPerDay)
 
   const day = dayIndex(c, t)
   for (const m of [...state.crew]) {

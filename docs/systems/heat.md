@@ -8,7 +8,8 @@ Everything you run draws police attention. Heat drifts toward a target set by yo
 ## Exposure, control, target
 
 ```
-exposure = Σ racket exposure (economy.md) + Σ front suspicion (fronts.md)
+exposure = Σ racket exposure (economy.md, including tier-3 specialization)
+           + Σ front suspicion (fronts.md, which depends on each front's mode)
 
 control  = (heat.baseControl + Σ owned officials' control + bribeControl)
            × (1 + heat.districtControlPct × districts taken)      (home turf doesn't count)
@@ -24,7 +25,7 @@ Over each reconcile segment of `h` hours, heat moves toward the target in closed
 heat = target + (heat − target) × (1 − heat.convergePerHr)^h
 ```
 
-Job heat spikes are added to heat directly (capped at 100) when a job resolves ([ops.md](ops.md)).
+Job heat spikes are added to heat directly (capped at 100) when a job resolves ([ops.md](ops.md)); a Ghost on the team shrinks the spike ([crew.md](crew.md#experience)). Spikes and `convergePerHr` are tuned together: bigger spikes that bleed off faster give short danger windows at the same equilibrium ([TUNING.md](../../TUNING.md), M2).
 
 ## Thresholds
 

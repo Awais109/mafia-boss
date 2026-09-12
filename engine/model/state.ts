@@ -2,17 +2,21 @@ import type {
   Act,
   Controller,
   DistrictId,
+  FrontMode,
   FrontType,
   OfficialId,
   OpConfig,
   OpOutcome,
   OpType,
+  PerkId,
   RacketType,
+  Specialization,
+  Stat,
   TraitId,
 } from '../config/schema'
 import type { GameEvent } from './events'
 
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 export const LOG_CAP = 200
 export const LEDGER_ROWS = 8 // 7 closed days plus today's opening snapshot
 
@@ -23,12 +27,15 @@ export type Racket = {
   tier: number
   condition: number // 0–100; yield × condition/100
   enforcerId: string | null
+  specialization?: Specialization // chosen on the way to rackets.specialization.atTier
 }
 
 export type Front = {
   id: string
   type: FrontType
-  level: number
+  level: number // rate upgrades
+  capacityLevel: number // throughput upgrades
+  mode: FrontMode
   buffer: number // dirty deposited, not yet converted
   convertedThisHour: number // dirty converted since the last whole hour
   util: number // smoothed utilization, updated at each whole hour; drives suspicion
@@ -48,6 +55,11 @@ export type CrewMember = {
   nephew?: boolean
   jailedUntil?: number
   assignedTo?: string // racket id (enforcer) or op id (on_op)
+  xp: Record<Stat, number> // toward the next point in each stat
+  potential: Record<Stat, number> // ceilings
+  gained: number // stat points earned since joining; sets rank
+  rank: number // 0 Associate, 1 Soldier, 2 Made, 3 Capo
+  perks: PerkId[]
 }
 
 export type OpInstance = {
@@ -73,6 +85,8 @@ export type TolyaState = {
   nextTickAt: number
   tickCount: number
   demand: number | null // tribute demanded; refused if still unpaid at the next tick
+  haggledTick: number | null // tickCount when a haggle over the current demand failed
+  forceResult?: 'tribute' // the next visit is a demand (the opening schedules one)
 }
 
 // What an inbox option does, materialized when the item is filed.
@@ -162,6 +176,10 @@ export type PlaytestStats = {
   shipmentsPaid: number
   surplusSold: number // Dirty received
   inbox: { filed: number; resolved: number; auto: number }
+  specializations: { greed: number; stealth: number }
+  frontModeChanges: number
+  haggles: { won: number; lost: number }
+  statPointsGained: number
   firstRaidAt: number | null
   officialBoughtAt: Partial<Record<OfficialId, number>>
   lastSessionAt: number | null
@@ -241,6 +259,10 @@ export function emptyStats(): PlaytestStats {
     shipmentsPaid: 0,
     surplusSold: 0,
     inbox: { filed: 0, resolved: 0, auto: 0 },
+    specializations: { greed: 0, stealth: 0 },
+    frontModeChanges: 0,
+    haggles: { won: 0, lost: 0 },
+    statPointsGained: 0,
     firstRaidAt: null,
     officialBoughtAt: {},
     lastSessionAt: null,

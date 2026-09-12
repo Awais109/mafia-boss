@@ -57,10 +57,12 @@ The plan and manual leave some mechanics open. These are the choices made here; 
 - **Ops** score the best stat on the team per weight, +5 per extra member, ±15 noise. Partial success pays 60% of the reward with half the heat spike; a failure pays nothing and spikes 150%.
 - **Front suspicion** uses utilization averaged over ~6 hours.
 - **Act II ends at 480 Rep.** Act III is a stub.
-- **Tolya** harasses all game: condition hits, tribute demands (refused if unpaid by his next visit), and more frequent visits once hostile.
+- **Tolya** harasses all game: condition hits, tribute demands you can pay, haggle once with your best talker, or refuse (unpaid by his next visit counts as refused), and more frequent visits once hostile.
+- **Crew grow with work**: jobs, training and enforcing earn XP that raises stats up to a ceiling; promotions to Soldier and Made each offer a perk.
+- **Fronts have a dial** (push, normal, lay low) and a capacity upgrade beside the rate upgrade; the upgrade to tier 3 asks for greed or stealth.
 
 ## Status
 
-- Engine, sim, and screens cover the systems in plan milestones M0–M5 (rackets, fronts, heat, crew and ops, districts, Tolya, officials, tutorial, debug tools, logging and export), playable through Act II. The original spec v1.1 wasn't available, so where the plan left mechanics open, the choices above fill them.
+- Engine, sim, and screens cover the systems in plan milestones M0–M5 (rackets, fronts, heat, crew and ops, districts, Tolya, officials, tutorial, debug tools, logging and export), playable through Act II, plus the expansion's session texture (inbox, opportunities board, ledger) and decisions (specialization, front modes, haggling, crew experience). The original spec v1.1 wasn't available, so where the plan left mechanics open, the choices above fill them.
 - Verified: typecheck, lint, the test suite, and a Metro bundle for Android (`npx expo export --platform android`). The app has **not** been launched on a device or simulator yet.
-- Sim meets 8 of 10 dev manual targets on the mean over 10 seeds. Front utilization (~45%) and Dirty left unconverted (~55%) are open; see [TUNING.md](TUNING.md).
+- Sim meets 8 of 11 dev manual targets on the mean over 10 seeds. Front utilization (~49%), Dirty left unconverted (~54%) and the wage share (~6%) are open; see [TUNING.md](TUNING.md).

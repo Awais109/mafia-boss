@@ -6,6 +6,7 @@ import { dayIndex } from '../core/time'
 import type { CrewMember, OpInstance, PlayerState } from '../model/state'
 import { changeLoyalty, effectiveStat } from './crew'
 import { addPressure } from './districts'
+import { grantXp, hasPerk, jobXp } from './experience'
 import { fileReport } from './inbox'
 import { gainRep } from './reputation'
 
@@ -13,6 +14,7 @@ import { gainRep } from './reputation'
 //   score = Σ w·(best effective stat on the team) / Σ w + teamBonus·(crew − 1) + U(−noise, noise)
 //           − U(0, randomPenalty) per alcoholic on the team
 //   full: score ≥ diff + fullMargin · partial: score ≥ diff · fail otherwise
+// Training jobs don't roll: they pay XP and nothing else.
 
 export function opUnlocked(state: PlayerState, c: Config, type: OpType): boolean {
   return (c.ops.list[type].act ?? 1) <= state.act
@@ -48,6 +50,7 @@ export function rollOp(c: Config, op: OpConfig, team: CrewMember[], rand: Rand):
 // Odds shown in the UI and used by the sim persona. Exact for the uniform noise;
 // alcoholic penalties are folded in at their mean.
 export function outcomeOdds(c: Config, op: OpConfig, team: CrewMember[]): Record<OpOutcome, number> {
+  if (op.training) return { full: 1, partial: 0, fail: 0 }
   const alcoholics = team.filter((m) => m.traits.includes('alcoholic')).length
   const mean = opBaseScore(c, op, team) - (alcoholics * c.crew.traits.alcoholic.randomPenalty) / 2
   const n = c.ops.noise
@@ -75,12 +78,28 @@ export function opConfigOf(c: Config, op: OpInstance): OpConfig {
   return op.cfg ?? c.ops.list[op.type]
 }
 
-export function opDirtyRewardFor(c: Config, state: PlayerState, cfg: OpConfig, outcome: OpOutcome): number {
-  return Math.round((cfg.dirty ?? 0) * rewardShare(c, outcome) * opRewardMult(c, state.act))
+// Dirty a job pays; an Earner on the team adds their perk.
+export function opDirtyRewardFor(c: Config, state: PlayerState, cfg: OpConfig, outcome: OpOutcome, team: CrewMember[] = []): number {
+  const earner = hasPerk(team, 'earner') ? (c.crew.experience.perks.earner.jobDirtyMult ?? 1) : 1
+  return Math.round((cfg.dirty ?? 0) * rewardShare(c, outcome) * opRewardMult(c, state.act) * earner)
 }
 
 export function opDirtyReward(c: Config, state: PlayerState, type: OpType, outcome: OpOutcome): number {
   return opDirtyRewardFor(c, state, c.ops.list[type], outcome)
+}
+
+// Minutes a job takes for this team; a Fixer shortens it.
+export function opMinutesFor(c: Config, cfg: OpConfig, team: CrewMember[]): number {
+  return cfg.minutes * (hasPerk(team, 'fixer') ? (c.crew.experience.perks.fixer.jobMinutesMult ?? 1) : 1)
+}
+
+function freeCrew(team: CrewMember[], op: OpInstance): void {
+  for (const m of team) {
+    if (m.status === 'on_op' && m.assignedTo === op.id) {
+      m.status = 'idle'
+      delete m.assignedTo
+    }
+  }
 }
 
 export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: number): void {
@@ -90,12 +109,23 @@ export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: numbe
   const team = op.crewIds
     .map((id) => state.crew.find((m) => m.id === id))
     .filter((m): m is CrewMember => m !== undefined)
+
+  if (cfg.training) {
+    freeCrew(team, op)
+    const m = team[0]
+    if (m) {
+      grantXp(state, ctx, t, m, { [cfg.training]: cfg.xp ?? 0 })
+      emit(ctx, t, { type: 'TRAINING_DONE', opId: op.id, crewId: m.id, name: m.name, stat: cfg.training, xp: cfg.xp ?? 0 })
+    }
+    return
+  }
+
   const { score, outcome } = team.length
     ? rollOp(c, cfg, team, ctx.rng.derive('op', op.id))
     : { score: 0, outcome: 'fail' as const }
   const share = rewardShare(c, outcome)
 
-  const dirty = opDirtyRewardFor(c, state, cfg, outcome)
+  const dirty = opDirtyRewardFor(c, state, cfg, outcome, team)
   state.dirty += dirty
   state.stats.dirtyEarned += dirty
   state.stats.jobDirty += dirty
@@ -114,7 +144,8 @@ export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: numbe
   }
 
   // Spikes land on displayed heat immediately and feed the next hour's raid roll (spec §10).
-  const spike = cfg.spike * spikeShare(c, outcome)
+  const ghost = hasPerk(team, 'ghost') ? (c.crew.experience.perks.ghost.jobSpikeMult ?? 1) : 1
+  const spike = cfg.spike * spikeShare(c, outcome) * ghost
   state.heat = Math.min(100, state.heat + spike)
 
   const loyalty =
@@ -123,13 +154,8 @@ export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: numbe
       : outcome === 'partial'
         ? Math.round(c.crew.loyalty.perOpSuccess * c.ops.partialRewardPct)
         : c.ops.failLoyalty
-  for (const m of team) {
-    changeLoyalty(m, loyalty)
-    if (m.status === 'on_op' && m.assignedTo === op.id) {
-      m.status = 'idle'
-      delete m.assignedTo
-    }
-  }
+  for (const m of team) changeLoyalty(m, loyalty)
+  freeCrew(team, op)
   state.stats.opOutcomes[outcome]++
 
   const rep = c.reputation.perOpSuccess * share
@@ -152,5 +178,8 @@ export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: numbe
   })
   gainRep(state, ctx, t, rep)
   if (cfg.districtPressure && op.districtId && outcome !== 'fail') addPressure(state, ctx, t, op.districtId)
+  // XP is computed for the whole team first, so one member's promotion can't change a partner's mentor bonus.
+  const xpByMember = team.map((m) => jobXp(c, cfg, outcome, m, team))
+  team.forEach((m, i) => grantXp(state, ctx, t, m, xpByMember[i]))
   fileReport(state, ctx, t, op, cfg, outcome, dirty)
 }

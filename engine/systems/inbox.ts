@@ -1,4 +1,13 @@
-import { INCIDENT_TYPES, type ChoiceConfig, type Config, type IncidentNeed, type IncidentType, type OpConfig, type OpOutcome } from '../config/schema'
+import {
+  INCIDENT_TYPES,
+  type ChoiceConfig,
+  type Config,
+  type IncidentNeed,
+  type IncidentType,
+  type OpConfig,
+  type OpOutcome,
+  type PerkId,
+} from '../config/schema'
 import { emit, newId, type Ctx } from '../core/ctx'
 import { hourIndex, hoursToMs } from '../core/time'
 import type { InboxEffects, InboxItem, InboxOption, OpInstance, PlayerState } from '../model/state'
@@ -131,6 +140,16 @@ function applyEffects(state: PlayerState, ctx: Ctx, t: number, item: InboxItem, 
   }
   if (e.disposition) changeDisposition(state, e.disposition)
   if (e.rep && e.rep > 0) gainRep(state, ctx, t, e.rep)
+  if (e.perk) {
+    const perk = e.perk as PerkId
+    for (const id of item.crewIds ?? []) {
+      const m = state.crew.find((x) => x.id === id)
+      if (m && !m.perks.includes(perk)) {
+        m.perks.push(perk)
+        emit(ctx, t, { type: 'PERK_CHOSEN', crewId: m.id, name: m.name, perk })
+      }
+    }
+  }
 }
 
 export function resolveInboxItem(state: PlayerState, ctx: Ctx, t: number, item: InboxItem, option: InboxOption, auto: boolean): void {

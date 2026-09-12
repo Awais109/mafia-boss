@@ -1,4 +1,4 @@
-import { dayMs, type Config, type IncidentType, type InboxEffects, type InboxItem, type OpType, type PlayerState } from '../engine'
+import { dayMs, RANK_NAMES, type Config, type IncidentType, type InboxEffects, type InboxItem, type OpType, type PerkId, type PlayerState } from '../engine'
 import { colors, glyph } from './components/ui'
 import { fmt, fmtDuration } from './format'
 import type { TabId } from './screens/types'
@@ -22,10 +22,12 @@ export function itemBody(item: InboxItem, s: PlayerState, c: Config): string {
     return names ? `${text} (${names})` : text
   }
   if (item.kind === 'report') return `${names || 'The crew'}: ${OUTCOME[item.outcome ?? 'partial']}. How do you want to handle it?`
-  return `${names} earned a promotion. Pick a perk.`
+  const m = s.crew.find((x) => x.id === item.ref)
+  return `${names} made ${m ? RANK_NAMES[m.rank] : 'a new rank'}. Pick a perk: it stays for good.`
 }
 
-export function effectsText(e: InboxEffects): string {
+export function effectsText(e: InboxEffects, c?: Config): string {
+  if (e.perk) return c ? c.crew.experience.perks[e.perk as PerkId].text : e.perk
   const sign = (n: number) => (n > 0 ? '+' : '−')
   const parts = [
     e.dirty ? `${sign(e.dirty)}${glyph.dirty}${fmt(Math.abs(e.dirty))}` : '',

@@ -54,8 +54,30 @@ New config, starting values from the expansion plan (ADRs 0024–0026):
             Seed 42: decisions/session 2.9, auto-resolved 1%, offer share 11%, wage share 7% (below the manual's 10–25%; reported).  Kept.
 ```
 
+## 2026-09-13 — expansion M2: decisions
+
+```
+2026-09-13  heat.convergePerHr 0.10→0.20; job spikes ×1.5 (shakeDown 2→3, collectDebt 1→1.5, leanOnWard 3→4.5, pressure 4→6, moveShipment 2→3, dinner 1→1.5)
+            Hypothesis (expansion note): sharp, short danger windows at the same equilibrium; hours ≥40 was ~7 a week.
+            Sim alone (10 seeds): Act I 1.90 d, Act II 3.60 d, heat 28.5, raids 0, partial 0.49.  Seed 42 with all of M2: hours ≥40 47.  Kept.
+2026-09-13  fronts.types.restaurant.throughput 185→120, with fronts.upgrade.capacity {step 0.25, levels 3, costPctOfUnlock 0.5}: 210 at level 3
+            Reason: Act II laundering grows through a decision (ADR 0028) instead of the one-line cut rejected on 2026-09-12.  Kept (sim in the next line).
+2026-09-13  New config, starting values from the expansion plan (ADRs 0027–0030):
+            rackets.specialization {atTier 3, greed 1.25/1.6, stealth 1.0/0.8}; fronts.modes {push ×1.5 from util 0.5, layLow ×0.5, no suspicion};
+            rivals.tolya.haggle {diff 45, noise 15, pricePct 0.5, win +5, insult −10}; crew.experience {xpByBand 2/5/8, outcomeMult 1/0.75/0.5,
+            pointCost 4 + 0.3 per point above 30, potentialRoll 5–20, mentorBonus 0.5, enforcerXpPerHr 0.15, ranks 8/20/36, perkChoices 2, six perks};
+            training jobs {240 min, 1 crew, costDirty 15 × act, xp 8}; crew.starting potentials Vitya M60 B38 N55, Dima M38 B72 N48.
+            Sim with all of M2 (10 seeds): Act I 1.89→1.80 d (8/10 in range), Act II 3.61→3.33 d (8/10), heat 32.2→34.4 (6/10), raids 0,
+            partial 0.48→0.51, front util 0.47→0.49, Dirty idle 0.54, missed wages 0, wage share 0.06.
+            Partial d1–2 0.55, d7–8 0.47 (plan gate ≥ 0.40); 1.1 stat points per crew member per day; offer share 0.25 (seed 42: 0.11→0.21).  Kept.
+2026-09-13  offers.templates.*.rewardMult [1.2, 1.6]→[1.1, 1.5]
+            Symptom: offer share 0.25 across seeds, at the plan's ceiling, once growing crew could win the harder offers.
+            Sim (10 seeds): offer share 0.25→0.18; Act I 1.80 d, Act II 3.29 d, heat 34.4, partial 0.50, d7–8 partial 0.47.  Kept.
+```
+
 ## Open
 
-- **Front utilization ~45% (target 70–90%) and Dirty idle ~55% (target 20–50%).** The Restaurant launders 185 Dirty/hr; the casual economy's Dirty supply stays well below that through Act II. A smaller Restaurant throttles Clean, which is what sets Act II pace, so this needs its own measured pass (e.g. Restaurant throughput that grows with front level) rather than a one-line cut.
-- **Act I clear is borderline** (1.92 d mean, 4/10 seeds inside 1–2 d).
-- **hours ≥40 is low** (~7 over 7 days): the danger window barely registers for the bot. Watch it in human playtests before touching heat.
+- **Front utilization ~49% (target 70–90%) and Dirty idle ~54% (target 20–50%).** The Restaurant now starts at 120 Dirty/hr and grows through its capacity track, but the casual economy's Dirty supply still sits below what fronts can wash. M3's upkeep and supply chain change the Dirty side; measure again there.
+- **Heat mean 34.4 is close to the 35 ceiling** (6/10 seeds in range) after M2. The bot pushes fronts and specializes within its heat budget; watch the mean when M3 adds businesses.
+- **Wage share ~6%** (manual 10–25%). Premises upkeep in M3 is expected to raise it.
+- **Act I clear** is 1.80 d mean, 8/10 seeds inside 1–2 d.

@@ -11,7 +11,7 @@ Pending decisions. Every job that comes back files a report with a fork, and one
 
 | Field | Meaning |
 |---|---|
-| `kind` | `report`, `incident` or `perk` (perk choices arrive with crew experience) |
+| `kind` | `report`, `incident` or `perk` (a promotion's perk choice) |
 | `ref` | the job type, incident type or crew id |
 | `crewIds`, `racketId` | who and what the loyalty and condition effects apply to |
 | `createdAt`, `expiresAt` | filed at, and when the default applies |
@@ -40,6 +40,10 @@ Reports always file, even during the tutorial. They expire after `inbox.reportHo
 
 Incidents expire after `inbox.incidentHours`.
 
+## Perk choices
+
+When a crew member reaches Soldier or Made, `filePerkChoice` in `engine/systems/experience.ts` files a `perk` item for them ([crew.md](crew.md#experience)): `crew.experience.perkChoices` perks they don't hold, drawn on `rng.derive('perk', crewId, rank)`, each option's effect `{ perk }`, the first as default. It expires after `inbox.perkHours`. Applying the option adds the perk to the member (if they're still on the crew and don't have it) and emits `PERK_CHOSEN { crewId, name, perk }`. Perk items don't count toward `maxPending`, and a perk costs nothing, so the default is always safe.
+
 ## Answering and expiry
 
 - `RESOLVE_INBOX { itemId, optionId }` applies the option. It's rejected with "You can’t cover that" when the option costs more Dirty or Clean than the player holds.
@@ -53,15 +57,16 @@ Effect rules: Dirty can't go below zero (the change is recorded in `stats.inboxD
 - `REPORT_FILED { itemId, opId, opType, outcome, expiresAt }` (quiet in the Log)
 - `INCIDENT_RAISED { itemId, incidentType, crewId?, expiresAt }`
 - `INBOX_RESOLVED { itemId, kind, ref, optionId, optionName, auto, effects }`; an auto-resolution is shown on Home and in the away popup
+- `PERK_CHOSEN { crewId, name, perk }` after a perk option applies
 
 `stats.inbox` counts `filed`, `resolved` and `auto`. `DEBUG_FORCE_INCIDENT { incidentType? }` files one immediately.
 
 ## The bot
 
-Right after `COLLECT`, the casual bot answers every item with the affordable option of highest value: `dirty + clean × 2 + rep × repValue + influence × influenceValue − heat × heatCost + loyalty × loyaltyValue` (×3 for someone below `raiseBelow`). `influenceValue` and `heatCost` are the same numbers it uses to value jobs ([sim.md](../sim.md)).
+Right after `COLLECT`, the casual bot answers every item with the affordable option of highest value: `dirty + clean × 2 + rep × repValue + influence × influenceValue − heat × heatCost + loyalty × loyaltyValue` (×3 for someone below `raiseBelow`). `influenceValue` and `heatCost` are the same numbers it uses to value jobs ([sim.md](../sim.md)). Perk choices go by a fixed preference: Earner, Ghost, Fixer, Steady, Mentor, Bargainer.
 
 ## The app
 
 Home lists pending items first ("Waiting for you"), each as an `InboxCard` with its countdown, what happened, and one button per option showing its effects; the default is marked. The Home tab shows a dot while anything is pending. The away popup says how many decisions are waiting and lists items that expired unanswered.
 
-**Tests:** `tests/inbox.test.ts` (reports file with baked options; answering applies effects; unaffordable options are rejected; expiry applies the default; incidents never roll during the tutorial, roll only at whole hours, never above `maxPending`), `tests/reconcile.test.ts` (split invariance with pending items).
+**Tests:** `tests/inbox.test.ts` (reports file with baked options; answering applies effects; unaffordable options are rejected; expiry applies the default; incidents never roll during the tutorial, roll only at whole hours, never above `maxPending`), `tests/crew.test.ts` (a promotion files a perk choice and choosing it adds the perk), `tests/reconcile.test.ts` (split invariance with pending items).

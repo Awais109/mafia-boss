@@ -25,7 +25,7 @@ export function RacketsScreen({ game }: ScreenProps) {
         <Row label="Max tier" value={String(d.maxTier)} />
         <T small muted>
           Each district runs one of each business it allows. Each tier multiplies yield by {c.rackets.tierYieldMult} and heat by{' '}
-          {c.rackets.tierHeatMult}: heat always grows faster.
+          {c.rackets.tierHeatMult}: heat always grows faster. {`The upgrade to tier ${c.rackets.specialization.atTier} is a choice: greed (yield ×${c.rackets.specialization.greed.yieldMult}, heat ×${c.rackets.specialization.greed.exposureMult}) or stealth (heat ×${c.rackets.specialization.stealth.exposureMult}).`}
         </T>
       </Card>
 
@@ -46,21 +46,45 @@ export function RacketsScreen({ game }: ScreenProps) {
           <Section key={id} title={dc.name} right={<T small muted>{`${controllerLabel(id)} · ${rackets.length}/${dc.allows.length}`}</T>}>
             {rackets.map(({ r, rd }) => {
               const rt = c.rackets.types[r.type]
-              const nextYield = formulas.tierYield(c, r.type, r.tier + 1) - formulas.tierYield(c, r.type, r.tier)
-              const nextHeat = formulas.tierHeat(c, r.type, r.tier + 1) - formulas.tierHeat(c, r.type, r.tier)
+              const specMult = r.specialization ? c.rackets.specialization[r.specialization] : { yieldMult: 1, exposureMult: 1 }
+              const nextYield = (formulas.tierYield(c, r.type, r.tier + 1) - formulas.tierYield(c, r.type, r.tier)) * specMult.yieldMult
+              const nextHeat = (formulas.tierHeat(c, r.type, r.tier + 1) - formulas.tierHeat(c, r.type, r.tier)) * specMult.exposureMult
+              const choosing = rd.upgradeCost !== null && r.tier + 1 === c.rackets.specialization.atTier
               const enforcer = s.crew.find((m) => m.id === r.enforcerId)
               return (
                 <Card key={r.id}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
                     <T bold>{`${rt.name} · tier ${r.tier}`}</T>
-                    {enforcer && <Tag text={`enforcer: ${enforcer.name}`} color={colors.accent} />}
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      {r.specialization && <Tag text={r.specialization} color={r.specialization === 'greed' ? colors.warn : colors.influence} />}
+                      {enforcer && <Tag text={`enforcer: ${enforcer.name}`} color={colors.accent} />}
+                    </View>
                   </View>
                   <Row label="Yield" hint={rd.tribute > 0 ? `−◆${fmt(rd.tribute)} tribute` : undefined} value={<Money kind="dirty" value={fmtRate(rd.yield)} />} />
                   <Row label="Exposure" value={`▲ ${fmt(rd.exposure)}`} />
                   <Row label="Condition" value={`${Math.round(r.condition)}%`} color={r.condition < 60 ? colors.heat : r.condition < 85 ? colors.warn : undefined} />
                   <Bar value={r.condition} max={100} color={r.condition < 60 ? colors.heat : colors.good} />
                   <BtnRow>
-                    {rd.upgradeCost !== null ? (
+                    {rd.upgradeCost === null ? (
+                      <Tag text="max tier" />
+                    ) : choosing ? (
+                      (['greed', 'stealth'] as const).map((choice) => {
+                        const m = c.rackets.specialization[choice]
+                        const dy = formulas.tierYield(c, r.type, r.tier + 1) * m.yieldMult - formulas.tierYield(c, r.type, r.tier)
+                        const dh = formulas.tierHeat(c, r.type, r.tier + 1) * m.exposureMult - formulas.tierHeat(c, r.type, r.tier)
+                        const cost = rd.upgradeCost!
+                        return (
+                          <Btn
+                            key={choice}
+                            small
+                            kind="primary"
+                            title={`Tier ${r.tier + 1}, ${choice}: ●${fmt(cost)} (+◆${fmt(dy)}/h, +▲${fmt(dh)})`}
+                            disabled={s.clean < cost}
+                            onPress={() => store.dispatch({ type: 'UPGRADE_RACKET', racketId: r.id, specialization: choice })}
+                          />
+                        )
+                      })
+                    ) : (
                       <Btn
                         small
                         kind="primary"
@@ -68,8 +92,6 @@ export function RacketsScreen({ game }: ScreenProps) {
                         disabled={s.clean < rd.upgradeCost}
                         onPress={() => store.dispatch({ type: 'UPGRADE_RACKET', racketId: r.id })}
                       />
-                    ) : (
-                      <Tag text="max tier" />
                     )}
                     {r.condition < 100 && (
                       <Btn

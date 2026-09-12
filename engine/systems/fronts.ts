@@ -1,13 +1,15 @@
 import type { Config } from '../config/schema'
-import { frontRate } from '../core/formulas'
+import { frontRate, frontThroughput } from '../core/formulas'
 import type { PlayerState } from '../model/state'
 
 // Fronts launder at a fixed throughput: min(buffer, throughput × h) × rate → Clean.
+// Throughput includes capacity upgrades and the mode dial; both change only at action time,
+// so it's constant within a reconcile segment.
 
 export function convertFronts(state: PlayerState, c: Config, hours: number): void {
   for (const f of state.fronts) {
     if (f.buffer <= 0) continue
-    const amount = Math.min(f.buffer, c.fronts.types[f.type].throughput * hours)
+    const amount = Math.min(f.buffer, frontThroughput(c, f) * hours)
     f.buffer -= amount
     f.convertedThisHour += amount
     const clean = amount * frontRate(c, f.type, f.level)
@@ -21,7 +23,7 @@ export function convertFronts(state: PlayerState, c: Config, hours: number): voi
 // hour after a big deposit.
 export function frontsHourBoundary(state: PlayerState, c: Config): void {
   for (const f of state.fronts) {
-    const hourUtil = Math.min(1, f.convertedThisHour / c.fronts.types[f.type].throughput)
+    const hourUtil = Math.min(1, f.convertedThisHour / frontThroughput(c, f))
     f.util += (hourUtil - f.util) / c.fronts.utilSmoothingHours
     f.convertedThisHour = 0
   }

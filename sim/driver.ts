@@ -23,6 +23,10 @@ export type HourRow = {
   frontUtil: number
   cleanEarned: number
   dirtyEarned: number
+  crew: number
+  opPartial: number // cumulative partial outcomes
+  opResolved: number // cumulative resolved jobs (training excluded)
+  statPoints: number // cumulative stat points gained
 }
 
 export type SessionRow = {
@@ -86,6 +90,10 @@ export class Recorder {
       frontUtil: throughput > 0 ? d.perFront.reduce((s, f) => s + f.util * f.throughput, 0) / throughput : 0,
       cleanEarned: state.stats.cleanEarned,
       dirtyEarned: state.stats.dirtyEarned,
+      crew: state.crew.length,
+      opPartial: state.stats.opOutcomes.partial,
+      opResolved: state.stats.opOutcomes.full + state.stats.opOutcomes.partial + state.stats.opOutcomes.fail,
+      statPoints: state.stats.statPointsGained ?? 0,
     })
   }
 
