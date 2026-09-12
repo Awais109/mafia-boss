@@ -4,6 +4,9 @@ import { LOG_CAP, type PlayerState } from '../model/state'
 import { crewDayBoundary, refreshPoolIfDue, releaseJailed } from '../systems/crew'
 import { convertFronts, frontsHourBoundary } from '../systems/fronts'
 import { heatHourBoundary } from '../systems/heat'
+import { autoResolveInbox, rollIncident } from '../systems/inbox'
+import { ledgerDayBoundary } from '../systems/ledger'
+import { refreshOffersIfDue } from '../systems/offers'
 import { resolveOp } from '../systems/ops'
 import { accrueVault, decayCondition } from '../systems/rackets'
 import { tolyaTick } from '../systems/rivals'
@@ -58,8 +61,10 @@ function nextBoundary(state: PlayerState, c: Config, t: number, now: number): nu
   for (const op of state.ops) consider(op.completesAt)
   if (state.bribeControl > 0) consider(state.bribeUntil)
   consider(state.recruitPool.refreshAt)
+  consider(state.offers.refreshAt)
   consider(state.rival.tolya.nextTickAt)
   for (const m of state.crew) if (m.status === 'jailed') consider(m.jailedUntil)
+  for (const item of state.inbox) consider(item.expiresAt)
   return b
 }
 
@@ -81,7 +86,11 @@ function hourBoundary(state: PlayerState, ctx: Ctx, t: number): void {
   frontsHourBoundary(state, ctx.c)
   decayCondition(state, ctx.c)
   heatHourBoundary(state, ctx, t)
-  if (isDayStart(ctx.c, t)) crewDayBoundary(state, ctx, t)
+  rollIncident(state, ctx, t)
+  if (isDayStart(ctx.c, t)) {
+    crewDayBoundary(state, ctx, t)
+    ledgerDayBoundary(state, t) // last: the snapshot sees the day's settled wages
+  }
 }
 
 const idNum = (id: string) => Number(id.replace(/\D/g, '')) || 0
@@ -92,6 +101,7 @@ export function processDue(state: PlayerState, ctx: Ctx, t: number): void {
     .filter((o) => o.completesAt <= t)
     .sort((a, b) => a.completesAt - b.completesAt || idNum(a.id) - idNum(b.id))
   for (const op of due) resolveOp(state, ctx, op, t)
+  autoResolveInbox(state, ctx, t)
 
   if (state.bribeControl > 0 && state.bribeUntil <= t) {
     state.bribeControl = 0
@@ -99,6 +109,7 @@ export function processDue(state: PlayerState, ctx: Ctx, t: number): void {
   }
   releaseJailed(state, ctx, t)
   refreshPoolIfDue(state, ctx, t)
+  refreshOffersIfDue(state, ctx, t)
   if (state.rival.tolya.nextTickAt <= t) tolyaTick(state, ctx, t)
 }
 

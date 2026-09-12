@@ -58,6 +58,7 @@ export const defaults: Config = {
     suspicionFactor: 0.3, // suspicion = factor × throughput × (util − start)
     utilSmoothingHours: 6, // util is a moving average over roughly this many hours
     bufferHours: 10, // buffer cap = throughput × this
+    reserveHours: 12, // "launder all but running costs" keeps this many hours of wages + upkeep in Dirty
     upgrade: {
       rateStep: 0.03, // +rate per level
       levels: 3,
@@ -147,6 +148,89 @@ export const defaults: Config = {
       pressure: { name: 'Pressure a District', band: 'standard', minutes: 60, crew: 2, w: { muscle: 0.6, nerve: 0.4 }, diff: 45, spike: 4, dirty: 10, districtPressure: true },
       moveShipment: { name: 'Move a Shipment', band: 'standard', minutes: 180, crew: 2, w: { nerve: 0.5, brains: 0.5 }, diff: 50, spike: 2, dirty: 30, act: 2 },
       dinner: { name: 'Dinner with Officials', band: 'long', minutes: 360, crew: 2, w: { brains: 0.7, nerve: 0.3 }, diff: 55, spike: 1, influence: 2 },
+    },
+    // Every finished job files a report with a fork (ADR 0024). dirtyPct is a share of the job's
+    // Dirty reward, so the options move value around rather than add it.
+    reports: {
+      bands: ['quick', 'standard', 'long'],
+      byOutcome: {
+        full: [
+          { id: 'pocket', name: 'Pocket it', default: true },
+          { id: 'boast', name: 'Let the street hear about it', rep: 1, heat: 1 },
+          { id: 'treat', name: 'Stand the crew a round', dirtyPct: -0.25, loyalty: 5 },
+        ],
+        partial: [
+          { id: 'pocket', name: 'Take what you got', default: true },
+          { id: 'pushHarder', name: 'Go back for the rest', dirtyPct: 0.25, heat: 2 },
+          { id: 'backOff', name: 'Let it go', loyalty: 3, heat: -1 },
+        ],
+        fail: [
+          { id: 'layLow', name: 'Lie low', default: true, heat: -1 },
+          { id: 'payOff', name: 'Pay off the witnesses', dirtyPerAct: -10, heat: -3 },
+          { id: 'blame', name: 'Blame the crew', loyalty: -5, rep: 1 },
+        ],
+      },
+    },
+  },
+
+  inbox: {
+    reportHours: 12, // an unanswered report takes its default after this long
+    incidentHours: 8,
+    perkHours: 24,
+    maxPending: 4, // incidents only: reports and perk choices always file
+  },
+
+  incidents: {
+    chancePerHr: 0.06, // rolled at whole hours: ~1.4 a day
+    startAfterHours: 6, // none in a game's first hours
+    types: {
+      inspector: {
+        name: 'An inspector calls',
+        text: 'A city inspector is going through your books and wants a reason to leave.',
+        needs: 'inspected',
+        options: [
+          { id: 'stall', name: 'Stall him', default: true, heat: 3 },
+          { id: 'pay', name: 'Pay him to go', dirtyPerAct: -20, heat: -3 },
+        ],
+      },
+      drunkCrew: {
+        name: 'Drunk on the job',
+        text: 'One of your crew turned up drunk and started a fight outside a kiosk.',
+        needs: 'idleCrew',
+        options: [
+          { id: 'dock', name: 'Dock their pay', default: true, loyalty: -5 },
+          { id: 'cover', name: 'Cover the damage', dirtyPerAct: -10, loyalty: 5 },
+          { id: 'ignore', name: 'Let it slide', heat: 2 },
+        ],
+      },
+      shopkeeperLead: {
+        name: 'A shopkeeper talks',
+        text: 'A shopkeeper knows where a rival hides his takings.',
+        needs: 'joint',
+        options: [
+          { id: 'pass', name: 'Leave it', default: true },
+          { id: 'take', name: 'Take the money', dirtyPerAct: 15, heat: 2 },
+        ],
+      },
+      copFavour: {
+        name: 'A favour for a cop',
+        text: 'A beat cop wants someone who owes him leaned on.',
+        options: [
+          { id: 'refuse', name: 'Refuse', default: true, heat: 2 },
+          { id: 'doIt', name: 'Do the favour', dirtyPerAct: -15, influence: 1 },
+        ],
+      },
+    },
+  },
+
+  offers: {
+    count: 3,
+    refreshHours: 6, // the board is replaced on this schedule; offers expire with it
+    templates: {
+      stubbornVendor: { base: 'shakeDown', name: 'A vendor who won’t pay', diffAdd: [0, 10], rewardMult: [1.2, 1.6], spikeMult: [1, 1.5], minutesMult: [0.75, 1.25] },
+      kioskRowDebt: { base: 'collectDebt', name: 'A debt in Kiosk Row', diffAdd: [0, 10], rewardMult: [1.2, 1.6], spikeMult: [1, 1.5], minutesMult: [0.75, 1.25] },
+      wardWord: { base: 'leanOnWard', name: 'A word with the ward', diffAdd: [0, 10], rewardMult: [1.2, 1.6], spikeMult: [1, 1.5], minutesMult: [0.75, 1.25] },
+      lateDelivery: { base: 'moveShipment', name: 'A late delivery', act: 2, diffAdd: [0, 10], rewardMult: [1.2, 1.6], spikeMult: [1, 1.5], minutesMult: [0.75, 1.25] },
     },
   },
 

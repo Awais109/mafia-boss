@@ -17,6 +17,7 @@ import { OpsScreen } from './app/screens/OpsScreen'
 import { RacketsScreen } from './app/screens/RacketsScreen'
 import { TurfScreen } from './app/screens/TurfScreen'
 import type { ScreenProps, TabId } from './app/screens/types'
+import { homeNeedsAttention } from './app/inbox'
 import { store, useGame, type Snapshot } from './app/store'
 
 const TABS: { id: TabId; title: string; debugOnly?: boolean; render: (p: ScreenProps) => ReactNode }[] = [
@@ -35,7 +36,7 @@ const TABS: { id: TabId; title: string; debugOnly?: boolean; render: (p: ScreenP
 function badges(game: Snapshot): Partial<Record<TabId, boolean>> {
   const { state: s, derived: d, config: c } = game
   return {
-    home: s.vault >= d.vaultCap - 1e-6 || s.rival.tolya.demand !== null,
+    home: homeNeedsAttention(game),
     fronts: s.dirty >= 1 && d.perFront.some((f) => f.bufferCap - (s.fronts.find((x) => x.id === f.id)?.buffer ?? 0) >= 1),
     ops: s.crew.some((m) => m.status === 'idle'),
     heat: s.heat >= c.heat.inspectThreshold,

@@ -52,6 +52,7 @@ export type Derived = {
   inspectionMult: number
   wagesPerHr: number
   wageMult: number
+  upkeepPerHr: number // premises running costs, paid in Dirty with wages
   influencePerHr: number
   crewSlots: number
   maxTier: number
@@ -160,6 +161,7 @@ export function derive(state: PlayerState, c: Config): Derived {
     inspectionMult,
     wagesPerHr: sum(state.crew.map((m) => baseWage(c, m))) * wageMult,
     wageMult,
+    upkeepPerHr: 0,
     influencePerHr: state.officials.length * c.officials.influencePerHrEach,
     crewSlots: crewSlots(c, state),
     maxTier,

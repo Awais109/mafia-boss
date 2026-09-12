@@ -1,12 +1,12 @@
-import { STATS, type Config, type OpConfig, type OpType } from '../config/schema'
+import { STATS, type Config, type OpConfig, type OpOutcome, type OpType } from '../config/schema'
 import { emit, type Ctx } from '../core/ctx'
 import { opRewardMult } from '../core/formulas'
 import type { Rand } from '../core/rng'
 import { dayIndex } from '../core/time'
-import type { OpOutcome } from '../model/events'
 import type { CrewMember, OpInstance, PlayerState } from '../model/state'
 import { changeLoyalty, effectiveStat } from './crew'
 import { addPressure } from './districts'
+import { fileReport } from './inbox'
 import { gainRep } from './reputation'
 
 // Resolution:
@@ -70,13 +70,22 @@ export function influenceRoom(state: PlayerState, c: Config, t: number): number 
   return Math.max(0, c.ops.influenceDailyCap - used)
 }
 
+// A job taken from the board resolves with its own snapshotted config.
+export function opConfigOf(c: Config, op: OpInstance): OpConfig {
+  return op.cfg ?? c.ops.list[op.type]
+}
+
+export function opDirtyRewardFor(c: Config, state: PlayerState, cfg: OpConfig, outcome: OpOutcome): number {
+  return Math.round((cfg.dirty ?? 0) * rewardShare(c, outcome) * opRewardMult(c, state.act))
+}
+
 export function opDirtyReward(c: Config, state: PlayerState, type: OpType, outcome: OpOutcome): number {
-  return Math.round((c.ops.list[type].dirty ?? 0) * rewardShare(c, outcome) * opRewardMult(c, state.act))
+  return opDirtyRewardFor(c, state, c.ops.list[type], outcome)
 }
 
 export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: number): void {
   const { c } = ctx
-  const cfg = c.ops.list[op.type]
+  const cfg = opConfigOf(c, op)
   state.ops = state.ops.filter((o) => o.id !== op.id)
   const team = op.crewIds
     .map((id) => state.crew.find((m) => m.id === id))
@@ -86,9 +95,11 @@ export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: numbe
     : { score: 0, outcome: 'fail' as const }
   const share = rewardShare(c, outcome)
 
-  const dirty = opDirtyReward(c, state, op.type, outcome)
+  const dirty = opDirtyRewardFor(c, state, cfg, outcome)
   state.dirty += dirty
   state.stats.dirtyEarned += dirty
+  state.stats.jobDirty += dirty
+  if (op.offerId) state.stats.offerDirty += dirty
 
   let influence = 0
   let influenceLostToCap = 0
@@ -136,7 +147,10 @@ export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: numbe
     spike,
     rep,
     districtId: op.districtId,
+    ...(op.name ? { name: op.name } : {}),
+    ...(op.offerId ? { offerId: op.offerId } : {}),
   })
   gainRep(state, ctx, t, rep)
   if (cfg.districtPressure && op.districtId && outcome !== 'fail') addPressure(state, ctx, t, op.districtId)
+  fileReport(state, ctx, t, op, cfg, outcome, dirty)
 }

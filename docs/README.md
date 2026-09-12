@@ -9,11 +9,12 @@ What is built, how it works, and why. Written so a person or an LLM new to the r
 | Doc | Covers |
 |---|---|
 | [architecture.md](architecture.md) | Layers and the one rule, reconcile/apply/derive, game time, RNG, config layering, persistence |
-| [systems/economy.md](systems/economy.md) | Vault, rackets, tiers, costs, condition, enforcers |
+| [systems/economy.md](systems/economy.md) | Vault, rackets, tiers, costs, condition, enforcers, the daily ledger and Money flow |
 | [systems/fronts.md](systems/fronts.md) | Laundering Dirty into Clean, buffers, rates, suspicion |
 | [systems/heat.md](systems/heat.md) | Exposure, control, heat target, inspections, raids, arrests, bribes, officials, Influence |
 | [systems/crew.md](systems/crew.md) | Crew stats and traits, wages, loyalty, recruiting, slots, jail |
-| [systems/ops.md](systems/ops.md) | Jobs, resolution formula, rewards, district pressure |
+| [systems/ops.md](systems/ops.md) | Jobs, resolution formula, rewards, district pressure, the opportunities board |
+| [systems/inbox.md](systems/inbox.md) | Pending decisions: crew reports, incidents, defaults and expiry |
 | [systems/districts-and-rivals.md](systems/districts-and-rivals.md) | Districts, tribute, buy-outs and flips, Tolya, Zhanna |
 | [systems/progression.md](systems/progression.md) | Reputation, acts, the unlock ladder, the tutorial |
 | [app.md](app.md) | The React Native app: store, storage, screens, Debug tab, export |
@@ -39,7 +40,9 @@ When you change a path on the left, update the doc on the right in the same comm
 | `engine/model/state.ts`, `engine/model/migrate.ts` | [architecture.md](architecture.md) (bump `SCHEMA_VERSION` for shape changes) |
 | `engine/model/actions.ts`, `engine/model/events.ts` | the system doc that owns the action or event |
 | `engine/newGame.ts` | [systems/progression.md](systems/progression.md) |
-| `engine/systems/rackets.ts` | [systems/economy.md](systems/economy.md) |
+| `engine/systems/rackets.ts`, `engine/systems/ledger.ts` | [systems/economy.md](systems/economy.md) |
+| `engine/systems/inbox.ts` | [systems/inbox.md](systems/inbox.md) |
+| `engine/systems/offers.ts` | [systems/ops.md](systems/ops.md) |
 | `engine/systems/fronts.ts` | [systems/fronts.md](systems/fronts.md) |
 | `engine/systems/heat.ts` | [systems/heat.md](systems/heat.md) |
 | `engine/systems/crew.ts` | [systems/crew.md](systems/crew.md) |

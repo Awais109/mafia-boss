@@ -38,6 +38,11 @@ export function AwayModal({ summary: a, game }: { summary: AwaySummary; game: Sn
             {fmtDuration(a.to - a.from, c)}
           </T>
           <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+            {a.pendingDecisions > 0 && (
+              <T small color={colors.accent}>
+                {`Waiting for you on Home: ${a.pendingDecisions} decision${a.pendingDecisions === 1 ? '' : 's'}. Unanswered ones take their default when they expire.`}
+              </T>
+            )}
             <T small style={styles.heading}>
               Jobs
             </T>

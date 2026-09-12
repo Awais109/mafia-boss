@@ -9,7 +9,7 @@ The React Native layer: `App.tsx` and `app/`. It renders state and dispatches ac
 - `index.ts` registers `App`.
 - `App.tsx` wraps everything in `SafeAreaProvider`, calls `store.start()` once, and renders a loading spinner until the first snapshot exists. Then: `Header`, a scrollable tab bar, `TutorialBanner`, `NoticeBar`, the active screen, and `AwayModal` while a "while you were away" summary is pending.
 - Tabs: Home, Rackets, Fronts, Ops, Crew, Heat, Turf, Log, and Debug (only when `debug.enabled`).
-- A dot on a tab means it wants attention: Home when the vault is full or Tolya has a demand, Fronts when there's Dirty and buffer room, Ops when crew are idle, Heat at or above `heat.inspectThreshold`.
+- A dot on a tab means it wants attention: Home when a decision is waiting, Tolya has a demand, or an alert is up (vault full, running costs Dirty can't cover, an offer about to expire; `homeNeedsAttention` in `app/inbox.ts`), Fronts when there's Dirty and buffer room, Ops when crew are idle, Heat at or above `heat.inspectThreshold`.
 - Screens receive `{ game, go }` (`app/screens/types.ts`): the current snapshot, and a function to switch tabs.
 
 ## The store
@@ -50,6 +50,7 @@ The React Native layer: `App.tsx` and `app/`. It renders state and dispatches ac
 | `cleanEarned`, `tributeLost`, `seized`, `influenceEarned` | Stats and state deltas |
 | `wagesPaid`, `wagesShort` | `WAGES_PAID` and `WAGES_MISSED` events |
 | `heatFrom`, `heatTo` | Heat before and after |
+| `pendingDecisions` | `after.inbox.length`; the popup points the player to Home |
 | `events` | Everything else except bookkeeping; the modal runs them through `describeEvent` and drops quiet lines |
 
 The summary is not saved: closing the app loses it, and the Log still has every event.
@@ -71,22 +72,26 @@ The summary is not saved: closing the app loses it, and the Log still has every 
 
 | Screen | Shows and does |
 |---|---|
-| Home | Tolya's demand, if any; vault bar with fill time and Collect; Dirty and Clean; crew idle, jobs, wages owed so far with the rate and time to payday (the projected bill only appears when Dirty can't cover it); heat and inspections; the act card (Rep against the next threshold, the act milestones from `stats.actClearedAt`, and once Act II is cleared, what's built plus Export log); the latest events |
+| Home | Tolya's demand, if any; Waiting for you (an `InboxCard` per pending decision, soonest expiry first); alerts from `homeAlerts` (running costs Dirty can't cover, offers about to expire); vault bar with fill time and Collect; Money flow (`MoneyFlow`); crew idle, jobs, wages owed with the rate and time to payday; heat and inspections; This week (`app/ledger.ts`: Dirty in, costs, Clean in and spent per game day); the act card (Rep against the next threshold, the act milestones from `stats.actClearedAt`, and once Act II is cleared, what's built plus Export log); the latest events |
 | Rackets | Per district: owned rackets with yield, tribute, exposure, condition, Upgrade and Repair; open spots for the district's allowed businesses, with cost or unlock Rep |
-| Fronts | Yield against laundering capacity; each front's rate, throughput, buffer, recent utilization, suspicion; Deposit half or max; rate upgrade; locked fronts |
-| Ops | Jobs in progress; a crew picker with effective stats; each job's weights, difficulty, heat, rewards, and odds for the picked team; district picker for Pressure; Influence earned today against the cap |
+| Fronts | Yield against laundering capacity, and one button that launders all but running costs (keeps `fronts.reserveHours` of wages and upkeep in Dirty, deposits the rest best rate first); each front's rate, throughput, buffer, recent utilization, suspicion; Deposit half or max; rate upgrade; locked fronts |
+| Ops | Jobs in progress (under an offer's own name); a crew picker with effective stats; On the board: each offer's terms, what it's based on, its countdown, odds for the picked team, and Take it; each fixed job's weights, difficulty, heat, rewards, and odds; district picker for Pressure; Influence earned today against the cap |
 | Crew | Roster with status, traits, loyalty bar, wage; Raise, enforcer assignment, two-tap Fire; the recruit pool and its refresh time; buying an extra slot |
 | Heat | Heat bar with the three thresholds; target formula with live numbers; exposure and control breakdowns; Bribe; officials and the cooldown |
 | Turf | Districts (controller, allowed businesses, tribute, perks, Buy out, Pressure); Tolya's mood, next visit, demand; a note on Zhanna in Act II |
-| Log | The in-save event log with filters (All, Crew & jobs, Heat, Turf, Money) and a bookkeeping toggle |
-| Debug | Panels: **Time** (skip +15m to +1d or custom hours, reset offset), **State** (grant currencies, set heat and Rep, force raid/arrest/Tolya, finish jobs, refresh recruits), **Config** (preset switch, grouped editor with preset values beside overrides, reset group/all, config errors), **Inspect** (live `Derived`, per racket and front, stats), **Save & log** (export, import, new game), **Bot** (play 1/3/5 days, then show the sim report) |
+| Log | The in-save event log with filters (All, Decisions, Crew & jobs, Heat, Turf, Money) and a bookkeeping toggle |
+| Debug | Panels: **Time** (skip +15m to +1d or custom hours, reset offset), **State** (grant currencies, set heat and Rep, force raid/arrest/Tolya/incident, finish jobs, refresh recruits or the offers board), **Config** (preset switch, grouped editor with preset values beside overrides, reset group/all, config errors), **Inspect** (live `Derived`, inbox and board counts, per racket and front, stats), **Save & log** (export, import, new game), **Bot** (play 1/3/5 days, then show the sim report) |
 
 ## Components and helpers
 
 - `app/components/ui.tsx`: the palette and primitives (`Screen`, `Section`, `Card`, `Row`, `T`, `Btn`, `BtnRow`, `Bar` with threshold marks, `Tag`, `Money`). Each resource has one colour and glyph everywhere: Dirty ◆ amber, Clean ● green, Influence ✦ blue, Rep ★ purple, Heat ▲ red.
 - `Header.tsx`: game clock, act (`Act II cleared` once it is), preset name when not default, the five resources, and the Rep line, which always names its target: `x/80 to Act II`, `x/480 to clear Act II`, or `x · Act II cleared on Day N` ([ADR 0022](decisions/0022-end-of-prototype-state.md)).
 - `NoticeBar.tsx`: the latest notice for 4 s; tap to dismiss.
+- `InboxCard.tsx`: one pending decision: title, what happened, time left, and a button per option showing its effects (`effectsText`); the default is marked and unaffordable options are disabled.
+- `MoneyFlow.tsx`: businesses into the vault, running costs, what the fronts are washing, Dirty and Clean on hand, and a warning when Dirty on hand won't cover `fronts.reserveHours` of costs.
 - `AwayModal.tsx`: the "while you were away" popup: jobs finished and what each earned, the money breakdown (rackets into the vault and what a full vault lost, per-front laundering into Clean, wages, tribute, seizures, Influence, heat), and any other notable events. Got it dismisses it.
 - `TutorialBanner.tsx`: copy for each tutorial step ([systems/progression.md](systems/progression.md#tutorial)), a button to the right tab, and Skip.
 - `app/eventText.ts`: `describeEvent(event, state, config)` → `{ text, color, quiet }`. `quiet` marks bookkeeping lines that Home hides and Log shows on request. `WAGES_PAID` is deliberately not quiet: it's the only sign a payday happened.
+- `app/inbox.ts`: `itemTitle`, `itemBody`, `effectsText`, `sortedInbox`, `homeAlerts`, `homeNeedsAttention` (the Home tab dot).
+- `app/ledger.ts`: `ledgerView(state, config, now)`, the "This week" rows built from `ledgerDays`.
 - `app/format.ts`: `fmt`, `fmtRate`, `pct`, `fmtDuration` (in game time, so `fast` still reads "2h"), `fmtClock` (device clock for real-time presets, game clock otherwise).

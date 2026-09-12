@@ -47,7 +47,7 @@ cost         = max(1, ceil(exposure × heat.bribe.costPerExposure))       (Dirty
 bribeControl = heat.bribe.controlPct × (baseControl + officials' control) × district multiplier
 ```
 
-The bribe lasts `heat.bribe.hours` and then expires. Events: `BRIBED`, `BRIBE_EXPIRED`.
+The bribe lasts `heat.bribe.hours` and then expires. Its cost is added to `stats.bribesPaid`. Events: `BRIBED`, `BRIBE_EXPIRED`.
 
 ## Officials
 

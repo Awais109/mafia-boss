@@ -2,10 +2,19 @@ import { describe, expect, it } from 'vitest'
 import { derive, makeRng, reconcile, type PlayerState } from '../engine'
 import { act, config, crewNamed, expectClose, fresh, H, T0 } from './helpers'
 
-// A state with everything moving at once: ops out, a bribe running, rackets paying tribute,
-// fronts converting, heat high enough for raids and arrests, a tribute demand pending.
+// A state with everything moving at once: ops out (one taken from the board), a bribe running,
+// rackets paying tribute, fronts converting, heat high enough for raids and arrests, a tribute
+// demand pending, decisions waiting to expire, and incidents free to roll.
 function busy(): PlayerState {
   let s = fresh('busy-player')
+  s.tutorial.done = true
+  s.offers.items.push({
+    id: 'offer-test',
+    opType: 'collectDebt',
+    name: 'A test debt',
+    cfg: { ...config.ops.list.collectDebt, dirty: 30, minutes: 35, diff: 45 },
+    expiresAt: s.offers.refreshAt,
+  })
   s = act(s, [{ type: 'DEBUG_GRANT', dirty: 3000, clean: 5000, influence: 30 }, { type: 'COLLECT' }], T0)
   const kiosk = s.fronts[0].id
   s = act(
@@ -16,7 +25,9 @@ function busy(): PlayerState {
       { type: 'BUY_RACKET', racketType: 'marketStall', districtId: 'kioskRow' },
       { type: 'BUY_RACKET', racketType: 'kiosk', districtId: 'kioskRow' },
       { type: 'START_OP', opType: 'shakeDown', crewIds: [crewNamed(s, 'Vitya').id] },
-      { type: 'START_OP', opType: 'collectDebt', crewIds: [crewNamed(s, 'Dima').id] },
+      { type: 'START_OP', opType: 'collectDebt', crewIds: [crewNamed(s, 'Dima').id], offerId: 'offer-test' },
+      { type: 'DEBUG_FORCE_INCIDENT', incidentType: 'copFavour' },
+      { type: 'DEBUG_FORCE_INCIDENT', incidentType: 'shopkeeperLead' },
       { type: 'BUY_OFFICIAL', officialId: 'wardCop' },
       { type: 'BRIBE' },
       { type: 'DEBUG_SET_REP', reputation: 90 },

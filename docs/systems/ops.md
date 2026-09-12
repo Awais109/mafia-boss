@@ -2,8 +2,8 @@
 
 Crew go out on timed jobs for Dirty, Influence and Rep, at the cost of a heat spike. How well a job goes depends on who you send.
 
-**Code:** `engine/systems/ops.ts` (`opUnlocked`, `opBaseScore`, `outcomeFor`, `rollOp`, `outcomeOdds`, `rewardShare`, `spikeShare`, `influenceRoom`, `opDirtyReward`, `resolveOp`), the `START_OP` handler in `engine/core/apply.ts`. Jobs resolve inside the reconcile walk at their exact completion time.
-**Config:** `ops.*`, plus `reputation.perOpSuccess` and `crew.loyalty.perOpSuccess`.
+**Code:** `engine/systems/ops.ts` (`opUnlocked`, `opBaseScore`, `outcomeFor`, `rollOp`, `outcomeOdds`, `rewardShare`, `spikeShare`, `influenceRoom`, `opConfigOf`, `opDirtyRewardFor`, `opDirtyReward`, `resolveOp`), `engine/systems/offers.ts` (the opportunities board), the `START_OP` handler in `engine/core/apply.ts`. Jobs resolve inside the reconcile walk at their exact completion time.
+**Config:** `ops.*` (including `ops.reports`, see [inbox.md](inbox.md)), `offers.*`, plus `reputation.perOpSuccess` and `crew.loyalty.perOpSuccess`.
 
 ## The jobs
 
@@ -20,12 +20,23 @@ Crew go out on timed jobs for Dirty, Influence and Rep, at the cost of a heat sp
 
 ## Starting a job
 
-`START_OP { opType, crewIds, districtId? }` checks:
+`START_OP { opType, crewIds, districtId?, offerId? }` checks:
+- with `offerId`: the offer is still on the board, hasn't expired, and is for `opType`; its `cfg` replaces `ops.list[opType]` for everything below;
 - the job is unlocked (`act ≤ state.act`);
 - exactly `crew` distinct crew members are chosen, and all are idle;
 - for Pressure, a `districtId` that's open and not already yours.
 
-The chosen crew become `on_op`, `stats.opsByCrew` counts the dispatch, and the job completes `minutes` of game time later (`OP_STARTED`).
+The chosen crew become `on_op`, `stats.opsByCrew` and `stats.opsByType` count the dispatch, and the job completes `minutes` of game time later (`OP_STARTED`). A job taken from the board stores `offerId`, its `name`, and a snapshot of its `cfg`, and the offer leaves the board.
+
+## The opportunities board
+
+([ADR 0025](../decisions/0025-opportunities-board.md)) `state.offers = { items, refreshAt, refreshCount }`. Every `offers.refreshHours` the board is replaced with `offers.count` offers, generated on `rng.derive('offers', refreshCount)`:
+
+1. Eligible templates are those in `offers.templates` whose base job exists, isn't a pressure job, and whose `act` (or the base job's) is at most the current act. Picks are without replacement.
+2. Each offer copies its base job and rolls: `diff + round(U(diffAdd))`, `spike × U(spikeMult)` (one decimal), `minutes × U(minutesMult)` (rounded to 5), Dirty `× U(rewardMult)` (rounded), Influence `× U(rewardMult)` (rounded up), and the template's `name`.
+3. Every offer expires at the next refresh (`expiresAt = refreshAt`). Expiry is lazy: nothing happens at the instant, the next refresh replaces the board, and `START_OP` rejects a stale id.
+
+`refreshOffersIfDue` runs in `processDue` after the recruit pool and walks the fixed schedule, so a long gap refreshes the board once per interval it crossed. `newGame` generates the first board (refresh 0). `DEBUG_REFRESH_OFFERS` replaces it now and restarts the schedule. Resolution uses `opConfigOf(c, op)`: the snapshot if there is one, otherwise `ops.list`. `stats.offerDirty` counts Dirty earned from offers.
 
 ## Resolution
 
@@ -56,13 +67,15 @@ The roll is seeded by the job's id. `outcomeOdds` computes the exact probabiliti
 - **Rep:** `reputation.perOpSuccess × share`.
 - **Heat:** the spike lands on heat immediately and feeds the next hour's raid roll ([heat.md](heat.md)).
 - **Pressure:** a full or partial success adds one pressure to the target district ([districts-and-rivals.md](districts-and-rivals.md)).
-- `stats.opOutcomes` counts each outcome.
+- **Report:** the crew's report is filed in the inbox with 2–3 choices ([inbox.md](inbox.md)).
+- `stats.opOutcomes` counts each outcome; `stats.jobDirty` the Dirty.
 
 ## Events
 
-- `OP_STARTED { opId, opType, crewIds, districtId? }`
-- `OP_RESOLVED { opId, opType, crewIds, outcome, score, diff, dirty, influence, influenceLostToCap, spike, rep, districtId? }`
+- `OP_STARTED { opId, opType, crewIds, districtId?, name?, offerId? }`
+- `OP_RESOLVED { opId, opType, crewIds, outcome, score, diff, dirty, influence, influenceLostToCap, spike, rep, districtId?, name?, offerId? }`
+- `OFFERS_REFRESHED { count }` (quiet)
 
 `DEBUG_COMPLETE_OPS` resolves every job in progress immediately.
 
-**Tests:** `tests/ops.test.ts` (partial success is the most common outcome, odds match rolls, team scoring, traits), `tests/apply.test.ts` (job lifecycle, pressure flips a district), `tests/sim.test.ts` (the bot's partial share stays 40–60%).
+**Tests:** `tests/ops.test.ts` (partial success is the most common outcome, odds match rolls, team scoring, traits), `tests/apply.test.ts` (job lifecycle, pressure flips a district), `tests/offers.test.ts` (the board's schedule, taking an offer, stale offers), `tests/sim.test.ts` (the bot's partial share stays 40–60%).

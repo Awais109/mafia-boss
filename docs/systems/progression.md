@@ -68,10 +68,12 @@ See [ADR 0010](../decisions/0010-starting-position.md).
 - sessions and actions;
 - act clear times;
 - raids, arrests, missed wages, walkouts;
-- job outcomes and dispatches per crew member;
-- Dirty earned and lost to the vault cap;
+- job outcomes, dispatches per crew member and per job type;
+- Dirty earned and lost to the vault cap, Dirty from jobs and from offers, and net Dirty from decisions;
 - Clean earned and spent;
+- wages, repairs and bribes paid (and counters for training, upkeep, smuggling, shipments and surplus sales, which stay 0 until those systems exist);
 - tribute lost and Dirty seized;
+- inbox items filed, answered and auto-resolved;
 - the first raid, when each official was bought, and the last session.
 
 Sessions come from the app dispatching `SESSION_START` and `SESSION_END`.

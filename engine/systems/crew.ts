@@ -104,6 +104,7 @@ export function crewDayBoundary(state: PlayerState, ctx: Ctx, t: number): void {
     state.vault -= fromVault
     const paid = fromDirty + fromVault
     state.wagesOwed = 0
+    state.stats.wagesPaid += paid
     if (paid + 1e-6 < owed) {
       state.stats.missedWages++
       for (const m of state.crew) changeLoyalty(m, c.crew.loyalty.perMissedWageDay)

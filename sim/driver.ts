@@ -1,4 +1,4 @@
-import { apply, dayMs, derive, newGame, reconcile, type Config, type PlayerState } from '../engine'
+import { apply, dayMs, derive, newGame, reconcile, type Config, type PlayerState, type PlaytestStats } from '../engine'
 import { CASUAL, nextSessionAfter, playSession, type ActionRecord, type PersonaOptions } from './persona'
 
 // Headless driver: walks game time hour by hour with reconcile, runs the persona at its
@@ -30,6 +30,7 @@ export type SessionRow = {
   day: number
   act: number
   actions: number
+  decisions: number // inbox items answered this session
   income: number // Dirty earned since the previous session ended
   dirtyAfter: number // Dirty left unconverted when the session ends
   vaultFillHrs: number // vault cap ÷ yield at session end
@@ -42,6 +43,7 @@ export type Trace = {
   label: TraceLabel
   start: number
   end: number
+  startStats: PlaytestStats // stats when the run began, for per-run deltas
   final: PlayerState
   hours: HourRow[]
   sessions: SessionRow[]
@@ -95,6 +97,7 @@ export class Recorder {
       day: this.dayOf(t),
       act: before.act,
       actions: actions.filter((a) => !a.error && a.action.type !== 'SESSION_START' && a.action.type !== 'SESSION_END').length,
+      decisions: actions.filter((a) => !a.error && a.action.type === 'RESOLVE_INBOX').length,
       income: before.stats.dirtyEarned - this.earnedAtLastSessionEnd,
       dirtyAfter: after.dirty,
       vaultFillHrs: d.yieldPerHr > 0 ? d.vaultCap / d.yieldPerHr : Infinity,
@@ -155,5 +158,15 @@ function runPersona(initial: PlayerState, c: Config, persona: PersonaOptions, fr
     if (t % H === 0) rec.hour(state, t)
   }
 
-  return { config: c, label, start: from, end: to, final: state, hours: rec.hours, sessions: rec.sessions, actions: rec.actions }
+  return {
+    config: c,
+    label,
+    start: from,
+    end: to,
+    startStats: initial.stats,
+    final: state,
+    hours: rec.hours,
+    sessions: rec.sessions,
+    actions: rec.actions,
+  }
 }

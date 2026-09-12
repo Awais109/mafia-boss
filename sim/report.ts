@@ -31,6 +31,10 @@ export type Summary = {
   cleanPerHrByDay: number[]
   sessions: number
   actionsPerSession: number
+  decisionsPerSession: number
+  inboxAutoPct: number // items that expired unanswered ÷ items resolved
+  offerShare: number // job Dirty from the opportunities board ÷ all job Dirty
+  wageShare: number // (wages + upkeep paid) ÷ Dirty earned
   checks: Check[]
 }
 
@@ -74,6 +78,12 @@ export function summarize(trace: Trace): Summary {
   })
 
   const idle = sessions.filter((s) => s.income > 0).map((s) => Math.min(1, s.dirtyAfter / s.income))
+  // Per-run deltas: the Debug Bot starts from a save that already has history.
+  const s0 = trace.startStats
+  const delta = (pick: (x: typeof st) => number | undefined) => (pick(st) ?? 0) - (pick(s0) ?? 0)
+  const answered = delta((x) => x.inbox?.resolved) + delta((x) => x.inbox?.auto)
+  const jobDirty = delta((x) => x.jobDirty)
+  const earned = delta((x) => x.dirtyEarned)
   const tiers = [...final.rackets]
     .sort((a, b) => RACKET_TYPES.indexOf(a.type) - RACKET_TYPES.indexOf(b.type) || b.tier - a.tier)
     .map((r) => `${ABBREV[r.type]}${r.tier}`)
@@ -104,6 +114,10 @@ export function summarize(trace: Trace): Summary {
     cleanPerHrByDay,
     sessions: sessions.length,
     actionsPerSession: mean(sessions.map((s) => s.actions)),
+    decisionsPerSession: mean(sessions.map((s) => s.decisions ?? 0)),
+    inboxAutoPct: answered > 0 ? delta((x) => x.inbox?.auto) / answered : NaN,
+    offerShare: jobDirty > 0 ? delta((x) => x.offerDirty) / jobDirty : 0,
+    wageShare: earned > 0 ? (delta((x) => x.wagesPaid) + delta((x) => x.upkeepPaid)) / earned : NaN,
     checks: [],
   }
   summary.checks = [
@@ -117,6 +131,7 @@ export function summarize(trace: Trace): Summary {
     { name: 'Dirty idle @ session end', value: summary.dirtyIdlePct, min: 0.2, max: 0.5 },
     { name: 'Partial op outcomes', value: opCount ? summary.opOutcomes.partial : null, min: 0.4, max: 0.6 },
     { name: 'Missed wages', value: summary.missedWages, min: 0, max: 0 },
+    { name: 'Wage share', value: Number.isNaN(summary.wageShare) ? null : summary.wageShare, min: 0.1, max: 0.25 },
   ]
   return summary
 }
@@ -144,7 +159,8 @@ export function formatSummary(s: Summary): string {
     `${pad('Vault fill (h):', 18)}${s.vaultFillByDay.map((v, i) => `d${i + 1} ${f1(v)}`).join('  ')}   ${ok('Vault fill Act I')}${ok('Vault fill Act II')}`,
     `${pad('Op outcomes:', 18)}full ${pc(s.opOutcomes.full)}  partial ${pc(s.opOutcomes.partial)}  fail ${pc(s.opOutcomes.fail)}  (${s.opCount} ops)   ${ok('Partial')}`,
     `${pad('Clean/hr by day:', 18)}${s.cleanPerHrByDay.map((v, i) => `d${i + 1} ${Math.round(v)}`).join('  ')}`,
-    `${pad('Sessions:', 18)}${pad(String(s.sessions), 8)}actions/session: ${f1(s.actionsPerSession)}`,
+    `${pad('Sessions:', 18)}${pad(String(s.sessions), 8)}actions/session: ${f1(s.actionsPerSession)}  decisions/session: ${f1(s.decisionsPerSession)}`,
+    `${pad('Decisions:', 18)}auto-resolved ${pc(s.inboxAutoPct)}  offer share ${pc(s.offerShare)}  wage share ${pc(s.wageShare)}   ${ok('Wage share')}`,
     `${pad('Tiers @ end:', 18)}${s.tiers}`,
   ]
   const passed = s.checks.filter((ch) => checkOk(ch) === true).length

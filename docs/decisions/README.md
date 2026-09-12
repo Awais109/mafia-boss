@@ -36,6 +36,9 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0021](0021-environment-doctor-and-native-env.md) | Environment doctor, per-command toolchain wrapper, default app IDs | Accepted |
 | [0022](0022-end-of-prototype-state.md) | The end of the prototype is a cleared Act II, said in words; reports measure from game start | Accepted |
 | [0023](0023-away-summary.md) | "While you were away" is built in the app from the catch-up reconcile | Accepted |
+| [0024](0024-inbox.md) | Pending decisions: crew reports and incidents with baked options and a default | Accepted |
+| [0025](0025-opportunities-board.md) | An opportunities board of generated, expiring job variants | Accepted |
+| [0026](0026-ledger-and-money-flow.md) | The daily ledger is stat snapshots; the Money flow card reads derive | Accepted |
 
 ## Template
 

@@ -1,5 +1,6 @@
 import {
   apply,
+  canAffordEffects,
   canPressure,
   derive,
   DISTRICT_IDS,
@@ -8,7 +9,7 @@ import {
   influenceRoom,
   OFFICIAL_IDS,
   openSpots,
-  opDirtyReward,
+  opDirtyRewardFor,
   opUnlocked,
   OP_TYPES,
   outcomeOdds,
@@ -18,6 +19,10 @@ import {
   type CrewMember,
   type Derived,
   type DistrictId,
+  type InboxEffects,
+  type InboxItem,
+  type OpConfig,
+  type OpType,
   type PlayerState,
 } from '../engine'
 
@@ -37,6 +42,7 @@ export type PersonaOptions = {
   raiseBelow: number
   repValue: number // Dirty-equivalents per Rep point, for valuing ops
   influenceValueHours: number // an Influence point is worth this many hours of yield while an official is left to buy
+  loyaltyValue: number // Dirty-equivalents per loyalty point (×3 for someone below raiseBelow)
 }
 
 export const CASUAL: PersonaOptions = {
@@ -52,6 +58,7 @@ export const CASUAL: PersonaOptions = {
   raiseBelow: 35,
   repValue: 10,
   influenceValueHours: 3,
+  loyaltyValue: 1,
 }
 
 // N sessions spread evenly between 08:00 and 22:00, for both acts.
@@ -96,6 +103,15 @@ export function playSession(
 
   // 1. Collect
   tryAct({ type: 'COLLECT' })
+
+  // Answer every pending decision with the option worth most to the bot.
+  for (const item of [...state.inbox]) {
+    const v = valuation(state, c, p)
+    const affordable = item.options.filter((o) => canAffordEffects(state, o.effects))
+    if (affordable.length === 0) continue
+    const best = affordable.reduce((a, b) => (valueOf(state, p, v, item, b.effects) > valueOf(state, p, v, item, a.effects) ? b : a))
+    tryAct({ type: 'RESOLVE_INBOX', itemId: item.id, optionId: best.id })
+  }
 
   // Keep Tolya sweet when it's cheap; fix what he broke.
   const demand = state.rival.tolya.demand
@@ -257,21 +273,48 @@ function spendOptions(state: PlayerState, c: Config, d: Derived): SpendOption[] 
   return out
 }
 
-function bestDispatch(state: PlayerState, c: Config, p: PersonaOptions, t: number, gapMinutes: number): Action | null {
-  const idle = state.crew.filter((m) => m.status === 'idle')
-  if (idle.length === 0) return null
+type Valuation = { influenceValue: number; heatCost: number }
+
+// What the bot thinks Influence and heat are worth right now, shared by dispatch and decisions.
+function valuation(state: PlayerState, c: Config, p: PersonaOptions): Valuation {
   const d = derive(state, c)
   // Influence buys officials, and it matters more the hotter things are getting.
   const officialsLeft = OFFICIAL_IDS.some((id) => !state.officials.includes(id))
   const urgency = 1 + Math.max(0, Math.max(state.heat, d.heatTarget) - p.officialAboveHeat) / 10
   const hourOfYield = Math.max(d.yieldPerHr, c.vault.floorCap / c.vault.targetHoursByAct[state.act])
-  const influenceValue = officialsLeft ? p.influenceValueHours * hourOfYield * urgency : 0
-  const heatCost = state.heat >= c.heat.inspectThreshold - 5 ? 8 : 2
+  return {
+    influenceValue: officialsLeft ? p.influenceValueHours * hourOfYield * urgency : 0,
+    heatCost: state.heat >= c.heat.inspectThreshold - 5 ? 8 : 2,
+  }
+}
+
+function valueOf(state: PlayerState, p: PersonaOptions, v: Valuation, item: InboxItem, e: InboxEffects): number {
+  let loyalty = 0
+  for (const id of item.crewIds ?? []) {
+    const m = state.crew.find((x) => x.id === id)
+    if (m) loyalty += (e.loyalty ?? 0) * p.loyaltyValue * (m.loyalty < p.raiseBelow ? 3 : 1)
+  }
+  return (
+    (e.dirty ?? 0) + (e.clean ?? 0) * 2 + (e.rep ?? 0) * p.repValue + (e.influence ?? 0) * v.influenceValue - (e.heat ?? 0) * v.heatCost + loyalty
+  )
+}
+
+function bestDispatch(state: PlayerState, c: Config, p: PersonaOptions, t: number, gapMinutes: number): Action | null {
+  const idle = state.crew.filter((m) => m.status === 'idle')
+  if (idle.length === 0) return null
+  const d = derive(state, c)
+  const { influenceValue, heatCost } = valuation(state, c, p)
   let best: { action: Action; score: number } | null = null
 
-  for (const type of OP_TYPES) {
-    if (!opUnlocked(state, c, type)) continue
-    const op = c.ops.list[type]
+  // The fixed jobs, plus whatever's on the board.
+  const jobs: { type: OpType; op: OpConfig; offerId?: string }[] = [
+    ...OP_TYPES.filter((type) => opUnlocked(state, c, type)).map((type) => ({ type, op: c.ops.list[type] })),
+    ...state.offers.items
+      .filter((o) => o.expiresAt > t && opUnlocked(state, c, o.opType))
+      .map((o) => ({ type: o.opType, op: o.cfg, offerId: o.id })),
+  ]
+
+  for (const { type, op, offerId } of jobs) {
     let districtId: DistrictId | undefined
     let flipValue = 0
     if (op.districtPressure) {
@@ -292,7 +335,7 @@ function bestDispatch(state: PlayerState, c: Config, p: PersonaOptions, t: numbe
     for (const team of combinations(idle, op.crew)) {
       const odds = outcomeOdds(c, op, team)
       const success = odds.full + odds.partial
-      const dirty = odds.full * opDirtyReward(c, state, type, 'full') + odds.partial * opDirtyReward(c, state, type, 'partial')
+      const dirty = odds.full * opDirtyRewardFor(c, state, op, 'full') + odds.partial * opDirtyRewardFor(c, state, op, 'partial')
       const rep = (odds.full + odds.partial * c.ops.partialRewardPct) * c.reputation.perOpSuccess
       let influence = 0
       if (op.influence && influenceValue > 0) {
@@ -307,7 +350,13 @@ function bestDispatch(state: PlayerState, c: Config, p: PersonaOptions, t: numbe
       if (value > 0 && (!best || score > best.score)) {
         best = {
           score,
-          action: { type: 'START_OP', opType: type, crewIds: team.map((m) => m.id), ...(districtId ? { districtId } : {}) },
+          action: {
+            type: 'START_OP',
+            opType: type,
+            crewIds: team.map((m) => m.id),
+            ...(districtId ? { districtId } : {}),
+            ...(offerId ? { offerId } : {}),
+          },
         }
       }
     }

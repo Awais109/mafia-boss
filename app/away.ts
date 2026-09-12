@@ -25,6 +25,7 @@ export type AwaySummary = {
   influenceEarned: number
   heatFrom: number
   heatTo: number
+  pendingDecisions: number // inbox items still waiting when the gap ended
   events: GameEvent[] // everything else worth a line; the popup describes them
 }
 
@@ -35,6 +36,8 @@ const FOLDED = new Set<GameEvent['type']>([
   'WAGES_MISSED',
   'VAULT_CAPPED',
   'OP_STARTED',
+  'REPORT_FILED', // counted in pendingDecisions
+  'OFFERS_REFRESHED',
   'COLLECTED',
   'DEPOSITED',
   'SESSION_START',
@@ -54,7 +57,7 @@ export function buildAway(before: PlayerState, after: PlayerState, events: GameE
   for (const e of events) {
     if (e.type === 'OP_RESOLVED') {
       jobs.push({
-        name: c.ops.list[e.opType].name,
+        name: e.name ?? c.ops.list[e.opType].name,
         crew: e.crewIds.map(crewName).join(' & '),
         outcome: e.outcome,
         dirty: e.dirty,
@@ -96,6 +99,7 @@ export function buildAway(before: PlayerState, after: PlayerState, events: GameE
     influenceEarned: delta((s) => s.influence),
     heatFrom: before.heat,
     heatTo: after.heat,
+    pendingDecisions: after.inbox.length,
     events: events.filter((e) => !FOLDED.has(e.type)),
   }
 }
@@ -129,6 +133,7 @@ export function mergeAway(pending: AwaySummary | null, next: AwaySummary): AwayS
     influenceEarned: pending.influenceEarned + next.influenceEarned,
     heatFrom: pending.heatFrom,
     heatTo: next.heatTo,
+    pendingDecisions: next.pendingDecisions,
     events: [...pending.events, ...next.events],
   }
 }

@@ -104,6 +104,8 @@ function StatePanel({ game }: { game: Snapshot }) {
           <Btn small title="Tolya visits" onPress={() => d({ type: 'DEBUG_FORCE_TOLYA' })} />
           <Btn small title={`Finish ${s.ops.length} jobs`} disabled={!s.ops.length} onPress={() => d({ type: 'DEBUG_COMPLETE_OPS' })} />
           <Btn small title="New recruits" onPress={() => d({ type: 'DEBUG_REFRESH_POOL' })} />
+          <Btn small title="Incident" onPress={() => d({ type: 'DEBUG_FORCE_INCIDENT' })} />
+          <Btn small title="New offers" onPress={() => d({ type: 'DEBUG_REFRESH_OFFERS' })} />
         </BtnRow>
       </Card>
     </>
@@ -251,6 +253,7 @@ function InspectPanel({ game }: { game: Snapshot }) {
     ['throughput / clean max', `${n(d.throughputPerHr)} / ${n(d.cleanPerHrMax)}`],
     ['crewSlots / maxTier', `${d.crewSlots} / ${d.maxTier}`],
     ['act / rep', `${s.act} / ${n(s.reputation)}`],
+    ['inbox / offers', `${s.inbox.length} / ${s.offers.items.length} (refresh #${s.offers.refreshCount})`],
   ]
   return (
     <>

@@ -4,14 +4,17 @@ import type {
   DistrictId,
   FrontType,
   OfficialId,
+  OpConfig,
+  OpOutcome,
   OpType,
   RacketType,
   TraitId,
 } from '../config/schema'
 import type { GameEvent } from './events'
 
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 export const LOG_CAP = 200
+export const LEDGER_ROWS = 8 // 7 closed days plus today's opening snapshot
 
 export type Racket = {
   id: string
@@ -54,6 +57,9 @@ export type OpInstance = {
   startedAt: number
   completesAt: number
   districtId?: DistrictId // pressure target
+  offerId?: string // taken from the opportunities board
+  cfg?: OpConfig // the offer's job, snapshotted: resolution uses this instead of ops.list
+  name?: string
 }
 
 export type District = {
@@ -69,6 +75,64 @@ export type TolyaState = {
   demand: number | null // tribute demanded; refused if still unpaid at the next tick
 }
 
+// What an inbox option does, materialized when the item is filed.
+export type InboxEffects = {
+  dirty?: number
+  clean?: number
+  influence?: number
+  rep?: number
+  heat?: number
+  loyalty?: number // each crew member on the item
+  condition?: number // the business on the item
+  disposition?: number // Tolya
+  cigarettes?: number
+  perk?: string
+}
+
+export type InboxOption = { id: string; name: string; effects: InboxEffects }
+
+export type InboxItem = {
+  id: string
+  kind: 'report' | 'incident' | 'perk'
+  ref: string // OpType for reports, IncidentType for incidents, crew id for perks
+  opId?: string
+  outcome?: OpOutcome
+  crewIds?: string[]
+  racketId?: string
+  createdAt: number
+  expiresAt: number
+  options: InboxOption[]
+  defaultOptionId: string
+}
+
+export type Offer = {
+  id: string
+  opType: OpType
+  name: string
+  cfg: OpConfig // materialized variant of the base job
+  expiresAt: number
+}
+
+export const LEDGER_COUNTERS = [
+  'dirtyEarned',
+  'jobDirty',
+  'inboxDirty',
+  'cleanEarned',
+  'cleanSpent',
+  'wagesPaid',
+  'repairsPaid',
+  'bribesPaid',
+  'tributeLost',
+  'seized',
+  'trainingPaid',
+  'upkeepPaid',
+  'smugglingPaid',
+  'shipmentsPaid',
+  'surplusSold',
+] as const
+export type LedgerCounter = (typeof LEDGER_COUNTERS)[number]
+export type LedgerRow = { startsAt: number } & Record<LedgerCounter, number>
+
 export type PlaytestStats = {
   sessions: number
   actions: number
@@ -79,12 +143,25 @@ export type PlaytestStats = {
   walkouts: number
   opOutcomes: { full: number; partial: number; fail: number }
   opsByCrew: Record<string, number>
+  opsByType: Partial<Record<OpType, number>>
   dirtyEarned: number // vault accrual + op rewards
   dirtyLostToCap: number // yield that hit a full vault
+  jobDirty: number // op rewards alone
+  offerDirty: number // op rewards from offers
+  inboxDirty: number // net Dirty from decisions (can be negative)
   cleanEarned: number
   cleanSpent: number
+  wagesPaid: number
+  repairsPaid: number
+  bribesPaid: number
   tributeLost: number // district tribute skimmed + Tolya demands paid
   seized: number
+  trainingPaid: number
+  upkeepPaid: number
+  smugglingPaid: number // Clean
+  shipmentsPaid: number
+  surplusSold: number // Dirty received
+  inbox: { filed: number; resolved: number; auto: number }
   firstRaidAt: number | null
   officialBoughtAt: Partial<Record<OfficialId, number>>
   lastSessionAt: number | null
@@ -126,6 +203,10 @@ export type PlayerState = {
   tutorial: { step: number; done: boolean }
   firstConversionDone: boolean
 
+  inbox: InboxItem[] // pending decisions
+  offers: { items: Offer[]; refreshAt: number; refreshCount: number }
+  ledger: LedgerRow[] // cumulative stat snapshots at day starts, newest last
+
   log: GameEvent[] // ring buffer of the latest LOG_CAP events
   stats: PlaytestStats
 }
@@ -141,14 +222,33 @@ export function emptyStats(): PlaytestStats {
     walkouts: 0,
     opOutcomes: { full: 0, partial: 0, fail: 0 },
     opsByCrew: {},
+    opsByType: {},
     dirtyEarned: 0,
     dirtyLostToCap: 0,
+    jobDirty: 0,
+    offerDirty: 0,
+    inboxDirty: 0,
     cleanEarned: 0,
     cleanSpent: 0,
+    wagesPaid: 0,
+    repairsPaid: 0,
+    bribesPaid: 0,
     tributeLost: 0,
     seized: 0,
+    trainingPaid: 0,
+    upkeepPaid: 0,
+    smugglingPaid: 0,
+    shipmentsPaid: 0,
+    surplusSold: 0,
+    inbox: { filed: 0, resolved: 0, auto: 0 },
     firstRaidAt: null,
     officialBoughtAt: {},
     lastSessionAt: null,
   }
+}
+
+export function ledgerSnapshot(stats: PlaytestStats, startsAt: number): LedgerRow {
+  const row = { startsAt } as LedgerRow
+  for (const k of LEDGER_COUNTERS) row[k] = stats[k]
+  return row
 }

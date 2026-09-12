@@ -1,7 +1,11 @@
 import { dayMs } from '../../engine'
-import { Bar, Btn, BtnRow, Card, colors, Money, Row, Screen, Section, T } from '../components/ui'
+import { InboxCard } from '../components/InboxCard'
+import { MoneyFlow } from '../components/MoneyFlow'
+import { Bar, Btn, BtnRow, Card, colors, Row, Screen, Section, T } from '../components/ui'
 import { describeEvent } from '../eventText'
 import { fmt, fmtClock, fmtDuration, fmtRate } from '../format'
+import { homeAlerts, sortedInbox } from '../inbox'
+import { ledgerView } from '../ledger'
 import { store } from '../store'
 import type { ScreenProps } from './types'
 
@@ -11,14 +15,15 @@ export function HomeScreen({ game, go }: ScreenProps) {
   const fillMs = d.yieldPerHr > 0 ? ((d.vaultCap - s.vault) / d.yieldPerHr) * c.time.hourMs : Infinity
   const idle = s.crew.filter((m) => m.status === 'idle').length
   const nextPayday = (Math.floor(now / dayMs(c)) + 1) * dayMs(c)
-  const wagesDue = s.wagesOwed + d.wagesPerHr * ((nextPayday - now) / c.time.hourMs)
-  const buffered = s.fronts.reduce((sum, f) => sum + f.buffer, 0)
   const demand = s.rival.tolya.demand
   const nextAct = s.act === 1 ? c.reputation.actThresholds[2] : c.reputation.actThresholds[3]
   // Milestones come from stats, which persist; the ACT_* events fall out of the 200-event log.
   const reachedActII = s.stats.actClearedAt[1]
   const clearedActII = s.stats.actClearedAt[2]
   const cleared = clearedActII !== undefined
+  const inbox = sortedInbox(s)
+  const alerts = homeAlerts(game).filter((a) => a.key !== 'vault')
+  const week = ledgerView(s, c, now).slice(-8)
   const recent = s.log
     .slice()
     .reverse()
@@ -40,9 +45,26 @@ export function HomeScreen({ game, go }: ScreenProps) {
         </Card>
       )}
 
+      {inbox.length > 0 && (
+        <Section title={`Waiting for you · ${inbox.length}`}>
+          {inbox.map((item) => (
+            <InboxCard key={item.id} item={item} game={game} />
+          ))}
+        </Section>
+      )}
+
+      {alerts.map((a) => (
+        <Card key={a.key} style={{ borderColor: a.color }}>
+          <T small color={a.color}>
+            {a.text}
+          </T>
+          {a.tab && a.cta && <Btn small title={a.cta} onPress={() => go(a.tab!)} />}
+        </Card>
+      ))}
+
       <Section title="Vault">
         <Card>
-          <Row label="Rackets make" value={<Money kind="dirty" value={fmtRate(d.yieldPerHr)} />} />
+          <Row label="Your businesses make" value={`◆${fmtRate(d.yieldPerHr)}`} color={colors.dirty} />
           <Bar value={s.vault} max={d.vaultCap} color={full ? colors.heat : colors.dirty} />
           <Row
             label={full ? 'Full: income has stopped' : `Full in ${fmtDuration(fillMs, c)}`}
@@ -53,16 +75,8 @@ export function HomeScreen({ game, go }: ScreenProps) {
         </Card>
       </Section>
 
-      <Section title="Money">
-        <Card>
-          <Row label="Dirty" hint="wages, repairs, bribes" value={<Money kind="dirty" value={fmt(s.dirty)} />} />
-          <Row label="Clean" hint="buys businesses" value={<Money kind="clean" value={fmt(s.clean)} />} />
-          <Row label="In the wash" value={`◆${fmt(buffered)} → up to ●${fmtRate(d.cleanPerHrMax)}`} />
-          <BtnRow>
-            <Btn small title="Launder →" onPress={() => go('fronts')} />
-            <Btn small title="Spend →" onPress={() => go('rackets')} />
-          </BtnRow>
-        </Card>
+      <Section title="Money flow" right={<Btn small kind="ghost" title="Launder →" onPress={() => go('fronts')} />}>
+        <MoneyFlow game={game} />
       </Section>
 
       <Section title="Operation">
@@ -71,11 +85,6 @@ export function HomeScreen({ game, go }: ScreenProps) {
           <Row label="Jobs running" value={String(s.ops.length)} />
           {/* Owed so far moves with time; the projected bill at payday doesn't, and read as frozen. */}
           <Row label="Wages owed" hint={`+◆${fmtRate(d.wagesPerHr)} · paid in ${fmtDuration(nextPayday - now, c)}`} value={`◆${fmt(s.wagesOwed)}`} />
-          {s.dirty + s.vault < wagesDue && (
-            <T small color={colors.heat}>
-              Not enough Dirty on hand to cover the ◆{fmt(wagesDue)} due at payday.
-            </T>
-          )}
           <Row
             label="Heat"
             hint={`heading to ${Math.round(d.heatTarget)}`}
@@ -90,6 +99,21 @@ export function HomeScreen({ game, go }: ScreenProps) {
         </Card>
       </Section>
 
+      <Section title="This week">
+        <Card>
+          <T small muted>Dirty in · costs · Clean in · Clean spent</T>
+          {week.map((row) => (
+            <Row
+              key={row.label}
+              label={row.label}
+              hint={`●${fmt(row.cleanIn)} in · ●${fmt(row.cleanOut)} out`}
+              value={`◆${fmt(row.dirtyIn)} − ${fmt(row.costs)}`}
+              color={row.net < 0 ? colors.heat : row.today ? colors.text : colors.muted}
+            />
+          ))}
+        </Card>
+      </Section>
+
       <Section title={cleared ? 'The end of the prototype' : 'Next'}>
         <Card>
           {s.act === 1 ? (
@@ -98,7 +122,7 @@ export function HomeScreen({ game, go }: ScreenProps) {
             </T>
           ) : !cleared ? (
             <T small muted>
-              Act II is cleared at ★{fmt(nextAct)}, the end of the prototype. Bigger rackets unlock as your Reputation grows.
+              Act II is cleared at ★{fmt(nextAct)}, the end of the prototype. Bigger businesses unlock as your Reputation grows.
             </T>
           ) : (
             <T small color={colors.rep}>

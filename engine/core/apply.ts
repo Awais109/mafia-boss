@@ -1,10 +1,12 @@
-import type { Config } from '../config/schema'
+import { INCIDENT_TYPES, type Config } from '../config/schema'
 import { PASSIVE_ACTIONS, type Action } from '../model/actions'
 import type { GameEvent } from '../model/events'
 import type { CrewMember, PlayerState } from '../model/state'
 import { changeLoyalty, crewSlots, regeneratePool, unassignEnforcer } from '../systems/crew'
 import { canPressure, getDistrict, takeDistrict } from '../systems/districts'
 import { arrest, raid } from '../systems/heat'
+import { canAffordEffects, incidentNeedHolds, raiseIncident, resolveInboxItem } from '../systems/inbox'
+import { regenerateOffers } from '../systems/offers'
 import { opUnlocked, resolveOp } from '../systems/ops'
 import { checkActs, spendClean } from '../systems/reputation'
 import { changeDisposition, tolyaTick } from '../systems/rivals'
@@ -129,6 +131,7 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       const cost = F.racketRepairCost(c, r.type)
       if (state.dirty < cost - EPS) return 'Not enough Dirty'
       state.dirty -= cost
+      state.stats.repairsPaid += cost
       r.condition = 100
       emit(ctx, t, { type: 'RACKET_REPAIRED', racketId: r.id, cost })
       return null
@@ -157,7 +160,13 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
     }
 
     case 'START_OP': {
-      const cfg = c.ops.list[a.opType]
+      const offer = a.offerId ? state.offers.items.find((o) => o.id === a.offerId) : undefined
+      if (a.offerId) {
+        if (!offer) return 'That offer is gone'
+        if (offer.expiresAt <= t) return 'That offer has expired'
+        if (offer.opType !== a.opType) return 'That offer is for a different job'
+      }
+      const cfg = offer ? offer.cfg : c.ops.list[a.opType]
       if (!cfg) return 'Unknown op'
       if (!opUnlocked(state, c, a.opType)) return 'Not unlocked yet'
       const ids = [...new Set(a.crewIds)]
@@ -177,13 +186,33 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
         startedAt: t,
         completesAt: t + minutesToMs(c, cfg.minutes),
         ...(cfg.districtPressure && a.districtId ? { districtId: a.districtId } : {}),
+        ...(offer ? { offerId: offer.id, cfg: offer.cfg, name: offer.name } : {}),
       })
+      if (offer) state.offers.items = state.offers.items.filter((o) => o.id !== offer.id)
       for (const m of team as CrewMember[]) {
         m.status = 'on_op'
         m.assignedTo = opId
         state.stats.opsByCrew[m.id] = (state.stats.opsByCrew[m.id] ?? 0) + 1
       }
-      emit(ctx, t, { type: 'OP_STARTED', opId, opType: a.opType, crewIds: ids, districtId: a.districtId })
+      state.stats.opsByType[a.opType] = (state.stats.opsByType[a.opType] ?? 0) + 1
+      emit(ctx, t, {
+        type: 'OP_STARTED',
+        opId,
+        opType: a.opType,
+        crewIds: ids,
+        districtId: a.districtId,
+        ...(offer ? { name: offer.name, offerId: offer.id } : {}),
+      })
+      return null
+    }
+
+    case 'RESOLVE_INBOX': {
+      const item = state.inbox.find((x) => x.id === a.itemId)
+      if (!item) return 'That’s already been dealt with'
+      const option = item.options.find((o) => o.id === a.optionId)
+      if (!option) return 'No such option'
+      if (!canAffordEffects(state, option.effects)) return 'You can’t cover that'
+      resolveInboxItem(state, ctx, t, item, option, false)
       return null
     }
 
@@ -255,6 +284,7 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       const cost = d.costs.bribe
       if (state.dirty < cost - EPS) return 'Not enough Dirty'
       state.dirty -= cost
+      state.stats.bribesPaid += cost
       const control = c.heat.bribe.controlPct * (d.controlParts.base + d.controlParts.officials) * d.controlParts.districtMult
       state.bribeControl = control
       state.bribeUntil = t + hoursToMs(c, c.heat.bribe.hours)
@@ -377,6 +407,19 @@ function handleDebug(state: PlayerState, ctx: Ctx, a: Action, t: number): string
       note()
       regeneratePool(state, ctx, t)
       state.recruitPool.refreshAt = t + hoursToMs(c, c.crew.poolRefreshHours)
+      return null
+    case 'DEBUG_FORCE_INCIDENT': {
+      const rand = ctx.rng.derive('debug-incident', state.nextId)
+      const eligible = INCIDENT_TYPES.filter((type) => incidentNeedHolds(state, c, c.incidents.types[type].needs))
+      const type = a.incidentType ?? (eligible.length ? rand.pick(eligible) : 'copFavour')
+      note(type)
+      raiseIncident(state, ctx, t, type, rand.next)
+      return null
+    }
+    case 'DEBUG_REFRESH_OFFERS':
+      note()
+      state.offers.refreshAt = t + hoursToMs(c, c.offers.refreshHours)
+      regenerateOffers(state, ctx, t)
       return null
     default:
       return `Unknown action ${(a as { type: string }).type}`

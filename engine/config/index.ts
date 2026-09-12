@@ -44,11 +44,12 @@ export function deepMerge<T>(base: T, overlay: unknown): T {
   return out as T
 }
 
+// Paths index into arrays too ("offers.templates.stubbornVendor.diffAdd.1").
 export function getPath(obj: unknown, path: string): unknown {
   let cur: unknown = obj
   for (const key of path.split('.')) {
-    if (!isObject(cur)) return undefined
-    cur = cur[key]
+    if (!isObject(cur) && !Array.isArray(cur)) return undefined
+    cur = (cur as Record<string, unknown>)[key]
   }
   return cur
 }
@@ -58,7 +59,7 @@ export function setPath<T>(obj: T, path: string, value: unknown): T {
   const root = structuredCloneJson(obj) as Record<string, unknown>
   let cur = root
   for (const key of keys.slice(0, -1)) {
-    if (!isObject(cur[key])) cur[key] = {}
+    if (!isObject(cur[key]) && !Array.isArray(cur[key])) cur[key] = {}
     cur = cur[key] as Record<string, unknown>
   }
   cur[keys[keys.length - 1]] = value

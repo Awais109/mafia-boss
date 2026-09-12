@@ -6,12 +6,13 @@ import { describeEvent } from '../eventText'
 import { fmtClock } from '../format'
 import type { ScreenProps } from './types'
 
-type Filter = 'all' | 'jobs' | 'heat' | 'turf' | 'money'
+type Filter = 'all' | 'decisions' | 'jobs' | 'heat' | 'turf' | 'money'
 
-const LABEL: Record<Filter, string> = { all: 'All', jobs: 'Crew & jobs', heat: 'Heat', turf: 'Turf', money: 'Money' }
+const LABEL: Record<Filter, string> = { all: 'All', decisions: 'Decisions', jobs: 'Crew & jobs', heat: 'Heat', turf: 'Turf', money: 'Money' }
 
 const GROUPS: Record<Exclude<Filter, 'all'>, readonly EventType[]> = {
-  jobs: ['OP_STARTED', 'OP_RESOLVED', 'RECRUITED', 'FIRED', 'RAISED', 'CREW_SLOT_BOUGHT', 'POOL_REFRESHED', 'ENFORCER_ASSIGNED', 'ENFORCER_REMOVED', 'WALKOUT', 'RELEASED', 'ARREST', 'WAGES_PAID', 'WAGES_MISSED'],
+  decisions: ['REPORT_FILED', 'INCIDENT_RAISED', 'INBOX_RESOLVED'],
+  jobs: ['OP_STARTED', 'OP_RESOLVED', 'OFFERS_REFRESHED', 'RECRUITED', 'FIRED', 'RAISED', 'CREW_SLOT_BOUGHT', 'POOL_REFRESHED', 'ENFORCER_ASSIGNED', 'ENFORCER_REMOVED', 'WALKOUT', 'RELEASED', 'ARREST', 'WAGES_PAID', 'WAGES_MISSED'],
   heat: ['INSPECTION_STARTED', 'INSPECTION_ENDED', 'RAID', 'ARREST', 'BRIBED', 'BRIBE_EXPIRED', 'OFFICIAL_BOUGHT'],
   turf: ['TOLYA_TICK', 'TRIBUTE_PAID', 'TRIBUTE_REFUSED', 'DISTRICT_BOUGHT', 'DISTRICT_PRESSURED', 'DISTRICT_FLIPPED', 'NOTE'],
   money: ['COLLECTED', 'DEPOSITED', 'RACKET_BOUGHT', 'RACKET_UPGRADED', 'RACKET_REPAIRED', 'FRONT_BOUGHT', 'FRONT_UPGRADED', 'VAULT_CAPPED', 'OFFLINE_CAPPED'],

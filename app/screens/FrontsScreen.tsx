@@ -7,6 +7,21 @@ import type { ScreenProps } from './types'
 export function FrontsScreen({ game }: ScreenProps) {
   const { state: s, derived: d, config: c } = game
   const deposit = (frontId: string, amount: number) => store.dispatch({ type: 'DEPOSIT', frontId, amount })
+  // "Launder all but running costs": keep reserveHours of wages and upkeep in Dirty, wash the rest best rate first.
+  const keep = (d.wagesPerHr + (d.upkeepPerHr ?? 0)) * c.fronts.reserveHours
+  const plan: { frontId: string; amount: number }[] = []
+  {
+    let available = Math.floor(s.dirty - keep)
+    for (const f of [...d.perFront].sort((a, b) => b.rate - a.rate)) {
+      const room = f.bufferCap - (s.fronts.find((x) => x.id === f.id)?.buffer ?? 0)
+      const amount = Math.floor(Math.min(available, room))
+      if (amount >= 1) {
+        plan.push({ frontId: f.id, amount })
+        available -= amount
+      }
+    }
+  }
+  const planned = plan.reduce((sum, p) => sum + p.amount, 0)
 
   return (
     <Screen>
@@ -20,6 +35,13 @@ export function FrontsScreen({ game }: ScreenProps) {
         {d.yieldPerHr > d.throughputPerHr && (
           <T small color={colors.warn}>You make more Dirty than you can launder. That’s the squeeze: pick what to wash.</T>
         )}
+        <Btn
+          kind="primary"
+          title={planned >= 1 ? `Launder ◆${fmt(planned)}, keep ◆${fmt(Math.min(s.dirty, keep))} for costs` : `Nothing to spare: keeping ◆${fmt(keep)} for costs`}
+          disabled={planned < 1}
+          onPress={() => plan.forEach((p) => deposit(p.frontId, p.amount))}
+        />
+        <T small muted>{`Keeps ${c.fronts.reserveHours}h of wages and upkeep in Dirty: those are paid from Dirty, never Clean.`}</T>
       </Card>
 
       {d.perFront.map((f) => {

@@ -1,8 +1,9 @@
 import { DISTRICT_IDS, FRONT_TYPES, type Config } from './config/schema'
 import { makeRng } from './core/rng'
 import { dayIndex, hoursToMs } from './core/time'
-import { emptyStats, SCHEMA_VERSION, type PlayerState } from './model/state'
+import { emptyStats, ledgerSnapshot, SCHEMA_VERSION, type PlayerState } from './model/state'
 import { generateCandidates } from './systems/crew'
+import { generateOffers } from './systems/offers'
 
 export function newGame(c: Config, playerId: string, now: number): PlayerState {
   const state: PlayerState = {
@@ -43,9 +44,14 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
     tutorial: { step: 0, done: !c.tutorial.enabled },
     firstConversionDone: false,
 
+    inbox: [],
+    offers: { items: [], refreshAt: now + hoursToMs(c, c.offers.refreshHours), refreshCount: 0 },
+    ledger: [],
+
     log: [],
     stats: emptyStats(),
   }
+  state.ledger = [ledgerSnapshot(state.stats, now)]
 
   for (const s of c.rackets.starting) {
     state.rackets.push({ id: `r${state.nextId++}`, type: s.type, districtId: s.districtId, tier: 1, condition: 100, enforcerId: null })
@@ -70,5 +76,6 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
     })
   }
   state.recruitPool.candidates = generateCandidates(c, 1, makeRng(playerId).derive('pool', 0), 0)
+  state.offers.items = generateOffers(c, state, makeRng(playerId).derive('offers', 0), 0, state.offers.refreshAt)
   return state
 }

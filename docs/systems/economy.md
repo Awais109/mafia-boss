@@ -70,6 +70,14 @@ Starts at 100. It loses `rackets.conditionDecayPerDay / 24` at every whole game 
 
 An idle crew member assigned to a racket multiplies its yield by `rackets.enforcer.yieldMult` and its exposure by `rackets.enforcer.heatMult`. Enforcers can't work jobs but still draw wages. The link is cleared if they're arrested, fired or walk out.
 
+## The daily ledger
+
+([ADR 0026](../decisions/0026-ledger-and-money-flow.md)) `state.ledger` holds up to `LEDGER_ROWS` (8) snapshots of the cumulative counters in `LEDGER_COUNTERS`, taken at each game day start by `ledgerDayBoundary` (last in the hour boundary, after wages settle). `newGame` takes the first at `createdAt`. A day's figures are the difference between two snapshots; today's are `stats` minus the last snapshot. `ledgerDays(state, now)` in `engine/systems/ledger.ts` returns them, and Home's "This week" renders them through `app/ledger.ts`.
+
+The counters: `dirtyEarned`, `jobDirty`, `inboxDirty`, `cleanEarned`, `cleanSpent`, `wagesPaid`, `repairsPaid`, `bribesPaid`, `tributeLost`, `seized`, `trainingPaid`, `upkeepPaid`, `smugglingPaid`, `shipmentsPaid`, `surplusSold`. Counters for systems that aren't built yet stay at 0.
+
+Home's **Money flow** card reads `derive` directly: what the businesses put in the vault per hour, running costs per hour (wages and upkeep), what the fronts are washing, and Dirty and Clean on hand, with a warning when Dirty on hand won't cover `fronts.reserveHours` of running costs.
+
 ## Actions and events
 
 | Action | Checks | Effect |
@@ -77,9 +85,9 @@ An idle crew member assigned to a racket multiplies its yield by `rackets.enforc
 | `COLLECT` | none | vault → Dirty; `COLLECTED` |
 | `BUY_RACKET { racketType, districtId }` | type unlocked, district open and allows the type, not already built there, enough Clean | new racket at tier 1, condition 100; `RACKET_BOUGHT` |
 | `UPGRADE_RACKET { racketId }` | below max tier, enough Clean | tier +1; `RACKET_UPGRADED` |
-| `REPAIR_RACKET { racketId }` | condition below 100, enough Dirty | condition 100; `RACKET_REPAIRED` |
+| `REPAIR_RACKET { racketId }` | condition below 100, enough Dirty | condition 100, `stats.repairsPaid`; `RACKET_REPAIRED` |
 | `ASSIGN_ENFORCER { crewId, racketId \| null }` | crew idle, racket has no enforcer (or `null` to unassign an enforcer) | `ENFORCER_ASSIGNED` / `ENFORCER_REMOVED` |
 
 Also emitted: `VAULT_CAPPED`, and `OFFLINE_CAPPED` from the reconcile walk ([architecture.md](../architecture.md#the-reconcile-walk)).
 
-**Tests:** `tests/apply.test.ts` (first session, districts host one of each, enforcer multipliers), `tests/reconcile.test.ts` (vault stops at its cap, offline cap).
+**Tests:** `tests/apply.test.ts` (first session, districts host one of each, enforcer multipliers), `tests/reconcile.test.ts` (vault stops at its cap, offline cap), `tests/ledger.test.ts` (snapshots at day starts, rows add up to stats).

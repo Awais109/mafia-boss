@@ -41,7 +41,7 @@ wage per hour = (muscle + brains + nerve) / crew.wageDivisor × trait wage multi
                 × Π mod.wageMult of districts you control
 ```
 
-Wages accrue continuously into `wagesOwed` and are settled at every game day start, paid from Dirty first, then the vault:
+Wages accrue continuously into `wagesOwed` and are settled at every game day start, paid from Dirty first, then the vault. What's paid is added to `stats.wagesPaid` (the ledger's wages line):
 - **Paid in full:** `WAGES_PAID`.
 - **Short:** whatever is there gets paid, the rest is forgiven, `stats.missedWages` increments, and every crew member takes `crew.loyalty.perMissedWageDay` loyalty (`WAGES_MISSED`).
 

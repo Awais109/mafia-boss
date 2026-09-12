@@ -41,6 +41,19 @@ Tried and rejected (7 d × 5 seeds each):
 
 Finding behind the threshold change: across every cost, ladder, and Restaurant variant, day-7 Rep stayed at 575–671. Rep follows Clean spent, and Clean spent follows Clean earned (~830/day in early Act II). Cost knobs change what Clean buys, not how much there is.
 
+## 2026-09-13 — expansion M1: session texture
+
+New config, starting values from the expansion plan (ADRs 0024–0026):
+
+```
+2026-09-13  inbox {reportHours 12, incidentHours 8, perkHours 24, maxPending 4}; incidents {chancePerHr 0.06, startAfterHours 6};
+            ops.reports (pocket/boast/treat, pocket/pushHarder/backOff, layLow/payOff/blame); offers {count 3, refreshHours 6,
+            4 templates, diffAdd 0–10, rewardMult 1.2–1.6, spikeMult 1–1.5, minutesMult 0.75–1.25}; fronts.reserveHours 12
+            Reason: decisions per visit.  Sim (10 seeds): Act I 1.92→1.89 d (5/10 in range), Act II 3.84→3.61 d (10/10), heat 28.8→32.2,
+            raids 0, partial 0.49→0.48, front util 0.47, Dirty idle 0.53, missed wages 0.
+            Seed 42: decisions/session 2.9, auto-resolved 1%, offer share 11%, wage share 7% (below the manual's 10–25%; reported).  Kept.
+```
+
 ## Open
 
 - **Front utilization ~45% (target 70–90%) and Dirty idle ~55% (target 20–50%).** The Restaurant launders 185 Dirty/hr; the casual economy's Dirty supply stays well below that through Act II. A smaller Restaurant throttles Clean, which is what sets Act II pace, so this needs its own measured pass (e.g. Restaurant throughput that grows with front level) rather than a one-line cut.

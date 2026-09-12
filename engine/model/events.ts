@@ -3,12 +3,13 @@ import type {
   Controller,
   DistrictId,
   FrontType,
+  IncidentType,
   OfficialId,
+  OpOutcome,
   OpType,
   RacketType,
 } from '../config/schema'
-
-export type OpOutcome = 'full' | 'partial' | 'fail'
+import type { InboxEffects, InboxItem } from './state'
 
 // What happened during a reconcile or apply. Events are the playtest log.
 export type EventBody =
@@ -23,7 +24,7 @@ export type EventBody =
   | { type: 'FRONT_UPGRADED'; frontId: string; level: number; cost: number }
   | { type: 'ENFORCER_ASSIGNED'; crewId: string; racketId: string }
   | { type: 'ENFORCER_REMOVED'; crewId: string; racketId: string }
-  | { type: 'OP_STARTED'; opId: string; opType: OpType; crewIds: string[]; districtId?: DistrictId }
+  | { type: 'OP_STARTED'; opId: string; opType: OpType; crewIds: string[]; districtId?: DistrictId; name?: string; offerId?: string }
   | {
       type: 'OP_RESOLVED'
       opId: string
@@ -38,7 +39,13 @@ export type EventBody =
       spike: number
       rep: number
       districtId?: DistrictId
+      name?: string // an offer's own name
+      offerId?: string
     }
+  | { type: 'REPORT_FILED'; itemId: string; opId: string; opType: OpType; outcome: OpOutcome; expiresAt: number }
+  | { type: 'INCIDENT_RAISED'; itemId: string; incidentType: IncidentType; crewId?: string; racketId?: string; expiresAt: number }
+  | { type: 'INBOX_RESOLVED'; itemId: string; kind: InboxItem['kind']; ref: string; optionId: string; optionName: string; auto: boolean; effects: InboxEffects }
+  | { type: 'OFFERS_REFRESHED'; count: number }
   | { type: 'RECRUITED'; crewId: string; name: string; cost: number }
   | { type: 'FIRED'; crewId: string; name: string }
   | { type: 'RAISED'; crewId: string; cost: number; loyalty: number }

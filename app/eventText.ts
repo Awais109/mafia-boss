@@ -46,7 +46,7 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
     case 'ENFORCER_REMOVED':
       return { text: `${crewName(e.crewId)} left the ${racketName(e.racketId)}`, quiet: true }
     case 'OP_STARTED':
-      return { text: `${e.crewIds.map(crewName).join(' & ')}: ${c.ops.list[e.opType].name}`, quiet: true }
+      return { text: `${e.crewIds.map(crewName).join(' & ')}: ${e.name ?? c.ops.list[e.opType].name}`, quiet: true }
     case 'OP_RESOLVED': {
       const gains = [
         e.dirty ? `+${d}${fmt(e.dirty)}` : '',
@@ -56,8 +56,25 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
         `+${glyph.heat}${fmt(e.spike)}`,
       ].filter(Boolean)
       const color = e.outcome === 'full' ? colors.good : e.outcome === 'partial' ? colors.text : colors.heat
-      return { text: `${c.ops.list[e.opType].name}: ${OUTCOME[e.outcome]} · ${gains.join(' ')}`, color }
+      return { text: `${e.name ?? c.ops.list[e.opType].name}: ${OUTCOME[e.outcome]} · ${gains.join(' ')}`, color }
     }
+    case 'REPORT_FILED':
+      return { text: `Report in from ${c.ops.list[e.opType].name}: your call`, quiet: true }
+    case 'INCIDENT_RAISED':
+      return { text: `${c.incidents.types[e.incidentType].name}: your call`, color: colors.warn }
+    case 'INBOX_RESOLVED': {
+      const title =
+        e.kind === 'incident'
+          ? c.incidents.types[e.ref as keyof typeof c.incidents.types]?.name ?? 'An incident'
+          : e.kind === 'report'
+            ? `${c.ops.list[e.ref as keyof typeof c.ops.list]?.name ?? 'A job'} report`
+            : 'A promotion'
+      return e.auto
+        ? { text: `Nobody answered “${title}”: it went “${e.optionName}”`, color: colors.muted }
+        : { text: `${title}: ${e.optionName}`, quiet: true }
+    }
+    case 'OFFERS_REFRESHED':
+      return { text: `New work on the board (${e.count})`, quiet: true }
     case 'RECRUITED':
       return { text: `${e.name} joined the crew (${cl}${fmt(e.cost)})` }
     case 'FIRED':

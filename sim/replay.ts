@@ -1,5 +1,6 @@
 import {
   apply,
+  migrate,
   reconcile,
   tryBuildConfig,
   type Action,
@@ -44,7 +45,9 @@ export function replayLog(doc: LogExport): Trace {
   const meta = lines[metaIndex] as Extract<LogLine, { kind: 'meta' }>
 
   let config = configFor(meta.preset, meta.overrides)
-  let state = meta.initialState
+  // Logs from older builds carry an older save shape.
+  let state = migrate(meta.initialState)
+  const startStats = state.stats
   const start = state.updatedAt
   const H = () => config.time.hourMs
   const rec = new Recorder(config, start)
@@ -87,6 +90,7 @@ export function replayLog(doc: LogExport): Trace {
     label: { preset: meta.preset, persona: 'human', seed: meta.playerId.slice(0, 8), days, source: 'replay' },
     start,
     end: t,
+    startStats,
     final: state,
     hours: rec.hours,
     sessions: rec.sessions,

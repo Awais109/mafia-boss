@@ -33,10 +33,55 @@ export const TRAIT_IDS: readonly TraitId[] = ['exArmy', 'gambler', 'alcoholic']
 
 export type Controller = 'player' | 'tolya' | 'zhanna' | 'none'
 export type OpBand = 'quick' | 'standard' | 'long'
+export const OP_BANDS: readonly OpBand[] = ['quick', 'standard', 'long']
+export type OpOutcome = 'full' | 'partial' | 'fail'
+export const OP_OUTCOMES: readonly OpOutcome[] = ['full', 'partial', 'fail']
+
+export type IncidentType = 'inspector' | 'drunkCrew' | 'shopkeeperLead' | 'copFavour'
+export const INCIDENT_TYPES: readonly IncidentType[] = ['inspector', 'drunkCrew', 'shopkeeperLead', 'copFavour']
+export type IncidentNeed = 'idleCrew' | 'joint' | 'factory' | 'inspected'
+
+// One option on a pending decision (a crew report or an incident). Effects are materialized
+// into the save when the item is filed, so replays don't depend on later config edits.
+export type ChoiceConfig = {
+  id: string
+  name: string
+  default?: boolean // exactly one per list; applied when the item expires unanswered
+  dirtyPct?: number // share of the job's Dirty reward (reports)
+  dirtyPerAct?: number // flat Dirty × act
+  influence?: number
+  rep?: number
+  heat?: number
+  loyalty?: number // every crew member named on the item
+  condition?: number // the business named on the item
+  disposition?: number // Tolya
+  cigarettes?: number
+}
+
+export type IncidentConfig = {
+  name: string
+  text: string
+  act?: Act
+  needs?: IncidentNeed
+  options: ChoiceConfig[]
+}
+
+export type OfferTemplate = {
+  base: OpType
+  name: string
+  act?: Act
+  diffAdd: [number, number]
+  rewardMult: [number, number]
+  spikeMult: [number, number]
+  minutesMult: [number, number]
+}
+
+export type RacketKind = 'joint' | 'racket' | 'premises'
 
 export type RacketTypeConfig = {
   name: string
   act: Act
+  kind?: RacketKind // joints sell cigarettes, rackets don't, premises make or keep things (ADR 0031)
   baseYield: number // dirty/hr at tier 1
   baseHeat: number // exposure at tier 1
   unlockRep: number
@@ -62,6 +107,8 @@ export type OpConfig = {
   spike: number
   dirty?: number
   influence?: number
+  cigarettes?: number // packs added to stock on success
+  training?: Stat // a training job: no roll, no heat, XP to this stat
   districtPressure?: boolean
   act?: Act
 }
@@ -121,6 +168,7 @@ export type Config = {
     suspicionFactor: number
     utilSmoothingHours: number
     bufferHours: number
+    reserveHours: number // "launder all but running costs" keeps this many hours of wages and upkeep
     upgrade: { rateStep: number; levels: number; costPctOfUnlock: number; minCostBasis: number }
     types: Record<FrontType, FrontTypeConfig>
   }
@@ -184,7 +232,11 @@ export type Config = {
     influenceDailyCap: number
     rewardActScaling: number
     list: Record<OpType, OpConfig>
+    reports: { bands: OpBand[]; byOutcome: Record<OpOutcome, ChoiceConfig[]> }
   }
+  inbox: { reportHours: number; incidentHours: number; perkHours: number; maxPending: number }
+  incidents: { chancePerHr: number; startAfterHours: number; types: Record<IncidentType, IncidentConfig> }
+  offers: { count: number; refreshHours: number; templates: Record<string, OfferTemplate> }
   districts: {
     pressureOpsToFlip: number
     list: Record<DistrictId, DistrictConfig>
@@ -236,6 +288,30 @@ const rate = (e: string[], p: string, v: unknown) => num(e, p, v, (n) => n > 0 &
 const int = (e: string[], p: string, v: unknown, min = 0) =>
   num(e, p, v, (n) => Number.isInteger(n) && n >= min, `an integer >= ${min}`)
 
+function range(e: string[], p: string, v: unknown, test: (n: number) => boolean) {
+  if (!Array.isArray(v) || v.length !== 2 || !isNum(v[0]) || !isNum(v[1])) {
+    e.push(`${p}: expected [lo, hi]`)
+    return
+  }
+  if (!test(v[0]) || !test(v[1]) || v[0] > v[1]) e.push(`${p}: [${v[0]}, ${v[1]}] must satisfy lo <= hi and the value rule`)
+}
+
+// A decision list: 2–3 options, unique ids, exactly one default, and the default never costs anything.
+function choices(e: string[], p: string, list: unknown) {
+  if (!Array.isArray(list) || list.length < 2 || list.length > 3) {
+    e.push(`${p}: list 2–3 options`)
+    return
+  }
+  const opts = list as ChoiceConfig[]
+  if (new Set(opts.map((o) => o.id)).size !== opts.length) e.push(`${p}: option ids must be unique`)
+  const defaults = opts.filter((o) => o.default)
+  if (defaults.length !== 1) e.push(`${p}: exactly one option must be the default`)
+  const d = defaults[0]
+  if (d && ((d.dirtyPct ?? 0) < 0 || (d.dirtyPerAct ?? 0) < 0 || (d.cigarettes ?? 0) < 0)) {
+    e.push(`${p}.${d.id}: the default option can't cost Dirty or cigarettes`)
+  }
+}
+
 export function validateConfig(c: Config): string[] {
   const e: string[] = []
   const checks: Check[] = [
@@ -286,6 +362,7 @@ export function validateConfig(c: Config): string[] {
       int(e, 'fronts.upgrade.levels', f.upgrade.levels, 0)
       nonNeg(e, 'fronts.upgrade.costPctOfUnlock', f.upgrade.costPctOfUnlock)
       nonNeg(e, 'fronts.upgrade.minCostBasis', f.upgrade.minCostBasis)
+      nonNeg(e, 'fronts.reserveHours', f.reserveHours)
       for (const t of FRONT_TYPES) {
         const ft = f.types[t]
         rate(e, `fronts.types.${t}.rate`, ft.rate)
@@ -371,6 +448,37 @@ export function validateConfig(c: Config): string[] {
           if (!STATS.includes(k as Stat)) e.push(`ops.list.${t}.w.${k}: unknown stat`)
         }
       }
+      for (const b of o.reports.bands) if (!OP_BANDS.includes(b)) e.push(`ops.reports.bands: unknown band ${b}`)
+      for (const outcome of OP_OUTCOMES) choices(e, `ops.reports.byOutcome.${outcome}`, o.reports.byOutcome[outcome])
+    },
+    (e) => {
+      const i = c.inbox
+      positive(e, 'inbox.reportHours', i.reportHours)
+      positive(e, 'inbox.incidentHours', i.incidentHours)
+      positive(e, 'inbox.perkHours', i.perkHours)
+      int(e, 'inbox.maxPending', i.maxPending, 0)
+      unit(e, 'incidents.chancePerHr', c.incidents.chancePerHr)
+      nonNeg(e, 'incidents.startAfterHours', c.incidents.startAfterHours)
+      for (const t of INCIDENT_TYPES) {
+        const inc = c.incidents.types[t]
+        if (!inc) { e.push(`incidents.types.${t}: missing`); continue }
+        choices(e, `incidents.types.${t}.options`, inc.options)
+      }
+    },
+    (e) => {
+      const o = c.offers
+      int(e, 'offers.count', o.count, 0)
+      positive(e, 'offers.refreshHours', o.refreshHours)
+      for (const [id, tpl] of Object.entries(o.templates)) {
+        const p = `offers.templates.${id}`
+        const base = c.ops.list[tpl.base]
+        if (!base) { e.push(`${p}.base: unknown job ${tpl.base}`); continue }
+        if (base.districtPressure) e.push(`${p}.base: pressure jobs can't be offers`)
+        range(e, `${p}.diffAdd`, tpl.diffAdd, (n) => Number.isFinite(n))
+        range(e, `${p}.rewardMult`, tpl.rewardMult, (n) => n > 0)
+        range(e, `${p}.spikeMult`, tpl.spikeMult, (n) => n >= 0)
+        range(e, `${p}.minutesMult`, tpl.minutesMult, (n) => n > 0)
+      }
     },
     (e) => {
       int(e, 'districts.pressureOpsToFlip', c.districts.pressureOpsToFlip, 1)
@@ -410,7 +518,14 @@ export function validateConfig(c: Config): string[] {
 }
 
 // Keys under these paths are open maps: a preset may add entries the defaults don't have.
-const OPEN_PATHS = [/^costs\.overrides$/, /^ops\.list\.[^.]+$/, /^ops\.list\.[^.]+\.w$/, /^districts\.list\.[^.]+\.mod(\..+)?$/]
+// Only maps the engine iterates by key are open; maps keyed by a fixed union (incident types) are not.
+const OPEN_PATHS = [
+  /^costs\.overrides$/,
+  /^ops\.list\.[^.]+$/,
+  /^ops\.list\.[^.]+\.w$/,
+  /^districts\.list\.[^.]+\.mod(\..+)?$/,
+  /^offers\.templates$/,
+]
 
 // Every key in `overlay` must exist in `base` (outside open maps). Catches preset typos.
 export function unknownKeys(base: unknown, overlay: unknown, path = ''): string[] {

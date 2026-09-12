@@ -29,17 +29,20 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 
 **Each session, in order** (`playSession`):
 1. `SESSION_START`, skip the tutorial, `COLLECT`.
-2. Pay Tolya's demand if affordable; repair rackets below 75 condition.
-3. Deposit Dirty into fronts, best rate first, up to buffer caps, keeping a reserve of 12 h of wages plus one bribe.
-4. Bribe if heat is above 55.
-5. Buy an official if affordable and heat or heat target is above 30.
-6. Buy any unlocked front. Recruit into empty slots (highest stat total). Raise anyone under 35 loyalty.
-7. Dispatch idle crew, one job at a time, greedily by value per crew member (below).
-8. Buy a district when affordable and its tribute over 48 h exceeds the buy-out. It never saves Clean for one.
-9. Spend Clean, repeatedly, on the best gain ÷ cost: a new front first, front rate upgrades when utilization is at least `fronts.suspicionStartUtil`, a new racket in the district with the best yield multiplier, or a tier upgrade. It skips anything that pushes the heat target above 55, unless an official is affordable right now.
-10. `SESSION_END`.
+2. Answer every pending inbox item with the affordable option of highest decision value (below).
+3. Pay Tolya's demand if affordable; repair rackets below 75 condition.
+4. Deposit Dirty into fronts, best rate first, up to buffer caps, keeping a reserve of 12 h of wages plus one bribe.
+5. Bribe if heat is above 55.
+6. Buy an official if affordable and heat or heat target is above 30.
+7. Buy any unlocked front. Recruit into empty slots (highest stat total). Raise anyone under 35 loyalty.
+8. Dispatch idle crew, one job at a time, greedily by value per crew member, over the fixed jobs and the offers on the board (below).
+9. Buy a district when affordable and its tribute over 48 h exceeds the buy-out. It never saves Clean for one.
+10. Spend Clean, repeatedly, on the best gain ÷ cost: a new front first, front rate upgrades when utilization is at least `fronts.suspicionStartUtil`, a new racket in the district with the best yield multiplier, or a tier upgrade. It skips anything that pushes the heat target above 55, unless an official is affordable right now.
+11. `SESSION_END`.
 
-**Job value** (`bestDispatch`) = expected Dirty + expected Rep × 10 + expected Influence × (3 h of yield × urgency) + P(success) × district flip value − expected heat spike × heat cost. The total is divided by the number of sessions the job blocks. Urgency rises as heat or heat target climbs past 30, so the bot runs Influence jobs when it needs an official.
+**Job value** (`bestDispatch`) = expected Dirty + expected Rep × 10 + expected Influence × (3 h of yield × urgency) + P(success) × district flip value − expected heat spike × heat cost. The total is divided by the number of sessions the job blocks. Urgency rises as heat or heat target climbs past 30, so the bot runs Influence jobs when it needs an official. Offers on the board are candidates too, valued with their own terms (`opDirtyRewardFor` on the offer's `cfg`).
+
+**Decision value** (`valueOf`) = Dirty + Clean × 2 + Rep × `repValue` + Influence × the same Influence value + loyalty × `loyaltyValue` for each named crew member (×3 for anyone below `raiseBelow`) − heat × the same heat cost. `valuation()` computes the Influence value and heat cost once for both.
 
 ## Driver
 
@@ -51,7 +54,8 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 
 `Recorder` rows:
 - `HourRow`: `hour`, `day`, `act`, `dirty`, `clean`, `vault`, `vaultCap`, `heat`, `heatTarget`, `exposure`, `control`, `yield`, `rep`, `influence`, `frontUtil`, `cleanEarned`, `dirtyEarned` (the CSV columns).
-- `SessionRow`: `day`, `act`, `actions`, `income` (Dirty earned since the last session ended), `dirtyAfter`, `vaultFillHrs`.
+- `SessionRow`: `day`, `act`, `actions`, `decisions` (successful `RESOLVE_INBOX`), `income` (Dirty earned since the last session ended), `dirtyAfter`, `vaultFillHrs`.
+- `Trace.startStats`: the stats when the run began. Per-run metrics subtract them, because the Debug Bot starts from a save with history.
 
 ## Report
 
@@ -68,6 +72,10 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 | Vault fill | `vaultCap ÷ yield` at session end. Act I uses day-1 sessions; Act II uses day-4+ Act II sessions |
 | Op outcomes | Shares of `stats.opOutcomes` |
 | Tiers | Final rackets, abbreviated (`K5 M4 A3 …`) |
+| Decisions per session | Mean over sessions of `SessionRow.decisions` |
+| Auto-resolved | `stats.inbox.auto` ÷ (answered + auto) over the run |
+| Offer share | `stats.offerDirty` ÷ `stats.jobDirty` over the run |
+| Wage share | (`stats.wagesPaid` + `stats.upkeepPaid`) ÷ `stats.dirtyEarned` over the run; a check at 10–25% (manual §5) |
 
 Clear times count from the game's `createdAt`, not the run's start, so the Debug Bot's report on an existing save reads like the CLI's. A clear that happened before the run is printed with `before this run` and not scored (`actClear1InRun`, `actClear2InRun`; [ADR 0022](decisions/0022-end-of-prototype-state.md)).
 
@@ -76,7 +84,7 @@ Where the bot stands against the targets, and every number change behind it, is 
 ## Replay
 
 `sim/replay.ts` defines the app's log format (`LogLine`: `meta`, `action`, `config`, `event`; `LogExport` wraps the lines) and `replayLog(doc)`:
-1. Start from the last `meta` line's snapshot and config.
+1. Start from the last `meta` line's snapshot, migrated to the current schema, and its config.
 2. Walk to each `action` line's time and apply it, switching config at `config` lines.
 3. Treat `SESSION_START` and `SESSION_END` as session bounds.
 

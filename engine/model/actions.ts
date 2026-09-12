@@ -1,4 +1,4 @@
-import type { DistrictId, FrontType, OfficialId, OpType, RacketType } from '../config/schema'
+import type { DistrictId, FrontType, IncidentType, OfficialId, OpType, RacketType } from '../config/schema'
 
 export type Action =
   | { type: 'COLLECT' }
@@ -7,7 +7,8 @@ export type Action =
   | { type: 'UPGRADE_RACKET'; racketId: string }
   | { type: 'REPAIR_RACKET'; racketId: string }
   | { type: 'ASSIGN_ENFORCER'; crewId: string; racketId: string | null } // null = back to idle
-  | { type: 'START_OP'; opType: OpType; crewIds: string[]; districtId?: DistrictId }
+  | { type: 'START_OP'; opType: OpType; crewIds: string[]; districtId?: DistrictId; offerId?: string }
+  | { type: 'RESOLVE_INBOX'; itemId: string; optionId: string }
   | { type: 'RECRUIT'; candidateId: string }
   | { type: 'FIRE'; crewId: string }
   | { type: 'RAISE'; crewId: string }
@@ -35,6 +36,8 @@ export type DebugAction =
   | { type: 'DEBUG_FORCE_TOLYA' }
   | { type: 'DEBUG_COMPLETE_OPS' }
   | { type: 'DEBUG_REFRESH_POOL' }
+  | { type: 'DEBUG_FORCE_INCIDENT'; incidentType?: IncidentType }
+  | { type: 'DEBUG_REFRESH_OFFERS' }
 
 export type ActionType = Action['type']
 
