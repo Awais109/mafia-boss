@@ -7,6 +7,7 @@ export type EventLine = { text: string; color?: string; quiet?: boolean }
 const OUTCOME = { full: 'clean job', partial: 'got some of it', fail: 'went wrong' } as const
 const STAT_NAME = { muscle: 'Muscle', brains: 'Brains', nerve: 'Nerve' } as const
 const MODE_TEXT = { push: 'pushing', normal: 'running normally', layLow: 'lying low' } as const
+const GOLD_SOURCE = { start: 'to start', act: 'for opening a new act', goal: 'for a goal', debug: 'from Debug', ad: 'for an ad', purchase: 'bought' } as const
 
 // Player-facing line for an event. `quiet` lines are bookkeeping, hidden unless the Log asks.
 export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLine {
@@ -80,6 +81,12 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
       }
     case 'SHORTAGE_ENDED':
       return { text: 'Cigarettes are back on the shelves', color: colors.good }
+    case 'GOLD_GRANTED':
+      return { text: `+${glyph.gold}${fmt(e.amount)} ${GOLD_SOURCE[e.source]}`, color: colors.gold }
+    case 'TIME_SKIPPED':
+      return { text: `Skipped ${e.hours}h for ${glyph.gold}${e.bars}`, color: colors.gold }
+    case 'OP_RUSHED':
+      return { text: `Finished ${e.name ?? c.ops.list[e.opType].name} early for ${glyph.gold}${e.bars}`, color: colors.gold }
     case 'REPORT_FILED':
       return { text: `Report in from ${c.ops.list[e.opType].name}: your call`, quiet: true }
     case 'INCIDENT_RAISED':

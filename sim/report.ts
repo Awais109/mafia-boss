@@ -42,6 +42,8 @@ export type Summary = {
   shortagePctAct1: number // share of Act I hours with stock out and joints selling
   stockIdlePct: number // hours stock sat at its cap ÷ hours joints were selling
   packsLostToCap: number
+  goldSpent: number
+  hoursSkipped: number
   checks: Check[]
 }
 
@@ -149,6 +151,8 @@ export function summarize(trace: Trace): Summary {
     shortagePctAct1: act1Hours.length ? act1Hours.filter((h) => h.packDemand > 0 && h.stock <= 1e-9).length / act1Hours.length : NaN,
     stockIdlePct: selling.length ? selling.filter((h) => h.stock >= h.stockCap - 1e-6).length / selling.length : NaN,
     packsLostToCap: delta((x) => x.packsLostToCap),
+    goldSpent: delta((x) => (x.gold ? x.gold.spentSkip + x.gold.spentRush : 0)),
+    hoursSkipped: delta((x) => x.gold?.hoursSkipped),
     checks: [],
   }
   summary.checks = [
@@ -194,6 +198,7 @@ export function formatSummary(s: Summary): string {
     `${pad('Decisions:', 18)}auto-resolved ${pc(s.inboxAutoPct)}  offer share ${pc(s.offerShare)}  wage share ${pc(s.wageShare)}   ${ok('Wage share')}`,
     `${pad('Crew growth:', 18)}${f1(s.statPointsPerCrewDay)} pts/crew/day  partial d1–2 ${pc(s.partialEarly)}  d7–8 ${pc(s.partialLate)}`,
     `${pad('Cigarettes:', 18)}shortage ${s.shortageHours} h (${pc(s.shortagePctAct1)} of Act I)  stock at cap ${pc(s.stockIdlePct)}  lost ${Math.round(s.packsLostToCap)} packs`,
+    `${pad('Gold:', 18)}spent ${s.goldSpent} bars  hours skipped ${s.hoursSkipped}`,
     `${pad('Tiers @ end:', 18)}${s.tiers}`,
   ]
   const passed = s.checks.filter((ch) => checkOk(ch) === true).length
@@ -203,7 +208,7 @@ export function formatSummary(s: Summary): string {
 
 const CSV_COLUMNS = [
   'hour', 'day', 'act', 'dirty', 'clean', 'vault', 'vaultCap', 'heat', 'heatTarget', 'exposure', 'control',
-  'yield', 'rep', 'influence', 'frontUtil', 'cleanEarned', 'dirtyEarned', 'stock',
+  'yield', 'rep', 'influence', 'frontUtil', 'cleanEarned', 'dirtyEarned', 'stock', 'gold',
 ] as const
 
 export function toCsv(trace: Trace): string {

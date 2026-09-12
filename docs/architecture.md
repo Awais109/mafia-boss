@@ -47,7 +47,7 @@ Events are appended to `state.log`, a ring buffer of the latest `LOG_CAP` (200) 
 
 ## apply
 
-`engine/core/apply.ts`: clone → reconcile to `now` → act at `t = max(now, updatedAt)`. Every handler validates before it mutates and returns an error string or `null`, so a rejected action leaves only the reconciled state. On success, `stats.actions` increments (except `SESSION_START`, `SESSION_END`, `TUTORIAL_ADVANCE`) and the tutorial checks whether the action advances it. `DEBUG_*` actions are refused unless `debug.enabled`. `DEBUG_RESET_OFFSET` shifts every stored timestamp back by the offset (`shiftTimes` in `engine/core/time.ts`), so resetting never freezes the game.
+`engine/core/apply.ts`: clone → reconcile to `now` → act at `t = max(now, updatedAt)`. Every handler validates before it mutates and returns an error string or `null`, so a rejected action leaves only the reconciled state. On success, `stats.actions` increments (except `SESSION_START`, `SESSION_END`, `TUTORIAL_ADVANCE`) and the tutorial checks whether the action advances it. `DEBUG_*` actions are refused unless `debug.enabled`. `DEBUG_RESET_OFFSET` shifts every stored timestamp back by the offset (`shiftTimes` in `engine/core/time.ts`), so resetting never freezes the game. `skippedMs` is a duration and is never shifted.
 
 Actions are listed in `engine/model/actions.ts`, events in `engine/model/events.ts`; each system doc lists its own.
 
@@ -55,7 +55,7 @@ Actions are listed in `engine/model/actions.ts`, events in `engine/model/events.
 
 ([ADR 0004](decisions/0004-game-time.md))
 
-- The app computes game time as `Date.now() + state.debugOffsetMs`. The engine only ever receives `now`.
+- The app computes game time as `Date.now() + state.debugOffsetMs + state.skippedMs`, the last being hours bought with gold ([systems/gold.md](systems/gold.md)). The engine only ever receives `now`.
 - Every duration in config is in **game hours** (op minutes are converted too). `time.hourMs` maps a game hour to milliseconds: 3,600,000 by default, 60,000 in the `fast` preset.
 - Hours and days are aligned to the epoch: `hourIndex = floor(t / hourMs)`, and a day starts where `t % (24 · hourMs) === 0`. Every split of a reconcile sees the same boundaries. The UI's "Day N" counts from `createdAt`.
 
@@ -80,9 +80,9 @@ effective = defaults.ts  ←  presets/<name>.json  ←  user overrides
 
 ## State and saves
 
-`engine/model/state.ts` defines `PlayerState`: currencies (`vault`, `dirty`, `clean`, `influence`, `reputation`), `act`, `heat` and `inspected`, the cigarette `inventory` and `stockEmpty`, `rackets` (with tier-3 `specialization`), `fronts` (with `mode` and `capacityLevel`), `crew` (with experience: `xp`, `potential`, `gained`, `rank`, `perks`), `recruitPool`, `ops`, `districts`, `officials`, bribe fields, `wagesOwed`, `upkeepOwed`, `influenceToday`, `rival.tolya` (with `haggledTick`), `tutorial`, the `inbox` of pending decisions, the `offers` board, the daily `ledger`, the event `log`, and playtest `stats`.
+`engine/model/state.ts` defines `PlayerState`: currencies (`vault`, `dirty`, `clean`, `influence`, `reputation`, `gold`), the bought time `skippedMs`, `act`, `heat` and `inspected`, the cigarette `inventory` and `stockEmpty`, `rackets` (with tier-3 `specialization`), `fronts` (with `mode` and `capacityLevel`), `crew` (with experience: `xp`, `potential`, `gained`, `rank`, `perks`), `recruitPool`, `ops`, `districts`, `officials`, bribe fields, `wagesOwed`, `upkeepOwed`, `influenceToday`, `rival.tolya` (with `haggledTick`), `tutorial`, the `inbox` of pending decisions, the `offers` board, the daily `ledger`, the event `log`, and playtest `stats`.
 
-`SCHEMA_VERSION` is 4. `engine/model/migrate.ts` holds one step per version (`STEPS[1]` = `v1to2`, `STEPS[2]` = `v2to3`, `STEPS[3]` = `v3to4`); `migrate()` runs them in order and refuses a save from a newer build. A step only fills what's missing: new stat counters default to 0, and anything timed is seeded from `updatedAt`, so it catches up on the next reconcile. v2 adds an empty inbox, an empty board that refreshes immediately, and one ledger snapshot. v3 gives crew and candidates no XP, a ceiling 10 above each stat (at most 100), rank 0 and no perks; sets every front to `normal` at capacity 0; and clears haggle state. v4 adds the starting stock, nothing owed in upkeep, and the Station Square district row, reading those from `defaults` because `migrate` has no config. `sim/replay.ts` migrates a log's starting snapshot, so logs from older builds still replay. Every new timestamp must also be shifted in `shiftTimes` (`engine/core/time.ts`).
+`SCHEMA_VERSION` is 5. `engine/model/migrate.ts` holds one step per version (`STEPS[1]` = `v1to2`, `STEPS[2]` = `v2to3`, `STEPS[3]` = `v3to4`, `STEPS[4]` = `v4to5`); `migrate()` runs them in order and refuses a save from a newer build. A step only fills what's missing: new stat counters default to 0, and anything timed is seeded from `updatedAt`, so it catches up on the next reconcile. v2 adds an empty inbox, an empty board that refreshes immediately, and one ledger snapshot. v3 gives crew and candidates no XP, a ceiling 10 above each stat (at most 100), rank 0 and no perks; sets every front to `normal` at capacity 0; and clears haggle state. v4 adds the starting stock, nothing owed in upkeep, and the Station Square district row, reading those from `defaults` because `migrate` has no config. v5 adds the starting gold and no bought time. `sim/replay.ts` migrates a log's starting snapshot, so logs from older builds still replay. Every new timestamp must also be shifted in `shiftTimes` (`engine/core/time.ts`).
 
 Persistence lives in the app ([app.md](app.md)): the save, settings, and a JSON-lines event log in the app's document directory ([ADR 0007](decisions/0007-local-file-persistence.md)).
 

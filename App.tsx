@@ -5,6 +5,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { AwayModal } from './app/components/AwayModal'
 import { Header } from './app/components/Header'
 import { NoticeBar } from './app/components/NoticeBar'
+import { SkipSheet } from './app/components/SkipSheet'
 import { TutorialBanner } from './app/components/TutorialBanner'
 import { colors } from './app/components/ui'
 import { CrewScreen } from './app/screens/CrewScreen'
@@ -47,6 +48,7 @@ export default function App() {
   useEffect(() => store.start(), [])
   const game = useGame()
   const [tab, setTab] = useState<TabId>('home')
+  const [skipping, setSkipping] = useState(false)
 
   return (
     <SafeAreaProvider>
@@ -58,11 +60,12 @@ export default function App() {
           </View>
         ) : (
           <>
-            <Header game={game} />
+            <Header game={game} onGold={() => setSkipping(true)} />
             <TabBar tab={tab} onChange={setTab} game={game} />
             <TutorialBanner game={game} go={setTab} />
             <NoticeBar notice={game.notice} realNow={game.realNow} />
             <View style={styles.body}>{TABS.find((t) => t.id === tab)?.render({ game, go: setTab })}</View>
+            {skipping && <SkipSheet game={game} onClose={() => setSkipping(false)} />}
             {game.away && <AwayModal summary={game.away} game={game} />}
           </>
         )}

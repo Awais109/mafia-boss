@@ -7,6 +7,7 @@ import { config, fresh, H } from './helpers'
 const V2_STATS = ['opsByType', 'jobDirty', 'offerDirty', 'inboxDirty', 'wagesPaid', 'repairsPaid', 'bribesPaid', 'trainingPaid', 'upkeepPaid', 'smugglingPaid', 'shipmentsPaid', 'surplusSold', 'inbox']
 const V3_STATS = ['specializations', 'frontModeChanges', 'haggles', 'statPointsGained']
 const V4_STATS = ['missedUpkeep', 'packsMade', 'packsSold', 'packsLostToCap', 'shortageHours']
+const V5_STATS = ['gold']
 const PROGRESS = ['xp', 'potential', 'gained', 'rank', 'perks']
 
 // A fresh save stripped back to the schema 1 shape.
@@ -15,7 +16,7 @@ function asV1(): Record<string, unknown> {
   delete s.inbox
   delete s.offers
   delete s.ledger
-  for (const k of [...V2_STATS, ...V3_STATS, ...V4_STATS]) delete s.stats[k]
+  for (const k of [...V2_STATS, ...V3_STATS, ...V4_STATS, ...V5_STATS]) delete s.stats[k]
   for (const m of [...s.crew, ...s.recruitPool.candidates]) for (const k of PROGRESS) delete m[k]
   for (const f of s.fronts) {
     delete f.mode
@@ -25,6 +26,8 @@ function asV1(): Record<string, unknown> {
   delete s.inventory
   delete s.stockEmpty
   delete s.upkeepOwed
+  delete s.gold
+  delete s.skippedMs
   s.districts = s.districts.filter((d: { id: string }) => d.id !== 'stationSquare')
   s.rackets = s.rackets.filter((r: { type: string }) => r.type === 'kiosk' || r.type === 'marketStall')
   s.stats.sessions = 3
@@ -63,6 +66,13 @@ describe('migrate', () => {
     expect(m.stockEmpty).toBe(false)
     expect(m.upkeepOwed).toBe(0)
     expect(m.districts.find((d) => d.id === 'stationSquare')).toEqual({ id: 'stationSquare', controller: 'none', pressureCount: 0 })
+  })
+
+  it('hands an old save the starting gold', () => {
+    const m = migrate(asV1())
+    expect(m.gold).toBe(config.gold.starting)
+    expect(m.skippedMs).toBe(0)
+    expect(m.stats.gold.granted).toBe(config.gold.starting)
   })
 
   it('a migrated save keeps playing: the board fills on the next catch-up', () => {

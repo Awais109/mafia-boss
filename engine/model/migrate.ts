@@ -62,7 +62,20 @@ function v3to4(doc: Doc): Doc {
   }
 }
 
-const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3, 3: v3to4 }
+// v5 (M4): gold bars and the game time they've bought. An old save gets the starting bars.
+function v4to5(doc: Doc): Doc {
+  const stats = { ...emptyStats(), ...(doc.stats as object) } as PlayerState['stats']
+  const hadGold = typeof doc.gold === 'number'
+  return {
+    ...doc,
+    schemaVersion: 5,
+    stats: hadGold ? stats : { ...stats, gold: { ...stats.gold, granted: defaults.gold.starting } },
+    gold: hadGold ? doc.gold : defaults.gold.starting,
+    skippedMs: doc.skippedMs ?? 0,
+  }
+}
+
+const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5 }
 
 export function migrate(doc: unknown): PlayerState {
   if (typeof doc !== 'object' || doc === null) throw new Error('Save is not an object')

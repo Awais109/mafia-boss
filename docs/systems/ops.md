@@ -87,6 +87,6 @@ The roll is seeded by the job's id. `outcomeOdds` computes the exact probabiliti
 - `OFFERS_REFRESHED { count }` (quiet)
 - `TRAINING_DONE { opId, crewId, name, stat, xp }`
 
-`DEBUG_COMPLETE_OPS` resolves every job in progress immediately.
+`DEBUG_COMPLETE_OPS` resolves every job in progress immediately. `RUSH_OP` finishes one now for gold bars, with the roll it would have had ([gold.md](gold.md)).
 
 **Tests:** `tests/ops.test.ts` (partial success is the most common outcome among rolled jobs, odds match rolls, team scoring, traits), `tests/apply.test.ts` (job lifecycle, pressure flips a district), `tests/offers.test.ts` (the board's schedule, taking an offer, stale offers), `tests/crew.test.ts` (training cost and XP, perks on jobs), `tests/supply.test.ts` (smuggling's Clean, its difficulty with heat, and its packs), `tests/sim.test.ts` (the bot's partial share stays 40–60%).

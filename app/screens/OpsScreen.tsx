@@ -12,6 +12,7 @@ import {
   opUnlocked,
   OP_TYPES,
   outcomeOdds,
+  rushCost,
   STATS,
   type CrewMember,
   type DistrictId,
@@ -19,7 +20,7 @@ import {
   type OpConfig,
   type OpType,
 } from '../../engine'
-import { Btn, BtnRow, Card, colors, Row, Screen, Section, T, Tag } from '../components/ui'
+import { Btn, BtnRow, Card, colors, glyph, Row, Screen, Section, T, Tag } from '../components/ui'
 import { fmt, fmtDuration, pct } from '../format'
 import { store, type Snapshot } from '../store'
 import type { ScreenProps } from './types'
@@ -60,6 +61,12 @@ export function OpsScreen({ game }: ScreenProps) {
                 {op.crewIds.map((id) => s.crew.find((m) => m.id === id)?.name ?? '?').join(' & ')}
                 {op.districtId ? ` · ${c.districts.list[op.districtId].name}` : ''}
               </T>
+              <Btn
+                small
+                title={`Finish now ${glyph.gold}${rushCost(c, op.completesAt - now)}`}
+                disabled={s.gold < rushCost(c, op.completesAt - now)}
+                onPress={() => store.dispatch({ type: 'RUSH_OP', opId: op.id })}
+              />
             </Card>
           ))}
         </Section>

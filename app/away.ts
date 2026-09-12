@@ -33,6 +33,8 @@ export type AwaySummary = {
   heatFrom: number
   heatTo: number
   pendingDecisions: number // inbox items still waiting when the gap ended
+  goldGranted: number
+  skippedHours?: number // the gap was bought with gold
   events: GameEvent[] // everything else worth a line; the popup describes them
 }
 
@@ -44,6 +46,8 @@ const FOLDED = new Set<GameEvent['type']>([
   'UPKEEP_PAID',
   'UPKEEP_MISSED',
   'STOCK_CAPPED',
+  'GOLD_GRANTED',
+  'TIME_SKIPPED',
   'VAULT_CAPPED',
   'OP_STARTED',
   'REPORT_FILED', // counted in pendingDecisions
@@ -66,6 +70,7 @@ export function buildAway(before: PlayerState, after: PlayerState, events: GameE
   let wagesShort = 0
   let upkeepPaid = 0
   let upkeepShort = 0
+  let goldGranted = 0
   for (const e of events) {
     if (e.type === 'OP_RESOLVED') {
       jobs.push({
@@ -81,6 +86,8 @@ export function buildAway(before: PlayerState, after: PlayerState, events: GameE
     } else if (e.type === 'WAGES_MISSED') {
       wagesPaid += e.paid
       wagesShort += e.owed - e.paid
+    } else if (e.type === 'GOLD_GRANTED') {
+      goldGranted += e.amount
     } else if (e.type === 'UPKEEP_PAID') {
       upkeepPaid += e.amount
     } else if (e.type === 'UPKEEP_MISSED') {
@@ -124,6 +131,7 @@ export function buildAway(before: PlayerState, after: PlayerState, events: GameE
     heatFrom: before.heat,
     heatTo: after.heat,
     pendingDecisions: after.inbox.length,
+    goldGranted,
     events: events.filter((e) => !FOLDED.has(e.type)),
   }
 }
@@ -165,6 +173,8 @@ export function mergeAway(pending: AwaySummary | null, next: AwaySummary): AwayS
     heatFrom: pending.heatFrom,
     heatTo: next.heatTo,
     pendingDecisions: next.pendingDecisions,
+    goldGranted: pending.goldGranted + next.goldGranted,
+    ...(pending.skippedHours || next.skippedHours ? { skippedHours: (pending.skippedHours ?? 0) + (next.skippedHours ?? 0) } : {}),
     events: [...pending.events, ...next.events],
   }
 }

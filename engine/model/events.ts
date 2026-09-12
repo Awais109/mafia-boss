@@ -15,6 +15,8 @@ import type {
 } from '../config/schema'
 import type { InboxEffects, InboxItem } from './state'
 
+export type GoldSource = 'start' | 'act' | 'goal' | 'debug' | 'ad' | 'purchase'
+
 // What happened during a reconcile or apply. Events are the playtest log.
 export type EventBody =
   | { type: 'OFFLINE_CAPPED'; skippedHours: number }
@@ -54,6 +56,9 @@ export type EventBody =
   | { type: 'STOCK_CAPPED'; cap: number }
   | { type: 'SHORTAGE_STARTED'; demand: number; made: number }
   | { type: 'SHORTAGE_ENDED' }
+  | { type: 'GOLD_GRANTED'; amount: number; source: GoldSource }
+  | { type: 'TIME_SKIPPED'; hours: number; bars: number }
+  | { type: 'OP_RUSHED'; opId: string; opType: OpType; bars: number; name?: string }
   | { type: 'REPORT_FILED'; itemId: string; opId: string; opType: OpType; outcome: OpOutcome; expiresAt: number }
   | { type: 'INCIDENT_RAISED'; itemId: string; incidentType: IncidentType; crewId?: string; racketId?: string; expiresAt: number }
   | { type: 'INBOX_RESOLVED'; itemId: string; kind: InboxItem['kind']; ref: string; optionId: string; optionName: string; auto: boolean; effects: InboxEffects }

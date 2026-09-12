@@ -90,6 +90,7 @@ function StatePanel({ game }: { game: Snapshot }) {
           <Btn small title="+●1000" onPress={() => d({ type: 'DEBUG_GRANT', clean: 1000 })} />
           <Btn small title="+✦5" onPress={() => d({ type: 'DEBUG_GRANT', influence: 5 })} />
           <Btn small title="+▮40" onPress={() => d({ type: 'DEBUG_GRANT', cigarettes: 40 })} />
+          <Btn small title="+▰10" onPress={() => d({ type: 'DEBUG_GRANT', gold: 10 })} />
         </BtnRow>
       </Card>
       <Card>
@@ -239,7 +240,7 @@ function ConfigPanel({ game }: { game: Snapshot }) {
 }
 
 function InspectPanel({ game }: { game: Snapshot }) {
-  const { state: s, derived: d } = game
+  const { state: s, derived: d, config: c } = game
   const n = (v: number) => v.toFixed(2)
   const rows: [string, string][] = [
     ['yieldPerHr', n(d.yieldPerHr)],
@@ -257,6 +258,7 @@ function InspectPanel({ game }: { game: Snapshot }) {
     ['crewSlots / maxTier', `${d.crewSlots} / ${d.maxTier}`],
     ['act / rep', `${s.act} / ${n(s.reputation)}`],
     ['inbox / offers', `${s.inbox.length} / ${s.offers.items.length} (refresh #${s.offers.refreshCount})`],
+    ['gold / skipped', `${s.gold} / ${n(s.skippedMs / c.time.hourMs)} h`],
   ]
   return (
     <>

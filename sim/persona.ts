@@ -20,6 +20,7 @@ import {
   OP_TYPES,
   outcomeOdds,
   premisesBlocked,
+  rushCost,
   RACKET_TYPES,
   STATS,
   type Action,
@@ -63,6 +64,7 @@ export type PersonaOptions = {
   stockReserveHours: number // smuggle when cigarettes would run out sooner than this
   maxWageShare: number // past two crew, hire only while wages stay under this share of yield
   supplyHorizonHours: number // more factory output is worth buying only when stock would run out within this many hours
+  rushJobs: boolean // spend gold bars finishing running jobs at the start of a session
 }
 
 export const CASUAL: PersonaOptions = {
@@ -85,7 +87,11 @@ export const CASUAL: PersonaOptions = {
   stockReserveHours: 12,
   maxWageShare: 0.25,
   supplyHorizonHours: 24,
+  rushJobs: false, // the casual bot never spends gold: pacing is tuned without it (ADR 0034)
 }
+
+// Spends every bar it can finishing jobs (plan (t)): how much sooner do acts clear with gold?
+export const GOLD_RUSH: PersonaOptions = { ...CASUAL, name: 'goldRush', rushJobs: true }
 
 // N sessions spread evenly between 08:00 and 22:00, for both acts.
 export function withSessions(p: PersonaOptions, n: number): PersonaOptions {
@@ -231,9 +237,21 @@ export function playSession(
 
   // 5. Dispatch every idle crew member to the best op they can do
   const gapMinutes = Math.max(15, ((nextSessionAt - t) / c.time.hourMs) * 60)
-  for (let guard = 0; guard < 10; guard++) {
-    const best = bestDispatch(state, c, p, t, gapMinutes)
-    if (!best || !tryAct(best)) break
+  const dispatchIdle = () => {
+    for (let guard = 0; guard < 10; guard++) {
+      const best = bestDispatch(state, c, p, t, gapMinutes)
+      if (!best || !tryAct(best)) break
+    }
+  }
+  dispatchIdle()
+  // Gold: finish what just went out, soonest first, and send the crew straight back out, while the bars last.
+  for (let round = 0; p.rushJobs && round < 20; round++) {
+    let rushed = false
+    for (const op of [...state.ops].sort((a, b) => a.completesAt - b.completesAt)) {
+      if (state.gold >= rushCost(c, op.completesAt - t)) rushed = tryAct({ type: 'RUSH_OP', opId: op.id }) || rushed
+    }
+    if (!rushed) break
+    dispatchIdle()
   }
 
   // Anyone still idle trains the stat with the most room to grow, if Dirty covers it above the reserve.

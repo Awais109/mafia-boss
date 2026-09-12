@@ -359,6 +359,14 @@ export type Config = {
     actThresholds: { 2: number; 3: number }
   }
   tutorial: { enabled: boolean; firstConversionInstant: boolean }
+  // Gold bars buy time and nothing else (ADR 0034).
+  gold: {
+    starting: number
+    perActUnlocked: { 2: number; 3: number } // granted when that act opens
+    hoursPerBar: number
+    maxSkipHours: number
+    skipChoices: number[]
+  }
   debug: { enabled: boolean }
 }
 
@@ -678,6 +686,17 @@ export function validateConfig(c: Config): string[] {
       nonNeg(e, 'reputation.perCleanSpent', r.perCleanSpent)
       positive(e, 'reputation.actThresholds.2', r.actThresholds[2])
       num(e, 'reputation.actThresholds.3', r.actThresholds[3], (n) => n > r.actThresholds[2], '> actThresholds.2')
+    },
+    (e) => {
+      const g = c.gold
+      int(e, 'gold.starting', g.starting, 0)
+      int(e, 'gold.perActUnlocked.2', g.perActUnlocked[2], 0)
+      int(e, 'gold.perActUnlocked.3', g.perActUnlocked[3], 0)
+      positive(e, 'gold.hoursPerBar', g.hoursPerBar)
+      int(e, 'gold.maxSkipHours', g.maxSkipHours, 1)
+      if (!Array.isArray(g.skipChoices) || g.skipChoices.some((h) => !Number.isInteger(h) || h < 1 || h > g.maxSkipHours)) {
+        e.push('gold.skipChoices: whole hours from 1 to maxSkipHours')
+      }
     },
   ]
   for (const check of checks) {

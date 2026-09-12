@@ -18,12 +18,13 @@ export const colors = {
   rep: '#b48ee6',
   heat: '#e0604f',
   packs: '#c79a6b', // cigarettes
+  gold: '#e8c547', // gold bars
   warn: '#e8a33d',
   good: '#5fbf7f',
   accent: '#c9a86a',
 }
 
-export const glyph = { dirty: '◆', clean: '●', influence: '✦', rep: '★', heat: '▲', packs: '▮' } as const
+export const glyph = { dirty: '◆', clean: '●', influence: '✦', rep: '★', heat: '▲', packs: '▮', gold: '▰' } as const
 
 export function Screen({ children }: { children: ReactNode }) {
   return (

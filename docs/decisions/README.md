@@ -46,6 +46,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0031](0031-business-kinds.md) | Joints, rackets and premises: four questions, spots and lots, upkeep | Accepted |
 | [0032](0032-supply-chain.md) | One city-wide cigarette stock: factories make, joints sell, warehouses keep | Accepted |
 | [0033](0033-bigger-act-i.md) | A bigger Act I: four new businesses, Station Square, a third crew slot | Accepted |
+| [0034](0034-gold-bars.md) | Gold bars buy time and nothing else: skip ahead, finish now | Accepted |
 
 ## Template
 

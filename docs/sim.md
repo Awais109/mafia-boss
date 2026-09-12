@@ -12,6 +12,7 @@
 | `--days <n>` | Days to simulate (default 5; use 8 to see Act II clear) |
 | `--seed <s>` | Seed; the bot's player id is `sim-<seed>` |
 | `--runs <n>` | Run seeds `seed … seed+n−1` and print each target's mean and how many runs were in range |
+| `--persona <name>` | `casual` (default) or `goldRush`, which spends every gold bar finishing jobs |
 | `--sessions <n>` | `n` evenly spaced sessions a day (08:00–22:00) instead of the casual schedule |
 | `--set path=value` | Config override, repeatable (`--set heat.baseControl=6`) |
 | `--replay <file>` | Report on a log exported from the app instead of the bot |
@@ -46,6 +47,8 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 
 **Supply value.** A pack is worth the joints' `atStake` over the packs they sell. A new factory or factory tier is worth `0.6 × Σ atStake × (shortfall before − shortfall after)`, with `shortfall = max(0, 1 − made ÷ demand)`, but only while stock would run out within `supplyHorizonHours` (24): a casual player reacts to the Supply card, not to a deficit days away. A new factory also counts the joint bonus it switches on in its district. A warehouse or warehouse tier is worth half the surplus it would bank over a day, while production outruns sales and stock is within 10% of the cap. Upkeep comes off both. Smuggling's goods are its expected packs, up to the room in stock, × Dirty per pack, minus its Clean × 2.
 
+**Gold.** The casual bot never spends gold, so the pacing guard measures the free game. `GOLD_RUSH` (`--persona goldRush`) is the casual bot plus one habit: after dispatching, it rushes every running job it can afford, soonest first, and dispatches again ([systems/gold.md](systems/gold.md)).
+
 **Decision value** (`valueOf`) = Dirty + Clean × 2 + packs × pack value (full while stock would run out within `stockReserveHours`, a fifth otherwise) + Rep × `repValue` + Influence × the same Influence value + loyalty × `loyaltyValue` for each named crew member (×3 for anyone below `raiseBelow`) − heat × the same heat cost. `valuation()` computes the Influence value and heat cost once for both.
 
 ## Driver
@@ -57,7 +60,7 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 - `SESSION_END` is recorded like any other action, so a bot's action list is a faithful log.
 
 `Recorder` rows:
-- `HourRow`: `hour`, `day`, `act`, `dirty`, `clean`, `vault`, `vaultCap`, `heat`, `heatTarget`, `exposure`, `control`, `yield`, `rep`, `influence`, `frontUtil`, `cleanEarned`, `dirtyEarned`, `stock` (the CSV columns), plus `crew`, `opPartial`, `opResolved`, `statPoints`, `stockCap` and `packDemand` for the report.
+- `HourRow`: `hour`, `day`, `act`, `dirty`, `clean`, `vault`, `vaultCap`, `heat`, `heatTarget`, `exposure`, `control`, `yield`, `rep`, `influence`, `frontUtil`, `cleanEarned`, `dirtyEarned`, `stock`, `gold` (the CSV columns), plus `crew`, `opPartial`, `opResolved`, `statPoints`, `stockCap` and `packDemand` for the report.
 - `SessionRow`: `day`, `act`, `actions`, `decisions` (successful `RESOLVE_INBOX`), `income` (Dirty earned since the last session ended), `dirtyAfter`, `vaultFillHrs`.
 - `Trace.startStats`: the stats when the run began. Per-run metrics subtract them, because the Debug Bot starts from a save with history.
 
@@ -82,6 +85,7 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 | Wage share | (`stats.wagesPaid` + `stats.upkeepPaid`) ÷ `stats.dirtyEarned` over the run; a check at 10–25% (manual §5) |
 | Crew growth | `stats.statPointsGained` over the run ÷ mean crew size ÷ days |
 | Partial d1–2, d7–8 | Partial outcomes ÷ resolved jobs between the first and last hourly rows of those days (training never counts); blank when the run is too short. The plan's gate is d7–8 ≥ 40%: crew growth must not erase partials |
+| Gold | Bars spent on skips and rushes, and hours skipped, over the run |
 | Cigarettes | `stats.shortageHours` over the run; the share of Act I hours with stock out and joints selling; the share of selling hours with stock at its cap; packs lost to the cap. The plan's gate is some shortage, under 10% of Act I |
 
 Clear times count from the game's `createdAt`, not the run's start, so the Debug Bot's report on an existing save reads like the CLI's. A clear that happened before the run is printed with `before this run` and not scored (`actClear1InRun`, `actClear2InRun`; [ADR 0022](decisions/0022-end-of-prototype-state.md)).

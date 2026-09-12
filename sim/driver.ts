@@ -30,6 +30,7 @@ export type HourRow = {
   stock: number
   stockCap: number
   packDemand: number // packs/h joints would sell
+  gold: number
 }
 
 export type SessionRow = {
@@ -100,6 +101,7 @@ export class Recorder {
       stock: d.supply.stock,
       stockCap: d.supply.cap,
       packDemand: d.supply.demandPerHr,
+      gold: state.gold,
     })
   }
 
@@ -167,6 +169,8 @@ function runPersona(initial: PlayerState, c: Config, persona: PersonaOptions, fr
       const ended = apply(r.state, end, t, c).state
       rec.session(state, ended, t, [...r.actions, { t, action: end }])
       state = ended
+      // A skip moved the game on: move the clock with it.
+      t = Math.max(t, state.updatedAt)
       nextSession = nextSessionAfter(state, c, persona, t)
     }
     if (t % H === 0) rec.hour(state, t)

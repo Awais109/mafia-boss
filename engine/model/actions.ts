@@ -20,6 +20,8 @@ export type Action =
   | { type: 'UPGRADE_FRONT'; frontId: string; track?: 'rate' | 'capacity' }
   | { type: 'SET_FRONT_MODE'; frontId: string; mode: FrontMode }
   | { type: 'PAY_TRIBUTE'; choice?: 'pay' | 'haggle' | 'refuse' }
+  | { type: 'SKIP_TIME'; hours: number }
+  | { type: 'RUSH_OP'; opId: string }
   | { type: 'TUTORIAL_ADVANCE' }
   | { type: 'TUTORIAL_SKIP' }
   | { type: 'SESSION_START' }
@@ -29,7 +31,7 @@ export type Action =
 export type DebugAction =
   | { type: 'DEBUG_ADD_OFFSET'; ms: number }
   | { type: 'DEBUG_RESET_OFFSET' }
-  | { type: 'DEBUG_GRANT'; dirty?: number; clean?: number; influence?: number; cigarettes?: number }
+  | { type: 'DEBUG_GRANT'; dirty?: number; clean?: number; influence?: number; cigarettes?: number; gold?: number }
   | { type: 'DEBUG_SET_HEAT'; heat: number }
   | { type: 'DEBUG_SET_REP'; reputation: number }
   | { type: 'DEBUG_FORCE_RAID' }

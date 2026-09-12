@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { simulate } from '../sim/driver'
+import { GOLD_RUSH } from '../sim/persona'
 import { summarize, type Summary } from '../sim/report'
 import { config } from './helpers'
 
@@ -37,6 +38,12 @@ describe('casual bot pacing on default config', () => {
     expect(heat).toBeLessThanOrEqual(35)
     expect(Math.max(...summaries.map((s) => s.raids))).toBeLessThanOrEqual(1)
     expect(summaries.every((s) => s.missedWages === 0)).toBe(true)
+  })
+
+  it('leaves Act I at a day or more even when every gold bar goes on finishing jobs', () => {
+    const rush = SEEDS.map((seed) => summarize(simulate({ config, preset: 'default', days: 3, seed, persona: GOLD_RUSH })))
+    expect(rush.every((s) => s.goldSpent > 0)).toBe(true)
+    expect(meanOf(rush, (s) => s.actClear1)).toBeGreaterThanOrEqual(1)
   })
 
   it('makes partial success the most common op outcome (40–60%)', () => {

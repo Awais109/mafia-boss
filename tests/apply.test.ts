@@ -41,7 +41,7 @@ describe('reputation and acts', () => {
   it('crossing the Act II threshold unlocks the Restaurant and more crew slots', () => {
     let s = act(fresh(), [{ type: 'DEBUG_GRANT', clean: 1000 }], T0)
     expect(apply(s, { type: 'BUY_FRONT', frontType: 'restaurant' }, T0, config).error).toBeDefined()
-    s = act(s, [{ type: 'DEBUG_SET_REP', reputation: 79 }, { type: 'BUY_RACKET', racketType: 'kiosk', districtId: 'kioskRow' }], T0)
+    s = act(s, [{ type: 'DEBUG_SET_REP', reputation: config.reputation.actThresholds[2] - 1 }, { type: 'BUY_RACKET', racketType: 'kiosk', districtId: 'kioskRow' }], T0)
     expect(s.act).toBe(2)
     expect(s.stats.actClearedAt[1]).toBe(T0)
     s = act(s, [{ type: 'BUY_FRONT', frontType: 'restaurant' }], T0)
@@ -108,7 +108,7 @@ describe('heat', () => {
   it('officials share a purchase cooldown', () => {
     const s = act(
       fresh(),
-      [{ type: 'DEBUG_GRANT', influence: 50 }, { type: 'DEBUG_SET_REP', reputation: 80 }, { type: 'BUY_OFFICIAL', officialId: 'wardCop' }],
+      [{ type: 'DEBUG_GRANT', influence: 50 }, { type: 'DEBUG_SET_REP', reputation: config.reputation.actThresholds[2] }, { type: 'BUY_OFFICIAL', officialId: 'wardCop' }],
       T0,
     )
     expect(apply(s, { type: 'BUY_OFFICIAL', officialId: 'precinctCaptain' }, T0 + 24 * H, config).error).toMatch(/soon/)

@@ -16,7 +16,7 @@ import type {
 } from '../config/schema'
 import type { GameEvent } from './events'
 
-export const SCHEMA_VERSION = 4
+export const SCHEMA_VERSION = 5
 export const LOG_CAP = 200
 export const LEDGER_ROWS = 8 // 7 closed days plus today's opening snapshot
 
@@ -185,6 +185,7 @@ export type PlaytestStats = {
   frontModeChanges: number
   haggles: { won: number; lost: number }
   statPointsGained: number
+  gold: { granted: number; spentSkip: number; spentRush: number; hoursSkipped: number }
   firstRaidAt: number | null
   officialBoughtAt: Partial<Record<OfficialId, number>>
   lastSessionAt: number | null
@@ -196,6 +197,7 @@ export type PlayerState = {
   createdAt: number
   updatedAt: number // game-time ms of the last reconcile/apply
   debugOffsetMs: number
+  skippedMs: number // game time bought with gold: part of the clock, never shifted
   nextId: number
 
   vault: number // accrues, capped; raids seize from here
@@ -203,6 +205,7 @@ export type PlayerState = {
   clean: number
   influence: number
   reputation: number
+  gold: number // bars: they buy time and nothing else (ADR 0034)
   act: Act
 
   heat: number // displayed value; converges toward the target
@@ -277,6 +280,7 @@ export function emptyStats(): PlaytestStats {
     frontModeChanges: 0,
     haggles: { won: 0, lost: 0 },
     statPointsGained: 0,
+    gold: { granted: 0, spentSkip: 0, spentRush: 0, hoursSkipped: 0 },
     firstRaidAt: null,
     officialBoughtAt: {},
     lastSessionAt: null,

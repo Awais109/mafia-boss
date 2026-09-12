@@ -21,7 +21,7 @@ Reputation is the progress currency: it opens Act II, unlocks bigger rackets and
 
 `checkActs` runs after every Rep gain.
 
-- **Act II** opens at `reputation.actThresholds[2]`. `state.act` becomes 2, `stats.actClearedAt[1]` is recorded, and `ACT_UNLOCKED` plus a note about Zhanna are emitted. What changes:
+- **Act II** opens at `reputation.actThresholds[2]`. `state.act` becomes 2, `stats.actClearedAt[1]` is recorded, and `ACT_UNLOCKED` plus a note about Zhanna are emitted, and `gold.perActUnlocked[2]` gold bars are granted ([gold.md](gold.md)). What changes:
   - Act II racket types (each still gated by its `unlockRep`) and the Restaurant (its own `unlockRep`);
   - the Port Quarter and Sovietsky Blocks, the Precinct Captain, and the Move a Shipment job;
   - `crew.slotsByAct[2]` crew slots, and recruits from `crew.statBandByAct[2]`;
@@ -40,6 +40,7 @@ The unlock ladder (`rackets.types.*.unlockRep`) sits below the Act II clear thre
 | Heat | `heat.startHeat` (inspected already if that's above the threshold) |
 | Businesses | `rackets.starting` (tier 1, condition 100; premises included) |
 | Cigarettes | `supply.startingStock` |
+| Gold | `gold.starting` bars |
 | Fronts | every front type with `cost` 0 and `unlockRep` 0 |
 | Crew | `crew.starting` |
 | Districts | controllers from `startsAs` |

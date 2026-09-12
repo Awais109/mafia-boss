@@ -109,6 +109,7 @@ export const defaults: Config = {
     types: {
       currencyKiosk: { name: 'Currency Kiosk', rate: 0.55, throughput: 25, unlockRep: 0, cost: 0 },
       // 185 → 120: Act II laundering grows through capacity upgrades (to 210) instead of arriving oversized (TUNING.md).
+      // Opens at 80, just before Act II at 90: moving it to 90 cost seed 46 a wage day (TUNING.md, M4).
       restaurant: { name: 'Restaurant', rate: 0.65, throughput: 120, unlockRep: 80, cost: 60 },
     },
   },
@@ -356,10 +357,20 @@ export const defaults: Config = {
     perOpSuccess: 2, // partial success earns partialRewardPct of this. Ops season Rep; spending drives it
     perDistrict: 20,
     // 3 = Act II cleared (Act III is stubbed). 480 ≈ Rep the casual bot holds 4 days after Act I (TUNING.md).
-    actThresholds: { 2: 80, 3: 480 },
+    // 80/480 → 90/540 with gold: a bot spending every bar still takes a day over Act I (TUNING.md, M4).
+    actThresholds: { 2: 90, 3: 540 },
   },
 
   tutorial: { enabled: true, firstConversionInstant: true },
+
+  // Gold bars (ADR 0034): each buys an hour of waiting. You start with some and get more when an act opens.
+  gold: {
+    starting: 10,
+    perActUnlocked: { 2: 5, 3: 10 },
+    hoursPerBar: 1,
+    maxSkipHours: 8,
+    skipChoices: [1, 2, 4, 8],
+  },
 
   debug: { enabled: true },
 }

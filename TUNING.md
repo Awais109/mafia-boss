@@ -103,10 +103,29 @@ New config, starting values from the expansion plan (ADRs 0031–0033):
             front util 0.55, Dirty idle 0.64, missed wages 0, wage share 0.05.
 ```
 
+## 2026-09-13 — expansion M4: gold bars
+
+```
+2026-09-13  New config (ADR 0034): gold {starting 10, perActUnlocked {2: 5, 3: 10}, hoursPerBar 1, maxSkipHours 8, skipChoices 1/2/4/8};
+            sim persona goldRush (rushes every job it sends out, then dispatches again).
+            Sim (10 seeds): casual unchanged (Act I 1.67 d, Act II 3.11 d, heat 33.5).  goldRush: 15 bars spent, Act I 0.99 d (5/10 ≥ 1 d),
+            Act II 2.89 d, heat 35.6.  The plan's gate (goldRush Act I ≥ 1 d) fails: tuned below.
+2026-09-13  reputation.actThresholds[2] 80→90
+            Symptom: goldRush Act I 0.99 d.  Sim: goldRush 1.18 d; casual Act I 1.67→1.86 d but Act II 3.11→2.94 d (3/10 in range).  Kept only with a later clear.
+2026-09-13  reputation.actThresholds[3] 480→500 / 510 (with [2] 85) / 540 (with [2] 90)
+            Symptom: casual Act II under 3 d.  Sim: 500: Act II 2.98 d.  85/510: casual Act I 1.80 d, Act II 3.08 d (5/10), goldRush Act I 1.06 d.
+            90/540: casual Act I 1.86 d (6/10), Act II 3.12 d (8/10), goldRush Act I 1.18 d (9/10).  90/540 kept.
+2026-09-13  fronts.types.restaurant.unlockRep 80→90 (to open with Act II)
+            Sim: seed 46 missed a wage day (10 seeds: missed wages 0.1).  Reverted: the Restaurant opens at 80, just before Act II.
+            Final (npm run sim, 10 seeds): casual Act I 1.86 d (6/10), Act II 3.12 d (8/10), heat 33.7 (8/10), raids 0, partial 0.50,
+            front util 0.55, Dirty idle 0.65, missed wages 0, wage share 0.05.  goldRush: Act I 1.18 d, Act II 3.05 d, heat 35.5, 15 bars.
+```
+
 ## Open
 
-- **Front utilization ~55% (target 70–90%) and Dirty idle ~64% (target 20–50%).** The bot keeps a large Dirty reserve and the fronts can wash more than it deposits. Dirty idle rose with M3's bigger Act I.
+- **Front utilization ~55% (target 70–90%) and Dirty idle ~65% (target 20–50%).** The bot keeps a large Dirty reserve and the fronts can wash more than it deposits. Dirty idle rose with M3's bigger Act I.
 - **Wage share ~5%** (manual 10–25%). Wages are about a quarter of day-1 income but a few percent of late Act II income, and upkeep doesn't change that. No number fixes both ends: raising wages or upkeep enough for Act II breaks the first day. Running costs that scale with the act would be a new rule, which the expansion plan doesn't have.
 - **Shortages are rare** (about 3 h per 8-day run, none in Act I). The plan's M3 gate asks for some shortage in Act I, under 10% of its hours.
-- **Act II clears at 3.11 d**, near the bottom of 3–5. M5's Rep shift will move it.
+- **Act I clears at 1.86 d** (6/10 seeds inside 1–2) since M4 raised the Act II threshold for gold. **Act II clears at 3.12 d**, near the bottom of 3–5. M5's Rep shift will move both.
+- **Gold is a strong early accelerator:** spending every bar on jobs takes Act I from 1.86 to 1.18 days. M5's goal rewards add bars; recheck the goldRush gate there.
 - **Heat mean 33.5**, with Act I around 36 while the bot fills its heat budget.

@@ -8,6 +8,7 @@ import { arrest, raid } from '../systems/heat'
 import { canAffordEffects, incidentNeedHolds, raiseIncident, resolveInboxItem } from '../systems/inbox'
 import { regenerateOffers } from '../systems/offers'
 import { opConfigAt, opMinutesFor, opUnlocked, resolveOp } from '../systems/ops'
+import { grantGold, rushCost, skipCost } from '../systems/gold'
 import { checkActs, spendClean } from '../systems/reputation'
 import { bestHaggler, canHaggle, changeDisposition, haggle, refuseDemand, tolyaTick } from '../systems/rivals'
 import { tutorialOnAction } from '../systems/tutorial'
@@ -411,6 +412,36 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       return null
     }
 
+    case 'SKIP_TIME': {
+      if (!Number.isInteger(a.hours) || a.hours < 1) return 'Skip a whole number of hours'
+      if (a.hours > c.gold.maxSkipHours) return `At most ${c.gold.maxSkipHours} hours at a time`
+      const bars = skipCost(c, a.hours)
+      if (state.gold < bars) return 'Not enough gold'
+      state.gold -= bars
+      state.stats.gold.spentSkip += bars
+      state.stats.gold.hoursSkipped += a.hours
+      emit(ctx, t, { type: 'TIME_SKIPPED', hours: a.hours, bars })
+      // Skipping is waiting, bought: the ordinary walk runs over those hours, rolls and all (ADR 0034).
+      const ms = a.hours * c.time.hourMs
+      advance(state, ctx, t + ms)
+      state.skippedMs += ms
+      return null
+    }
+
+    case 'RUSH_OP': {
+      const op = state.ops.find((o) => o.id === a.opId)
+      if (!op) return 'That job is already done'
+      const bars = rushCost(c, op.completesAt - t)
+      if (state.gold < bars) return 'Not enough gold'
+      state.gold -= bars
+      state.stats.gold.spentRush += bars
+      emit(ctx, t, { type: 'OP_RUSHED', opId: op.id, opType: op.type, bars, ...(op.name ? { name: op.name } : {}) })
+      // The roll it was always going to get: resolution is seeded by the job's id, not the time.
+      op.completesAt = t
+      resolveOp(state, ctx, op, t)
+      return null
+    }
+
     case 'TUTORIAL_ADVANCE':
     case 'TUTORIAL_SKIP':
       return null
@@ -446,7 +477,8 @@ function handleDebug(state: PlayerState, ctx: Ctx, a: Action, t: number): string
       state.clean += a.clean ?? 0
       state.influence += a.influence ?? 0
       if (a.cigarettes) state.inventory.cigarettes = Math.max(0, state.inventory.cigarettes + a.cigarettes)
-      note(JSON.stringify({ dirty: a.dirty, clean: a.clean, influence: a.influence, cigarettes: a.cigarettes }))
+      if (a.gold) grantGold(state, ctx, t, a.gold, 'debug')
+      note(JSON.stringify({ dirty: a.dirty, clean: a.clean, influence: a.influence, cigarettes: a.cigarettes, gold: a.gold }))
       return null
     case 'DEBUG_SET_HEAT':
       state.heat = Math.max(0, Math.min(100, a.heat))

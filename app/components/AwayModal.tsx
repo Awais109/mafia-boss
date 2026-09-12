@@ -32,7 +32,7 @@ export function AwayModal({ summary: a, game }: { summary: AwaySummary; game: Sn
       <View style={styles.backdrop}>
         <View style={styles.panel}>
           <T bold style={styles.title}>
-            While you were away
+            {a.skippedHours ? `Skipped ${a.skippedHours} hour${a.skippedHours === 1 ? '' : 's'}` : 'While you were away'}
           </T>
           <T small muted>
             {fmtDuration(a.to - a.from, c)}
@@ -99,6 +99,7 @@ export function AwayModal({ summary: a, game }: { summary: AwaySummary; game: Sn
             {a.influenceEarned > 0 && (
               <Row label="Influence" value={`+${glyph.influence}${fmt(a.influenceEarned)}`} color={colors.influence} />
             )}
+            {a.goldGranted > 0 && <Row label="Gold" value={`+${glyph.gold}${fmt(a.goldGranted)}`} color={colors.gold} />}
             <Row label="Heat" value={`${Math.round(a.heatFrom)} → ${Math.round(a.heatTo)}`} color={heatColor} />
             {a.vaultFull && (
               <T small color={colors.warn}>

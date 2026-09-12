@@ -12,6 +12,7 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
     createdAt: now,
     updatedAt: now,
     debugOffsetMs: 0,
+    skippedMs: 0,
     nextId: 1,
 
     vault: c.vault.startingDirty,
@@ -19,6 +20,7 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
     clean: c.vault.startingClean,
     influence: c.vault.startingInfluence,
     reputation: 0,
+    gold: c.gold.starting,
     act: 1,
 
     heat: c.heat.startHeat,
@@ -55,6 +57,7 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
     log: [],
     stats: emptyStats(),
   }
+  state.stats.gold.granted = c.gold.starting
   state.ledger = [ledgerSnapshot(state.stats, now)]
 
   for (const s of c.rackets.starting) {

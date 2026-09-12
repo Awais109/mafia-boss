@@ -94,7 +94,8 @@ class GameStore {
   }
 
   gameNow(): number {
-    return Date.now() + (this.committed?.debugOffsetMs ?? 0)
+    // The real clock, the debug offset, and the hours bought with gold (ADR 0034).
+    return Date.now() + (this.committed?.debugOffsetMs ?? 0) + (this.committed?.skippedMs ?? 0)
   }
 
   dispatch = (action: Action): string | null => {
@@ -102,8 +103,14 @@ class GameStore {
     // Catch up first, so a gap becomes an away summary and `apply` only sees the action.
     this.tick()
     const t = this.gameNow()
+    const before = this.committed
     const r = apply(this.committed, action, t, this.config)
     this.appendLog([{ kind: 'action', t, action }])
+    // A skip leaves no gap for the tick to find, so it gets its summary here.
+    if (!r.error && action.type === 'SKIP_TIME') {
+      const summary = buildAway(before, r.state, r.events, this.config, r.state.updatedAt)
+      this.away = mergeAway(this.away, { ...summary, skippedHours: action.hours })
+    }
     if (!r.error && action.type !== 'SESSION_START' && action.type !== 'SESSION_END') this.session.actions++
     if (r.error) this.notice = { text: r.error, kind: 'error', at: Date.now() }
     this.commit(r.state, r.events)

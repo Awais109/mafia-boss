@@ -30,7 +30,7 @@ function busy(): PlayerState {
       { type: 'DEBUG_FORCE_INCIDENT', incidentType: 'shopkeeperLead' },
       { type: 'BUY_OFFICIAL', officialId: 'wardCop' },
       { type: 'BRIBE' },
-      { type: 'DEBUG_SET_REP', reputation: 90 },
+      { type: 'DEBUG_SET_REP', reputation: config.reputation.actThresholds[2] },
       { type: 'BUY_FRONT', frontType: 'restaurant' },
       { type: 'BUY_RACKET', racketType: 'warehouse', districtId: 'stationSquare' },
       { type: 'BUY_CREW_SLOT' },
