@@ -88,7 +88,7 @@ The summary is not saved: closing the app loses it, and the Log still has every 
 ## Components and helpers
 
 - `app/components/ui.tsx`: the palette and primitives (`Screen`, `Section`, `Card`, `Row`, `T`, `Btn`, `BtnRow`, `Bar` with threshold marks, `Tag`, `Money`). Each resource has one colour and glyph everywhere: Dirty ◆ amber, Clean ● green, Influence ✦ blue, Rep ★ purple, Heat ▲ red, Packs ▮ tobacco brown, Gold ▰ yellow.
-- `Header.tsx`: game clock, act (`Act II cleared` once it is), hours skipped, preset name when not default, a gold chip that opens Skip ahead, the vault, Dirty, Clean, Influence, Packs and Heat, and the Rep line, which always names its target: `x/90 to Act II`, `x/540 to clear Act II`, or `x · Act II cleared on Day N` ([ADR 0022](decisions/0022-end-of-prototype-state.md)).
+- `Header.tsx`: game clock, act (`Act II cleared` once it is), hours skipped, preset name when not default, a gold chip that opens Skip ahead, the vault, Dirty, Clean, Influence, Packs and Heat, and the Rep line, which always names its target: `x/143 to Act II`, `x/610 to clear Act II`, or `x · Act II cleared on Day N` ([ADR 0022](decisions/0022-end-of-prototype-state.md)).
 - `NoticeBar.tsx`: the latest notice for 4 s; tap to dismiss.
 - `InboxCard.tsx`: one pending decision: title, what happened, time left, and a button per option showing its effects (`effectsText`); the default is marked and unaffordable options are disabled.
 - `TributeCard.tsx`: Tolya's demand, on Home and Turf: Pay; Haggle, naming who talks, the odds (`haggleOdds`) and the haggled price, disabled once he's refused an offer on this demand; Refuse.

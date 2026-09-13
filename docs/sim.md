@@ -80,7 +80,7 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 | Dirty idle | Mean over sessions of `min(1, dirtyAfter ÷ income)` |
 | Vault fill | `vaultCapBase ÷ yield` at session end, so a Stash House's extra hours don't count; the report prints the best stash's extra hours beside it ([ADR 0037](decisions/0037-act-ii-premises.md)). Act I uses day-1 sessions; Act II uses day-4+ Act II sessions |
 | Op outcomes | Shares of `stats.opOutcomes` |
-| Tiers | Final businesses, abbreviated (`K5 M4 BT3 VS2 TF2 WH1 A3 …`) |
+| Tiers | Final businesses, abbreviated (`K5 M4 BT3 VS2 TF2 WH1 A3 ST2 UN1 …`) |
 | Decisions per session | Mean over sessions of `SessionRow.decisions` |
 | Auto-resolved | `stats.inbox.auto` ÷ (answered + auto) over the run |
 | Offer share | `stats.offerDirty` ÷ `stats.jobDirty` over the run |
