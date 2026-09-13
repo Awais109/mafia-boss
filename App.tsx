@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { AwayModal } from './app/components/AwayModal'
+import { EventNoticeModal } from './app/components/EventNoticeModal'
 import { Header } from './app/components/Header'
 import { NoticeBar } from './app/components/NoticeBar'
 import { SkipSheet } from './app/components/SkipSheet'
@@ -13,9 +14,11 @@ import { DebugScreen } from './app/screens/DebugScreen'
 import { FrontsScreen } from './app/screens/FrontsScreen'
 import { HeatScreen } from './app/screens/HeatScreen'
 import { HomeScreen } from './app/screens/HomeScreen'
+import { HowItWorksScreen } from './app/screens/HowItWorksScreen'
 import { LogScreen } from './app/screens/LogScreen'
 import { OpsScreen } from './app/screens/OpsScreen'
 import { RacketsScreen } from './app/screens/RacketsScreen'
+import { StatsScreen } from './app/screens/StatsScreen'
 import { TurfScreen } from './app/screens/TurfScreen'
 import type { ScreenProps, TabId } from './app/screens/types'
 import { homeNeedsAttention } from './app/inbox'
@@ -29,6 +32,8 @@ const TABS: { id: TabId; title: string; debugOnly?: boolean; render: (p: ScreenP
   { id: 'crew', title: 'Crew', render: (p) => <CrewScreen {...p} /> },
   { id: 'heat', title: 'Heat', render: (p) => <HeatScreen {...p} /> },
   { id: 'turf', title: 'Turf', render: (p) => <TurfScreen {...p} /> },
+  { id: 'stats', title: 'Stats', render: (p) => <StatsScreen {...p} /> },
+  { id: 'help', title: 'How it works', render: (p) => <HowItWorksScreen {...p} /> },
   { id: 'log', title: 'Log', render: (p) => <LogScreen {...p} /> },
   { id: 'debug', title: 'Debug', debugOnly: true, render: (p) => <DebugScreen {...p} /> },
 ]
@@ -66,7 +71,11 @@ export default function App() {
             <NoticeBar notice={game.notice} realNow={game.realNow} />
             <View style={styles.body}>{TABS.find((t) => t.id === tab)?.render({ game, go: setTab })}</View>
             {skipping && <SkipSheet game={game} onClose={() => setSkipping(false)} />}
-            {game.away && <AwayModal summary={game.away} game={game} />}
+            {game.away ? (
+              <AwayModal summary={game.away} game={game} />
+            ) : (
+              game.notices.length > 0 && <EventNoticeModal notice={game.notices[0]} game={game} />
+            )}
           </>
         )}
       </SafeAreaView>

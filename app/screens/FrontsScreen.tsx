@@ -9,8 +9,8 @@ const MODE_LABEL = { push: 'Push', normal: 'Normal', layLow: 'Lay low' } as cons
 export function FrontsScreen({ game }: ScreenProps) {
   const { state: s, derived: d, config: c } = game
   const deposit = (frontId: string, amount: number) => store.dispatch({ type: 'DEPOSIT', frontId, amount })
-  // "Launder all but running costs": keep reserveHours of wages and upkeep in Dirty, wash the rest best rate first.
-  const keep = (d.wagesPerHr + (d.upkeepPerHr ?? 0)) * c.fronts.reserveHours
+  // "Launder all but running costs": keep what's already owed plus reserveHours of wages and upkeep in Dirty, wash the rest best rate first.
+  const keep = s.wagesOwed + s.upkeepOwed + (d.wagesPerHr + (d.upkeepPerHr ?? 0)) * c.fronts.reserveHours
   const plan: { frontId: string; amount: number }[] = []
   {
     let available = Math.floor(s.dirty - keep)
@@ -43,7 +43,7 @@ export function FrontsScreen({ game }: ScreenProps) {
           disabled={planned < 1}
           onPress={() => plan.forEach((p) => deposit(p.frontId, p.amount))}
         />
-        <T small muted>{`Keeps ${c.fronts.reserveHours}h of wages and upkeep in Dirty: those are paid from Dirty, never Clean.`}</T>
+        <T small muted>{`Keeps what's already owed plus ${c.fronts.reserveHours}h of wages and upkeep in Dirty: those are paid from Dirty, never Clean.`}</T>
       </Card>
 
       {d.perFront.map((f) => {

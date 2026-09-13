@@ -7,7 +7,7 @@ Dirty money can't buy anything. Fronts turn it into Clean at a fixed rate per ho
 
 ## Types
 
-`fronts.types`: `currencyKiosk` (bought in the opening) and `restaurant` (unlocks at its `unlockRep`, just before Act II). Both cost Clean, and you can run one of each type.
+`fronts.types`: `currencyKiosk` (bought in the opening) and `restaurant` (unlocks at its `unlockRep`, just before Act II). Both cost Clean, and you can run one of each type. Each also carries a `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)).
 
 ## Depositing and converting
 

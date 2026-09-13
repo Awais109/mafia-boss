@@ -1,8 +1,9 @@
-import { Modal, ScrollView, StyleSheet, View } from 'react-native'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import type { AwayJob, AwaySummary } from '../away'
 import { describeEvent } from '../eventText'
 import { fmt, fmtDuration } from '../format'
 import { store, type Snapshot } from '../store'
+import { ModalPanel } from './Modal'
 import { Btn, colors, Divider, glyph, Row, T } from './ui'
 
 const OUTCOME = {
@@ -28,16 +29,14 @@ export function AwayModal({ summary: a, game }: { summary: AwaySummary; game: Sn
   const notes = a.events.map((e) => describeEvent(e, s, c)).filter((line) => !line.quiet)
   const heatColor = a.heatTo >= c.heat.raidThreshold ? colors.heat : a.heatTo >= c.heat.inspectThreshold ? colors.warn : undefined
   return (
-    <Modal transparent animationType="fade" visible onRequestClose={store.dismissAway}>
-      <View style={styles.backdrop}>
-        <View style={styles.panel}>
-          <T bold style={styles.title}>
-            {a.skippedHours ? `Skipped ${a.skippedHours} hour${a.skippedHours === 1 ? '' : 's'}` : 'While you were away'}
-          </T>
-          <T small muted>
-            {fmtDuration(a.to - a.from, c)}
-          </T>
-          <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+    <ModalPanel onRequestClose={store.dismissAway} style={styles.panel}>
+      <T bold style={styles.title}>
+        {a.skippedHours ? `Skipped ${a.skippedHours} hour${a.skippedHours === 1 ? '' : 's'}` : 'While you were away'}
+      </T>
+      <T small muted>
+        {fmtDuration(a.to - a.from, c)}
+      </T>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
             {a.pendingDecisions > 0 && (
               <T small color={colors.accent}>
                 {`Waiting for you on Home: ${a.pendingDecisions} decision${a.pendingDecisions === 1 ? '' : 's'}. Unanswered ones take their default when they expire.`}
@@ -119,25 +118,14 @@ export function AwayModal({ summary: a, game }: { summary: AwaySummary; game: Sn
                 ))}
               </>
             )}
-          </ScrollView>
-          <Btn kind="primary" title="Got it" onPress={store.dismissAway} />
-        </View>
-      </View>
-    </Modal>
+      </ScrollView>
+      <Btn kind="primary" title="Got it" onPress={store.dismissAway} />
+    </ModalPanel>
   )
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.65)', justifyContent: 'center', padding: 16 },
-  panel: {
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    padding: 14,
-    gap: 8,
-    maxHeight: '85%',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
+  panel: { maxHeight: '85%' },
   title: { fontSize: 18, color: colors.accent },
   scroll: { flexGrow: 0 },
   content: { gap: 6, paddingBottom: 4 },

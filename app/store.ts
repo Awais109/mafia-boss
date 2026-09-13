@@ -21,6 +21,7 @@ import {
 import { botPlay, type Trace } from '../sim/driver'
 import type { LogExport, LogLine } from '../sim/replay'
 import { buildAway, mergeAway, type AwaySummary } from './away'
+import { buildNotices, diffUnlocked, type QueuedNotice, type UnlockedMap } from './notices'
 import { FILES, storage } from './storage'
 
 // A gap of this many game minutes since the save was last caught up counts as being away, and
@@ -46,6 +47,7 @@ export type Snapshot = {
   realNow: number
   notice: Notice | null
   away: AwaySummary | null // pending "while you were away" popup
+  notices: QueuedNotice[] // live events/decisions queued while actively playing, shown one at a time
 }
 
 const DEFAULT_SETTINGS: Settings = { preset: 'default', overrides: {} }
@@ -65,6 +67,8 @@ class GameStore {
   private listeners = new Set<() => void>()
   private notice: Notice | null = null
   private away: AwaySummary | null = null
+  private notices: QueuedNotice[] = []
+  private lastUnlocked: UnlockedMap | null = null
   private session = { open: false, startedAt: 0, actions: 0 }
   private started = false
 
@@ -110,6 +114,8 @@ class GameStore {
     if (!r.error && action.type === 'SKIP_TIME') {
       const summary = buildAway(before, r.state, r.events, this.config, r.state.updatedAt)
       this.away = mergeAway(this.away, { ...summary, skippedHours: action.hours })
+    } else if (!r.error && r.events.length) {
+      this.notices = [...this.notices, ...buildNotices(before, r.state, r.events)]
     }
     if (!r.error && action.type !== 'SESSION_START' && action.type !== 'SESSION_END') this.session.actions++
     if (r.error) this.notice = { text: r.error, kind: 'error', at: Date.now() }
@@ -130,6 +136,11 @@ class GameStore {
 
   dismissAway = (): void => {
     this.away = null
+    this.refresh()
+  }
+
+  dismissNotice = (): void => {
+    this.notices = this.notices.slice(1)
     this.refresh()
   }
 
@@ -294,9 +305,16 @@ class GameStore {
   private tick(): void {
     if (!this.committed) return
     const now = this.gameNow()
-    const r = reconcile(this.committed, now, this.config)
-    const away = now - this.committed.updatedAt >= AWAY_MIN_GAME_MINUTES * (this.config.time.hourMs / 60)
-    if (away) this.away = mergeAway(this.away, buildAway(this.committed, r.state, r.events, this.config, now))
+    const before = this.committed
+    const r = reconcile(before, now, this.config)
+    const away = now - before.updatedAt >= AWAY_MIN_GAME_MINUTES * (this.config.time.hourMs / 60)
+    if (away) {
+      // The Away modal already covers this catch-up gap on its own; a stack of individual
+      // pop-ups right after it would just repeat what it already reports.
+      this.away = mergeAway(this.away, buildAway(before, r.state, r.events, this.config, now))
+    } else if (r.events.length) {
+      this.notices = [...this.notices, ...buildNotices(before, r.state, r.events)]
+    }
     // A gap is committed even without events, or the next tick would summarise it again.
     if (r.events.length || away) this.commit(r.state, r.events)
     else this.refresh(r.state)
@@ -311,9 +329,14 @@ class GameStore {
 
   private refresh(state: PlayerState | null = this.snapshot?.state ?? this.committed): void {
     if (!state) return
+    const derived = derive(state, this.config)
+    // No event marks a racket/front/district/official newly unlocking, only the Act transition
+    // itself — so this reads `derive`'s own `unlocked` map against last time's, every refresh.
+    this.notices = [...this.notices, ...diffUnlocked(this.lastUnlocked, derived.unlocked)]
+    this.lastUnlocked = derived.unlocked
     this.snapshot = {
       state,
-      derived: derive(state, this.config),
+      derived,
       config: this.config,
       settings: this.settings,
       configErrors: this.configErrors,
@@ -321,6 +344,7 @@ class GameStore {
       realNow: Date.now(),
       notice: this.notice,
       away: this.away,
+      notices: this.notices,
     }
     for (const listener of this.listeners) listener()
   }

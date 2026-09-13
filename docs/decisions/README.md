@@ -50,6 +50,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0035](0035-guided-opening.md) | A guided opening: buy the starting setup yourself, then Act I goals | Accepted |
 | [0036](0036-zhanna-and-the-port.md) | Zhanna sells lots of cigarettes, buys the surplus, and makes smuggling past her Port harder | Accepted |
 | [0037](0037-act-ii-premises.md) | Act II premises: the Stash House and the Union Office, and their synergies | Accepted |
+| [0038](0038-live-event-notices.md) | Live event and unlock notices, queued one at a time; a `description` field on every business/front/district/official | Accepted |
 
 ## Template
 

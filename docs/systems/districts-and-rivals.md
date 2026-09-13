@@ -8,7 +8,7 @@ The city is five districts. Rivals take a cut of what you run on their turf unti
 ## Districts
 
 Each entry in `districts.list` has:
-- `name` and `act`;
+- `name`, `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)), and `act`;
 - `startsAs`: the starting controller (`player`, `tolya`, `zhanna` or `none`);
 - `home`: your starting turf;
 - `allows`: the joints and rackets it can host, one of each ([ADR 0009](../decisions/0009-districts-one-of-each-business.md));

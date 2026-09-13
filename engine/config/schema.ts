@@ -113,6 +113,7 @@ export const RACKET_KINDS: readonly RacketKind[] = ['joint', 'racket', 'premises
 // and make, keep or improve something instead.
 export type RacketTypeConfig = {
   name: string
+  description: string // one plain-language sentence: what it does, shown on unlock and in How It Works
   act: Act
   kind: RacketKind // joints sell cigarettes, rackets don't, premises make or keep things
   baseYield: number // dirty/hr at tier 1 (0 for premises)
@@ -149,13 +150,14 @@ export type SynergyConfig = {
 
 export type FrontTypeConfig = {
   name: string
+  description: string // one plain-language sentence: what it does, shown on unlock and in How It Works
   rate: number // clean out per dirty in
   throughput: number // dirty/hr
   unlockRep: number
   cost: number // clean
 }
 
-export type OfficialConfig = { name: string; control: number; cost: number; act: Act }
+export type OfficialConfig = { name: string; description: string; control: number; cost: number; act: Act }
 
 export type OpConfig = {
   name: string
@@ -179,6 +181,7 @@ export type OpConfig = {
 
 export type DistrictConfig = {
   name: string
+  description: string // one plain-language sentence: what it does, shown on unlock and in How It Works
   act: Act
   startsAs: Controller
   home?: boolean // starting turf: never bought, no control bonus

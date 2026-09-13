@@ -30,7 +30,7 @@ The cap is the session leash: once the vault is full, income stops until you col
 | Premises | nothing; costs upkeep | no | a lot in any open district | Tobacco Factory, Warehouse; Stash House, Union Office |
 | Front | Clean | no | one of each, city-wide ([fronts.md](fronts.md)) | Currency Kiosk, Restaurant |
 
-Every business except fronts lives in `state.rackets` and uses `BUY_RACKET`, `UPGRADE_RACKET` and `REPAIR_RACKET`; `rackets.types[type].kind` says which kind it is. The rule for any new type: joints and rackets answer "does it make money"; premises answer "does it supply, improve or protect something".
+Every business except fronts lives in `state.rackets` and uses `BUY_RACKET`, `UPGRADE_RACKET` and `REPAIR_RACKET`; `rackets.types[type].kind` says which kind it is. The rule for any new type: joints and rackets answer "does it make money"; premises answer "does it supply, improve or protect something". Every type also carries a `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)).
 
 A type can be bought when `type.act ≤ act` and `reputation ≥ type.unlockRep`, in a district that's open (`district.act ≤ act`):
 - **Joints and rackets** need a spot: the district allows the type and doesn't already run one ([ADR 0009](../decisions/0009-districts-one-of-each-business.md)). `openSpots(state, config, districtId)` lists what's still buildable.
@@ -119,7 +119,7 @@ An idle crew member assigned to a joint or racket multiplies its yield by `racke
 
 The counters: `dirtyEarned`, `jobDirty`, `inboxDirty`, `cleanEarned`, `cleanSpent`, `wagesPaid`, `repairsPaid`, `bribesPaid`, `tributeLost`, `seized`, `trainingPaid`, `upkeepPaid`, `smugglingPaid`, `shipmentsPaid`, `surplusSold`. Counters for systems that aren't built yet stay at 0.
 
-Home's **Money flow** card reads `derive` directly: what the businesses put in the vault per hour, running costs per hour (wages and upkeep), what the fronts are washing, and Dirty and Clean on hand, with a warning when Dirty on hand won't cover `fronts.reserveHours` of running costs.
+Home's **Money flow** card reads `derive` directly: what the businesses put in the vault per hour, running costs per hour (wages and upkeep), what the fronts are washing, and Dirty and Clean on hand, with a warning when Dirty on hand won't cover what's already owed (`wagesOwed` + `upkeepOwed`) plus `fronts.reserveHours` of running costs.
 
 ## Actions and events
 

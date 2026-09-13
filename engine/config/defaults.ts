@@ -16,8 +16,8 @@ export const defaults: Config = {
   vault: {
     floorCap: 40, // vault cap never drops below this
     targetHoursByAct: { 1: 2.5, 2: 5.5 }, // vault cap = yield × this — the session leash (manual §4 Cadence)
-    startingDirty: 30, // sits in the vault at launch; first conversion is instant (spec §3.2)
-    startingDirtyOnHand: 90, // ready for the first wages and Tolya's first visit (ADR 0035)
+    startingDirty: 0, // vault starts empty: nothing has been earned yet at launch
+    startingDirtyOnHand: 120, // ready for the first wages and Tolya's first visit (ADR 0035); absorbs the 30 that used to sit pre-filled in the vault
     startingClean: 440, // Uncle Lyosha's money: the opening's setup costs ●380, leaving ●60 as the old start did (ADR 0035)
     startingInfluence: 1,
   },
@@ -48,34 +48,74 @@ export const defaults: Config = {
     // Every non-zero unlock sits 38 above its M4 value: buying the opening's setup earns 38 Rep (ADR 0035).
     types: {
       // Joints: cigaretteShare of the yield needs stock (ADR 0032). Purchase = yield × payback hours.
-      kiosk: { name: 'Kiosk', act: 1, kind: 'joint', baseYield: 6, baseHeat: 0.8, unlockRep: 0, sellsPerHr: 0.5, cigaretteShare: 0.7 },
-      marketStall: { name: 'Market Stall', act: 1, kind: 'joint', baseYield: 10, baseHeat: 1.3, unlockRep: 0, sellsPerHr: 0.8, cigaretteShare: 0.5 },
-      beerTent: { name: 'Beer Tent', act: 1, kind: 'joint', baseYield: 8, baseHeat: 1.0, unlockRep: 53, sellsPerHr: 0.6, cigaretteShare: 0.4 },
-      videoSalon: { name: 'Video Salon', act: 1, kind: 'racket', baseYield: 12, baseHeat: 1.6, unlockRep: 68 },
-      taxiRank: { name: 'Taxi Rank', act: 1, kind: 'racket', baseYield: 14, baseHeat: 2.0, unlockRep: 83 },
-      slotHall: { name: 'Slot Hall', act: 1, kind: 'joint', baseYield: 18, baseHeat: 2.6, unlockRep: 98, sellsPerHr: 0.4, cigaretteShare: 0.2 },
+      kiosk: {
+        name: 'Kiosk', description: 'A street kiosk selling cigarettes and odds and ends. Cheap, quiet, and always the first thing you own.',
+        act: 1, kind: 'joint', baseYield: 6, baseHeat: 0.8, unlockRep: 0, sellsPerHr: 0.5, cigaretteShare: 0.7,
+      },
+      marketStall: {
+        name: 'Market Stall', description: 'A stall in the open market. More turnover than a Kiosk, a bit more heat to go with it.',
+        act: 1, kind: 'joint', baseYield: 10, baseHeat: 1.3, unlockRep: 0, sellsPerHr: 0.8, cigaretteShare: 0.5,
+      },
+      beerTent: {
+        name: 'Beer Tent', description: 'A tent that sells beer and cigarettes on the side. Modest money, modest heat.',
+        act: 1, kind: 'joint', baseYield: 8, baseHeat: 1.0, unlockRep: 53, sellsPerHr: 0.6, cigaretteShare: 0.4,
+      },
+      videoSalon: {
+        name: 'Video Salon', description: 'A pirated-video parlor. Earns Dirty directly — no cigarettes involved, but it runs hot for its size.',
+        act: 1, kind: 'racket', baseYield: 12, baseHeat: 1.6, unlockRep: 68,
+      },
+      taxiRank: {
+        name: 'Taxi Rank', description: 'An unlicensed taxi stand. Earns Dirty directly, hotter still than a Video Salon.',
+        act: 1, kind: 'racket', baseYield: 14, baseHeat: 2.0, unlockRep: 83,
+      },
+      slotHall: {
+        name: 'Slot Hall', description: 'A back-room slot machine hall. Your best Act I joint by far — and the hottest one.',
+        act: 1, kind: 'joint', baseYield: 18, baseHeat: 2.6, unlockRep: 98, sellsPerHr: 0.4, cigaretteShare: 0.2,
+      },
       // Premises earn nothing: the factory rolls packs, the warehouse raises the stock cap.
       tobaccoFactory: {
-        name: 'Tobacco Factory', act: 1, kind: 'premises', baseYield: 0, baseHeat: 0.6, unlockRep: 0,
+        name: 'Tobacco Factory',
+        description: "Makes cigarette packs for your joints to sell. Earns no Dirty itself — pair it with a Warehouse so packs don't go to waste.",
+        act: 1, kind: 'premises', baseYield: 0, baseHeat: 0.6, unlockRep: 0,
         purchase: 80, upkeepPerHr: 0.5, upkeepTierMult: 1.3, makesPerHr: 2, tierMakeMult: 1.5,
       },
       warehouse: {
-        name: 'Warehouse', act: 1, kind: 'premises', baseYield: 0, baseHeat: 0.3, unlockRep: 58,
+        name: 'Warehouse', description: 'Raises how many cigarette packs the city can hold in stock, so a busy Tobacco Factory stops overflowing.',
+        act: 1, kind: 'premises', baseYield: 0, baseHeat: 0.3, unlockRep: 58,
         purchase: 120, upkeepPerHr: 1, upkeepTierMult: 1.2, capPerTier: 100,
       },
       // Ladder sits under the Act II clear threshold (reputation.actThresholds[3]) so every spot opens in the act.
-      autoShop: { name: 'Auto Shop', act: 2, kind: 'racket', baseYield: 18, baseHeat: 2.5, unlockRep: 148 },
-      cafe: { name: 'Café', act: 2, kind: 'joint', baseYield: 14, baseHeat: 1.8, unlockRep: 208, sellsPerHr: 1.2, cigaretteShare: 0.3 },
-      bathhouse: { name: 'Bathhouse', act: 2, kind: 'joint', baseYield: 24, baseHeat: 3.2, unlockRep: 288, sellsPerHr: 1.6, cigaretteShare: 0.3 },
-      petrol: { name: 'Petrol Station', act: 2, kind: 'racket', baseYield: 34, baseHeat: 4.5, unlockRep: 368 },
-      cargoBay: { name: 'Cargo Bay', act: 2, kind: 'racket', baseYield: 55, baseHeat: 8.0, unlockRep: 458 },
+      autoShop: {
+        name: 'Auto Shop', description: "Act II's entry-level racket: a chop shop dressed as a repair garage. Earns Dirty directly.",
+        act: 2, kind: 'racket', baseYield: 18, baseHeat: 2.5, unlockRep: 148,
+      },
+      cafe: {
+        name: 'Café', description: 'A café that moves cigarettes quietly alongside the coffee.',
+        act: 2, kind: 'joint', baseYield: 14, baseHeat: 1.8, unlockRep: 208, sellsPerHr: 1.2, cigaretteShare: 0.3,
+      },
+      bathhouse: {
+        name: 'Bathhouse', description: 'A banya where deals get made along with the steam. A strong Act II joint, but it runs hot.',
+        act: 2, kind: 'joint', baseYield: 24, baseHeat: 3.2, unlockRep: 288, sellsPerHr: 1.6, cigaretteShare: 0.3,
+      },
+      petrol: {
+        name: 'Petrol Station', description: 'A skimmed-fuel racket. Earns Dirty directly, and earns it fast.',
+        act: 2, kind: 'racket', baseYield: 34, baseHeat: 4.5, unlockRep: 368,
+      },
+      cargoBay: {
+        name: 'Cargo Bay', description: 'Your biggest earner: a shipping yard moving whatever pays. Also your hottest business by far.',
+        act: 2, kind: 'racket', baseYield: 55, baseHeat: 8.0, unlockRep: 458,
+      },
       // Act II premises (ADR 0037): the stash lengthens the leash and hides part of a raid; the union makes Influence.
       stashHouse: {
-        name: 'Stash House', act: 2, kind: 'premises', baseYield: 0, baseHeat: 1.0, unlockRep: 178,
+        name: 'Stash House',
+        description: 'A hidden cache that lets the vault hold more before it fills, and hides part of what a raid can seize. Earns no Dirty itself.',
+        act: 2, kind: 'premises', baseYield: 0, baseHeat: 1.0, unlockRep: 178,
         purchase: 200, upkeepPerHr: 1, upkeepTierMult: 1.2, leashHoursPerTier: 1.5, shieldPerTier: 0.16,
       },
       unionOffice: {
-        name: 'Union Office', act: 2, kind: 'premises', baseYield: 0, baseHeat: 0.5, unlockRep: 238, maxInCity: 1,
+        name: 'Union Office',
+        description: 'A captured union local that generates Influence over time, for buying officials and bribing your way to more control.',
+        act: 2, kind: 'premises', baseYield: 0, baseHeat: 0.5, unlockRep: 238, maxInCity: 1,
         purchase: 250, upkeepPerHr: 1.5, upkeepTierMult: 1.2, influencePerHrPerTier: 1 / 60,
       },
     },
@@ -115,10 +155,16 @@ export const defaults: Config = {
       capacity: { step: 0.25, levels: 3, costPctOfUnlock: 0.5 }, // +25% throughput (and buffer) per level
     },
     types: {
-      currencyKiosk: { name: 'Currency Kiosk', rate: 0.55, throughput: 25, unlockRep: 0, cost: 40 }, // bought in the opening (ADR 0035)
+      currencyKiosk: {
+        name: 'Currency Kiosk', description: 'Turns Dirty into Clean at a modest rate. Your first front, and the cheapest.',
+        rate: 0.55, throughput: 25, unlockRep: 0, cost: 40,
+      }, // bought in the opening (ADR 0035)
       // 185 → 120: Act II laundering grows through capacity upgrades (to 210) instead of arriving oversized (TUNING.md).
       // Opens just before Act II (143): opening it with Act II cost a seed a wage day (TUNING.md, M4).
-      restaurant: { name: 'Restaurant', rate: 0.65, throughput: 120, unlockRep: 133, cost: 60 },
+      restaurant: {
+        name: 'Restaurant', description: 'A better rate and much more laundering capacity than the Currency Kiosk — the front you grow into for Act II.',
+        rate: 0.65, throughput: 120, unlockRep: 133, cost: 60,
+      },
     },
   },
 
@@ -142,9 +188,12 @@ export const defaults: Config = {
     cooldownDays: 2, // between any two official purchases; puts the Captain ~40% into Act II
     influencePerHrEach: 1 / 8,
     list: {
-      wardCop: { name: 'Ward Cop', control: 6, cost: 4, act: 1 },
+      wardCop: { name: 'Ward Cop', description: 'A beat cop on the payroll. A small, steady boost to control, plus a trickle of Influence.', control: 6, cost: 4, act: 1 },
       // 140 → 240 with the bigger Act I, whose businesses tier to 5 in Act II (TUNING.md, M3).
-      precinctCaptain: { name: 'Precinct Captain', control: 240, cost: 12, act: 2 },
+      precinctCaptain: {
+        name: 'Precinct Captain', description: 'A captain who can make real trouble disappear. A huge, permanent boost to control.',
+        control: 240, cost: 12, act: 2,
+      },
     },
   },
 
@@ -332,12 +381,27 @@ export const defaults: Config = {
     pressureOpsToFlip: 3,
     // Each district hosts one of each joint or racket it allows, and premises on its lots (ADR 0031).
     list: {
-      zarechye: { name: 'Zarechye', act: 1, startsAs: 'player', home: true, allows: ['kiosk', 'marketStall', 'beerTent'], premisesLots: 2, buyout: 0, tribute: 0, mod: {} },
-      kioskRow: { name: 'Kiosk Row', act: 1, startsAs: 'tolya', allows: ['kiosk', 'marketStall', 'videoSalon'], premisesLots: 1, buyout: 150, tribute: 0.15, mod: { yieldMult: { kiosk: 1.1, marketStall: 1.1 } } },
+      zarechye: {
+        name: 'Zarechye', description: 'Your home turf. Never bought and never fought over, but it earns no control bonus either.',
+        act: 1, startsAs: 'player', home: true, allows: ['kiosk', 'marketStall', 'beerTent'], premisesLots: 2, buyout: 0, tribute: 0, mod: {},
+      },
+      kioskRow: {
+        name: 'Kiosk Row', description: "Tolya's turf. He skims tribute off every business here until you take it, which also boosts Kiosk and Market Stall yield.",
+        act: 1, startsAs: 'tolya', allows: ['kiosk', 'marketStall', 'videoSalon'], premisesLots: 1, buyout: 150, tribute: 0.15, mod: { yieldMult: { kiosk: 1.1, marketStall: 1.1 } },
+      },
       // Nobody's yet: buy it out, or take it with three pressure jobs (ADR 0033).
-      stationSquare: { name: 'Station Square', act: 1, startsAs: 'none', allows: ['beerTent', 'videoSalon', 'taxiRank', 'slotHall'], premisesLots: 2, buyout: 200, tribute: 0, mod: { yieldMult: { taxiRank: 1.1, slotHall: 1.1 } } },
-      portQuarter: { name: 'Port Quarter', act: 2, startsAs: 'zhanna', allows: ['petrol', 'cargoBay'], premisesLots: 2, buyout: 300, tribute: 0.15, mod: {} },
-      sovietsky: { name: 'Sovietsky Blocks', act: 2, startsAs: 'none', allows: ['autoShop', 'cafe', 'bathhouse'], premisesLots: 2, buyout: 300, tribute: 0, mod: { wageMult: 0.9 } },
+      stationSquare: {
+        name: 'Station Square', description: "Unclaimed turf. Take it by buyout or pressure jobs for a Taxi Rank and Slot Hall yield boost — nobody's tribute to pay in the meantime.",
+        act: 1, startsAs: 'none', allows: ['beerTent', 'videoSalon', 'taxiRank', 'slotHall'], premisesLots: 2, buyout: 200, tribute: 0, mod: { yieldMult: { taxiRank: 1.1, slotHall: 1.1 } },
+      },
+      portQuarter: {
+        name: 'Port Quarter', description: "Zhanna's turf from Act II. She skims tribute here until you take it, and still runs her cigarette trade either way.",
+        act: 2, startsAs: 'zhanna', allows: ['petrol', 'cargoBay'], premisesLots: 2, buyout: 300, tribute: 0.15, mod: {},
+      },
+      sovietsky: {
+        name: 'Sovietsky Blocks', description: 'Unclaimed Act II turf. Take it and every crew wage in the city drops 10%.',
+        act: 2, startsAs: 'none', allows: ['autoShop', 'cafe', 'bathhouse'], premisesLots: 2, buyout: 300, tribute: 0, mod: { wageMult: 0.9 },
+      },
     },
   },
 

@@ -161,6 +161,18 @@ New config, starting values from the expansion plan (ADRs 0031–0033):
             goldRush: Act I 1.03 d (8/10 ≥ 1 d), Act II 2.99 d (7/10).  Kept: no number moved to pass a gate.
 ```
 
+## 2026-09-14 — vault starts empty
+
+```
+2026-09-14  vault.startingDirty 30→0; vault.startingDirtyOnHand 90→120
+            Symptom: the vault held 30 Dirty before any racket existed to have earned it — a visible inconsistency, not a balance
+            complaint. Tried startingDirty→0 alone first: Act I 1.89→1.72 d (8/10, better), but missed wages 0.00→0.20 (2/10 seeds
+            missed a payday) — the 30 was quietly cushioning the first payday. Moved it into startingDirtyOnHand instead (120 keeps
+            the combined starting Dirty pool at 120, same as 30+90 before): sim (10 seeds) came back byte-identical to baseline
+            (Act I 1.89 d, Act II 3.07 d, heat 34.01, missed wages 0.00) — same total Dirty, just relocated out of an empty vault
+            into cash on hand. Kept.
+```
+
 ## Open
 
 - **Front utilization ~59% (target 70–90%) and Dirty idle ~68% (target 20–50%).** The bot keeps a large Dirty reserve and the fronts can wash more than it deposits. Dirty idle rose with M3's bigger Act I, and again with M6's Stash House, whose longer leash makes bigger collections.
