@@ -67,6 +67,10 @@ export type IncidentType = 'inspector' | 'drunkCrew' | 'shopkeeperLead' | 'copFa
 export const INCIDENT_TYPES: readonly IncidentType[] = ['inspector', 'drunkCrew', 'shopkeeperLead', 'copFavour', 'badBatch']
 export type IncidentNeed = 'idleCrew' | 'joint' | 'factory' | 'inspected'
 
+// Act I goals (ADR 0035), each paying gold once.
+export type GoalId = 'secondDistrict' | 'factoryTier2' | 'thirdCrew' | 'wardCop' | 'workFront' | 'smuggleRun' | 'soldier' | 'actII'
+export const GOAL_IDS: readonly GoalId[] = ['secondDistrict', 'factoryTier2', 'thirdCrew', 'wardCop', 'workFront', 'smuggleRun', 'soldier', 'actII']
+
 // One option on a pending decision (a crew report or an incident). Effects are materialized
 // into the save when the item is filed, so replays don't depend on later config edits.
 export type ChoiceConfig = {
@@ -203,6 +207,7 @@ export type Config = {
     floorCap: number
     targetHoursByAct: Record<Act, number>
     startingDirty: number
+    startingDirtyOnHand: number // Dirty in hand at the start, beside the vault
     startingClean: number
     startingInfluence: number
   }
@@ -221,7 +226,6 @@ export type Config = {
     premises: { maxTier: number; missedUpkeepConditionHit: number }
     synergies: SynergyConfig[]
     types: Record<RacketType, RacketTypeConfig>
-    starting: { type: RacketType; districtId: DistrictId }[]
   }
   supply: {
     baseCap: number // cigarettes the city holds without a warehouse
@@ -311,7 +315,7 @@ export type Config = {
       perkChoices: number
       perks: Record<PerkId, PerkConfig>
     }
-    starting: CrewSeed[]
+    openingPool: CrewSeed[] // the first people looking for work: ids cand0-0, cand0-1, …
   }
   ops: {
     fullMargin: number
@@ -358,7 +362,12 @@ export type Config = {
     perDistrict: number
     actThresholds: { 2: number; 3: number }
   }
-  tutorial: { enabled: boolean; firstConversionInstant: boolean }
+  tutorial: { enabled: boolean; firstConversionInstant: boolean; tolyaAfterMinutes: number }
+  // What Skip buys, and what a game starts with when the tutorial is off (ADR 0035).
+  opening: {
+    quickStart: { rackets: { type: RacketType; districtId: DistrictId }[]; fronts: FrontType[]; recruits: string[] }
+  }
+  goals: { enabled: boolean; rewardGold: number; list: GoalId[] }
   // Gold bars buy time and nothing else (ADR 0034).
   gold: {
     starting: number
@@ -425,6 +434,7 @@ export function validateConfig(c: Config): string[] {
       nonNeg(e, 'vault.floorCap', c.vault.floorCap)
       for (const a of ACTS) positive(e, `vault.targetHoursByAct.${a}`, c.vault.targetHoursByAct[a])
       nonNeg(e, 'vault.startingDirty', c.vault.startingDirty)
+      nonNeg(e, 'vault.startingDirtyOnHand', c.vault.startingDirtyOnHand)
       nonNeg(e, 'vault.startingClean', c.vault.startingClean)
       nonNeg(e, 'vault.startingInfluence', c.vault.startingInfluence)
     },
@@ -570,10 +580,10 @@ export function validateConfig(c: Config): string[] {
       positive(e, 'crew.traits.gambler.wageMult', cr.traits.gambler.wageMult)
       positive(e, 'crew.traits.alcoholic.wageMult', cr.traits.alcoholic.wageMult)
       nonNeg(e, 'crew.traits.alcoholic.randomPenalty', cr.traits.alcoholic.randomPenalty)
-      if (cr.starting.length > cr.slotsByAct[1]) e.push('crew.starting: more starting crew than act 1 slots')
-      for (const seed of cr.starting) {
+      if (!Array.isArray(cr.openingPool) || cr.openingPool.length === 0) e.push('crew.openingPool: list at least one person')
+      for (const seed of cr.openingPool ?? []) {
         for (const st of STATS) {
-          if (seed.potential && !(seed.potential[st] >= seed[st])) e.push(`crew.starting.${seed.name}.potential.${st}: below the stat`)
+          if (seed.potential && !(seed.potential[st] >= seed[st])) e.push(`crew.openingPool.${seed.name}.potential.${st}: below the stat`)
         }
       }
       const x = cr.experience
@@ -697,6 +707,20 @@ export function validateConfig(c: Config): string[] {
       if (!Array.isArray(g.skipChoices) || g.skipChoices.some((h) => !Number.isInteger(h) || h < 1 || h > g.maxSkipHours)) {
         e.push('gold.skipChoices: whole hours from 1 to maxSkipHours')
       }
+    },
+    (e) => {
+      const q = c.opening.quickStart
+      for (const r of q.rackets) {
+        if (!RACKET_TYPES.includes(r.type) || !DISTRICT_IDS.includes(r.districtId)) e.push(`opening.quickStart.rackets: unknown ${r.type} in ${r.districtId}`)
+      }
+      for (const f of q.fronts) if (!FRONT_TYPES.includes(f)) e.push(`opening.quickStart.fronts: unknown front ${f}`)
+      if (q.recruits.length > c.crew.slotsByAct[1]) e.push('opening.quickStart.recruits: more than act 1 has slots for')
+      for (const id of q.recruits) {
+        if (!c.crew.openingPool.some((_, i) => `cand0-${i}` === id)) e.push(`opening.quickStart.recruits: ${id} isn't in crew.openingPool`)
+      }
+      positive(e, 'tutorial.tolyaAfterMinutes', c.tutorial.tolyaAfterMinutes)
+      int(e, 'goals.rewardGold', c.goals.rewardGold, 0)
+      for (const g of c.goals.list) if (!GOAL_IDS.includes(g)) e.push(`goals.list: unknown goal ${g}`)
     },
   ]
   for (const check of checks) {

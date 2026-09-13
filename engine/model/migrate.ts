@@ -75,7 +75,18 @@ function v4to5(doc: Doc): Doc {
   }
 }
 
-const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5 }
+// v6 (M5): Act I goals. A save still in the old five-step tutorial can't pick up the new opening, so it's done.
+function v5to6(doc: Doc): Doc {
+  const tutorial = (doc.tutorial as { step: number; done: boolean } | undefined) ?? { step: 0, done: true }
+  return {
+    ...doc,
+    schemaVersion: 6,
+    goals: doc.goals ?? { done: [] },
+    tutorial: { ...tutorial, done: true },
+  }
+}
+
+const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6 }
 
 export function migrate(doc: unknown): PlayerState {
   if (typeof doc !== 'object' || doc === null) throw new Error('Save is not an object')

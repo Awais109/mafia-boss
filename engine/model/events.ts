@@ -4,6 +4,7 @@ import type {
   DistrictId,
   FrontMode,
   FrontType,
+  GoalId,
   IncidentType,
   OfficialId,
   OpOutcome,
@@ -59,6 +60,7 @@ export type EventBody =
   | { type: 'GOLD_GRANTED'; amount: number; source: GoldSource }
   | { type: 'TIME_SKIPPED'; hours: number; bars: number }
   | { type: 'OP_RUSHED'; opId: string; opType: OpType; bars: number; name?: string }
+  | { type: 'GOAL_DONE'; goalId: GoalId; gold: number }
   | { type: 'REPORT_FILED'; itemId: string; opId: string; opType: OpType; outcome: OpOutcome; expiresAt: number }
   | { type: 'INCIDENT_RAISED'; itemId: string; incidentType: IncidentType; crewId?: string; racketId?: string; expiresAt: number }
   | { type: 'INBOX_RESOLVED'; itemId: string; kind: InboxItem['kind']; ref: string; optionId: string; optionName: string; auto: boolean; effects: InboxEffects }

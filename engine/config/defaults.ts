@@ -17,7 +17,8 @@ export const defaults: Config = {
     floorCap: 40, // vault cap never drops below this
     targetHoursByAct: { 1: 2.5, 2: 5.5 }, // vault cap = yield × this — the session leash (manual §4 Cadence)
     startingDirty: 30, // sits in the vault at launch; first conversion is instant (spec §3.2)
-    startingClean: 60, // enough that the tutorial's first purchase lands in the first session
+    startingDirtyOnHand: 90, // ready for the first wages and Tolya's first visit (ADR 0035)
+    startingClean: 440, // Uncle Lyosha's money: the opening's setup costs ●380, leaving ●60 as the old start did (ADR 0035)
     startingInfluence: 1,
   },
 
@@ -41,36 +42,31 @@ export const defaults: Config = {
       { id: 'factoryJoints', a: 'tobaccoFactory', b: 'joints', effect: { yieldMult: 1.15, servedFirst: true } },
       { id: 'warehouseFactory', a: 'warehouse', b: 'tobaccoFactory', effect: { upkeepMultOf: { warehouse: 0.5 } } },
     ],
+    // Every non-zero unlock sits 38 above its M4 value: buying the opening's setup earns 38 Rep (ADR 0035).
     types: {
       // Joints: cigaretteShare of the yield needs stock (ADR 0032). Purchase = yield × payback hours.
       kiosk: { name: 'Kiosk', act: 1, kind: 'joint', baseYield: 6, baseHeat: 0.8, unlockRep: 0, sellsPerHr: 0.5, cigaretteShare: 0.7 },
       marketStall: { name: 'Market Stall', act: 1, kind: 'joint', baseYield: 10, baseHeat: 1.3, unlockRep: 0, sellsPerHr: 0.8, cigaretteShare: 0.5 },
-      beerTent: { name: 'Beer Tent', act: 1, kind: 'joint', baseYield: 8, baseHeat: 1.0, unlockRep: 15, sellsPerHr: 0.6, cigaretteShare: 0.4 },
-      videoSalon: { name: 'Video Salon', act: 1, kind: 'racket', baseYield: 12, baseHeat: 1.6, unlockRep: 30 },
-      taxiRank: { name: 'Taxi Rank', act: 1, kind: 'racket', baseYield: 14, baseHeat: 2.0, unlockRep: 45 },
-      slotHall: { name: 'Slot Hall', act: 1, kind: 'joint', baseYield: 18, baseHeat: 2.6, unlockRep: 60, sellsPerHr: 0.4, cigaretteShare: 0.2 },
+      beerTent: { name: 'Beer Tent', act: 1, kind: 'joint', baseYield: 8, baseHeat: 1.0, unlockRep: 53, sellsPerHr: 0.6, cigaretteShare: 0.4 },
+      videoSalon: { name: 'Video Salon', act: 1, kind: 'racket', baseYield: 12, baseHeat: 1.6, unlockRep: 68 },
+      taxiRank: { name: 'Taxi Rank', act: 1, kind: 'racket', baseYield: 14, baseHeat: 2.0, unlockRep: 83 },
+      slotHall: { name: 'Slot Hall', act: 1, kind: 'joint', baseYield: 18, baseHeat: 2.6, unlockRep: 98, sellsPerHr: 0.4, cigaretteShare: 0.2 },
       // Premises earn nothing: the factory rolls packs, the warehouse raises the stock cap.
       tobaccoFactory: {
         name: 'Tobacco Factory', act: 1, kind: 'premises', baseYield: 0, baseHeat: 0.6, unlockRep: 0,
         purchase: 80, upkeepPerHr: 0.5, upkeepTierMult: 1.3, makesPerHr: 2, tierMakeMult: 1.5,
       },
       warehouse: {
-        name: 'Warehouse', act: 1, kind: 'premises', baseYield: 0, baseHeat: 0.3, unlockRep: 20,
+        name: 'Warehouse', act: 1, kind: 'premises', baseYield: 0, baseHeat: 0.3, unlockRep: 58,
         purchase: 120, upkeepPerHr: 1, upkeepTierMult: 1.2, capPerTier: 100,
       },
       // Ladder sits under the Act II clear threshold (reputation.actThresholds[3]) so every spot opens in the act.
-      autoShop: { name: 'Auto Shop', act: 2, kind: 'racket', baseYield: 18, baseHeat: 2.5, unlockRep: 110 },
-      cafe: { name: 'Café', act: 2, kind: 'joint', baseYield: 14, baseHeat: 1.8, unlockRep: 170, sellsPerHr: 1.2, cigaretteShare: 0.3 },
-      bathhouse: { name: 'Bathhouse', act: 2, kind: 'joint', baseYield: 24, baseHeat: 3.2, unlockRep: 250, sellsPerHr: 1.6, cigaretteShare: 0.3 },
-      petrol: { name: 'Petrol Station', act: 2, kind: 'racket', baseYield: 34, baseHeat: 4.5, unlockRep: 330 },
-      cargoBay: { name: 'Cargo Bay', act: 2, kind: 'racket', baseYield: 55, baseHeat: 8.0, unlockRep: 420 },
+      autoShop: { name: 'Auto Shop', act: 2, kind: 'racket', baseYield: 18, baseHeat: 2.5, unlockRep: 148 },
+      cafe: { name: 'Café', act: 2, kind: 'joint', baseYield: 14, baseHeat: 1.8, unlockRep: 208, sellsPerHr: 1.2, cigaretteShare: 0.3 },
+      bathhouse: { name: 'Bathhouse', act: 2, kind: 'joint', baseYield: 24, baseHeat: 3.2, unlockRep: 288, sellsPerHr: 1.6, cigaretteShare: 0.3 },
+      petrol: { name: 'Petrol Station', act: 2, kind: 'racket', baseYield: 34, baseHeat: 4.5, unlockRep: 368 },
+      cargoBay: { name: 'Cargo Bay', act: 2, kind: 'racket', baseYield: 55, baseHeat: 8.0, unlockRep: 458 },
     },
-    // Kiosk + Stall: 16 Dirty/hr before the factory's synergy. The factory keeps them in stock (ADR 0033).
-    starting: [
-      { type: 'kiosk', districtId: 'zarechye' },
-      { type: 'marketStall', districtId: 'zarechye' },
-      { type: 'tobaccoFactory', districtId: 'zarechye' },
-    ],
   },
 
   // One city-wide pool of cigarettes (ADR 0032): factories add, joints sell, warehouses raise the cap.
@@ -107,10 +103,10 @@ export const defaults: Config = {
       capacity: { step: 0.25, levels: 3, costPctOfUnlock: 0.5 }, // +25% throughput (and buffer) per level
     },
     types: {
-      currencyKiosk: { name: 'Currency Kiosk', rate: 0.55, throughput: 25, unlockRep: 0, cost: 0 },
+      currencyKiosk: { name: 'Currency Kiosk', rate: 0.55, throughput: 25, unlockRep: 0, cost: 40 }, // bought in the opening (ADR 0035)
       // 185 → 120: Act II laundering grows through capacity upgrades (to 210) instead of arriving oversized (TUNING.md).
-      // Opens at 80, just before Act II at 90: moving it to 90 cost seed 46 a wage day (TUNING.md, M4).
-      restaurant: { name: 'Restaurant', rate: 0.65, throughput: 120, unlockRep: 80, cost: 60 },
+      // Opens just before Act II (143): opening it with Act II cost a seed a wage day (TUNING.md, M4).
+      restaurant: { name: 'Restaurant', rate: 0.65, throughput: 120, unlockRep: 133, cost: 60 },
     },
   },
 
@@ -187,9 +183,11 @@ export const defaults: Config = {
         steady: { name: 'Steady', text: 'loyalty never drifts', noDrift: true },
       },
     },
-    starting: [
+    // The first people looking for work (ADR 0035): the opening hires two of the three.
+    openingPool: [
       { name: 'Vitya', muscle: 48, brains: 30, nerve: 42, loyalty: 70, potential: { muscle: 60, brains: 38, nerve: 55 } },
       { name: 'Dima', muscle: 30, brains: 50, nerve: 38, loyalty: 70, nephew: true, potential: { muscle: 38, brains: 72, nerve: 48 } },
+      { name: 'Sasha "Cold"', muscle: 34, brains: 36, nerve: 50, loyalty: 50, potential: { muscle: 42, brains: 44, nerve: 62 } },
     ],
   },
 
@@ -357,11 +355,31 @@ export const defaults: Config = {
     perOpSuccess: 2, // partial success earns partialRewardPct of this. Ops season Rep; spending drives it
     perDistrict: 20,
     // 3 = Act II cleared (Act III is stubbed). 480 ≈ Rep the casual bot holds 4 days after Act I (TUNING.md).
-    // 80/480 → 90/540 with gold: a bot spending every bar still takes a day over Act I (TUNING.md, M4).
-    actThresholds: { 2: 90, 3: 540 },
+    // 80/480 → 90/540 with gold (M4); +38 for the opening's setup Rep and +15/+32 for its faster start (M5): TUNING.md.
+    actThresholds: { 2: 143, 3: 610 },
   },
 
-  tutorial: { enabled: true, firstConversionInstant: true },
+  tutorial: { enabled: true, firstConversionInstant: true, tolyaAfterMinutes: 2 }, // Tolya's first visit, right after the heat lesson
+
+  // What Skip buys, and what a game starts with when the tutorial is off (ADR 0035).
+  opening: {
+    quickStart: {
+      rackets: [
+        { type: 'kiosk', districtId: 'zarechye' },
+        { type: 'marketStall', districtId: 'zarechye' },
+        { type: 'tobaccoFactory', districtId: 'zarechye' },
+      ],
+      fronts: ['currencyKiosk'],
+      recruits: ['cand0-0', 'cand0-1'],
+    },
+  },
+
+  // Act I goals (ADR 0035): shown once the opening is over; each pays rewardGold once.
+  goals: {
+    enabled: true,
+    rewardGold: 1,
+    list: ['secondDistrict', 'factoryTier2', 'thirdCrew', 'wardCop', 'workFront', 'smuggleRun', 'soldier', 'actII'],
+  },
 
   // Gold bars (ADR 0034): each buys an hour of waiting. You start with some and get more when an act opens.
   gold: {

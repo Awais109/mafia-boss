@@ -97,9 +97,10 @@ describe('smuggling', () => {
     for (const m of s.crew) Object.assign(m, { nerve: 95, brains: 95 })
     s.inventory.cigarettes = 20
     const clean = s.clean
+    const rep = s.reputation
     s = act(s, [{ type: 'START_OP', opType: 'smuggleCigarettes', crewIds: s.crew.map((m) => m.id) }], T0, quiet)
     expect(s.clean).toBe(clean - job.costClean!)
-    expect(s.reputation).toBe(0)
+    expect(s.reputation).toBe(rep)
     expect(s.stats.smugglingPaid).toBe(job.costClean)
     expect(s.ops[0].cfg!.diff).toBe(job.diff + Math.round(job.heatDiffPerPoint! * 50))
 

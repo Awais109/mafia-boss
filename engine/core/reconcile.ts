@@ -4,6 +4,7 @@ import { LOG_CAP, type PlayerState } from '../model/state'
 import { crewDayBoundary, refreshPoolIfDue, releaseJailed } from '../systems/crew'
 import { accrueEnforcerXp, crewXpHourBoundary } from '../systems/experience'
 import { convertFronts, frontsHourBoundary } from '../systems/fronts'
+import { checkGoals } from '../systems/goals'
 import { heatHourBoundary } from '../systems/heat'
 import { autoResolveInbox, rollIncident } from '../systems/inbox'
 import { ledgerDayBoundary } from '../systems/ledger'
@@ -122,6 +123,8 @@ export function processDue(state: PlayerState, ctx: Ctx, t: number): void {
   refreshPoolIfDue(state, ctx, t)
   refreshOffersIfDue(state, ctx, t)
   if (state.rival.tolya.nextTickAt <= t) tolyaTick(state, ctx, t)
+  // Goals only change at boundaries and actions, so checking here dates each to where it happened.
+  checkGoals(state, ctx, t)
 }
 
 export function appendLog(state: PlayerState, events: GameEvent[]): void {

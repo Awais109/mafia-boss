@@ -31,6 +31,7 @@ export type HourRow = {
   stockCap: number
   packDemand: number // packs/h joints would sell
   gold: number
+  goals: number // Act I goals done
 }
 
 export type SessionRow = {
@@ -102,6 +103,7 @@ export class Recorder {
       stockCap: d.supply.cap,
       packDemand: d.supply.demandPerHr,
       gold: state.gold,
+      goals: state.goals?.done.length ?? 0,
     })
   }
 

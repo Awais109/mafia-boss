@@ -28,6 +28,7 @@ function asV1(): Record<string, unknown> {
   delete s.upkeepOwed
   delete s.gold
   delete s.skippedMs
+  delete s.goals
   s.districts = s.districts.filter((d: { id: string }) => d.id !== 'stationSquare')
   s.rackets = s.rackets.filter((r: { type: string }) => r.type === 'kiosk' || r.type === 'marketStall')
   s.stats.sessions = 3
@@ -46,6 +47,9 @@ describe('migrate', () => {
     expect(m.stats.inbox).toEqual({ filed: 0, resolved: 0, auto: 0 })
     expect(m.stats.haggles).toEqual({ won: 0, lost: 0 })
     expect(m.stats.packsMade).toBe(0)
+    expect(m.goals).toEqual({ done: [] })
+    // A save caught in the old tutorial can't resume the new opening.
+    expect(m.tutorial.done).toBe(true)
   })
 
   it('gives existing crew room to grow and fronts the default dial', () => {

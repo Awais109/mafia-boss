@@ -27,7 +27,9 @@ describe('crew reports', () => {
 
 describe('incidents', () => {
   it('answering applies the option and removes the item', () => {
-    let s = act(fresh(), [{ type: 'DEBUG_GRANT', dirty: 100 }, { type: 'DEBUG_FORCE_INCIDENT', incidentType: 'copFavour' }], T0)
+    const start = fresh()
+    start.dirty = 100
+    let s = act(start, [{ type: 'DEBUG_FORCE_INCIDENT', incidentType: 'copFavour' }], T0)
     const item = s.inbox[0]
     expect(item.kind).toBe('incident')
     const influence = s.influence
@@ -40,7 +42,9 @@ describe('incidents', () => {
   })
 
   it("can't pick an option you can't cover", () => {
-    const s = act(fresh(), [{ type: 'DEBUG_FORCE_INCIDENT', incidentType: 'copFavour' }], T0)
+    const broke = fresh()
+    broke.dirty = 0
+    const s = act(broke, [{ type: 'DEBUG_FORCE_INCIDENT', incidentType: 'copFavour' }], T0)
     expect(apply(s, { type: 'RESOLVE_INBOX', itemId: s.inbox[0].id, optionId: 'doIt' }, T0, config).error).toMatch(/cover/)
   })
 

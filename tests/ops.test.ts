@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { makeRng, newGame, opBaseScore, outcomeOdds, type Act, type CrewMember, type OpType } from '../engine'
-import { generateCandidates } from '../engine/systems/crew'
+import { makeRng, opBaseScore, outcomeOdds, type Act, type CrewMember, type OpType } from '../engine'
+import { crewFromSeed, generateCandidates } from '../engine/systems/crew'
 import { rollOp } from '../engine/systems/ops'
 import { config } from './helpers'
 
@@ -30,7 +30,7 @@ describe('op resolution', () => {
     // Default stats = the crew the game hands you: Vitya and Dima in Act I, recruits from the Act II
     // band after that. Random Act I recruits sent on a difficulty-55 Dinner aren't a crew anyone picks.
     const rng = makeRng('ops-distribution')
-    const starting = newGame(config, 'ops-test', 0).crew
+    const starting = config.crew.openingPool.slice(0, 2).map((seed, i) => crewFromSeed(seed, `m${i}`))
     const counts = { full: 0, partial: 0, fail: 0 }
     for (let i = 0; i < 500; i++) {
       const act: Act = i % 2 === 0 ? 1 : 2

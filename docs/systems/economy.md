@@ -33,7 +33,7 @@ A type can be bought when `type.act ≤ act` and `reputation ≥ type.unlockRep`
 - **Joints and rackets** need a spot: the district allows the type and doesn't already run one ([ADR 0009](../decisions/0009-districts-one-of-each-business.md)). `openSpots(state, config, districtId)` lists what's still buildable.
 - **Premises** need a lot: `districts.list[id].premisesLots`, any premises type, one of each type per district, and at most `maxInCity` in the city when the type sets it. `openLots` counts free lots; `premisesBlocked` returns why one can't go in: "You already have one there", "Only one in the city", "No free lot there".
 
-Spots and lots per district are in [districts-and-rivals.md](districts-and-rivals.md#districts). You start with a Kiosk, a Market Stall and a Tobacco Factory in Zarechye ([ADR 0010](../decisions/0010-starting-position.md), [ADR 0033](../decisions/0033-bigger-act-i.md)).
+Spots and lots per district are in [districts-and-rivals.md](districts-and-rivals.md#districts). The opening has the player buy a Kiosk, a Market Stall and a Tobacco Factory in Zarechye ([ADR 0035](../decisions/0035-guided-opening.md)).
 
 ### Yield and exposure
 

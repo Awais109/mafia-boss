@@ -18,7 +18,7 @@ What is built, how it works, and why. Written so a person or an LLM new to the r
 | [systems/ops.md](systems/ops.md) | Jobs, training, resolution formula, rewards, district pressure, the opportunities board |
 | [systems/inbox.md](systems/inbox.md) | Pending decisions: crew reports, incidents, perk choices, defaults and expiry |
 | [systems/districts-and-rivals.md](systems/districts-and-rivals.md) | Districts, tribute, buy-outs and flips, Tolya and answering his demands, Zhanna |
-| [systems/progression.md](systems/progression.md) | Reputation, acts, the unlock ladder, the tutorial |
+| [systems/progression.md](systems/progression.md) | Reputation, acts, the unlock ladder, the guided opening, Act I goals |
 | [app.md](app.md) | The React Native app: store, storage, screens, Debug tab, export |
 | [sim.md](sim.md) | The headless bot, report metrics, CLI, log replay, baseline |
 | [testing.md](testing.md) | What each test file guards |
@@ -52,7 +52,7 @@ When you change a path on the left, update the doc on the right in the same comm
 | `engine/systems/crew.ts`, `engine/systems/experience.ts` | [systems/crew.md](systems/crew.md) |
 | `engine/systems/ops.ts` | [systems/ops.md](systems/ops.md) |
 | `engine/systems/districts.ts`, `engine/systems/rivals.ts` | [systems/districts-and-rivals.md](systems/districts-and-rivals.md) |
-| `engine/systems/reputation.ts`, `engine/systems/tutorial.ts` | [systems/progression.md](systems/progression.md) |
+| `engine/systems/reputation.ts`, `engine/systems/tutorial.ts`, `engine/systems/goals.ts` | [systems/progression.md](systems/progression.md) |
 | `App.tsx`, `app/` | [app.md](app.md) |
 | `sim/` | [sim.md](sim.md) |
 | `tests/`, `vitest.config.mts` | [testing.md](testing.md) |

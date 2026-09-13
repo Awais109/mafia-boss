@@ -25,7 +25,8 @@ describe('crew experience', () => {
   })
 
   it('training costs Dirty, pays XP, and raises a stat when XP covers the cost', () => {
-    let s = act(fresh(), [{ type: 'DEBUG_GRANT', dirty: 200 }], T0)
+    let s = fresh()
+    s.dirty = 200
     const id = crewNamed(s, 'Vitya').id
     const train = config.ops.list.trainMuscle
     s = act(s, [{ type: 'START_OP', opType: 'trainMuscle', crewIds: [id] }], T0)

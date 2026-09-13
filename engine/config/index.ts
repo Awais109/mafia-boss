@@ -109,5 +109,5 @@ export function configLeaves(config: Config): { path: string; value: number | bo
     else if (isObject(node)) for (const [k, v] of Object.entries(node)) walk(v, prefix ? `${prefix}.${k}` : k)
   }
   walk(config, '')
-  return out.filter((l) => !l.path.startsWith('meta.') && !l.path.startsWith('crew.starting.'))
+  return out.filter((l) => !l.path.startsWith('meta.') && !l.path.startsWith('crew.openingPool.') && !l.path.startsWith('opening.'))
 }

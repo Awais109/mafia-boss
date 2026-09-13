@@ -1,5 +1,5 @@
 import { expect } from 'vitest'
-import { apply, buildConfig, newGame, type Action, type Config, type PlayerState } from '../engine'
+import { apply, buildConfig, newGame, TUTORIAL_STEPS, type Action, type Config, type PlayerState } from '../engine'
 
 export const config: Config = buildConfig('default')
 // Defaults with nothing wearing down or random from Tolya: no condition decay, no hits, no demands.
@@ -12,7 +12,17 @@ export const H = config.time.hourMs
 // An arbitrary start that is not aligned to an hour, so boundaries land mid-segment.
 export const T0 = Date.UTC(2026, 0, 5, 7, 23, 11)
 
+// A game just past the opening's shopping: the quick-start setup Skip buys (ADR 0035), with the tutorial
+// parked at its first lesson so incidents and goals stay off unless a test turns them on.
 export function fresh(playerId = 'test-player', c: Config = config, t = T0): PlayerState {
+  const s = apply(newGame(c, playerId, t), { type: 'TUTORIAL_SKIP' }, t, c).state
+  s.tutorial = { step: TUTORIAL_STEPS.findIndex((st) => st.id === 'collect'), done: false }
+  s.log = []
+  return s
+}
+
+// A brand-new game: the opening money, empty turf, the first recruits waiting.
+export function blank(playerId = 'test-player', c: Config = config, t = T0): PlayerState {
   return newGame(c, playerId, t)
 }
 

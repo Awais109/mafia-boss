@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { derive, formulas, makeRng, reconcile, type PlayerState } from '../engine'
+import { derive, formulas, makeRng, reconcile, type GameEvent, type PlayerState } from '../engine'
 import { act, config, crewNamed, expectClose, fresh, H, T0 } from './helpers'
 
 // A state with everything moving at once: ops out (one taken from the board), a bribe running,
@@ -34,6 +34,7 @@ function busy(): PlayerState {
       { type: 'BUY_FRONT', frontType: 'restaurant' },
       { type: 'BUY_RACKET', racketType: 'warehouse', districtId: 'stationSquare' },
       { type: 'BUY_CREW_SLOT' },
+      { type: 'DEBUG_REFRESH_POOL' }, // the opening already hired from the first pool
     ],
     T0,
   )
@@ -106,8 +107,11 @@ describe('reconcile', () => {
     const s = fresh()
     s.crew = [] // no wages drawn from the vault at the day boundary
     const r = reconcile(s, s.updatedAt + 48 * H, config)
-    expect(r.state.vault).toBe(config.vault.floorCap)
-    expect(r.events.some((e) => e.type === 'VAULT_CAPPED')).toBe(true)
+    // The vault stops at the cap it hit; a cap that falls later pauses it without taking anything back.
+    const capped = r.events.filter((e): e is Extract<GameEvent, { type: 'VAULT_CAPPED' }> => e.type === 'VAULT_CAPPED').at(-1)
+    expect(capped).toBeDefined()
+    expect(r.state.vault).toBeCloseTo(capped!.cap)
+    expect(r.state.vault).toBeGreaterThanOrEqual(derive(r.state, config).vaultCap - 1e-6)
   })
 
   it('is deterministic for a player: same window, same raids', () => {

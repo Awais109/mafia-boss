@@ -15,7 +15,7 @@ The people who work jobs and mind rackets. They cost wages, their loyalty decide
 - An optional `nephew` flag.
 - Progress: `xp` and `potential` per stat, `gained` (stat points earned), `rank`, `perks`.
 
-The game starts with `crew.starting`: Vitya, and Dima, your nephew, who can't be fired and never walks out ([ADR 0018](../decisions/0018-crew-rules.md)). Their potentials are set in config rather than rolled.
+A new game's first recruit pool is `crew.openingPool`: Vitya; Dima, your nephew, who can't be fired and never walks out ([ADR 0018](../decisions/0018-crew-rules.md)); and Sasha. The opening hires two of the three ([ADR 0035](../decisions/0035-guided-opening.md)). Their potentials are set in config rather than rolled.
 
 ## Traits
 
@@ -103,7 +103,7 @@ Training jobs don't change loyalty.
 
 ## Recruiting
 
-- **The pool.** `crew.poolSize` candidates. Each rolls stats uniformly in `crew.statBandByAct[act]`, a potential per stat of `stat + U(experience.potentialRoll)` capped at 100, starts at `recruitLoyalty`, and has a `traitChance` of one random trait. Names are a Russian first name with a nickname. A raw recruit with a high ceiling against a ready-made one is the choice.
+- **The pool.** A new game's is `crew.openingPool`; every refresh after that rolls `crew.poolSize` candidates. Each rolls stats uniformly in `crew.statBandByAct[act]`, a potential per stat of `stat + U(experience.potentialRoll)` capped at 100, starts at `recruitLoyalty`, and has a `traitChance` of one random trait. Names are a Russian first name with a nickname. A raw recruit with a high ceiling against a ready-made one is the choice.
 - **Refresh.** The pool regenerates every `crew.poolRefreshHours` on a fixed schedule (`POOL_REFRESHED`).
 - **`RECRUIT { candidateId }`** needs a free slot and `recruitCostPerAct × act` Clean. It emits `RECRUITED`.
 - **`FIRE { crewId }`** refuses the nephew and anyone on a job, and clears any enforcer link (`FIRED`).

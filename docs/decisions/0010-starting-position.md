@@ -1,6 +1,6 @@
 # 0010. Start with a Kiosk and a Market Stall, 60 Clean, Vitya and nephew Dima
 
-- **Status:** Accepted; a starting Tobacco Factory added by [0033](0033-bigger-act-i.md)
+- **Status:** Superseded by [0035](0035-guided-opening.md) (after [0033](0033-bigger-act-i.md) added a starting Tobacco Factory)
 - **Date:** 2026-09-12
 
 ## Context

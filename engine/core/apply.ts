@@ -8,6 +8,7 @@ import { arrest, raid } from '../systems/heat'
 import { canAffordEffects, incidentNeedHolds, raiseIncident, resolveInboxItem } from '../systems/inbox'
 import { regenerateOffers } from '../systems/offers'
 import { opConfigAt, opMinutesFor, opUnlocked, resolveOp } from '../systems/ops'
+import { checkGoals } from '../systems/goals'
 import { grantGold, rushCost, skipCost } from '../systems/gold'
 import { checkActs, spendClean } from '../systems/reputation'
 import { bestHaggler, canHaggle, changeDisposition, haggle, refuseDemand, tolyaTick } from '../systems/rivals'
@@ -53,7 +54,8 @@ export function apply(
 
   if (error === null) {
     if (!PASSIVE_ACTIONS.includes(action.type)) state.stats.actions++
-    tutorialOnAction(state, ctx, t, action.type)
+    tutorialOnAction(state, ctx, t, action)
+    checkGoals(state, ctx, t)
   }
   appendLog(state, ctx.events)
   return error === null ? { state, events: ctx.events } : { state, events: ctx.events, error }
@@ -443,7 +445,10 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
     }
 
     case 'TUTORIAL_ADVANCE':
+      return null
+
     case 'TUTORIAL_SKIP':
+      if (!state.tutorial.done) applyQuickStart(state, ctx, t)
       return null
 
     case 'SESSION_START':
@@ -458,6 +463,31 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
 
     default:
       return handleDebug(state, ctx, a, t)
+  }
+}
+
+// What Skip buys (ADR 0035): the quick-start setup, through the ordinary handlers, so Clean, Rep and
+// events match buying it by hand. Anything already owned is skipped; anything Clean can't cover is
+// placed directly, so skipping never leaves a player worse off than the old fixed start.
+function applyQuickStart(state: PlayerState, ctx: Ctx, t: number): void {
+  const q = ctx.c.opening.quickStart
+  for (const { type, districtId } of q.rackets) {
+    if (state.rackets.some((r) => r.type === type && r.districtId === districtId)) continue
+    if (handle(state, ctx, { type: 'BUY_RACKET', racketType: type, districtId }, t) === null) continue
+    state.rackets.push({ id: newId(state, 'r'), type, districtId, tier: 1, condition: 100, enforcerId: null })
+  }
+  for (const type of q.fronts) {
+    if (state.fronts.some((f) => f.type === type)) continue
+    if (handle(state, ctx, { type: 'BUY_FRONT', frontType: type }, t) === null) continue
+    state.fronts.push({ id: newId(state, 'f'), type, level: 0, capacityLevel: 0, mode: 'normal', buffer: 0, convertedThisHour: 0, util: 0 })
+  }
+  for (const id of q.recruits) {
+    if (state.crew.length >= q.recruits.length) break
+    const cand = state.recruitPool.candidates.find((x) => x.id === id)
+    if (!cand) continue
+    if (handle(state, ctx, { type: 'RECRUIT', candidateId: id }, t) === null) continue
+    state.recruitPool.candidates = state.recruitPool.candidates.filter((x) => x.id !== id)
+    state.crew.push({ ...cand, id: newId(state, 'crew'), status: 'idle' })
   }
 }
 

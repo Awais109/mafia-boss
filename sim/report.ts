@@ -43,6 +43,7 @@ export type Summary = {
   stockIdlePct: number // hours stock sat at its cap ÷ hours joints were selling
   packsLostToCap: number
   goldSpent: number
+  goalsByDay: number[] // Act I goals done by the end of each day
   hoursSkipped: number
   checks: Check[]
 }
@@ -152,6 +153,7 @@ export function summarize(trace: Trace): Summary {
     stockIdlePct: selling.length ? selling.filter((h) => h.stock >= h.stockCap - 1e-6).length / selling.length : NaN,
     packsLostToCap: delta((x) => x.packsLostToCap),
     goldSpent: delta((x) => (x.gold ? x.gold.spentSkip + x.gold.spentRush : 0)),
+    goalsByDay: Array.from({ length: days }, (_, i) => Math.max(0, ...hours.filter((h) => h.day === i + 1).map((h) => h.goals ?? 0))),
     hoursSkipped: delta((x) => x.gold?.hoursSkipped),
     checks: [],
   }
@@ -199,6 +201,7 @@ export function formatSummary(s: Summary): string {
     `${pad('Crew growth:', 18)}${f1(s.statPointsPerCrewDay)} pts/crew/day  partial d1–2 ${pc(s.partialEarly)}  d7–8 ${pc(s.partialLate)}`,
     `${pad('Cigarettes:', 18)}shortage ${s.shortageHours} h (${pc(s.shortagePctAct1)} of Act I)  stock at cap ${pc(s.stockIdlePct)}  lost ${Math.round(s.packsLostToCap)} packs`,
     `${pad('Gold:', 18)}spent ${s.goldSpent} bars  hours skipped ${s.hoursSkipped}`,
+    `${pad('Goals by day:', 18)}${s.goalsByDay.map((g, i) => `d${i + 1} ${g}`).join('  ')}`,
     `${pad('Tiers @ end:', 18)}${s.tiers}`,
   ]
   const passed = s.checks.filter((ch) => checkOk(ch) === true).length

@@ -84,6 +84,11 @@ export function CrewScreen({ game }: ScreenProps) {
       </Card>
 
       <Section title="Your crew">
+        {s.crew.length === 0 && (
+          <Card>
+            <T small muted>Nobody yet. Hire from the people looking for work below.</T>
+          </Card>
+        )}
         {s.crew.map((m) => {
           const st = status(m)
           return (

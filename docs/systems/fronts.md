@@ -7,7 +7,7 @@ Dirty money can't buy anything. Fronts turn it into Clean at a fixed rate per ho
 
 ## Types
 
-`fronts.types`: `currencyKiosk` (free; the game starts with it) and `restaurant` (unlocks at its `unlockRep`, costs Clean). You can run one of each type. New games start with every type whose `cost` and `unlockRep` are both 0.
+`fronts.types`: `currencyKiosk` (bought in the opening) and `restaurant` (unlocks at its `unlockRep`, just before Act II). Both cost Clean, and you can run one of each type.
 
 ## Depositing and converting
 
@@ -66,7 +66,7 @@ suspicion = fronts.suspicionFactor × throughput × max(0, util − start)      
 | `rate` (default) | `level`: rate + `rateStep` | `fronts.upgrade.levels` | `round(max(type.cost, upgrade.minCostBasis) × upgrade.costPctOfUnlock × (L+1))` |
 | `capacity` | `capacityLevel`: throughput and buffer × (1 + `capacity.step` per level) | `fronts.upgrade.capacity.levels` | `round(max(type.cost, upgrade.minCostBasis) × upgrade.capacity.costPctOfUnlock × (L+1))` |
 
-`minCostBasis` gives the free Currency Kiosk a real upgrade price. Both emit `FRONT_UPGRADED { frontId, level, cost, track }`.
+`minCostBasis` gives the cheap Currency Kiosk a real upgrade price. Both emit `FRONT_UPGRADED { frontId, level, cost, track }`.
 
 ## Actions and events
 

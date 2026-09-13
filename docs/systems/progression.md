@@ -1,9 +1,9 @@
 # Progression: reputation, acts, tutorial
 
-Reputation is the progress currency: it opens Act II, unlocks bigger rackets and the Restaurant, and ends Act II. A short tutorial teaches the loop in the first session.
+Reputation is the progress currency: it opens Act II, unlocks bigger rackets and the Restaurant, and ends Act II. The guided opening walks a new player through buying the starting setup and then the loop; Act I goals give a reason to come back.
 
-**Code:** `engine/systems/reputation.ts` (`gainRep`, `spendClean`, `checkActs`), `engine/systems/tutorial.ts` (`TUTORIAL_STEPS`, `currentTutorialStep`, `tutorialOnAction`), `engine/newGame.ts`. The tutorial copy lives in `app/components/TutorialBanner.tsx`.
-**Config:** `reputation.*`, the `unlockRep` fields in `rackets.types` and `fronts.types`, `tutorial.*`, and the `starting*` fields.
+**Code:** `engine/systems/reputation.ts` (`gainRep`, `spendClean`, `checkActs`), `engine/systems/tutorial.ts` (`TUTORIAL_STEPS`, `currentTutorialStep`, `tutorialOnAction`), `engine/systems/goals.ts` (`GOAL_CHECKS`, `checkGoals`), `engine/newGame.ts`, the quick start in `engine/core/apply.ts` (`applyQuickStart`). The copy lives in `app/components/TutorialBanner.tsx` and `app/goals.ts`.
+**Config:** `reputation.*`, the `unlockRep` fields in `rackets.types` and `fronts.types`, `tutorial.*`, `opening.quickStart`, `crew.openingPool`, `goals.*`, and the `vault.starting*` fields.
 
 ## Reputation
 
@@ -28,7 +28,7 @@ Reputation is the progress currency: it opens Act II, unlocks bigger rackets and
   - recruit and raise costs scaled by act, and job Dirty × `2^ops.rewardActScaling`.
 - **Act II is cleared** at `reputation.actThresholds[3]`: `stats.actClearedAt[2]` and `ACT_CLEARED`. The game carries on in Act II. **Act III and later are not built**; the threshold is named 3 only to mark the end of Act II ([ADR 0015](../decisions/0015-act-ii-pacing.md)). The app says so in words: the header reads `Act II cleared`, and Home lists both act milestones from `stats.actClearedAt`, since the events themselves fall out of the 200-event log ([ADR 0022](../decisions/0022-end-of-prototype-state.md)).
 
-The unlock ladder (`rackets.types.*.unlockRep`) sits below the Act II clear threshold, so every business opens within the act.
+The unlock ladder (`rackets.types.*.unlockRep`) sits below the Act II clear threshold, so every business opens within the act. Every non-zero threshold includes the 38 Rep the opening's setup earns ([ADR 0035](../decisions/0035-guided-opening.md)).
 
 ## New game
 
@@ -36,33 +36,59 @@ The unlock ladder (`rackets.types.*.unlockRep`) sits below the Act II clear thre
 
 | Field | Starts from |
 |---|---|
-| Vault, Clean, Influence | `vault.startingDirty`, `vault.startingClean`, `vault.startingInfluence` |
+| Vault, Dirty, Clean, Influence | `vault.startingDirty` in the vault, `vault.startingDirtyOnHand`, `vault.startingClean`, `vault.startingInfluence` |
 | Heat | `heat.startHeat` (inspected already if that's above the threshold) |
-| Businesses | `rackets.starting` (tier 1, condition 100; premises included) |
+| Businesses, fronts, crew | none: the opening buys them |
 | Cigarettes | `supply.startingStock` |
 | Gold | `gold.starting` bars |
-| Fronts | every front type with `cost` 0 and `unlockRep` 0 |
-| Crew | `crew.starting` |
 | Districts | controllers from `startsAs` |
-| Recruit pool | generated; refreshes after `crew.poolRefreshHours` |
-| Tolya | first visit after `rivals.tolya.tickHours` |
-| Tutorial | on unless `tutorial.enabled` is false |
+| Recruit pool | `crew.openingPool` (ids `cand0-0`, `cand0-1`, …); refreshes after `crew.poolRefreshHours` |
+| Tolya | first visit after `rivals.tolya.tickHours`, or right after the opening's heat lesson |
+| Tutorial | running; with `tutorial.enabled` false, `newGame` applies the quick start at once |
 
-See [ADR 0010](../decisions/0010-starting-position.md).
+See [ADR 0035](../decisions/0035-guided-opening.md), which replaces [ADR 0010](../decisions/0010-starting-position.md).
 
-## Tutorial
+## The guided opening
 
-`TUTORIAL_STEPS`. Each step advances when the player does the thing. The engine tracks only the step index; the app owns the words.
+([ADR 0035](../decisions/0035-guided-opening.md)) `TUTORIAL_STEPS`. Each step advances when the player does the thing; the engine tracks only the step index and the app owns the words. The first five are purchases, and a purchase step is done once the thing is owned, however it got there, so buying out of order never strands the player.
 
-| Step | Advances on | Teaches |
-|---|---|---|
-| `collect` | `COLLECT` | the vault and its cap |
-| `deposit` | `DEPOSIT` | Dirty can't buy anything; launder it (the first conversion is instant) |
-| `spend` | `BUY_RACKET` or `UPGRADE_RACKET` | Clean buys businesses and earns Rep |
-| `op` | `START_OP` | jobs |
-| `heat` | `TUTORIAL_ADVANCE` ("Got it") | heat, thresholds, officials |
+| # | Step | Advances when | Teaches |
+|---|---|---|---|
+| 1 | `kiosk` | a Kiosk is owned | joints sell cigarettes; yield, heat, one of each per district |
+| 2 | `stall` | a Market Stall is owned | a bigger joint, the vault cap |
+| 3 | `factory` | a Tobacco Factory is owned | premises make, joints sell; upkeep |
+| 4 | `front` | a front is owned | Dirty can't buy businesses; laundering |
+| 5 | `hire` | the crew is 2 | stats, ceilings, wages in Dirty, the nephew |
+| 6 | `collect` | `COLLECT` | the vault as the leash; Money flow |
+| 7 | `launder` | `DEPOSIT` | the instant first conversion; keeping running costs back |
+| 8 | `job` | `START_OP` | odds, experience, finishing a job with gold |
+| 9 | `upgrade` | `UPGRADE_RACKET` | tiers; Clean spent earns Rep |
+| 10 | `heat` | `TUTORIAL_ADVANCE` ("Got it") | heat, thresholds, the Ward Cop |
+| 11 | `tolya` | `PAY_TRIBUTE`, any choice | tribute; pay, haggle or refuse |
+| 12 | `report` | `RESOLVE_INBOX` | reports and their choices |
+| 13 | `city` | `TUTORIAL_ADVANCE` | the city runs without you; gold; goals |
 
-`TUTORIAL_SKIP` ends it at any point. Each step emits `TUTORIAL_STEP`.
+- **Tolya's visit.** Leaving step 10 sets Tolya's next visit `tutorial.tolyaAfterMinutes` game minutes away with `forceResult: 'tribute'`, so step 11 has a demand to answer. His visits carry on on their usual schedule from there.
+- Reports file from the first job on; incidents wait for the opening to end.
+- **Skip.** `TUTORIAL_SKIP` buys `opening.quickStart` through the ordinary `BUY_RACKET`, `BUY_FRONT` and `RECRUIT` handlers, skipping anything already owned and hiring only up to the quick start's crew size. Anything Clean can't cover is placed directly, so a skipped game is never worse off than the old fixed start. It doesn't count as an action.
+- With `tutorial.enabled` false, `newGame` applies the quick start itself.
+
+Each step emits `TUTORIAL_STEP`.
+
+## Act I goals
+
+([ADR 0035](../decisions/0035-guided-opening.md)) `goals.list`, checked by `checkGoals` after every action and at every reconcile boundary once the opening is over, so each is dated to the boundary where its condition first held. Each pays `goals.rewardGold` gold once (`GOAL_DONE { goalId, gold }`, a `goal` grant; [gold.md](gold.md)) and is kept in `state.goals.done`. Home lists them until all are done.
+
+| Goal | Done when |
+|---|---|
+| `secondDistrict` | you control at least two districts |
+| `factoryTier2` | a Tobacco Factory is at tier 2 or more |
+| `thirdCrew` | the crew is 3 |
+| `wardCop` | the Ward Cop is on the payroll |
+| `workFront` | a front's dial was changed, or a front has a capacity level |
+| `smuggleRun` | a smuggling job was sent |
+| `soldier` | anyone reached Soldier |
+| `actII` | Act II is open |
 
 ## Playtest stats
 
@@ -80,4 +106,4 @@ See [ADR 0010](../decisions/0010-starting-position.md).
 
 Sessions come from the app dispatching `SESSION_START` and `SESSION_END`.
 
-**Tests:** `tests/apply.test.ts` (the first-session path, reaching Act II), `tests/sim.test.ts` (act clear times for the bot).
+**Tests:** `tests/opening.test.ts` (an empty start; the scripted path in order and affordable, ending where Skip does; purchases out of order; skipping part-way; a skip short of Clean; the tutorial off), `tests/goals.test.ts` (each goal pays once; goals wait for the opening), `tests/apply.test.ts` (the first-session loop, reaching Act II), `tests/sim.test.ts` (act clear times for the bot).

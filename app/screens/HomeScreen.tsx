@@ -3,9 +3,10 @@ import { InboxCard } from '../components/InboxCard'
 import { MoneyFlow } from '../components/MoneyFlow'
 import { SupplyCard } from '../components/SupplyCard'
 import { TributeCard } from '../components/TributeCard'
-import { Bar, Btn, BtnRow, Card, colors, Row, Screen, Section, T } from '../components/ui'
+import { Bar, Btn, BtnRow, Card, colors, glyph, Row, Screen, Section, T } from '../components/ui'
 import { describeEvent } from '../eventText'
 import { fmt, fmtClock, fmtDuration, fmtRate } from '../format'
+import { goalsView } from '../goals'
 import { homeAlerts, sortedInbox } from '../inbox'
 import { ledgerView } from '../ledger'
 import { store } from '../store'
@@ -24,6 +25,7 @@ export function HomeScreen({ game, go }: ScreenProps) {
   const clearedActII = s.stats.actClearedAt[2]
   const cleared = clearedActII !== undefined
   const inbox = sortedInbox(s)
+  const goals = goalsView(s, c)
   const alerts = homeAlerts(game).filter((a) => a.key !== 'vault')
   const week = ledgerView(s, c, now).slice(-8)
   const recent = s.log
@@ -53,6 +55,18 @@ export function HomeScreen({ game, go }: ScreenProps) {
           {a.tab && a.cta && <Btn small title={a.cta} onPress={() => go(a.tab!)} />}
         </Card>
       ))}
+
+      {goals && (
+        <Section title="Act I goals" right={<T small muted>{`${glyph.gold}${c.goals.rewardGold} each`}</T>}>
+          <Card>
+            {goals.map((g) => (
+              <T key={g.id} small color={g.done ? colors.good : colors.text}>
+                {`${g.done ? '✓' : '·'} ${g.text}`}
+              </T>
+            ))}
+          </Card>
+        </Section>
+      )}
 
       <Section title="Vault">
         <Card>

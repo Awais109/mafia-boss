@@ -29,7 +29,7 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 **Sessions** (game time): Act I at 08:00, 10:30, 13:00, 15:30, 18:00, 20:30, 23:00, following the 2.5 h vault leash. Act II at 08:00, 13:00, 18:00, 22:00.
 
 **Each session, in order** (`playSession`):
-1. `SESSION_START`, skip the tutorial, `COLLECT`.
+1. `SESSION_START`; skip the tutorial, which buys the quick-start setup at the first session; `COLLECT`.
 2. Answer every pending inbox item with the affordable option of highest decision value (below). Perk choices go by a fixed preference: Earner, Ghost, Fixer, Steady, Mentor, Bargainer.
 3. Tolya: haggle when `haggleOdds` is at least `haggleAbove` (0.6) and Dirty covers the haggled price; otherwise pay the demand if affordable. It never refuses. Repair rackets below 75 condition.
 4. Set each front's dial: lay low while heat is above 55; push when the Dirty waiting to be washed (Dirty above the reserve, plus buffers) exceeds `pushBacklogHours` (6) of the front's base throughput and pushing keeps the heat target within 55; otherwise normal.
@@ -60,7 +60,7 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 - `SESSION_END` is recorded like any other action, so a bot's action list is a faithful log.
 
 `Recorder` rows:
-- `HourRow`: `hour`, `day`, `act`, `dirty`, `clean`, `vault`, `vaultCap`, `heat`, `heatTarget`, `exposure`, `control`, `yield`, `rep`, `influence`, `frontUtil`, `cleanEarned`, `dirtyEarned`, `stock`, `gold` (the CSV columns), plus `crew`, `opPartial`, `opResolved`, `statPoints`, `stockCap` and `packDemand` for the report.
+- `HourRow`: `hour`, `day`, `act`, `dirty`, `clean`, `vault`, `vaultCap`, `heat`, `heatTarget`, `exposure`, `control`, `yield`, `rep`, `influence`, `frontUtil`, `cleanEarned`, `dirtyEarned`, `stock`, `gold` (the CSV columns), plus `crew`, `opPartial`, `opResolved`, `statPoints`, `stockCap`, `packDemand` and `goals` for the report.
 - `SessionRow`: `day`, `act`, `actions`, `decisions` (successful `RESOLVE_INBOX`), `income` (Dirty earned since the last session ended), `dirtyAfter`, `vaultFillHrs`.
 - `Trace.startStats`: the stats when the run began. Per-run metrics subtract them, because the Debug Bot starts from a save with history.
 
@@ -86,6 +86,7 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 | Crew growth | `stats.statPointsGained` over the run ÷ mean crew size ÷ days |
 | Partial d1–2, d7–8 | Partial outcomes ÷ resolved jobs between the first and last hourly rows of those days (training never counts); blank when the run is too short. The plan's gate is d7–8 ≥ 40%: crew growth must not erase partials |
 | Gold | Bars spent on skips and rushes, and hours skipped, over the run |
+| Goals by day | Act I goals done by the end of each game day |
 | Cigarettes | `stats.shortageHours` over the run; the share of Act I hours with stock out and joints selling; the share of selling hours with stock at its cap; packs lost to the cap. The plan's gate is some shortage, under 10% of Act I |
 
 Clear times count from the game's `createdAt`, not the run's start, so the Debug Bot's report on an existing save reads like the CLI's. A clear that happened before the run is printed with `before this run` and not scored (`actClear1InRun`, `actClear2InRun`; [ADR 0022](decisions/0022-end-of-prototype-state.md)).

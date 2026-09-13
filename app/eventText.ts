@@ -1,5 +1,6 @@
 import { RANK_NAMES, type Config, type GameEvent, type PlayerState } from '../engine'
 import { colors, glyph } from './components/ui'
+import { GOAL_TEXT } from './goals'
 import { fmt } from './format'
 
 export type EventLine = { text: string; color?: string; quiet?: boolean }
@@ -87,6 +88,8 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
       return { text: `Skipped ${e.hours}h for ${glyph.gold}${e.bars}`, color: colors.gold }
     case 'OP_RUSHED':
       return { text: `Finished ${e.name ?? c.ops.list[e.opType].name} early for ${glyph.gold}${e.bars}`, color: colors.gold }
+    case 'GOAL_DONE':
+      return { text: `Goal done: ${GOAL_TEXT[e.goalId]} (+${glyph.gold}${e.gold})`, color: colors.gold }
     case 'REPORT_FILED':
       return { text: `Report in from ${c.ops.list[e.opType].name}: your call`, quiet: true }
     case 'INCIDENT_RAISED':

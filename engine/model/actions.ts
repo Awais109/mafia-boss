@@ -45,4 +45,4 @@ export type DebugAction =
 export type ActionType = Action['type']
 
 // Bookkeeping actions that shouldn't count toward "actions per session".
-export const PASSIVE_ACTIONS: readonly ActionType[] = ['SESSION_START', 'SESSION_END', 'TUTORIAL_ADVANCE']
+export const PASSIVE_ACTIONS: readonly ActionType[] = ['SESSION_START', 'SESSION_END', 'TUTORIAL_ADVANCE', 'TUTORIAL_SKIP']

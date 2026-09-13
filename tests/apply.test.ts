@@ -6,22 +6,23 @@ const find = <K extends GameEvent['type']>(events: GameEvent[], type: K) =>
   events.find((e): e is Extract<GameEvent, { type: K }> => e.type === type)
 
 describe('first session', () => {
-  it('collect → deposit converts instantly → spend → op → heat', () => {
+  it('collect → deposit converts instantly → spend → op', () => {
     let s = fresh()
-    expect(s.vault).toBe(30)
+    const onHand = s.dirty
+    const rep = s.reputation
+    expect(s.vault).toBe(config.vault.startingDirty)
     s = act(s, [{ type: 'COLLECT' }], T0)
-    expect(s.dirty).toBe(30)
+    expect(s.dirty).toBe(onHand + config.vault.startingDirty)
     expect(s.vault).toBe(0)
+    const clean = s.clean
     s = act(s, [{ type: 'DEPOSIT', frontId: s.fronts[0].id, amount: 30 }], T0)
-    expect(s.clean).toBeCloseTo(60 + 30 * 0.55)
+    expect(s.clean).toBeCloseTo(clean + 30 * config.fronts.types.currencyKiosk.rate)
     expect(s.fronts[0].buffer).toBe(0)
     s = act(s, [{ type: 'UPGRADE_RACKET', racketId: s.rackets[0].id }], T0)
     expect(s.rackets[0].tier).toBe(2)
-    expect(s.reputation).toBeCloseTo(formulas.racketUpgradeCost(config, 'kiosk', 1) * config.reputation.perCleanSpent)
+    expect(s.reputation - rep).toBeCloseTo(formulas.racketUpgradeCost(config, 'kiosk', 1) * config.reputation.perCleanSpent)
     s = act(s, [{ type: 'START_OP', opType: 'shakeDown', crewIds: [crewNamed(s, 'Vitya').id] }], T0)
-    expect(s.tutorial.step).toBe(4)
-    s = act(s, [{ type: 'TUTORIAL_ADVANCE' }], T0)
-    expect(s.tutorial.done).toBe(true)
+    expect(s.ops).toHaveLength(1)
   })
 })
 
@@ -67,7 +68,7 @@ describe('ops', () => {
     const resolved = find(r.events, 'OP_RESOLVED')
     expect(resolved).toBeDefined()
     expect(crewNamed(r.state, 'Vitya').status).toBe('idle')
-    expect(r.state.dirty).toBe(resolved!.dirty)
+    expect(r.state.dirty - s.dirty).toBe(resolved!.dirty)
   })
 
   it('three successful pressure ops flip a district and end its tribute', () => {
@@ -121,6 +122,7 @@ describe('crew', () => {
     const s = fresh()
     s.rackets = []
     s.vault = 0
+    s.dirty = 0
     const r = reconcile(s, T0 + 24 * H, config)
     expect(find(r.events, 'WAGES_MISSED')).toBeDefined()
     expect(r.state.stats.missedWages).toBe(1)
@@ -144,7 +146,7 @@ describe('crew', () => {
 
 describe('business kinds and premises lots', () => {
   it('premises go on free lots, one of each type per district', () => {
-    const s = act(fresh(), [{ type: 'DEBUG_GRANT', clean: 5000 }, { type: 'DEBUG_SET_REP', reputation: 30 }], T0)
+    const s = act(fresh(), [{ type: 'DEBUG_GRANT', clean: 5000 }, { type: 'DEBUG_SET_REP', reputation: config.rackets.types.videoSalon.unlockRep }], T0)
     // The starting factory already takes one of Zarechye's lots.
     expect(openLots(s, config, 'zarechye')).toBe(config.districts.list.zarechye.premisesLots - 1)
     expect(apply(s, { type: 'BUY_RACKET', racketType: 'tobaccoFactory', districtId: 'zarechye' }, T0, config).error).toMatch(/already have one/)
@@ -159,7 +161,7 @@ describe('business kinds and premises lots', () => {
     c.rackets.types.warehouse.maxInCity = 1
     const s = act(
       fresh('city', c),
-      [{ type: 'DEBUG_GRANT', clean: 5000 }, { type: 'DEBUG_SET_REP', reputation: 30 }, { type: 'BUY_RACKET', racketType: 'warehouse', districtId: 'zarechye' }],
+      [{ type: 'DEBUG_GRANT', clean: 5000 }, { type: 'DEBUG_SET_REP', reputation: config.rackets.types.videoSalon.unlockRep }, { type: 'BUY_RACKET', racketType: 'warehouse', districtId: 'zarechye' }],
       T0,
       c,
     )
@@ -196,6 +198,7 @@ describe('business kinds and premises lots', () => {
     broke.rackets = broke.rackets.filter((r) => r.type === 'tobaccoFactory') // nothing earns
     broke.crew = []
     broke.vault = 0
+    broke.dirty = 0
     const missed = reconcile(broke, nextDay, quiet)
     expect(find(missed.events, 'UPKEEP_MISSED')).toBeDefined()
     expect(missed.state.stats.missedUpkeep).toBe(1)
@@ -205,7 +208,7 @@ describe('business kinds and premises lots', () => {
 
 describe('the bigger Act I', () => {
   it('Station Square hosts the new businesses and falls to three pressure jobs', () => {
-    let s = act(fresh(), [{ type: 'DEBUG_GRANT', clean: 5000 }, { type: 'DEBUG_SET_REP', reputation: 60 }], T0)
+    let s = act(fresh(), [{ type: 'DEBUG_GRANT', clean: 5000 }, { type: 'DEBUG_SET_REP', reputation: config.rackets.types.slotHall.unlockRep }], T0)
     expect(apply(s, { type: 'BUY_RACKET', racketType: 'slotHall', districtId: 'stationSquare' }, T0, config).error).toBeUndefined()
     expect(apply(s, { type: 'BUY_RACKET', racketType: 'slotHall', districtId: 'zarechye' }, T0, config).error).toMatch(/fit/)
     for (const m of s.crew) Object.assign(m, { muscle: 95, nerve: 95 })
@@ -219,7 +222,7 @@ describe('the bigger Act I', () => {
   })
 
   it("Tolya's visits speed up with joints and rackets, not with premises", () => {
-    const s = act(fresh(), [{ type: 'DEBUG_GRANT', clean: 5000 }, { type: 'DEBUG_SET_REP', reputation: 30 }], T0)
+    const s = act(fresh(), [{ type: 'DEBUG_GRANT', clean: 5000 }, { type: 'DEBUG_SET_REP', reputation: config.rackets.types.videoSalon.unlockRep }], T0)
     const withPremises = act(
       s,
       [
@@ -290,7 +293,8 @@ describe('front modes and capacity', () => {
 
 describe('Tolya negotiation', () => {
   const withDemand = (nerve: number) => {
-    const s = act(fresh(), [{ type: 'DEBUG_GRANT', dirty: 100 }], T0)
+    const s = fresh()
+    s.dirty = 100
     s.rival.tolya.demand = 20
     for (const m of s.crew) m.nerve = nerve
     return s
@@ -330,7 +334,8 @@ describe('Tolya', () => {
   })
 
   it('paying clears the demand and improves disposition', () => {
-    const s = act(fresh(), [{ type: 'DEBUG_GRANT', dirty: 50 }], T0)
+    const s = fresh()
+    s.dirty = 50
     s.rival.tolya.demand = 10
     const paid = act(s, [{ type: 'PAY_TRIBUTE' }], T0)
     expect(paid.rival.tolya.demand).toBeNull()

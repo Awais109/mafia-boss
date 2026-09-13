@@ -259,6 +259,7 @@ function InspectPanel({ game }: { game: Snapshot }) {
     ['act / rep', `${s.act} / ${n(s.reputation)}`],
     ['inbox / offers', `${s.inbox.length} / ${s.offers.items.length} (refresh #${s.offers.refreshCount})`],
     ['gold / skipped', `${s.gold} / ${n(s.skippedMs / c.time.hourMs)} h`],
+    ['goals done', `${s.goals.done.length} / ${c.goals.list.length}`],
   ]
   return (
     <>

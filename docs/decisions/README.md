@@ -22,7 +22,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0007](0007-local-file-persistence.md) | Save, settings and a JSON-lines log on the local file system | Accepted |
 | [0008](0008-app-shell-and-ui.md) | Custom tab shell, no navigation library, one colour per resource | Accepted |
 | [0009](0009-districts-one-of-each-business.md) | Districts host one of each business they allow | Accepted |
-| [0010](0010-starting-position.md) | Start with a Kiosk and a Market Stall, 60 Clean, Vitya and nephew Dima | Accepted; a starting Tobacco Factory added by 0033 |
+| [0010](0010-starting-position.md) | Start with a Kiosk and a Market Stall, 60 Clean, Vitya and nephew Dima | Superseded by 0035 |
 | [0011](0011-heat-target-formula.md) | Heat target = 100 × exposure ÷ (exposure + control) | Accepted |
 | [0012](0012-op-resolution.md) | Jobs score the team's best stats plus a team bonus, with uniform noise | Accepted |
 | [0013](0013-front-suspicion-smoothing.md) | Front suspicion reads smoothed utilization | Accepted |
@@ -47,6 +47,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0032](0032-supply-chain.md) | One city-wide cigarette stock: factories make, joints sell, warehouses keep | Accepted |
 | [0033](0033-bigger-act-i.md) | A bigger Act I: four new businesses, Station Square, a third crew slot | Accepted |
 | [0034](0034-gold-bars.md) | Gold bars buy time and nothing else: skip ahead, finish now | Accepted |
+| [0035](0035-guided-opening.md) | A guided opening: buy the starting setup yourself, then Act I goals | Accepted |
 
 ## Template
 

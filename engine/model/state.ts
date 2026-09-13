@@ -3,6 +3,7 @@ import type {
   Controller,
   DistrictId,
   FrontMode,
+  GoalId,
   FrontType,
   OfficialId,
   OpConfig,
@@ -16,7 +17,7 @@ import type {
 } from '../config/schema'
 import type { GameEvent } from './events'
 
-export const SCHEMA_VERSION = 5
+export const SCHEMA_VERSION = 6
 export const LOG_CAP = 200
 export const LEDGER_ROWS = 8 // 7 closed days plus today's opening snapshot
 
@@ -231,6 +232,7 @@ export type PlayerState = {
   influenceToday: { day: number; amount: number } // ops Influence, for the daily cap
   rival: { tolya: TolyaState }
   tutorial: { step: number; done: boolean }
+  goals: { done: GoalId[] } // Act I goals completed (ADR 0035)
   firstConversionDone: boolean
 
   inbox: InboxItem[] // pending decisions
