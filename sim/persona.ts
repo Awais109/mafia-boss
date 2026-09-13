@@ -21,8 +21,10 @@ import {
   outcomeOdds,
   premisesBlocked,
   rushCost,
+  surplusRoomToday,
   RACKET_TYPES,
   STATS,
+  zhannaDeals,
   type Action,
   type Config,
   type CrewMember,
@@ -173,6 +175,15 @@ export function playSession(
     }
   }
 
+  // Zhanna buys the surplus when stock sits near its cap and the factories outrun the joints (plan (p)).
+  {
+    const sup = d().supply
+    if (zhannaDeals(state, c) && sup.madePerHr > sup.demandPerHr && sup.stock >= 0.9 * sup.cap) {
+      const packs = Math.min(surplusRoomToday(state, c, t), Math.floor(sup.stock - 0.7 * sup.cap))
+      if (packs >= 1) tryAct({ type: 'SELL_SURPLUS', packs })
+    }
+  }
+
   // Front dial: lie low when hot; push through a backlog when the heat budget allows it.
   {
     const now = d()
@@ -265,6 +276,15 @@ export function playSession(
     const cost = (c.ops.list[type].costDirty ?? 0) * state.act
     if (state.dirty - cost < reserve) continue
     tryAct({ type: 'START_OP', opType: type, crewIds: [m.id] })
+  }
+
+  // A lot from Zhanna when stock would run out soon and Dirty covers it above the reserve (plan (p)).
+  {
+    const now = d()
+    const price = formulas.shipmentPrice(c, state.rival.zhanna.disposition)
+    const reserve = (now.wagesPerHr + now.upkeepPerHr) * p.reserveWageHours + now.costs.bribe
+    const ready = zhannaDeals(state, c) && state.rival.zhanna.nextShipmentAt <= t
+    if (ready && now.supply.hoursToEmpty < p.stockReserveHours && state.dirty - price >= reserve) tryAct({ type: 'BUY_SHIPMENT' })
   }
 
   // 7 (before spending, so it gets first claim on Clean). Buy a district when it's affordable and its
@@ -367,6 +387,14 @@ function canBuyControl(state: PlayerState, c: Config, d: Derived, t: number): bo
   )
 }
 
+// The Influence multiplier a premises of this type would get in this district (the Union office in Sovietsky).
+function influenceMultIf(c: Config, id: DistrictId, type: RacketType): number {
+  return c.rackets.synergies.reduce(
+    (m, syn) => (syn.a === type && syn.effect.influenceMult !== undefined && (syn.district === undefined || syn.district === id) ? m * syn.effect.influenceMult : m),
+    1,
+  )
+}
+
 type SpendOption = { action: Action; cost: number; gain: number; heatGain: number }
 
 // What the spend loop would buy next, affordable or not: a smuggling run won't eat into it.
@@ -406,6 +434,12 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
 
   const sup = d.supply
   const atStake = d.perRacket.reduce((sum, r) => sum + r.atStake, 0)
+  const v = valuation(state, c, p)
+  // Vault hours past the act's target are worth the overnight loss they save, up to a ten-hour leash (plan (k)).
+  const leashRoom = Math.max(0, 10 - c.vault.targetHoursByAct[state.act] - d.stashHours)
+  const stashValue = (extraHours: number) => (Math.min(Math.max(0, extraHours), leashRoom) * d.yieldPerHr) / 24
+  const yieldShare = (id: DistrictId) =>
+    d.yieldPerHr > 0 ? d.perRacket.reduce((sum, rd, i) => (rd.kind !== 'premises' && state.rackets[i].districtId === id ? sum + rd.yield : sum), 0) / d.yieldPerHr : 0
   // A casual player adds output when the Supply card warns, not days ahead.
   const urgent = sup.hoursToEmpty < p.supplyHorizonHours ? 1 : 0
   const perPack = packValue(d)
@@ -430,6 +464,9 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
           gain += synergyYieldIf(state, c, d, id, type)
         }
         if (rt.capPerTier) gain += surplusValue(formulas.warehouseCapacity(c, type, 1))
+        // A stash where the money is: raids are rare, so its shield only breaks ties between lots.
+        if (rt.leashHoursPerTier) gain += stashValue(rt.leashHoursPerTier - d.stashHours) + yieldShare(id) * (rt.shieldPerTier ?? 0) * d.yieldPerHr * 0.02
+        if (rt.influencePerHrPerTier) gain += rt.influencePerHrPerTier * influenceMultIf(c, id, type) * v.influenceValue
         if (!best || gain > best.gain) best = { id, gain }
       }
       if (best && best.gain > 0) {
@@ -473,6 +510,8 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
         gain += urgent * 0.6 * atStake * (shortfall(sup.madePerHr, sup.demandPerHr) - shortfall(sup.madePerHr + extra, sup.demandPerHr))
       }
       if (rt.capPerTier) gain += surplusValue(rt.capPerTier * cond)
+      if (rt.leashHoursPerTier) gain += stashValue(rt.leashHoursPerTier * (r.tier + 1) * cond - d.stashHours)
+      if (rt.influencePerHrPerTier) gain += rt.influencePerHrPerTier * cond * influenceMultIf(c, r.districtId, r.type) * v.influenceValue
       if (gain > 0) {
         out.push({ action: { type: 'UPGRADE_RACKET', racketId: r.id }, cost: rd.upgradeCost, gain, heatGain: rd.exposure * (c.rackets.tierHeatMult - 1) })
       }

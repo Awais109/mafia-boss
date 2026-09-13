@@ -3,7 +3,7 @@ import { emit, type Ctx } from '../core/ctx'
 import { derive } from '../core/derive'
 import { tributeDemand } from '../core/formulas'
 import type { Rand } from '../core/rng'
-import { hoursToMs } from '../core/time'
+import { dayIndex, hoursToMs } from '../core/time'
 import type { CrewMember, PlayerState, Racket } from '../model/state'
 import { effectiveStat } from './crew'
 
@@ -100,6 +100,26 @@ export function haggle(state: PlayerState, ctx: Ctx, t: number, m: CrewMember): 
   return { won, paid: won ? price : 0 }
 }
 
+// Zhanna (ADR 0036): she trades from Act II, when the Port opens.
+export function changeZhanna(state: PlayerState, delta: number): void {
+  const z = state.rival.zhanna
+  z.disposition = Math.max(-100, Math.min(100, z.disposition + delta))
+}
+
+export const zhannaHostile = (state: PlayerState, c: Config): boolean => state.rival.zhanna.disposition < c.rivals.zhanna.hostileBelow
+
+export const zhannaDeals = (state: PlayerState, c: Config): boolean => c.districts.list.portQuarter.act <= state.act
+
+export const zhannaHoldsPort = (state: PlayerState, c: Config): boolean =>
+  zhannaDeals(state, c) && state.districts.find((d) => d.id === 'portQuarter')?.controller === 'zhanna'
+
+// Packs she'll still buy today.
+export function surplusRoomToday(state: PlayerState, c: Config, t: number): number {
+  const today = state.rival.zhanna.surplusToday
+  const sold = today.day === dayIndex(c, t) ? today.packs : 0
+  return Math.max(0, c.rivals.zhanna.surplus.maxPerDay - sold)
+}
+
 export function tolyaTick(state: PlayerState, ctx: Ctx, t: number): void {
   const { c } = ctx
   const cfg = c.rivals.tolya
@@ -116,7 +136,7 @@ export function tolyaTick(state: PlayerState, ctx: Ctx, t: number): void {
     const racket = damageRandomRacket(state, rand, cfg.conditionHit)
     emit(ctx, t, { type: 'TOLYA_TICK', result: 'conditionHit', racketId: racket?.id, amount: cfg.conditionHit, hostile })
   } else if (roll < cfg.pConditionHit + cfg.pTribute || forced === 'tribute') {
-    const amount = tributeDemand(c, derive(state, c).vaultCap)
+    const amount = tributeDemand(c, derive(state, c).vaultCapBase) // a Stash House doesn't raise his price
     tol.demand = amount
     emit(ctx, t, { type: 'TOLYA_TICK', result: 'tribute', amount, hostile })
   } else {

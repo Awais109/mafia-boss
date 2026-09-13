@@ -22,7 +22,7 @@ export function checkActs(state: PlayerState, ctx: Ctx, t: number): void {
     state.stats.actClearedAt[1] = t
     emit(ctx, t, { type: 'ACT_UNLOCKED', act: 2 })
     grantGold(state, ctx, t, ctx.c.gold.perActUnlocked[2], 'act')
-    // Zhanna is a static presence until the supply chain exists (plan M4): log only.
+    // Zhanna's trade opens with the Port (ADR 0036).
     emit(ctx, t, { type: 'NOTE', text: 'Zhanna runs the Port Quarter. Her people watch every crate that moves.' })
   }
   if (state.act === 2 && state.reputation >= th[3] && state.stats.actClearedAt[2] === undefined) {

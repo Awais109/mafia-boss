@@ -1,6 +1,7 @@
 import { View } from 'react-native'
 import { DISTRICT_IDS, tolyaHostile, tolyaIntervalHours, type RacketType } from '../../engine'
 import { TributeCard } from '../components/TributeCard'
+import { ZhannaCard } from '../components/ZhannaCard'
 import { Btn, BtnRow, Card, colors, Row, Screen, Section, T, Tag } from '../components/ui'
 import { fmt, fmtDuration, fmtRate, pct } from '../format'
 import { store } from '../store'
@@ -82,12 +83,7 @@ export function TurfScreen({ game, go }: ScreenProps) {
 
       {s.act >= 2 && (
         <Section title="Zhanna">
-          <Card>
-            <T small muted>
-              Runs the Port Quarter and every crate that moves through it. Her supply chain isn’t in this prototype; for now she just takes{' '}
-              {pct(c.districts.list.portQuarter.tribute)} of what you run on her docks.
-            </T>
-          </Card>
+          <ZhannaCard game={game} />
         </Section>
       )}
     </Screen>

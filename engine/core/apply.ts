@@ -11,14 +11,15 @@ import { opConfigAt, opMinutesFor, opUnlocked, resolveOp } from '../systems/ops'
 import { checkGoals } from '../systems/goals'
 import { grantGold, rushCost, skipCost } from '../systems/gold'
 import { checkActs, spendClean } from '../systems/reputation'
-import { bestHaggler, canHaggle, changeDisposition, haggle, refuseDemand, tolyaTick } from '../systems/rivals'
+import { bestHaggler, canHaggle, changeDisposition, changeZhanna, haggle, refuseDemand, surplusRoomToday, tolyaTick, zhannaDeals } from '../systems/rivals'
+import { addStock } from '../systems/supply'
 import { tutorialOnAction } from '../systems/tutorial'
 import { clone, emit, newId, type Ctx } from './ctx'
 import { derive } from './derive'
 import * as F from './formulas'
 import { advance, appendLog } from './reconcile'
 import { makeRng, type RngFactory } from './rng'
-import { hoursToMs, minutesToMs, shiftTimes } from './time'
+import { dayIndex, hoursToMs, minutesToMs, shiftTimes } from './time'
 
 export type ApplyResult = { state: PlayerState; events: GameEvent[]; error?: string }
 
@@ -213,6 +214,8 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
         state.clean -= cfg.costClean
         state.stats.smugglingPaid += cfg.costClean
       }
+      // Every run past her Port sours Zhanna (ADR 0036).
+      if (cfg.cigarettes && zhannaDeals(state, c)) changeZhanna(state, c.rivals.zhanna.dispositionPerSmuggle)
       const minutes = opMinutesFor(c, cfg, team as CrewMember[])
       const opId = newId(state, 'op')
       state.ops.push({
@@ -441,6 +444,44 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       // The roll it was always going to get: resolution is seeded by the job's id, not the time.
       op.completesAt = t
       resolveOp(state, ctx, op, t)
+      return null
+    }
+
+    case 'BUY_SHIPMENT': {
+      const z = state.rival.zhanna
+      const zc = c.rivals.zhanna
+      if (!zhannaDeals(state, c)) return 'Zhanna deals from Act II'
+      if (z.nextShipmentAt > t) return 'Her next lot isn’t in yet'
+      const price = F.shipmentPrice(c, z.disposition)
+      if (state.dirty < price - EPS) return 'Not enough Dirty'
+      state.dirty -= price
+      state.stats.shipmentsPaid += price
+      const packs = addStock(state, derive(state, c).supply.cap, zc.shipment.cigarettes)
+      z.shipmentsBought++
+      z.nextShipmentAt = t + hoursToMs(c, zc.shipment.cooldownHours)
+      changeZhanna(state, zc.dispositionPerShipment)
+      emit(ctx, t, { type: 'SHIPMENT_BOUGHT', packs, cost: price })
+      return null
+    }
+
+    case 'SELL_SURPLUS': {
+      const z = state.rival.zhanna
+      const zc = c.rivals.zhanna
+      if (!zhannaDeals(state, c)) return 'Zhanna deals from Act II'
+      if (!Number.isInteger(a.packs) || a.packs < 1) return 'Sell whole packs'
+      const room = surplusRoomToday(state, c, t)
+      if (room <= 0) return 'She’s bought all she wants today'
+      if (a.packs > room) return `She’ll take ${room} more today`
+      if (state.inventory.cigarettes < a.packs - EPS) return 'Not that many in stock'
+      const day = dayIndex(c, t)
+      const before = z.surplusToday.day === day ? z.surplusToday.packs : 0
+      state.inventory.cigarettes -= a.packs
+      const dirty = a.packs * zc.surplus.pricePerPack
+      state.dirty += dirty
+      state.stats.surplusSold += dirty
+      z.surplusToday = { day, packs: before + a.packs }
+      changeZhanna(state, zc.surplus.dispositionPer10 * (Math.floor((before + a.packs) / 10) - Math.floor(before / 10)))
+      emit(ctx, t, { type: 'SURPLUS_SOLD', packs: a.packs, dirty })
       return null
     }
 

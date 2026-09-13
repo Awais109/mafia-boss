@@ -1,4 +1,4 @@
-import { dayMs, RACKET_TYPES, type RacketType } from '../engine'
+import { dayMs, derive, RACKET_TYPES, type RacketType } from '../engine'
 import type { Trace } from './driver'
 
 // Summary table against the dev manual §3 targets, plus the hourly CSV.
@@ -44,6 +44,7 @@ export type Summary = {
   packsLostToCap: number
   goldSpent: number
   goalsByDay: number[] // Act I goals done by the end of each day
+  stashHours: number // vault hours the best Stash House adds at the end of the run
   hoursSkipped: number
   checks: Check[]
 }
@@ -57,6 +58,8 @@ const ABBREV: Record<RacketType, string> = {
   slotHall: 'SL',
   tobaccoFactory: 'TF',
   warehouse: 'WH',
+  stashHouse: 'ST',
+  unionOffice: 'UN',
   autoShop: 'A',
   cafe: 'C',
   bathhouse: 'B',
@@ -152,6 +155,7 @@ export function summarize(trace: Trace): Summary {
     shortagePctAct1: act1Hours.length ? act1Hours.filter((h) => h.packDemand > 0 && h.stock <= 1e-9).length / act1Hours.length : NaN,
     stockIdlePct: selling.length ? selling.filter((h) => h.stock >= h.stockCap - 1e-6).length / selling.length : NaN,
     packsLostToCap: delta((x) => x.packsLostToCap),
+    stashHours: derive(final, c).stashHours,
     goldSpent: delta((x) => (x.gold ? x.gold.spentSkip + x.gold.spentRush : 0)),
     goalsByDay: Array.from({ length: days }, (_, i) => Math.max(0, ...hours.filter((h) => h.day === i + 1).map((h) => h.goals ?? 0))),
     hoursSkipped: delta((x) => x.gold?.hoursSkipped),
@@ -193,7 +197,7 @@ export function formatSummary(s: Summary): string {
     `${pad('Raids:', 18)}${pad(String(s.raids), 8)}Arrests: ${pad(String(s.arrests), 4)}Missed wages: ${s.missedWages}  Walkouts: ${s.walkouts}   ${ok('Raids')}${ok('Missed wages')}`,
     `${pad('Heat mean:', 18)}${pad(String(Math.round(s.heatMean)), 8)}min ${Math.round(s.heatMin)}  max ${Math.round(s.heatMax)}   hours ≥40: ${s.hoursAbove40}   ${ok('Heat mean')}`,
     `${pad('Front util:', 18)}${pad(pc(s.frontUtil), 8)}Dirty idle @ session end: ${pc(s.dirtyIdlePct)}   ${ok('Front util')}${ok('Dirty idle')}`,
-    `${pad('Vault fill (h):', 18)}${s.vaultFillByDay.map((v, i) => `d${i + 1} ${f1(v)}`).join('  ')}   ${ok('Vault fill Act I')}${ok('Vault fill Act II')}`,
+    `${pad('Vault fill (h):', 18)}${s.vaultFillByDay.map((v, i) => `d${i + 1} ${f1(v)}`).join('  ')}   ${ok('Vault fill Act I')}${ok('Vault fill Act II')}${s.stashHours > 0 ? `   (+${f1(s.stashHours)} h from a Stash House)` : ''}`,
     `${pad('Op outcomes:', 18)}full ${pc(s.opOutcomes.full)}  partial ${pc(s.opOutcomes.partial)}  fail ${pc(s.opOutcomes.fail)}  (${s.opCount} ops)   ${ok('Partial')}`,
     `${pad('Clean/hr by day:', 18)}${s.cleanPerHrByDay.map((v, i) => `d${i + 1} ${Math.round(v)}`).join('  ')}`,
     `${pad('Sessions:', 18)}${pad(String(s.sessions), 8)}actions/session: ${f1(s.actionsPerSession)}  decisions/session: ${f1(s.decisionsPerSession)}`,

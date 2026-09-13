@@ -36,11 +36,14 @@ export const defaults: Config = {
       stealth: { yieldMult: 1.0, exposureMult: 0.8 },
     },
     // Premises (ADR 0031) tier up to maxTier in any act; a missed upkeep day knocks this off each one.
-    premises: { maxTier: 5, missedUpkeepConditionHit: 20 },
+    premises: { maxTier: 5, missedUpkeepConditionHit: 20, maxShield: 0.8 }, // stash houses keep back at most this share of a raid
     // Side-by-side bonuses, evaluated per district (plan (m)).
     synergies: [
       { id: 'factoryJoints', a: 'tobaccoFactory', b: 'joints', effect: { yieldMult: 1.15, servedFirst: true } },
       { id: 'warehouseFactory', a: 'warehouse', b: 'tobaccoFactory', effect: { upkeepMultOf: { warehouse: 0.5 } } },
+      // Act II (ADR 0037)
+      { id: 'stashWarehouse', a: 'stashHouse', b: 'warehouse', effect: { upkeepMultOf: { warehouse: 0 } } },
+      { id: 'unionSovietsky', a: 'unionOffice', district: 'sovietsky', effect: { influenceMult: 1.5 } },
     ],
     // Every non-zero unlock sits 38 above its M4 value: buying the opening's setup earns 38 Rep (ADR 0035).
     types: {
@@ -66,6 +69,15 @@ export const defaults: Config = {
       bathhouse: { name: 'Bathhouse', act: 2, kind: 'joint', baseYield: 24, baseHeat: 3.2, unlockRep: 288, sellsPerHr: 1.6, cigaretteShare: 0.3 },
       petrol: { name: 'Petrol Station', act: 2, kind: 'racket', baseYield: 34, baseHeat: 4.5, unlockRep: 368 },
       cargoBay: { name: 'Cargo Bay', act: 2, kind: 'racket', baseYield: 55, baseHeat: 8.0, unlockRep: 458 },
+      // Act II premises (ADR 0037): the stash lengthens the leash and hides part of a raid; the union makes Influence.
+      stashHouse: {
+        name: 'Stash House', act: 2, kind: 'premises', baseYield: 0, baseHeat: 1.0, unlockRep: 178,
+        purchase: 200, upkeepPerHr: 1, upkeepTierMult: 1.2, leashHoursPerTier: 1.5, shieldPerTier: 0.16,
+      },
+      unionOffice: {
+        name: 'Union Office', act: 2, kind: 'premises', baseYield: 0, baseHeat: 0.5, unlockRep: 238, maxInCity: 1,
+        purchase: 250, upkeepPerHr: 1.5, upkeepTierMult: 1.2, influencePerHrPerTier: 1 / 60,
+      },
     },
   },
 
@@ -347,6 +359,17 @@ export const defaults: Config = {
       hostileTickMult: 0.5,
       // Pay, haggle or refuse (ADR 0029). One haggle per demand: best idle Nerve + U(±noise) vs diff.
       haggle: { diff: 45, noise: 15, pricePct: 0.5, dispositionOnWin: 5, dispositionOnInsult: -10 },
+    },
+    // From Act II (ADR 0036): lots of cigarettes for Dirty, a buyer for the surplus, eyes on every crate at the Port.
+    zhanna: {
+      shipment: { cigarettes: 25, basePrice: 40, pricePerDisposition: -0.3, priceClamp: [0.5, 1.5], cooldownHours: 6, hostileMarkup: 1.5 },
+      surplus: { pricePerPack: 2, maxPerDay: 30, dispositionPer10: 1 },
+      dispositionPerShipment: 5,
+      dispositionPerSmuggle: -5,
+      dispositionOnBuyout: -10,
+      dispositionOnFlip: -25,
+      hostileBelow: -30,
+      seizureDiff: 10,
     },
   },
 

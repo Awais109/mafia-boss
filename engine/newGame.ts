@@ -53,6 +53,7 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
     influenceToday: { day: dayIndex(c, now), amount: 0 },
     rival: {
       tolya: { disposition: 0, nextTickAt: now + hoursToMs(c, c.rivals.tolya.tickHours), tickCount: 0, demand: null, haggledTick: null },
+      zhanna: { disposition: 0, nextShipmentAt: now, shipmentsBought: 0, surplusToday: { day: dayIndex(c, now), packs: 0 } },
     },
     tutorial: { step: 0, done: false },
     goals: { done: [] },

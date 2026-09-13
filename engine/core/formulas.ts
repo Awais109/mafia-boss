@@ -125,8 +125,17 @@ export function convergeHeat(heat: number, target: number, hours: number, perHr:
   return target + (heat - target) * Math.pow(1 - perHr, hours)
 }
 
-export function vaultCap(c: Config, yieldPerHr: number, act: Act): number {
-  return Math.max(c.vault.floorCap, yieldPerHr * c.vault.targetHoursByAct[act])
+// The vault holds `targetHoursByAct` hours of yield, plus any hours a Stash House adds (ADR 0037).
+export function vaultCap(c: Config, yieldPerHr: number, act: Act, extraHours = 0): number {
+  return Math.max(c.vault.floorCap, yieldPerHr * (c.vault.targetHoursByAct[act] + extraHours))
+}
+
+// What Zhanna asks for a lot (ADR 0036): cheaper the more she likes you, dearer while she's hostile.
+export function shipmentPrice(c: Config, disposition: number): number {
+  const z = c.rivals.zhanna
+  const [lo, hi] = z.shipment.priceClamp
+  const mult = Math.min(hi, Math.max(lo, 1 + (z.shipment.pricePerDisposition * disposition) / 100))
+  return Math.round(z.shipment.basePrice * mult * (disposition < z.hostileBelow ? z.shipment.hostileMarkup : 1))
 }
 
 export function bribeCost(c: Config, exposure: number): number {

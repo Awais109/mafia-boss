@@ -31,6 +31,9 @@ function premisesEffect(c: Config, type: RacketType, tier: number): string {
   return [
     rt.makesPerHr ? `makes ${glyph.packs}${fmtRate(formulas.factoryOutput(c, type, tier))}` : '',
     rt.capPerTier ? `holds +${glyph.packs}${fmt(formulas.warehouseCapacity(c, type, tier))}` : '',
+    rt.leashHoursPerTier ? `vault holds +${fmt(rt.leashHoursPerTier * tier)}h` : '',
+    rt.shieldPerTier ? `hides ${pct(rt.shieldPerTier * tier)} of this district's share of a raid` : '',
+    rt.influencePerHrPerTier ? `${glyph.influence}${fmt(rt.influencePerHrPerTier * tier * 24)} a day` : '',
   ]
     .filter(Boolean)
     .join(', ')

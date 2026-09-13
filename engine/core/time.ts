@@ -32,6 +32,7 @@ export function shiftTimes(state: PlayerState, delta: number): PlayerState {
   s.bribeUntil = shift(s.bribeUntil)
   s.recruitPool.refreshAt = shift(s.recruitPool.refreshAt)
   s.rival.tolya.nextTickAt = shift(s.rival.tolya.nextTickAt)
+  s.rival.zhanna.nextShipmentAt = shift(s.rival.zhanna.nextShipmentAt)
   for (const op of s.ops) {
     op.startedAt = shift(op.startedAt)
     op.completesAt = shift(op.completesAt)

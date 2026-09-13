@@ -30,9 +30,11 @@ function busy(): PlayerState {
       { type: 'DEBUG_FORCE_INCIDENT', incidentType: 'shopkeeperLead' },
       { type: 'BUY_OFFICIAL', officialId: 'wardCop' },
       { type: 'BRIBE' },
-      { type: 'DEBUG_SET_REP', reputation: config.reputation.actThresholds[2] },
+      { type: 'DEBUG_SET_REP', reputation: config.rackets.types.unionOffice.unlockRep },
       { type: 'BUY_FRONT', frontType: 'restaurant' },
       { type: 'BUY_RACKET', racketType: 'warehouse', districtId: 'stationSquare' },
+      { type: 'BUY_RACKET', racketType: 'stashHouse', districtId: 'kioskRow' }, // a longer vault leash
+      { type: 'BUY_RACKET', racketType: 'unionOffice', districtId: 'sovietsky' }, // Influence outside the daily cap
       { type: 'BUY_CREW_SLOT' },
       { type: 'DEBUG_REFRESH_POOL' }, // the opening already hired from the first pool
     ],

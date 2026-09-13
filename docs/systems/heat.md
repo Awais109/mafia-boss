@@ -34,10 +34,10 @@ Checked at every whole game hour (`heatHourBoundary`). The rolls are seeded by h
 | Heat | Effect | Events |
 |---|---|---|
 | ≥ `inspectThreshold` | `state.inspected` is set; every racket's yield × `inspectYieldMult` until an hour check finds heat below the threshold | `INSPECTION_STARTED`, `INSPECTION_ENDED` |
-| ≥ `raidThreshold` | `raidChancePerHr` chance: police seize `floor(vault × raidSeizePct)` from the vault (not Dirty) | `RAID` |
+| ≥ `raidThreshold` | `raidChancePerHr` chance: police seize `floor(vault × raidSeizePct × (1 − raidShield))` from the vault (not Dirty); stash houses keep back the rest ([economy.md](economy.md#premises)) | `RAID { heat, seized, shielded }` |
 | ≥ `arrestThreshold` | `arrestChancePerHr` chance: a random idle crew member or enforcer is jailed for `arrestHours` | `ARREST`, later `RELEASED` |
 
-Raids update `stats.raids`, `stats.seized` and `stats.firstRaidAt`; arrests update `stats.arrests`.
+Raids update `stats.raids`, `stats.seized` and `stats.firstRaidAt`; `RAID.shielded` is what stash houses kept back (`Derived.raidShield`, at most `rackets.premises.maxShield`). Arrests update `stats.arrests`.
 
 ## Bribes
 
@@ -61,8 +61,9 @@ Permanent control, bought with Influence. `officials.list` has a Ward Cop (Act I
 
 It records `stats.officialBoughtAt` and emits `OFFICIAL_BOUGHT`.
 
-**Influence** comes from two places:
+**Influence** comes from three places:
 - Each owned official produces `officials.influencePerHrEach` per hour, continuously.
+- A Union Office (Act II) makes `influencePerHrPerTier × tier` per hour, continuously, outside the jobs' daily cap ([economy.md](economy.md#premises)).
 - Influence jobs pay it too, up to `ops.influenceDailyCap` per game day ([ops.md](ops.md)).
 
 The game starts with `vault.startingInfluence`.
@@ -71,4 +72,4 @@ The game starts with `vault.startingInfluence`.
 
 `DEBUG_SET_HEAT { heat }`, `DEBUG_FORCE_RAID`, `DEBUG_FORCE_ARREST`.
 
-**Tests:** `tests/apply.test.ts` (bribe duration, heat convergence, official cooldown), `tests/reconcile.test.ts` (seeded raids and arrests are deterministic), `tests/sim.test.ts` (bot heat stays 25–35 with at most one raid).
+**Tests:** `tests/apply.test.ts` (bribe duration, heat convergence, official cooldown, a Stash House keeps back part of a raid), `tests/reconcile.test.ts` (seeded raids and arrests are deterministic), `tests/sim.test.ts` (bot heat stays 25–35 with at most one raid).

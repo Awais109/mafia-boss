@@ -26,7 +26,7 @@ export {
 } from './systems/ops'
 export { jobXp, rankFor, RANK_NAMES } from './systems/experience'
 export { rushCost, skipCost } from './systems/gold'
-export { bestHaggler, canHaggle, haggleOdds } from './systems/rivals'
+export { bestHaggler, canHaggle, haggleOdds, surplusRoomToday, zhannaDeals, zhannaHoldsPort, zhannaHostile } from './systems/rivals'
 export { canAffordEffects, incidentNeedHolds } from './systems/inbox'
 export { ledgerDays, type LedgerDay } from './systems/ledger'
 export { tolyaHostile, tolyaIntervalHours } from './systems/rivals'

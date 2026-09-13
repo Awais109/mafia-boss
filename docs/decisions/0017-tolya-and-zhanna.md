@@ -1,6 +1,6 @@
 # 0017. Tolya's visits and disposition; Zhanna is tribute only
 
-- **Status:** Accepted
+- **Status:** Accepted; "Zhanna is tribute only" superseded by [0036](0036-zhanna-and-the-port.md)
 - **Date:** 2026-09-12
 
 ## Context

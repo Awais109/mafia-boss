@@ -59,12 +59,13 @@ The plan and manual leave some mechanics open. These are the choices made here; 
 - **Act II opens at 143 Rep and ends at 610.** Act III is a stub.
 - **Tolya** harasses all game: condition hits, tribute demands you can pay, haggle once with your best talker, or refuse (unpaid by his next visit counts as refused), and more frequent visits once hostile.
 - **Crew grow with work**: jobs, training and enforcing earn XP that raises stats up to a ceiling; promotions to Soldier and Made each offer a perk.
-- **Cigarettes are the one product**: tobacco factories make them, joints need them for part of their income, warehouses store the surplus, and smuggling runs bring in a batch for Clean.
+- **Cigarettes are the one product**: tobacco factories make them, joints need them for part of their income, warehouses store the surplus, smuggling runs bring in a batch for Clean, and from Act II Zhanna sells lots for Dirty and buys the surplus.
+- **Act II premises**: a Stash House lengthens the vault leash and hides part of a raid, in proportion to the yield in its district; a Union Office makes Influence.
 - **Gold bars buy time and nothing else**: 10 to start, 5 more when Act II opens and one for each Act I goal; a bar skips an hour ahead or finishes a job now. Rewarded ads and purchases aren't built.
 - **Fronts have a dial** (push, normal, lay low) and a capacity upgrade beside the rate upgrade; the upgrade to tier 3 asks for greed or stealth.
 
 ## Status
 
-- Engine, sim, and screens cover the systems in plan milestones M0–M5 (rackets, fronts, heat, crew and ops, districts, Tolya, officials, tutorial, debug tools, logging and export), playable through Act II, plus the expansion's session texture (inbox, opportunities board, ledger), its decisions (specialization, front modes, haggling, crew experience), and the tobacco chain with a bigger Act I (premises, cigarettes, smuggling, Station Square), gold bars, and the guided opening with Act I goals. The original spec v1.1 wasn't available, so where the plan left mechanics open, the choices above fill them.
+- Engine, sim, and screens cover the systems in plan milestones M0–M5 (rackets, fronts, heat, crew and ops, districts, Tolya, officials, tutorial, debug tools, logging and export), playable through Act II, plus the expansion's session texture (inbox, opportunities board, ledger), its decisions (specialization, front modes, haggling, crew experience), and the tobacco chain with a bigger Act I (premises, cigarettes, smuggling, Station Square), gold bars, the guided opening with Act I goals, and the Act II additions (Stash House, Union Office, Zhanna's trade). The original spec v1.1 wasn't available, so where the plan left mechanics open, the choices above fill them.
 - Verified: typecheck, lint, the test suite, and a Metro bundle for Android (`npx expo export --platform android`). The app has **not** been launched on a device or simulator yet.
-- Sim meets 8 of 11 dev manual targets on the mean over 10 seeds. Front utilization (~57%), Dirty left unconverted (~63%) and the wage share (~5%) are open; see [TUNING.md](TUNING.md).
+- Sim meets 8 of 11 dev manual targets on the mean over 10 seeds. Front utilization (~59%), Dirty left unconverted (~68%) and the wage share (~4%) are open; see [TUNING.md](TUNING.md).

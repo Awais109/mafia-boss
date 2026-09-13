@@ -2,8 +2,8 @@
 
 The city is five districts. Rivals take a cut of what you run on their turf until you buy them out or push them out, and Tolya, the old boss, keeps sending his boys around.
 
-**Code:** `engine/systems/districts.ts` (`getDistrict`, `districtUnlocked`, `takenDistrictCount`, `openSpots`, `openLots`, `premisesBlocked`, `canPressure`, `takeDistrict`, `addPressure`), `engine/systems/rivals.ts` (`changeDisposition`, `tolyaHostile`, `tolyaIntervalHours`, `refuseDemand`, `bestHaggler`, `haggleOdds`, `canHaggle`, `haggle`, `tolyaTick`), tribute in `engine/core/derive.ts`, the `PAY_TRIBUTE` handler in `engine/core/apply.ts`.
-**Config:** `districts.*`, `rivals.tolya.*` (including `rivals.tolya.haggle`).
+**Code:** `engine/systems/districts.ts` (`getDistrict`, `districtUnlocked`, `takenDistrictCount`, `openSpots`, `openLots`, `premisesBlocked`, `canPressure`, `takeDistrict`, `addPressure`), `engine/systems/rivals.ts` (`changeDisposition`, `tolyaHostile`, `tolyaIntervalHours`, `refuseDemand`, `bestHaggler`, `haggleOdds`, `canHaggle`, `haggle`, `tolyaTick`, `changeZhanna`, `zhannaHostile`, `zhannaDeals`, `zhannaHoldsPort`, `surplusRoomToday`), `shipmentPrice` in `engine/core/formulas.ts`, tribute in `engine/core/derive.ts`, the `PAY_TRIBUTE`, `BUY_SHIPMENT` and `SELL_SURPLUS` handlers in `engine/core/apply.ts`. App: `app/components/TributeCard.tsx`, `app/components/ZhannaCard.tsx`.
+**Config:** `districts.*`, `rivals.tolya.*` (including `rivals.tolya.haggle`), `rivals.zhanna.*`.
 
 ## Districts
 
@@ -54,7 +54,7 @@ Each visit (`tolyaTick`, seeded by visit count):
 1. **An unpaid demand** from last time is refused (`refuseDemand`). Disposition drops by `dispositionPerTribute` and a random racket loses `refuseConditionHit` condition (`TRIBUTE_REFUSED`).
 2. **A roll:**
    - below `pConditionHit`: a random racket loses `conditionHit` condition;
-   - below `pConditionHit + pTribute`: he demands `max(1, round(vaultCap × tributePctOfVault))` Dirty;
+   - below `pConditionHit + pTribute`: he demands `max(1, round(vaultCapBase × tributePctOfVault))` Dirty (the vault cap without a Stash House's extra hours, so a stash doesn't raise his price);
    - otherwise he does nothing.
 
    All three emit `TOLYA_TICK` with a `result`. When `tolya.forceResult` is `'tribute'`, this one visit demands tribute without rolling, and the flag clears (for the guided opening).
@@ -99,6 +99,32 @@ Both emit `TRIBUTE_HAGGLED { crewId, name, won, demand, paid }`. `haggleOdds(sta
 
 ## Zhanna
 
-Zhanna controls the Port Quarter. Her only effect in this prototype is the Port Quarter's tribute, plus a log note when Act II opens. **Her supply chain is not built.**
+([ADR 0036](../decisions/0036-zhanna-and-the-port.md)) Zhanna controls the Port Quarter, which opens in Act II. Businesses there pay her tribute, and from Act II she trades in cigarettes ([supply-chain.md](supply-chain.md)): she sells lots, buys the surplus, and watches every crate that moves through her Port. Her state is `rival.zhanna = { disposition, nextShipmentAt, shipmentsBought, surplusToday }`. Nothing about her runs in the reconcile walk: the lot's cooldown and the daily surplus count are read when you act.
 
-**Tests:** `tests/apply.test.ts` (three pressure jobs flip a district and end its tribute, a refused demand damages a racket, paying clears it, a good talker pays the haggled price, a failed haggle insults him once and the demand stands, an explicit refusal breaks a business now, Station Square hosts the new businesses and falls to pressure, Tolya's visits speed up with joints and rackets but not premises).
+**Her lots.** `BUY_SHIPMENT` needs Act II ("Zhanna deals from Act II"), her next lot to be in ("Her next lot isn’t in yet") and the price in Dirty. It adds `shipment.cigarettes` packs to stock (whatever doesn't fit under the cap is lost), counts the price in `stats.shipmentsPaid`, schedules the next lot `shipment.cooldownHours` later, and emits `SHIPMENT_BOUGHT { packs, cost }`. A new game's first lot is ready at once.
+
+```
+price = round(shipment.basePrice
+              × clamp(1 + shipment.pricePerDisposition × disposition ÷ 100, shipment.priceClamp)
+              × shipment.hostileMarkup    (while disposition < hostileBelow))
+```
+
+`pricePerDisposition` is negative, so her lots get cheaper as she warms to you (`formulas.shipmentPrice`).
+
+**The surplus.** `SELL_SURPLUS { packs }` sells whole packs from stock for `surplus.pricePerPack` Dirty each, up to `surplus.maxPerDay` packs a game day (`surplusRoomToday`; otherwise "She’ll take N more today" or "She’s bought all she wants today"). The Dirty counts in `stats.surplusSold`; `SURPLUS_SOLD { packs, dirty }` is quiet.
+
+**The Port.** While she holds the Port Quarter, a smuggling run starts `seizureDiff` harder, on top of the heat term ([ops.md](ops.md)). The job's snapshot keeps it, so the odds shown are the odds rolled.
+
+**Disposition** runs from −100 to 100 and starts at 0. Below `hostileBelow` she's hostile and her lots cost `shipment.hostileMarkup` times as much.
+
+| Your move | Disposition change |
+|---|---|
+| Buying a lot | `dispositionPerShipment` |
+| Selling her surplus | `surplus.dispositionPer10` for every 10 packs she's bought today |
+| Starting a smuggling run (from Act II) | `dispositionPerSmuggle` |
+| Buying out her Port | `dispositionOnBuyout` |
+| Flipping her Port by pressure | `dispositionOnFlip` |
+
+The Turf tab's Zhanna card shows her mood, her next lot and its price, Buy, and Sell 10 or everything she'll still take today.
+
+**Tests:** `tests/apply.test.ts` (three pressure jobs flip a district and end its tribute, a refused demand damages a racket, paying clears it, a good talker pays the haggled price, a failed haggle insults him once and the demand stands, an explicit refusal breaks a business now, Station Square hosts the new businesses and falls to pressure, Tolya's visits speed up with joints and rackets but not premises, his demand reads the vault's base cap), `tests/zhanna.test.ts` (her price by mood and the hostile markup, lots only from Act II and once per cooldown, the daily surplus limit, smuggling harder while she holds the Port, taking her Port sours her).

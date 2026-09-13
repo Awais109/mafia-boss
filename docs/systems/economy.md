@@ -2,7 +2,7 @@
 
 Your businesses make Dirty money into a capped vault. You collect it, launder it through fronts ([fronts.md](fronts.md)) into Clean, and spend Clean on more and better businesses. Joints and rackets earn; premises make, keep or improve something and cost upkeep ([ADR 0031](../decisions/0031-business-kinds.md)).
 
-**Code:** `engine/systems/rackets.ts` (`accrueVault`, `decayCondition`, `settleUpkeep`), `engine/systems/districts.ts` (`openSpots`, `openLots`, `premisesBlocked`), `engine/core/formulas.ts` (costs, tier curves, `racketMaxTier`, `premisesUpkeep`, `factoryOutput`, `jointSales`, `warehouseCapacity`, vault cap), `engine/core/derive.ts` (`perRacket`, `yieldPerHr`, `upkeepPerHr`, `synergies`, `vaultCap`), handlers in `engine/core/apply.ts`.
+**Code:** `engine/systems/rackets.ts` (`accrueVault`, `decayCondition`, `settleUpkeep`), `engine/systems/districts.ts` (`openSpots`, `openLots`, `premisesBlocked`), `engine/core/formulas.ts` (costs, tier curves, `racketMaxTier`, `premisesUpkeep`, `factoryOutput`, `jointSales`, `warehouseCapacity`, vault cap), `engine/core/derive.ts` (`perRacket`, `yieldPerHr`, `upkeepPerHr`, `influencePerHr`, `synergies`, `vaultCap`, `vaultCapBase`, `stashHours`, `raidShield`), handlers in `engine/core/apply.ts`.
 **Config:** `vault.*`, `rackets.*` (including `rackets.premises` and `rackets.synergies`), `costs.*`, and `districts.list.*.allows` and `premisesLots` in `engine/config/defaults.ts`.
 
 ## Vault and Dirty
@@ -13,8 +13,11 @@ Two buckets ([ADR 0016](../decisions/0016-vault-and-dirty.md)):
 - **Dirty**: spendable and uncapped. `COLLECT` moves the whole vault into Dirty.
 
 ```
-vaultCap = max(vault.floorCap, yieldPerHr × vault.targetHoursByAct[act])
+vaultCap     = max(vault.floorCap, yieldPerHr × (vault.targetHoursByAct[act] + stashHours))
+vaultCapBase = max(vault.floorCap, yieldPerHr × vault.targetHoursByAct[act])
 ```
+
+`stashHours` is what your best Stash House adds (see [Premises](#premises)); without one the two caps are equal. Tolya's demand and the sim report read `vaultCapBase` ([ADR 0037](../decisions/0037-act-ii-premises.md)).
 
 The cap is the session leash: once the vault is full, income stops until you collect. Yield that would have gone past the cap is counted in `stats.dirtyLostToCap`, and the moment the vault fills emits `VAULT_CAPPED`. Wages and upkeep are paid from Dirty first, then from the vault ([crew.md](crew.md)).
 
@@ -24,7 +27,7 @@ The cap is the session leash: once the vault is full, income stops until you col
 |---|---|---|---|---|
 | Joint | Dirty | for `cigaretteShare` of its yield | a spot its district allows | Kiosk, Market Stall, Beer Tent, Slot Hall; Café, Bathhouse |
 | Racket | Dirty, with more heat per Dirty | no | a spot its district allows | Video Salon, Taxi Rank; Auto Shop, Petrol Station, Cargo Bay |
-| Premises | nothing; costs upkeep | no | a lot in any open district | Tobacco Factory, Warehouse |
+| Premises | nothing; costs upkeep | no | a lot in any open district | Tobacco Factory, Warehouse; Stash House, Union Office |
 | Front | Clean | no | one of each, city-wide ([fronts.md](fronts.md)) | Currency Kiosk, Restaurant |
 
 Every business except fronts lives in `state.rackets` and uses `BUY_RACKET`, `UPGRADE_RACKET` and `REPAIR_RACKET`; `rackets.types[type].kind` says which kind it is. The rule for any new type: joints and rackets answer "does it make money"; premises answer "does it supply, improve or protect something".
@@ -60,6 +63,9 @@ exposure = baseHeat × tierHeatMult^(tier−1) × enforcer.heatMult (if enforced
 - They earn no yield and pay no tribute. Exposure is `baseHeat × tierHeatMult^(tier−1)`, like any business.
 - They tier up to `rackets.premises.maxTier` in any act. They can't take an enforcer ("Premises don’t need minding") or specialize ("Premises don’t specialize").
 - What they do scales with condition: a factory makes `makesPerHr × tierMakeMult^(tier−1) × condition/100` packs an hour, and a warehouse adds `capPerTier × tier × condition/100` to the stock cap ([supply-chain.md](supply-chain.md)).
+- **Act II premises** ([ADR 0037](../decisions/0037-act-ii-premises.md)):
+  - A **Stash House** lengthens the vault leash and hides part of a raid. Your best one adds `leashHoursPerTier × tier × condition/100` hours to the vault cap (`Derived.stashHours`; several don't stack). Each also shields `shieldPerTier × tier × condition/100 × (its district's joint and racket yield ÷ total yield)` of a raid, and the shares add up to at most `rackets.premises.maxShield` (`Derived.raidShield`, [heat.md](heat.md)). So a stash belongs where the money is.
+  - A **Union Office**, one per city, makes `influencePerHrPerTier × tier × condition/100` Influence an hour, times any synergy `influenceMult`. It's added to `Derived.influencePerHr` beside the officials' and sits outside the daily cap on Influence from jobs.
 
 **Upkeep.** `upkeep = upkeepPerHr × upkeepTierMult^(tier−1) × synergy upkeep multipliers`. `Derived.upkeepPerHr` accrues into `upkeepOwed` continuously. At every day start, right after wages, `settleUpkeep` pays it from Dirty, then the vault:
 - **Paid in full:** `UPKEEP_PAID` (quiet), `stats.upkeepPaid`.
@@ -73,8 +79,10 @@ exposure = baseHeat × tierHeatMult^(tier−1) × enforcer.heatMult (if enforced
 |---|---|---|
 | `factoryJoints` | a Tobacco Factory and any joint | the joints earn × `effect.yieldMult` and get cigarettes first in a shortage (`servedFirst`) |
 | `warehouseFactory` | a Warehouse and a Tobacco Factory | the Warehouse's upkeep × `effect.upkeepMultOf.warehouse` |
+| `stashWarehouse` | a Stash House and a Warehouse | the Warehouse's upkeep × `effect.upkeepMultOf.warehouse` (0: it's free) |
+| `unionSovietsky` | a Union Office, in Sovietsky Blocks only | its Influence × `effect.influenceMult` |
 
-A `yieldMult` lands on the `b` businesses; `upkeepMultOf` names the types whose upkeep it changes.
+A `yieldMult` lands on the `b` businesses; `upkeepMultOf` names the types whose upkeep it changes; an `influenceMult` lands on the `a` premises.
 
 ### Tier-3 specialization
 
@@ -125,4 +133,4 @@ Home's **Money flow** card reads `derive` directly: what the businesses put in t
 
 Also emitted: `VAULT_CAPPED`, `UPKEEP_PAID` (quiet), `UPKEEP_MISSED`, and `OFFLINE_CAPPED` from the reconcile walk ([architecture.md](../architecture.md#the-reconcile-walk)).
 
-**Tests:** `tests/apply.test.ts` (first session, districts host one of each, enforcer multipliers, tier-3 specialization, premises lots and the per-city limit, premises rules, upkeep paid and missed), `tests/reconcile.test.ts` (vault stops at its cap, offline cap), `tests/ledger.test.ts` (snapshots at day starts, rows add up to stats).
+**Tests:** `tests/apply.test.ts` (first session, districts host one of each, enforcer multipliers, tier-3 specialization, premises lots and the per-city limit, premises rules, upkeep paid and missed, a Stash House's leash and raid shield, the Union Office's Influence and its Sovietsky bonus, a free Warehouse beside a stash), `tests/reconcile.test.ts` (vault stops at its cap, offline cap), `tests/ledger.test.ts` (snapshots at day starts, rows add up to stats).

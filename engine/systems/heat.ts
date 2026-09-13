@@ -1,4 +1,5 @@
 import { emit, type Ctx } from '../core/ctx'
+import { derive } from '../core/derive'
 import type { Rand } from '../core/rng'
 import { hourIndex, hoursToMs } from '../core/time'
 import type { PlayerState } from '../model/state'
@@ -24,12 +25,15 @@ export function heatHourBoundary(state: PlayerState, ctx: Ctx, t: number): void 
 }
 
 export function raid(state: PlayerState, ctx: Ctx, t: number): void {
-  const seized = Math.floor(state.vault * ctx.c.heat.raidSeizePct)
+  // Stash houses keep part of it back (ADR 0037).
+  const exposed = state.vault * ctx.c.heat.raidSeizePct
+  const seized = Math.floor(exposed * (1 - derive(state, ctx.c).raidShield))
+  const shielded = Math.max(0, Math.floor(exposed) - seized)
   state.vault -= seized
   state.stats.raids++
   state.stats.seized += seized
   if (state.stats.firstRaidAt === null) state.stats.firstRaidAt = t
-  emit(ctx, t, { type: 'RAID', heat: state.heat, seized })
+  emit(ctx, t, { type: 'RAID', heat: state.heat, seized, shielded })
 }
 
 export function arrest(state: PlayerState, ctx: Ctx, t: number, rand: Rand): void {

@@ -90,6 +90,10 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
       return { text: `Finished ${e.name ?? c.ops.list[e.opType].name} early for ${glyph.gold}${e.bars}`, color: colors.gold }
     case 'GOAL_DONE':
       return { text: `Goal done: ${GOAL_TEXT[e.goalId]} (+${glyph.gold}${e.gold})`, color: colors.gold }
+    case 'SHIPMENT_BOUGHT':
+      return { text: `Bought a lot from Zhanna: +${glyph.packs}${fmt(e.packs)} for ${d}${fmt(e.cost)}`, color: colors.packs }
+    case 'SURPLUS_SOLD':
+      return { text: `Sold Zhanna ${glyph.packs}${fmt(e.packs)} for ${d}${fmt(e.dirty)}`, quiet: true }
     case 'REPORT_FILED':
       return { text: `Report in from ${c.ops.list[e.opType].name}: your call`, quiet: true }
     case 'INCIDENT_RAISED':
@@ -128,7 +132,7 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
     case 'INSPECTION_ENDED':
       return { text: 'Inspectors backed off', color: colors.good }
     case 'RAID':
-      return { text: `RAID! Police seized ${d}${fmt(e.seized)} from the vault`, color: colors.heat }
+      return { text: `RAID! Police seized ${d}${fmt(e.seized)} from the vault${e.shielded ? ` (${d}${fmt(e.shielded)} stayed hidden in stash houses)` : ''}`, color: colors.heat }
     case 'ARREST':
       return { text: `${e.name} was arrested (out in ${c.heat.arrestHours}h)`, color: colors.heat }
     case 'RELEASED':

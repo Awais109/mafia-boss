@@ -206,6 +206,63 @@ describe('business kinds and premises lots', () => {
   })
 })
 
+describe('Act II premises', () => {
+  const rich = () => {
+    const s = act(fresh(), [{ type: 'DEBUG_SET_REP', reputation: config.rackets.types.unionOffice.unlockRep }], T0)
+    s.clean = 5000
+    return s
+  }
+
+  it('a Stash House lengthens the vault and hides part of a raid', () => {
+    const s = act(rich(), [{ type: 'BUY_RACKET', racketType: 'stashHouse', districtId: 'zarechye' }], T0)
+    const stash = config.rackets.types.stashHouse
+    const d = derive(s, config)
+    expect(d.stashHours).toBeCloseTo(stash.leashHoursPerTier!)
+    expect(d.vaultCap).toBeCloseTo(Math.max(config.vault.floorCap, d.yieldPerHr * (config.vault.targetHoursByAct[s.act] + stash.leashHoursPerTier!)))
+    expect(d.vaultCapBase).toBeCloseTo(Math.max(config.vault.floorCap, d.yieldPerHr * config.vault.targetHoursByAct[s.act]))
+    // Everything that earns runs in Zarechye, so the whole shield applies.
+    expect(d.raidShield).toBeCloseTo(stash.shieldPerTier!)
+    s.vault = 100
+    const raided = act(s, [{ type: 'DEBUG_FORCE_RAID' }], T0)
+    const exposed = 100 * config.heat.raidSeizePct
+    const seized = Math.floor(exposed * (1 - stash.shieldPerTier!))
+    expect(raided.vault).toBe(100 - seized)
+    expect(raided.log.find((e) => e.type === 'RAID')).toMatchObject({ seized, shielded: Math.floor(exposed) - seized })
+  })
+
+  it('a Union office makes Influence, one per city, half again in Sovietsky', () => {
+    const s = rich()
+    const union = config.rackets.types.unionOffice
+    const before = derive(s, config).influencePerHr
+    const home = act(s, [{ type: 'BUY_RACKET', racketType: 'unionOffice', districtId: 'zarechye' }], T0)
+    expect(derive(home, config).influencePerHr - before).toBeCloseTo(union.influencePerHrPerTier!)
+    expect(apply(home, { type: 'BUY_RACKET', racketType: 'unionOffice', districtId: 'sovietsky' }, T0, config).error).toMatch(/Only one/)
+    const sov = act(s, [{ type: 'BUY_RACKET', racketType: 'unionOffice', districtId: 'sovietsky' }], T0)
+    const mult = config.rackets.synergies.find((x) => x.id === 'unionSovietsky')!.effect.influenceMult!
+    expect(derive(sov, config).influencePerHr - before).toBeCloseTo(union.influencePerHrPerTier! * mult)
+  })
+
+  it('a Warehouse beside a Stash House costs no upkeep', () => {
+    const s = act(
+      rich(),
+      [
+        { type: 'BUY_RACKET', racketType: 'warehouse', districtId: 'sovietsky' },
+        { type: 'BUY_RACKET', racketType: 'stashHouse', districtId: 'sovietsky' },
+      ],
+      T0,
+    )
+    const i = s.rackets.findIndex((r) => r.type === 'warehouse')
+    expect(derive(s, config).perRacket[i].upkeep).toBe(0)
+  })
+
+  it("Tolya's demand reads the vault's base cap, not a Stash House's extra hours", () => {
+    const s = act(rich(), [{ type: 'BUY_RACKET', racketType: 'stashHouse', districtId: 'zarechye' }], T0)
+    s.rival.tolya.forceResult = 'tribute'
+    const r = reconcile(s, s.rival.tolya.nextTickAt, config)
+    expect(r.state.rival.tolya.demand).toBe(formulas.tributeDemand(config, derive(r.state, config).vaultCapBase))
+  })
+})
+
 describe('the bigger Act I', () => {
   it('Station Square hosts the new businesses and falls to three pressure jobs', () => {
     let s = act(fresh(), [{ type: 'DEBUG_GRANT', clean: 5000 }, { type: 'DEBUG_SET_REP', reputation: config.rackets.types.slotHall.unlockRep }], T0)

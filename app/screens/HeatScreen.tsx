@@ -27,7 +27,7 @@ export function HeatScreen({ game }: ScreenProps) {
             {`≥ ${h.inspectThreshold}: inspections, yield ×${h.inspectYieldMult}${s.inspected ? '  ← now' : ''}`}
           </T>
           <T small color={line(s.heat >= h.raidThreshold, true)}>
-            {`≥ ${h.raidThreshold}: raids, ${pct(h.raidChancePerHr)} an hour, seize ${pct(h.raidSeizePct)} of the vault`}
+            {`≥ ${h.raidThreshold}: raids, ${pct(h.raidChancePerHr)} an hour, seize ${pct(h.raidSeizePct)} of the vault${d.raidShield > 0 ? `, ${pct(d.raidShield)} of that hidden in stash houses` : ''}`}
           </T>
           <T small color={line(s.heat >= h.arrestThreshold, true)}>
             {`≥ ${h.arrestThreshold}: arrests, ${pct(h.arrestChancePerHr)} an hour, ${h.arrestHours}h in a cell`}

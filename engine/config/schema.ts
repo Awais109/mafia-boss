@@ -9,10 +9,10 @@ export const ACTS: readonly Act[] = [1, 2]
 // Every business, whatever its kind (ADR 0031): joints, rackets and premises share one list.
 export type RacketType =
   | 'kiosk' | 'marketStall' | 'beerTent' | 'videoSalon' | 'taxiRank' | 'slotHall' | 'tobaccoFactory' | 'warehouse'
-  | 'autoShop' | 'cafe' | 'bathhouse' | 'petrol' | 'cargoBay'
+  | 'autoShop' | 'cafe' | 'bathhouse' | 'petrol' | 'cargoBay' | 'stashHouse' | 'unionOffice'
 export const RACKET_TYPES: readonly RacketType[] = [
   'kiosk', 'marketStall', 'beerTent', 'videoSalon', 'taxiRank', 'slotHall', 'tobaccoFactory', 'warehouse',
-  'autoShop', 'cafe', 'bathhouse', 'petrol', 'cargoBay',
+  'autoShop', 'cafe', 'bathhouse', 'petrol', 'cargoBay', 'stashHouse', 'unionOffice',
 ]
 
 export type FrontType = 'currencyKiosk' | 'restaurant'
@@ -127,6 +127,9 @@ export type RacketTypeConfig = {
   makesPerHr?: number // factories: packs per hour at tier 1
   tierMakeMult?: number
   capPerTier?: number // warehouses: stock cap added per tier
+  leashHoursPerTier?: number // stash houses: vault hours added per tier (the best one counts)
+  shieldPerTier?: number // stash houses: share of a raid kept back per tier, weighted by the district's share of yield
+  influencePerHrPerTier?: number // union offices: Influence per hour per tier
 }
 
 // Businesses that work better side by side in one district (plan (m)). Active in a district that has
@@ -223,7 +226,7 @@ export type Config = {
       greed: { yieldMult: number; exposureMult: number }
       stealth: { yieldMult: number; exposureMult: number }
     }
-    premises: { maxTier: number; missedUpkeepConditionHit: number }
+    premises: { maxTier: number; missedUpkeepConditionHit: number; maxShield: number }
     synergies: SynergyConfig[]
     types: Record<RacketType, RacketTypeConfig>
   }
@@ -355,6 +358,24 @@ export type Config = {
       hostileTickMult: number
       haggle: { diff: number; noise: number; pricePct: number; dispositionOnWin: number; dispositionOnInsult: number }
     }
+    // Zhanna sells cigarettes by the lot and buys the surplus (ADR 0036).
+    zhanna: {
+      shipment: {
+        cigarettes: number
+        basePrice: number // Dirty
+        pricePerDisposition: number // price × (1 + this × disposition ÷ 100), clamped to priceClamp
+        priceClamp: [number, number]
+        cooldownHours: number
+        hostileMarkup: number
+      }
+      surplus: { pricePerPack: number; maxPerDay: number; dispositionPer10: number }
+      dispositionPerShipment: number
+      dispositionPerSmuggle: number
+      dispositionOnBuyout: number
+      dispositionOnFlip: number
+      hostileBelow: number
+      seizureDiff: number // added to smuggling difficulty while she holds the Port
+    }
   }
   reputation: {
     perCleanSpent: number
@@ -456,6 +477,7 @@ export function validateConfig(c: Config): string[] {
       num(e, 'rackets.specialization.stealth.exposureMult', sp.stealth.exposureMult, (n) => n >= 1 / r.tierHeatMult, '>= 1 / tierHeatMult')
       int(e, 'rackets.premises.maxTier', r.premises.maxTier, 1)
       nonNeg(e, 'rackets.premises.missedUpkeepConditionHit', r.premises.missedUpkeepConditionHit)
+      unit(e, 'rackets.premises.maxShield', r.premises.maxShield)
       for (const t of RACKET_TYPES) {
         const rt = r.types[t]
         if (!rt) { e.push(`rackets.types.${t}: missing`); continue }
@@ -473,6 +495,9 @@ export function validateConfig(c: Config): string[] {
           if (rt.tierMakeMult !== undefined) num(e, `${p}.tierMakeMult`, rt.tierMakeMult, (n) => n >= 1, '>= 1')
           if (rt.capPerTier !== undefined) nonNeg(e, `${p}.capPerTier`, rt.capPerTier)
           if (rt.maxInCity !== undefined) int(e, `${p}.maxInCity`, rt.maxInCity, 1)
+          if (rt.leashHoursPerTier !== undefined) nonNeg(e, `${p}.leashHoursPerTier`, rt.leashHoursPerTier)
+          if (rt.shieldPerTier !== undefined) unit(e, `${p}.shieldPerTier`, rt.shieldPerTier)
+          if (rt.influencePerHrPerTier !== undefined) nonNeg(e, `${p}.influencePerHrPerTier`, rt.influencePerHrPerTier)
         } else {
           positive(e, `${p}.baseYield`, rt.baseYield)
         }
@@ -690,6 +715,15 @@ export function validateConfig(c: Config): string[] {
       nonNeg(e, 'rivals.tolya.haggle.diff', t.haggle.diff)
       nonNeg(e, 'rivals.tolya.haggle.noise', t.haggle.noise)
       rate(e, 'rivals.tolya.haggle.pricePct', t.haggle.pricePct)
+      const z = c.rivals.zhanna
+      positive(e, 'rivals.zhanna.shipment.cigarettes', z.shipment.cigarettes)
+      positive(e, 'rivals.zhanna.shipment.basePrice', z.shipment.basePrice)
+      range(e, 'rivals.zhanna.shipment.priceClamp', z.shipment.priceClamp, (n) => n > 0)
+      positive(e, 'rivals.zhanna.shipment.cooldownHours', z.shipment.cooldownHours)
+      num(e, 'rivals.zhanna.shipment.hostileMarkup', z.shipment.hostileMarkup, (n) => n >= 1, '>= 1')
+      nonNeg(e, 'rivals.zhanna.surplus.pricePerPack', z.surplus.pricePerPack)
+      int(e, 'rivals.zhanna.surplus.maxPerDay', z.surplus.maxPerDay, 0)
+      nonNeg(e, 'rivals.zhanna.seizureDiff', z.seizureDiff)
     },
     (e) => {
       const r = c.reputation

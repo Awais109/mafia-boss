@@ -1,9 +1,9 @@
 # Supply chain: cigarettes
 
-One city-wide stock of cigarettes, the game's only product ([ADR 0032](../decisions/0032-supply-chain.md)). Tobacco factories make packs, joints sell them for part of their income, warehouses raise the stock cap, and smuggling runs bring in a batch. Rackets and fronts never touch stock.
+One city-wide stock of cigarettes, the game's only product ([ADR 0032](../decisions/0032-supply-chain.md)). Tobacco factories make packs, joints sell them for part of their income, warehouses raise the stock cap, smuggling runs bring in a batch, and from Act II Zhanna sells lots and buys the surplus. Rackets and fronts never touch stock.
 
-**Code:** `engine/systems/supply.ts` (`accrueStock`, `supplyHourBoundary`, `addStock`), supply in `engine/core/derive.ts` (`Derived.supply`; per business `packsPerHr`, `served`, `atStake`, `capacity`), `engine/core/formulas.ts` (`factoryOutput`, `jointSales`, `warehouseCapacity`), smuggling in `engine/systems/ops.ts` (`opConfigAt`, `resolveOp`). App: `app/components/SupplyCard.tsx`.
-**Config:** `supply.*`; joints' `sellsPerHr` and `cigaretteShare`; premises' `makesPerHr`, `tierMakeMult` and `capPerTier`; `ops.list.smuggleCigarettes`; the `servedFirst` synergy in `rackets.synergies`.
+**Code:** `engine/systems/supply.ts` (`accrueStock`, `supplyHourBoundary`, `addStock`), supply in `engine/core/derive.ts` (`Derived.supply`; per business `packsPerHr`, `served`, `atStake`, `capacity`), `engine/core/formulas.ts` (`factoryOutput`, `jointSales`, `warehouseCapacity`), smuggling in `engine/systems/ops.ts` (`opConfigAt`, `resolveOp`), Zhanna's trade in `engine/systems/rivals.ts` and the `BUY_SHIPMENT` and `SELL_SURPLUS` handlers in `engine/core/apply.ts`. App: `app/components/SupplyCard.tsx`, `app/components/ZhannaCard.tsx`.
+**Config:** `supply.*`; joints' `sellsPerHr` and `cigaretteShare`; premises' `makesPerHr`, `tierMakeMult` and `capPerTier`; `ops.list.smuggleCigarettes`; `rivals.zhanna.shipment`, `rivals.zhanna.surplus` and `rivals.zhanna.seizureDiff`; the `servedFirst` synergy in `rackets.synergies`.
 
 ## Stock
 
@@ -39,8 +39,10 @@ A joint then earns `× (1 − cigaretteShare + cigaretteShare × served)` ([econ
 
 `addStock(state, cap, amount)` adds a batch at once: what fits under the cap goes in and the rest is lost; a negative batch takes what's there.
 
-- **Smuggling** ([ops.md](ops.md)): `smuggleCigarettes` costs `costClean` up front, earning no Rep, and starts `round(heatDiffPerPoint × heat)` harder. On success it lands `round(cigarettes × reward share)` packs when it resolves; `OP_RESOLVED.cigarettes` is what went in. A failed run keeps the Clean gone. The opportunities board has a smuggling variant.
+- **Smuggling** ([ops.md](ops.md)): `smuggleCigarettes` costs `costClean` up front, earning no Rep, and starts `round(heatDiffPerPoint × heat)` harder, plus `rivals.zhanna.seizureDiff` while Zhanna holds the Port Quarter. On success it lands `round(cigarettes × reward share)` packs when it resolves; `OP_RESOLVED.cigarettes` is what went in. A failed run keeps the Clean gone. The opportunities board has a smuggling variant.
 - **Decisions** ([inbox.md](inbox.md)): an option's `cigarettes` effect. The Bad batch incident (needs a factory) burns packs by default, or sells them for Dirty and heat.
+- **Zhanna's lots** ([districts-and-rivals.md](districts-and-rivals.md#zhanna)): from Act II, `BUY_SHIPMENT` lands `rivals.zhanna.shipment.cigarettes` packs for Dirty, once every `shipment.cooldownHours`, cheaper the more she likes you.
+- **Selling to Zhanna:** from Act II, `SELL_SURPLUS { packs }` takes packs out of stock for `surplus.pricePerPack` Dirty each, up to `surplus.maxPerDay` a game day. It turns packs a full stock would waste into money.
 - **Debug:** `DEBUG_GRANT { cigarettes }` adds straight to stock.
 
 ## Derived
@@ -49,14 +51,14 @@ A joint then earns `× (1 − cigaretteShare + cigaretteShare × served)` ([econ
 
 ## Events
 
-`STOCK_OUT`, `STOCK_CAPPED { cap }` (quiet), `SHORTAGE_STARTED { demand, made }`, `SHORTAGE_ENDED`; `OP_RESOLVED.cigarettes`.
+`STOCK_OUT`, `STOCK_CAPPED { cap }` (quiet), `SHORTAGE_STARTED { demand, made }`, `SHORTAGE_ENDED`; `OP_RESOLVED.cigarettes`; `SHIPMENT_BOUGHT { packs, cost }`, `SURPLUS_SOLD { packs, dirty }` (quiet).
 
 ## The bot
 
-How the casual bot values factories, warehouses, joints and smuggling runs is in [sim.md](../sim.md#the-casual-bot). In short: it adds output when stock would run out within a day, banks surplus when production outruns sales at the cap, discounts joints that would run short, and smuggles when stock would run out within 12 hours.
+How the casual bot values factories, warehouses, joints and smuggling runs is in [sim.md](../sim.md#the-casual-bot). In short: it adds output when stock would run out within a day, banks surplus when production outruns sales at the cap, discounts joints that would run short, smuggles or buys a lot from Zhanna when stock would run out within 12 hours, and sells her the surplus when stock sits near its cap while production outruns sales.
 
 ## The app
 
-"Packs" in the header; the Supply card on Home and Business (stock against cap, made and sold per hour, when it runs out or fills); joints show packs sold, their cigarette share and, when short, the share supplied; Home alerts when stock will run out within 6 hours or is out; the away popup lists packs made, sold and wasted and the stock before and after.
+"Packs" in the header; the Supply card on Home and Business (stock against cap, made and sold per hour, when it runs out or fills); joints show packs sold, their cigarette share and, when short, the share supplied; Home alerts when stock will run out within 6 hours or is out; the away popup lists packs made, sold and wasted and the stock before and after; Zhanna's card on Turf buys her lots and sells her the surplus.
 
-**Tests:** `tests/supply.test.ts` (starting rates; exact clamps and events; the flag only at whole hours; factory-district joints served first; a cap below the stock; smuggling), `tests/reconcile.test.ts` (split invariance with stock filling in a fresh game and running out in a busy one), `tests/migrate.test.ts` (old saves get the starting stock).
+**Tests:** `tests/supply.test.ts` (starting rates; exact clamps and events; the flag only at whole hours; factory-district joints served first; a cap below the stock; smuggling), `tests/reconcile.test.ts` (split invariance with stock filling in a fresh game and running out in a busy one), `tests/migrate.test.ts` (old saves get the starting stock), `tests/zhanna.test.ts` (lots, the surplus, smuggling past her Port).

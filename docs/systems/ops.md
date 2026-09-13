@@ -15,7 +15,7 @@ Crew go out on timed jobs for Dirty, Influence and Rep, at the cost of a heat sp
 | `collectDebt` | 1 | Nerve, Brains | Dirty | quick |
 | `leanOnWard` | 2 | Brains, Nerve | Influence | standard |
 | `pressure` | 2 | Muscle, Nerve | Dirty + district pressure | standard; needs a target district |
-| `smuggleCigarettes` | 2 | Nerve, Brains | Cigarettes | standard; costs Clean up front, harder with heat ([supply-chain.md](supply-chain.md#batches)) |
+| `smuggleCigarettes` | 2 | Nerve, Brains | Cigarettes | standard; costs Clean up front, harder with heat and while Zhanna holds the Port ([supply-chain.md](supply-chain.md#batches)) |
 | `moveShipment` | 2 | Nerve, Brains | Dirty | standard; Act II |
 | `dinner` | 2 | Brains, Nerve | Influence | long |
 | `trainMuscle`, `trainBrains`, `trainNerve` | 1 | the stat trained | XP only | long; training, costs Dirty (below) |

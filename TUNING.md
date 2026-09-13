@@ -143,11 +143,32 @@ New config, starting values from the expansion plan (ADRs 0031–0033):
             gold numbers (10 to start, one per goal), so the guard now measures the same ten seeds as the tuning runs.
 ```
 
+## 2026-09-13 — expansion M6: Act II premises and Zhanna
+
+```
+2026-09-13  New config (ADR 0037): rackets.types.stashHouse {act 2, purchase 200, unlock ★178, upkeep 1/h ×1.2 a tier, heat 1.0,
+            leashHoursPerTier 1.5, shieldPerTier 0.16}; rackets.types.unionOffice {act 2, one per city, purchase 250, unlock ★238,
+            upkeep 1.5/h ×1.2, heat 0.5, influencePerHrPerTier 1/60}; rackets.premises.maxShield 0.8; synergies stashWarehouse
+            (Warehouse upkeep ×0) and unionSovietsky (Influence ×1.5).
+2026-09-13  New config (ADR 0036): rivals.zhanna {a lot of 25 packs for ◆40, price −0.3 per 100 disposition within ×0.5–1.5, 6 h cooldown,
+            ×1.5 while hostile; surplus ◆2 a pack, 30 packs a day, +1 disposition per 10; +5 per lot, −5 per smuggling run, −10 for a
+            buy-out, −25 for a flip, hostile below −30; smuggling +10 difficulty while she holds the Port}.
+            Sim (10 seeds): casual Act I 1.89 d (4/10), Act II 3.09→3.07 d (7/10), vault fill Act II 5.50 h on the base cap, heat 34.0 (8/10),
+            raids 0, partial 0.48, missed wages 0, front util 0.59, Dirty idle 0.68, wage share 0.04.
+            Stash House in 10/10 runs (around day 4.5, tier 4, +5.4 vault hours, 12% raid shield); Union Office in 0/10; Zhanna's lots
+            0.3 a run, surplus ◆52 a run, her disposition ends near −17.  Influence guardrail: the Precinct Captain's cost ÷ Influence
+            a day while saving for him 1.77 d (target 1.5–2.5).
+            goldRush: Act I 1.03 d (8/10 ≥ 1 d), Act II 2.99 d (7/10).  Kept: no number moved to pass a gate.
+```
+
 ## Open
 
-- **Front utilization ~57% (target 70–90%) and Dirty idle ~63% (target 20–50%).** The bot keeps a large Dirty reserve and the fronts can wash more than it deposits. Dirty idle rose with M3's bigger Act I.
-- **Wage share ~5%** (manual 10–25%). Wages are about a quarter of day-1 income but a few percent of late Act II income, and upkeep doesn't change that. No number fixes both ends: raising wages or upkeep enough for Act II breaks the first day. Running costs that scale with the act would be a new rule, which the expansion plan doesn't have.
+- **Front utilization ~59% (target 70–90%) and Dirty idle ~68% (target 20–50%).** The bot keeps a large Dirty reserve and the fronts can wash more than it deposits. Dirty idle rose with M3's bigger Act I, and again with M6's Stash House, whose longer leash makes bigger collections.
+- **Wage share ~4%** (manual 10–25%). Wages are about a quarter of day-1 income but a few percent of late Act II income, and upkeep doesn't change that. No number fixes both ends: raising wages or upkeep enough for Act II breaks the first day. Running costs that scale with the act would be a new rule, which the expansion plan doesn't have.
 - **Shortages are rare** (about 3 h per 8-day run, none in Act I). The plan's M3 gate asks for some shortage in Act I, under 10% of its hours.
-- **Act I clears at 1.89 d** (4/10 seeds inside 1–2): the thresholds were raised twice to keep gold and the opening's head start from shortening it. **Act II clears at 3.09 d**, near the bottom of 3–5.
-- **Gold is a strong early accelerator:** with the goals' bars, spending every bar on quick jobs takes Act I from 1.89 to 1.03 days, right at the gold gate. Any new source of bars will break it.
-- **Heat mean 33.5**, with Act I around 36 while the bot fills its heat budget.
+- **Act I clears at 1.89 d** (4/10 seeds inside 1–2): the thresholds were raised twice to keep gold and the opening's head start from shortening it. **Act II clears at 3.07 d**, near the bottom of 3–5.
+- **Gold is a strong early accelerator:** with the goals' bars, spending every bar on quick jobs takes Act I from 1.89 to 1.03 days, right at the gold gate, and Act II in 2.99 days (not gated). Any new source of bars will break it.
+- **Heat mean 34.0**, with Act I around 36 while the bot fills its heat budget.
+- **The bot never builds a Union Office.** Influence buys only officials in Acts I–II, and the bot has bought the Precinct Captain before the office unlocks at ★238. A player can use it to reach the Captain sooner; its lasting use would be an Act III official.
+- **Zhanna's lots are rare for the bot** (0.3 a run), because stock seldom gets within 12 hours of running out; surplus sales come to about ◆50 a run.
+- **No raids in the sim**, so only the tests exercise the Stash House's raid shield.

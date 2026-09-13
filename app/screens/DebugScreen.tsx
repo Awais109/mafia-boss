@@ -245,7 +245,8 @@ function InspectPanel({ game }: { game: Snapshot }) {
   const rows: [string, string][] = [
     ['yieldPerHr', n(d.yieldPerHr)],
     ['tributePerHr', n(d.tributePerHr)],
-    ['vaultCap', n(d.vaultCap)],
+    ['vaultCap (base, +stash h)', `${n(d.vaultCap)} (${n(d.vaultCapBase)}, +${n(d.stashHours)})`],
+    ['raid shield', n(d.raidShield)],
     ['exposure (rackets + fronts)', `${n(d.exposure)} (${n(d.racketExposure)} + ${n(d.frontSuspicion)})`],
     ['control', n(d.control)],
     ['heat → target', `${n(s.heat)} → ${n(d.heatTarget)}`],

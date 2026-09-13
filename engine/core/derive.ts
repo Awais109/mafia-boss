@@ -33,6 +33,9 @@ export type RacketDerived = {
   served: number // joints: share of their cigarette trade being supplied (1 unless stock is out)
   atStake: number // joints: Dirty/hr of yield that needs cigarettes, at full supply
   capacity: number // warehouses: stock cap they add
+  leashHours: number // stash houses: vault hours they add (only the best counts)
+  shield: number // stash houses: their part of the raid shield
+  influence: number // union offices: Influence per hour
   upgradeCost: number | null // null at max tier
   repairCost: number
 }
@@ -66,7 +69,10 @@ export type SupplyDerived = {
 export type Derived = {
   yieldPerHr: number
   tributePerHr: number
-  vaultCap: number
+  vaultCap: number // with the best Stash House's extra hours
+  vaultCapBase: number // without them: Tolya's demand and the report read this
+  stashHours: number
+  raidShield: number // share of a raid's seizure kept back
   exposure: number
   racketExposure: number
   frontSuspicion: number
@@ -133,6 +139,7 @@ export function derive(state: PlayerState, c: Config): Derived {
   const effectsOn = (r: Racket) => {
     let yieldMult = 1
     let upkeepMult = 1
+    let influenceMult = 1
     let servedFirst = false
     for (const syn of activeIn.get(r.districtId) ?? []) {
       const onB = syn.b === 'joints' ? kindOf(r.type) === 'joint' : syn.b === r.type
@@ -140,8 +147,9 @@ export function derive(state: PlayerState, c: Config): Derived {
       if (onB && syn.effect.servedFirst) servedFirst = true
       const mult = syn.effect.upkeepMultOf?.[r.type]
       if (mult !== undefined) upkeepMult *= mult
+      if (syn.a === r.type && syn.effect.influenceMult !== undefined) influenceMult *= syn.effect.influenceMult
     }
-    return { yieldMult, upkeepMult, servedFirst }
+    return { yieldMult, upkeepMult, influenceMult, servedFirst }
   }
 
   // The supply chain (ADR 0032): what the factories make, what the joints would sell, the stock cap.
@@ -156,6 +164,8 @@ export function derive(state: PlayerState, c: Config): Derived {
       demand: kind === 'joint' && sells ? F.jointSales(c, r.type, r.tier) * cond : 0,
       made: kind === 'premises' ? F.factoryOutput(c, r.type, r.tier) * cond : 0,
       capacity: kind === 'premises' ? F.warehouseCapacity(c, r.type, r.tier) * cond : 0,
+      leash: (c.rackets.types[r.type].leashHoursPerTier ?? 0) * r.tier * cond,
+      shieldRaw: (c.rackets.types[r.type].shieldPerTier ?? 0) * r.tier * cond,
     }
   })
   const madePerHr = sum(base.map((b) => b.made))
@@ -176,7 +186,7 @@ export function derive(state: PlayerState, c: Config): Derived {
     })
   }
 
-  const perRacket: RacketDerived[] = base.map(({ r, kind, cond, fx, demand, made, capacity }, i) => {
+  const perRacket: RacketDerived[] = base.map(({ r, kind, cond, fx, demand, made, capacity, leash }, i) => {
     const rt = c.rackets.types[r.type]
     const district = c.districts.list[r.districtId]
     const controller = controllerOf(r.districtId)
@@ -213,6 +223,9 @@ export function derive(state: PlayerState, c: Config): Derived {
       served: served[i],
       atStake: fullYield * share,
       capacity,
+      leashHours: leash,
+      shield: 0, // set below, once total yield is known
+      influence: (rt.influencePerHrPerTier ?? 0) * r.tier * cond * fx.influenceMult,
       upgradeCost: r.tier < F.racketMaxTier(c, r.type, state.act) ? F.racketUpgradeCost(c, r.type, r.tier) : null,
       repairCost: F.racketRepairCost(c, r.type),
     }
@@ -239,6 +252,14 @@ export function derive(state: PlayerState, c: Config): Derived {
   })
 
   const yieldPerHr = sum(perRacket.map((r) => r.yield))
+  // Stash houses hide part of a raid, in proportion to how much of the yield runs in their district (ADR 0037).
+  const districtYield = (id: DistrictId) =>
+    sum(perRacket.map((rd, i) => (rd.kind !== 'premises' && state.rackets[i].districtId === id ? rd.yield : 0)))
+  base.forEach((b, i) => {
+    if (b.shieldRaw > 0 && yieldPerHr > 0) perRacket[i].shield = (b.shieldRaw * districtYield(b.r.districtId)) / yieldPerHr
+  })
+  const raidShield = Math.min(c.rackets.premises.maxShield, sum(perRacket.map((rd) => rd.shield)))
+  const stashHours = Math.max(0, ...perRacket.map((rd) => rd.leashHours))
   const racketExposure = sum(perRacket.map((r) => r.exposure))
   const frontSuspicion = sum(perFront.map((f) => f.suspicion))
   const exposure = racketExposure + frontSuspicion
@@ -259,7 +280,10 @@ export function derive(state: PlayerState, c: Config): Derived {
   return {
     yieldPerHr,
     tributePerHr: sum(perRacket.map((r) => r.tribute)),
-    vaultCap: F.vaultCap(c, yieldPerHr, state.act),
+    vaultCap: F.vaultCap(c, yieldPerHr, state.act, stashHours),
+    vaultCapBase: F.vaultCap(c, yieldPerHr, state.act),
+    stashHours,
+    raidShield,
     exposure,
     racketExposure,
     frontSuspicion,
@@ -270,7 +294,7 @@ export function derive(state: PlayerState, c: Config): Derived {
     wagesPerHr: sum(state.crew.map((m) => baseWage(c, m))) * wageMult,
     wageMult,
     upkeepPerHr: sum(perRacket.map((r) => r.upkeep)),
-    influencePerHr: state.officials.length * c.officials.influencePerHrEach,
+    influencePerHr: state.officials.length * c.officials.influencePerHrEach + sum(perRacket.map((rd) => rd.influence)),
     crewSlots: crewSlots(c, state),
     maxTier,
     cleanPerHrMax: sum(perFront.map((f) => f.throughput * f.rate)),

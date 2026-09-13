@@ -17,7 +17,7 @@ What is built, how it works, and why. Written so a person or an LLM new to the r
 | [systems/crew.md](systems/crew.md) | Crew stats and traits, experience, ranks and perks, wages, loyalty, recruiting, slots, jail |
 | [systems/ops.md](systems/ops.md) | Jobs, training, resolution formula, rewards, district pressure, the opportunities board |
 | [systems/inbox.md](systems/inbox.md) | Pending decisions: crew reports, incidents, perk choices, defaults and expiry |
-| [systems/districts-and-rivals.md](systems/districts-and-rivals.md) | Districts, tribute, buy-outs and flips, Tolya and answering his demands, Zhanna |
+| [systems/districts-and-rivals.md](systems/districts-and-rivals.md) | Districts, tribute, buy-outs and flips, Tolya and answering his demands, Zhanna's lots and surplus trade |
 | [systems/progression.md](systems/progression.md) | Reputation, acts, the unlock ladder, the guided opening, Act I goals |
 | [app.md](app.md) | The React Native app: store, storage, screens, Debug tab, export |
 | [sim.md](sim.md) | The headless bot, report metrics, CLI, log replay, baseline |
@@ -63,4 +63,4 @@ When you change a path on the left, update the doc on the right in the same comm
 
 - Describe mechanics, formulas, config keys, actions, events and file paths. For the numbers themselves, point at `engine/config/defaults.ts`; copied numbers go stale. Quote a number only when it is the point, and date it or link [TUNING.md](../TUNING.md).
 - Name config keys exactly as in code (`heat.bribe.controlPct`), so they can be searched.
-- Say what isn't built when it matters (for example, Zhanna's shipments), so no one assumes it exists.
+- Say what isn't built when it matters (for example, Act III), so no one assumes it exists.

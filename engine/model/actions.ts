@@ -22,6 +22,8 @@ export type Action =
   | { type: 'PAY_TRIBUTE'; choice?: 'pay' | 'haggle' | 'refuse' }
   | { type: 'SKIP_TIME'; hours: number }
   | { type: 'RUSH_OP'; opId: string }
+  | { type: 'BUY_SHIPMENT' }
+  | { type: 'SELL_SURPLUS'; packs: number }
   | { type: 'TUTORIAL_ADVANCE' }
   | { type: 'TUTORIAL_SKIP' }
   | { type: 'SESSION_START' }

@@ -86,7 +86,14 @@ function v5to6(doc: Doc): Doc {
   }
 }
 
-const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6 }
+// v7 (M6): Zhanna's trade. Her first lot is ready at once.
+function v6to7(doc: Doc): Doc {
+  const rival = doc.rival as Record<string, unknown>
+  const zhanna = rival.zhanna ?? { disposition: 0, nextShipmentAt: doc.updatedAt, shipmentsBought: 0, surplusToday: { day: 0, packs: 0 } }
+  return { ...doc, schemaVersion: 7, rival: { ...rival, zhanna } }
+}
+
+const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7 }
 
 export function migrate(doc: unknown): PlayerState {
   if (typeof doc !== 'object' || doc === null) throw new Error('Save is not an object')

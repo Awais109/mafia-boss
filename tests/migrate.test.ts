@@ -29,6 +29,7 @@ function asV1(): Record<string, unknown> {
   delete s.gold
   delete s.skippedMs
   delete s.goals
+  delete s.rival.zhanna
   s.districts = s.districts.filter((d: { id: string }) => d.id !== 'stationSquare')
   s.rackets = s.rackets.filter((r: { type: string }) => r.type === 'kiosk' || r.type === 'marketStall')
   s.stats.sessions = 3
@@ -70,6 +71,11 @@ describe('migrate', () => {
     expect(m.stockEmpty).toBe(false)
     expect(m.upkeepOwed).toBe(0)
     expect(m.districts.find((d) => d.id === 'stationSquare')).toEqual({ id: 'stationSquare', controller: 'none', pressureCount: 0 })
+  })
+
+  it("opens Zhanna's trade with her first lot ready", () => {
+    const m = migrate(asV1())
+    expect(m.rival.zhanna).toEqual({ disposition: 0, nextShipmentAt: m.updatedAt, shipmentsBought: 0, surplusToday: { day: 0, packs: 0 } })
   })
 
   it('hands an old save the starting gold', () => {

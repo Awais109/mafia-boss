@@ -2,7 +2,7 @@ import type { Config, DistrictId, RacketType } from '../config/schema'
 import { emit, type Ctx } from '../core/ctx'
 import type { District, PlayerState } from '../model/state'
 import { gainRep } from './reputation'
-import { changeDisposition } from './rivals'
+import { changeDisposition, changeZhanna } from './rivals'
 
 export function getDistrict(state: PlayerState, id: DistrictId): District {
   const d = state.districts.find((x) => x.id === id)
@@ -55,6 +55,8 @@ export function takeDistrict(state: PlayerState, ctx: Ctx, t: number, id: Distri
   d.pressureCount = 0
   const cfg = ctx.c.rivals.tolya
   if (from === 'tolya') changeDisposition(state, how === 'buyout' ? cfg.dispositionOnBuyout : cfg.dispositionOnFlip)
+  const z = ctx.c.rivals.zhanna
+  if (from === 'zhanna') changeZhanna(state, how === 'buyout' ? z.dispositionOnBuyout : z.dispositionOnFlip)
   if (how === 'pressure') emit(ctx, t, { type: 'DISTRICT_FLIPPED', districtId: id, from })
   gainRep(state, ctx, t, ctx.c.reputation.perDistrict)
 }

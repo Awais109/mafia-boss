@@ -118,7 +118,8 @@ export class Recorder {
       decisions: actions.filter((a) => !a.error && a.action.type === 'RESOLVE_INBOX').length,
       income: before.stats.dirtyEarned - this.earnedAtLastSessionEnd,
       dirtyAfter: after.dirty,
-      vaultFillHrs: d.yieldPerHr > 0 ? d.vaultCap / d.yieldPerHr : Infinity,
+      // Scored on the base cap; a Stash House's extra hours are reported beside it (ADR 0037).
+      vaultFillHrs: d.yieldPerHr > 0 ? d.vaultCapBase / d.yieldPerHr : Infinity,
     })
     this.earnedAtLastSessionEnd = after.stats.dirtyEarned
   }

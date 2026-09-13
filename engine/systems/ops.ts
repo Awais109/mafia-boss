@@ -10,6 +10,7 @@ import { addPressure } from './districts'
 import { grantXp, hasPerk, jobXp } from './experience'
 import { fileReport } from './inbox'
 import { gainRep } from './reputation'
+import { zhannaHoldsPort } from './rivals'
 import { addStock } from './supply'
 
 // Resolution:
@@ -84,7 +85,9 @@ export function opConfigOf(c: Config, op: OpInstance): OpConfig {
 // the result on the job, so the odds shown are the odds rolled.
 export function opConfigAt(c: Config, state: PlayerState, cfg: OpConfig): OpConfig {
   if (!cfg.heatDiffPerPoint) return cfg
-  const out: OpConfig = { ...cfg, diff: cfg.diff + Math.round(cfg.heatDiffPerPoint * state.heat) }
+  // Zhanna's people watch every crate while she holds the Port (ADR 0036).
+  const seizure = cfg.cigarettes && zhannaHoldsPort(state, c) ? c.rivals.zhanna.seizureDiff : 0
+  const out: OpConfig = { ...cfg, diff: cfg.diff + Math.round(cfg.heatDiffPerPoint * state.heat) + seizure }
   delete out.heatDiffPerPoint
   return out
 }

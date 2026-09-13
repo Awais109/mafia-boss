@@ -31,14 +31,14 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 **Each session, in order** (`playSession`):
 1. `SESSION_START`; skip the tutorial, which buys the quick-start setup at the first session; `COLLECT`.
 2. Answer every pending inbox item with the affordable option of highest decision value (below). Perk choices go by a fixed preference: Earner, Ghost, Fixer, Steady, Mentor, Bargainer.
-3. Tolya: haggle when `haggleOdds` is at least `haggleAbove` (0.6) and Dirty covers the haggled price; otherwise pay the demand if affordable. It never refuses. Repair rackets below 75 condition.
+3. Tolya: haggle when `haggleOdds` is at least `haggleAbove` (0.6) and Dirty covers the haggled price; otherwise pay the demand if affordable. It never refuses. Repair rackets below 75 condition. From Act II, when stock is within 10% of its cap and production outruns sales, sell Zhanna packs down to 70% of the cap, within her daily limit.
 4. Set each front's dial: lay low while heat is above 55; push when the Dirty waiting to be washed (Dirty above the reserve, plus buffers) exceeds `pushBacklogHours` (6) of the front's base throughput and pushing keeps the heat target within 55; otherwise normal.
 5. Deposit Dirty into fronts, best rate first, up to buffer caps, keeping a reserve of 12 h of wages and upkeep plus one bribe.
 6. Bribe if heat is above 55.
 7. Buy an official if affordable and heat or heat target is above 30.
 8. Buy any unlocked front. Recruit into empty slots (highest stat total); past two crew, only while wages after the hire stay under `maxWageShare` (25%) of yield. Raise anyone under 35 loyalty.
 9. Dispatch idle crew, one job at a time, greedily by value per crew member, over the fixed jobs and the offers on the board (below). Smuggling is a candidate only when stock would run out within `stockReserveHours` (12) and the Clean it costs isn't needed for the next planned purchase.
-10. Anyone still idle trains the stat with the most room under its ceiling, if Dirty after the lesson stays above the reserve.
+10. Anyone still idle trains the stat with the most room under its ceiling, if Dirty after the lesson stays above the reserve. Then, from Act II, buy a lot from Zhanna when her next one is in, stock would run out within `stockReserveHours` (12), and Dirty after her price stays above the reserve.
 11. Buy a district when affordable and its tribute plus perks (yield bonuses on what the bot runs there, cheaper wages) over 48 h exceed the buy-out. It never saves Clean for one.
 12. Spend Clean, repeatedly, on the best gain ÷ cost: a new front first; front rate and capacity upgrades when utilization is at least `fronts.suspicionStartUtil`; a new joint or racket in the district with the best yield multiplier; premises on the lot where they help most (below); or a tier upgrade. Joints and joint tiers are discounted by the shortage they would cause. The upgrade to tier 3 is offered twice, greed and stealth, and the heat-budget filter leaves stealth when greed runs too hot. It skips anything that pushes the heat target above 55, unless an official is affordable right now.
 13. `SESSION_END`.
@@ -46,6 +46,8 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 **Job value** (`bestDispatch`) = expected Dirty + expected Rep × 10 + expected Influence × (3 h of yield × urgency) + P(success) × district flip value + growth + goods − expected heat spike × heat cost. Growth is, per member and stat, the expected XP ÷ that stat's point cost × `xpValue` (3), skipping stats at their ceiling. The total is divided by the number of sessions the job blocks. Urgency rises as heat or heat target climbs past 30, so the bot runs Influence jobs when it needs an official. Offers on the board are candidates too, valued with their own terms (`opDirtyRewardFor` on the offer's `cfg`). Training jobs aren't dispatch candidates; step 10 handles them.
 
 **Supply value.** A pack is worth the joints' `atStake` over the packs they sell. A new factory or factory tier is worth `0.6 × Σ atStake × (shortfall before − shortfall after)`, with `shortfall = max(0, 1 − made ÷ demand)`, but only while stock would run out within `supplyHorizonHours` (24): a casual player reacts to the Supply card, not to a deficit days away. A new factory also counts the joint bonus it switches on in its district. A warehouse or warehouse tier is worth half the surplus it would bank over a day, while production outruns sales and stock is within 10% of the cap. Upkeep comes off both. Smuggling's goods are its expected packs, up to the room in stock, × Dirty per pack, minus its Clean × 2.
+
+**Act II premises.** A Stash House, or a stash tier, is worth the overnight vault loss its extra hours would save: `min(extra hours, 10 − the act's target hours − hours already added) × yield ÷ 24`. A new stash also counts a small share of its raid shield, weighted by its district's yield, so it goes where the money is. A Union Office, or a tier, is worth its Influence × the Influence value jobs use, which is 0 once no official is left to buy. In practice the bot has bought the Precinct Captain before the office unlocks, so it never builds one.
 
 **Gold.** The casual bot never spends gold, so the pacing guard measures the free game. `GOLD_RUSH` (`--persona goldRush`) is the casual bot plus one habit: after dispatching, it rushes every running job it can afford, soonest first, and dispatches again ([systems/gold.md](systems/gold.md)).
 
@@ -76,7 +78,7 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 | hours ≥40 | Hourly rows with heat at or above `heat.inspectThreshold` |
 | Front util | Mean over hours of throughput-weighted smoothed utilization |
 | Dirty idle | Mean over sessions of `min(1, dirtyAfter ÷ income)` |
-| Vault fill | `vaultCap ÷ yield` at session end. Act I uses day-1 sessions; Act II uses day-4+ Act II sessions |
+| Vault fill | `vaultCapBase ÷ yield` at session end, so a Stash House's extra hours don't count; the report prints the best stash's extra hours beside it ([ADR 0037](decisions/0037-act-ii-premises.md)). Act I uses day-1 sessions; Act II uses day-4+ Act II sessions |
 | Op outcomes | Shares of `stats.opOutcomes` |
 | Tiers | Final businesses, abbreviated (`K5 M4 BT3 VS2 TF2 WH1 A3 …`) |
 | Decisions per session | Mean over sessions of `SessionRow.decisions` |

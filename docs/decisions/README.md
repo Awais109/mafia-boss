@@ -29,10 +29,10 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0014](0014-sim-persona-policy.md) | The casual bot's policy, and where it deviates from the plan | Accepted |
 | [0015](0015-act-ii-pacing.md) | Act II ends at 480 Rep with a compressed unlock ladder | Accepted |
 | [0016](0016-vault-and-dirty.md) | The vault and Dirty are separate buckets | Accepted |
-| [0017](0017-tolya-and-zhanna.md) | Tolya's visits and disposition; Zhanna is tribute only | Accepted |
+| [0017](0017-tolya-and-zhanna.md) | Tolya's visits and disposition; Zhanna is tribute only | Accepted; Zhanna superseded by 0036 |
 | [0018](0018-crew-rules.md) | Crew rules: wages, loyalty, walkouts, the nephew, traits, slots | Accepted |
 | [0019](0019-reputation-sources.md) | Rep comes from all Clean spending, jobs and districts | Accepted |
-| [0020](0020-sim-report-metrics.md) | How the sim report measures the dev manual's targets | Accepted; act clear rows superseded by 0022 |
+| [0020](0020-sim-report-metrics.md) | How the sim report measures the dev manual's targets | Accepted; act clear rows superseded by 0022; vault fill amended by 0037 |
 | [0021](0021-environment-doctor-and-native-env.md) | Environment doctor, per-command toolchain wrapper, default app IDs | Accepted |
 | [0022](0022-end-of-prototype-state.md) | The end of the prototype is a cleared Act II, said in words; reports measure from game start | Accepted |
 | [0023](0023-away-summary.md) | "While you were away" is built in the app from the catch-up reconcile | Accepted |
@@ -48,6 +48,8 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0033](0033-bigger-act-i.md) | A bigger Act I: four new businesses, Station Square, a third crew slot | Accepted |
 | [0034](0034-gold-bars.md) | Gold bars buy time and nothing else: skip ahead, finish now | Accepted |
 | [0035](0035-guided-opening.md) | A guided opening: buy the starting setup yourself, then Act I goals | Accepted |
+| [0036](0036-zhanna-and-the-port.md) | Zhanna sells lots of cigarettes, buys the surplus, and makes smuggling past her Port harder | Accepted |
+| [0037](0037-act-ii-premises.md) | Act II premises: the Stash House and the Union Office, and their synergies | Accepted |
 
 ## Template
 

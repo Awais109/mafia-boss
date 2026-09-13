@@ -17,7 +17,7 @@ import type {
 } from '../config/schema'
 import type { GameEvent } from './events'
 
-export const SCHEMA_VERSION = 6
+export const SCHEMA_VERSION = 7
 export const LOG_CAP = 200
 export const LEDGER_ROWS = 8 // 7 closed days plus today's opening snapshot
 
@@ -88,6 +88,14 @@ export type TolyaState = {
   demand: number | null // tribute demanded; refused if still unpaid at the next tick
   haggledTick: number | null // tickCount when a haggle over the current demand failed
   forceResult?: 'tribute' // the next visit is a demand (the opening schedules one)
+}
+
+// Zhanna (ADR 0036): lots of cigarettes and a buyer for the surplus, from Act II.
+export type ZhannaState = {
+  disposition: number
+  nextShipmentAt: number // her next lot is in
+  shipmentsBought: number
+  surplusToday: { day: number; packs: number } // packs she's bought today
 }
 
 // What an inbox option does, materialized when the item is filed.
@@ -230,7 +238,7 @@ export type PlayerState = {
   wagesOwed: number // accrues continuously, settled at each day boundary
   upkeepOwed: number // premises upkeep: accrues continuously, settled after wages
   influenceToday: { day: number; amount: number } // ops Influence, for the daily cap
-  rival: { tolya: TolyaState }
+  rival: { tolya: TolyaState; zhanna: ZhannaState }
   tutorial: { step: number; done: boolean }
   goals: { done: GoalId[] } // Act I goals completed (ADR 0035)
   firstConversionDone: boolean
