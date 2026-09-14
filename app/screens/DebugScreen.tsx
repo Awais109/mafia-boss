@@ -105,6 +105,7 @@ function StatePanel({ game }: { game: Snapshot }) {
           <Btn small kind="danger" title="Arrest" onPress={() => d({ type: 'DEBUG_FORCE_ARREST' })} />
           <Btn small title="Tolya visits" onPress={() => d({ type: 'DEBUG_FORCE_TOLYA' })} />
           <Btn small title={`Finish ${s.ops.length} jobs`} disabled={!s.ops.length} onPress={() => d({ type: 'DEBUG_COMPLETE_OPS' })} />
+          <Btn small title="Complete goals → Act II" disabled={s.act !== 1} onPress={() => d({ type: 'DEBUG_COMPLETE_GOALS' })} />
           <Btn small title="New recruits" onPress={() => d({ type: 'DEBUG_REFRESH_POOL' })} />
           <Btn small title="Incident" onPress={() => d({ type: 'DEBUG_FORCE_INCIDENT' })} />
           <Btn small title="New offers" onPress={() => d({ type: 'DEBUG_REFRESH_OFFERS' })} />

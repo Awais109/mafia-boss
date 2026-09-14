@@ -36,6 +36,7 @@ export type DebugAction =
   | { type: 'DEBUG_GRANT'; dirty?: number; clean?: number; influence?: number; cigarettes?: number; gold?: number }
   | { type: 'DEBUG_SET_HEAT'; heat: number }
   | { type: 'DEBUG_SET_REP'; reputation: number }
+  | { type: 'DEBUG_COMPLETE_GOALS' }
   | { type: 'DEBUG_FORCE_RAID' }
   | { type: 'DEBUG_FORCE_ARREST' }
   | { type: 'DEBUG_FORCE_TOLYA' }

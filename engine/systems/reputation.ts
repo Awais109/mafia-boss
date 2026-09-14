@@ -1,6 +1,5 @@
 import { emit, type Ctx } from '../core/ctx'
 import type { PlayerState } from '../model/state'
-import { grantGold } from './gold'
 
 // Rep = perCleanSpent per Clean spent + perOpSuccess per successful op + perDistrict per district.
 export function gainRep(state: PlayerState, ctx: Ctx, t: number, amount: number): void {
@@ -15,16 +14,10 @@ export function spendClean(state: PlayerState, ctx: Ctx, t: number, cost: number
   gainRep(state, ctx, t, cost * ctx.c.reputation.perCleanSpent)
 }
 
+// Act I → Act II is gated by Act I goals now, not Reputation (ADR 0039) — see `checkActII` in
+// `engine/systems/goals.ts`. This only ever handles Act II being "cleared", which stays Rep-based.
 export function checkActs(state: PlayerState, ctx: Ctx, t: number): void {
   const th = ctx.c.reputation.actThresholds
-  if (state.act === 1 && state.reputation >= th[2]) {
-    state.act = 2
-    state.stats.actClearedAt[1] = t
-    emit(ctx, t, { type: 'ACT_UNLOCKED', act: 2 })
-    grantGold(state, ctx, t, ctx.c.gold.perActUnlocked[2], 'act')
-    // Zhanna's trade opens with the Port (ADR 0036).
-    emit(ctx, t, { type: 'NOTE', text: 'Zhanna runs the Port Quarter. Her people watch every crate that moves.' })
-  }
   if (state.act === 2 && state.reputation >= th[3] && state.stats.actClearedAt[2] === undefined) {
     state.stats.actClearedAt[2] = t
     emit(ctx, t, { type: 'ACT_CLEARED', act: 2 })

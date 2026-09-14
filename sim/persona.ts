@@ -12,6 +12,7 @@ import {
   influenceRoom,
   jobXp,
   OFFICIAL_IDS,
+  openLots,
   openSpots,
   opConfigAt,
   opDirtyRewardFor,
@@ -31,6 +32,7 @@ import {
   type Derived,
   type DistrictId,
   type FrontMode,
+  type GoalId,
   type InboxEffects,
   type InboxItem,
   type OpConfig,
@@ -137,6 +139,75 @@ export function playSession(
 
   // 1. Collect
   tryAct({ type: 'COLLECT' })
+
+  // Goal-directed (ADR 0039): Act II needs every Act I goal done, and the bot's normal economic
+  // logic doesn't reliably trigger three of them (they only fire on a predicted shortage or high
+  // front utilization, both rare under the tuned economy) — a real player would just do these
+  // deliberately once they know goals gate Act II, so the bot does too, ahead of its usual priority.
+  // Runs before the deposit step below, so any new upkeep this session is already reflected in the
+  // reserve it keeps back — otherwise a session's deposit can drain Dirty past what a goal purchase
+  // is about to obligate it to. Gated on the same wage/upkeep reserve health the rest of the bot
+  // respects: none of this should run while Dirty is already tight.
+  const goalDone = (id: GoalId) => state.goals.done.includes(id)
+  const dirtyHealthy = state.dirty >= (d().wagesPerHr + d().upkeepPerHr) * p.reserveWageHours
+
+  if (dirtyHealthy && !goalDone('factoryTier2')) {
+    const factory = state.rackets.find((r) => r.type === 'tobaccoFactory' && r.tier < 2)
+    if (factory) {
+      const cost = formulas.racketUpgradeCost(c, 'tobaccoFactory', factory.tier)
+      if (state.clean >= cost) tryAct({ type: 'UPGRADE_RACKET', racketId: factory.id })
+    }
+  }
+
+  if (dirtyHealthy && !goalDone('workFront')) {
+    for (const f of d().perFront) {
+      const level = state.fronts.find((x) => x.id === f.id)!.level
+      if (level >= 2 || f.upgradeCost === null || state.clean < f.upgradeCost) continue
+      tryAct({ type: 'UPGRADE_FRONT', frontId: f.id, track: 'rate' })
+    }
+  }
+
+  if (dirtyHealthy && (state.stats.opsByType.smuggleCigarettes ?? 0) < 3 && opUnlocked(state, c, 'smuggleCigarettes')) {
+    const op = c.ops.list.smuggleCigarettes
+    const idle = state.crew.filter((m) => m.status === 'idle')
+    if (idle.length >= op.crew && state.clean >= (op.costClean ?? 0)) {
+      const team = [...idle].sort((a, b) => statSum(b) - statSum(a)).slice(0, op.crew)
+      tryAct({ type: 'START_OP', opType: 'smuggleCigarettes', crewIds: team.map((m) => m.id) })
+    }
+  }
+
+  if (dirtyHealthy && !goalDone('secondDistrict')) {
+    // Complete home plus the cheapest other unlocked district: every allows-slot, every premises lot.
+    const home = DISTRICT_IDS.find((id) => c.districts.list[id].home)!
+    const owned = DISTRICT_IDS.filter((id) => controllerOf(state, id) === 'player')
+    let targets = owned.length >= 2 ? owned.slice(0, 2) : [home]
+    if (targets.length < 2) {
+      const buyable = DISTRICT_IDS.filter((id) => d().unlocked.district[id] && controllerOf(state, id) !== 'player').sort(
+        (a, b) => c.districts.list[a].buyout - c.districts.list[b].buyout,
+      )
+      const pick = buyable.find((id) => state.clean >= c.districts.list[id].buyout)
+      if (pick && tryAct({ type: 'BUY_DISTRICT', districtId: pick })) targets = [home, pick]
+    }
+    for (const id of targets) {
+      for (let guard = 0; guard < 10; guard++) {
+        const now = d()
+        const spot = openSpots(state, c, id).find((t) => now.unlocked.racket[t] && state.clean >= now.costs.racket[t])
+        if (spot && tryAct({ type: 'BUY_RACKET', racketType: spot, districtId: id })) continue
+        const lot = openLots(state, c, id) > 0
+        // Cap upkeep relative to yield here too (same spirit as the wage-share guard on hiring below):
+        // completing a district's premises lots is a goal requirement, not a reason to run the upkeep away.
+        const premises = lot
+          ? RACKET_TYPES.find((t) => {
+              if (c.rackets.types[t].kind !== 'premises' || !now.unlocked.racket[t]) return false
+              if (premisesBlocked(state, c, id, t) || state.clean < now.costs.racket[t]) return false
+              return now.upkeepPerHr + formulas.premisesUpkeep(c, t, 1) <= p.maxWageShare * now.yieldPerHr
+            })
+          : undefined
+        if (premises && tryAct({ type: 'BUY_RACKET', racketType: premises, districtId: id })) continue
+        break
+      }
+    }
+  }
 
   // Answer every pending decision with the option worth most to the bot.
   for (const item of [...state.inbox]) {

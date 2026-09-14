@@ -21,15 +21,20 @@ function meanOf(summaries: Summary[], pick: (s: Summary) => number | null): numb
 describe('casual bot pacing on default config', () => {
   const summaries = SEEDS.map((seed) => summarize(simulate({ config, preset: 'default', days: 8, seed })))
 
-  it('clears Act I in about 1–2 days', () => {
-    // Borderline in TUNING.md (1.92 d over 10 seeds): guard against drifting later, not the exact band.
-    expect(meanOf(summaries, (s) => s.actClear1)).toBeLessThanOrEqual(2.1)
+  it('clears Act I in about 4–5.5 days (goal-gated now, ADR 0039)', () => {
+    // Was ≤2.1 d under the old Rep-threshold gate. Completing every Act I goal — especially fully
+    // building two districts — genuinely takes longer; 4.55 d mean over these 5 seeds (TUNING.md).
+    const actI = meanOf(summaries, (s) => s.actClear1)
+    expect(actI).toBeGreaterThanOrEqual(4)
+    expect(actI).toBeLessThanOrEqual(5.5)
   })
 
-  it('clears Act II 3–5 days after Act I', () => {
+  it('clears Act II 1–2.2 days after Act I', () => {
+    // Was 3–5 d under the old gate. A bot that took this long to finish Act I's goals enters Act II
+    // heavily built up already, so it clears faster than before; 1.73 d mean over these 5 seeds.
     const actII = meanOf(summaries, (s) => s.actClear2)
-    expect(actII).toBeGreaterThanOrEqual(3)
-    expect(actII).toBeLessThanOrEqual(5)
+    expect(actII).toBeGreaterThanOrEqual(1)
+    expect(actII).toBeLessThanOrEqual(2.2)
   })
 
   it('keeps heat on schedule with no more than one raid and no missed wages', () => {
@@ -41,10 +46,11 @@ describe('casual bot pacing on default config', () => {
   })
 
   it('leaves Act I at a day or more even when every gold bar goes on finishing jobs', () => {
-    // The gate sits right at its limit with the owner's gold numbers (TUNING.md, M5), so it's measured on the
-    // same ten seeds the tuning runs use; seeds 42–46 alone average 0.94 d. Act I always clears within 3 days.
+    // Gold speeds up jobs, not the building goals now gate Act I on (ADR 0039), so it barely moves
+    // this number any more — but the floor is still worth guarding. Needs 6 days, not 3, for every
+    // seed to reach the milestone at the new pace (TUNING.md).
     const TEN = Array.from({ length: 10 }, (_, i) => String(42 + i))
-    const rush = TEN.map((seed) => summarize(simulate({ config, preset: 'default', days: 3, seed, persona: GOLD_RUSH })))
+    const rush = TEN.map((seed) => summarize(simulate({ config, preset: 'default', days: 6, seed, persona: GOLD_RUSH })))
     expect(rush.every((s) => s.goldSpent > 0)).toBe(true)
     expect(meanOf(rush, (s) => s.actClear1)).toBeGreaterThanOrEqual(1)
   })

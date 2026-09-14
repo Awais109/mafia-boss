@@ -9,7 +9,7 @@ const z = config.rivals.zhanna
 
 // A game in Act II with money to trade.
 function inActII(): PlayerState {
-  const s = act(fresh('zhanna'), [{ type: 'DEBUG_SET_REP', reputation: config.reputation.actThresholds[2] }], T0)
+  const s = act(fresh('zhanna'), [{ type: 'DEBUG_COMPLETE_GOALS' }], T0)
   s.dirty = 1000
   s.clean = 1000
   return s

@@ -85,6 +85,12 @@ describe('migrate', () => {
     expect(m.stats.gold.granted).toBe(config.gold.starting)
   })
 
+  it('drops the retired actII goal from an old save, keeping everything else it finished', () => {
+    const v7 = { ...JSON.parse(JSON.stringify(fresh())), schemaVersion: 7, goals: { done: ['wardCop', 'actII', 'soldier'] } }
+    const m = migrate(v7)
+    expect(m.goals.done).toEqual(['wardCop', 'soldier'])
+  })
+
   it('a migrated save keeps playing: the board fills on the next catch-up', () => {
     const m = migrate(asV1())
     const r = reconcile(m, m.updatedAt + H, config)

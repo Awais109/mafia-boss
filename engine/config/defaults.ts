@@ -443,6 +443,8 @@ export const defaults: Config = {
     perDistrict: 20,
     // 3 = Act II cleared (Act III is stubbed). 480 ≈ Rep the casual bot holds 4 days after Act I (TUNING.md).
     // 80/480 → 90/540 with gold (M4); +38 for the opening's setup Rep and +15/+32 for its faster start (M5): TUNING.md.
+    // [2] no longer gates Act I → Act II (ADR 0039: that's goals.list completion now) — kept as the historical
+    // reference point the unlock ladder was tuned against, and unread by checkActs.
     actThresholds: { 2: 143, 3: 610 },
   },
 
@@ -462,10 +464,11 @@ export const defaults: Config = {
   },
 
   // Act I goals (ADR 0035): shown once the opening is over; each pays rewardGold once.
+  // Act II opens once every one of these is done (ADR 0039) — not a Reputation threshold.
   goals: {
     enabled: true,
     rewardGold: 1,
-    list: ['secondDistrict', 'factoryTier2', 'thirdCrew', 'wardCop', 'workFront', 'smuggleRun', 'soldier', 'actII'],
+    list: ['secondDistrict', 'factoryTier2', 'thirdCrew', 'wardCop', 'workFront', 'smuggleRun', 'soldier'],
   },
 
   // Gold bars (ADR 0034): each buys an hour of waiting. You start with some and get more when an act opens.

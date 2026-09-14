@@ -19,7 +19,8 @@ export function HomeScreen({ game, go }: ScreenProps) {
   const idle = s.crew.filter((m) => m.status === 'idle').length
   const nextPayday = (Math.floor(now / dayMs(c)) + 1) * dayMs(c)
   const demand = s.rival.tolya.demand
-  const nextAct = s.act === 1 ? c.reputation.actThresholds[2] : c.reputation.actThresholds[3]
+  // Only meaningful once in Act II: Act I → Act II is goal-gated now, not Rep-gated (ADR 0039).
+  const nextAct = c.reputation.actThresholds[3]
   // Milestones come from stats, which persist; the ACT_* events fall out of the 200-event log.
   const reachedActII = s.stats.actClearedAt[1]
   const clearedActII = s.stats.actClearedAt[2]
@@ -59,6 +60,7 @@ export function HomeScreen({ game, go }: ScreenProps) {
       {goals && (
         <Section title="Act I goals" right={<T small muted>{`${glyph.gold}${c.goals.rewardGold} each`}</T>}>
           <Card>
+            <T small muted>{`${s.goals.done.length}/${c.goals.list.length} done — Act II opens once every one is`}</T>
             {goals.map((g) => (
               <T key={g.id} small color={g.done ? colors.good : colors.text}>
                 {`${g.done ? '✓' : '·'} ${g.text}`}
@@ -128,7 +130,7 @@ export function HomeScreen({ game, go }: ScreenProps) {
         <Card>
           {s.act === 1 ? (
             <T small muted>
-              Act II at ★{fmt(nextAct)}: the Restaurant front, more crew slots, the Port Quarter and Sovietsky Blocks.
+              Act II opens once every Act I goal above is done: the Restaurant front, more crew slots, the Port Quarter and Sovietsky Blocks.
             </T>
           ) : !cleared ? (
             <T small muted>
@@ -140,8 +142,14 @@ export function HomeScreen({ game, go }: ScreenProps) {
               the late game holds up, or export the log and start over from Debug.
             </T>
           )}
-          <Bar value={s.reputation} max={nextAct} color={colors.rep} />
-          <Row label="Reputation" value={cleared ? `★${fmt(s.reputation)}` : `★${fmt(s.reputation)} / ${fmt(nextAct)}`} color={colors.rep} />
+          {s.act === 1 ? (
+            <Row label="Reputation" value={`★${fmt(s.reputation)}`} color={colors.rep} />
+          ) : (
+            <>
+              <Bar value={s.reputation} max={nextAct} color={colors.rep} />
+              <Row label="Reputation" value={cleared ? `★${fmt(s.reputation)}` : `★${fmt(s.reputation)} / ${fmt(nextAct)}`} color={colors.rep} />
+            </>
+          )}
           {reachedActII !== undefined && <Row label="Act II reached" value={fmtClock(reachedActII, s.createdAt, c)} />}
           {clearedActII !== undefined && <Row label="Act II cleared" value={fmtClock(clearedActII, s.createdAt, c)} />}
           {cleared && (

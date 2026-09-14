@@ -30,6 +30,7 @@ function busy(): PlayerState {
       { type: 'DEBUG_FORCE_INCIDENT', incidentType: 'shopkeeperLead' },
       { type: 'BUY_OFFICIAL', officialId: 'wardCop' },
       { type: 'BRIBE' },
+      { type: 'DEBUG_COMPLETE_GOALS' },
       { type: 'DEBUG_SET_REP', reputation: config.rackets.types.unionOffice.unlockRep },
       { type: 'BUY_FRONT', frontType: 'restaurant' },
       { type: 'BUY_RACKET', racketType: 'warehouse', districtId: 'stationSquare' },

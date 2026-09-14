@@ -93,7 +93,15 @@ function v6to7(doc: Doc): Doc {
   return { ...doc, schemaVersion: 7, rival: { ...rival, zhanna } }
 }
 
-const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7 }
+// v8: Act II is gated by Act I goals now, not Reputation, and `actII` was a circular goal (it
+// checked being in Act II) so it's gone from the goal list (ADR 0039). A save that already
+// completed it just loses that entry; `state.act` itself is untouched either way.
+function v7to8(doc: Doc): Doc {
+  const goals = doc.goals as { done: string[] }
+  return { ...doc, schemaVersion: 8, goals: { ...goals, done: goals.done.filter((id) => id !== 'actII') } }
+}
+
+const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7, 7: v7to8 }
 
 export function migrate(doc: unknown): PlayerState {
   if (typeof doc !== 'object' || doc === null) throw new Error('Save is not an object')

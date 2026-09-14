@@ -1,8 +1,8 @@
 # Progression: reputation, acts, tutorial
 
-Reputation is the progress currency: it opens Act II, unlocks bigger rackets and the Restaurant, and ends Act II. The guided opening walks a new player through buying the starting setup and then the loop; Act I goals give a reason to come back.
+Reputation is the progress currency: it unlocks bigger rackets, the Restaurant, districts and officials, and ends Act II. Act I → Act II itself is gated by finishing every Act I goal, not by Reputation ([ADR 0039](../decisions/0039-goals-gate-act-two.md)). The guided opening walks a new player through buying the starting setup and then the loop; Act I goals give a reason to come back, and now decide when Act II opens.
 
-**Code:** `engine/systems/reputation.ts` (`gainRep`, `spendClean`, `checkActs`), `engine/systems/tutorial.ts` (`TUTORIAL_STEPS`, `currentTutorialStep`, `tutorialOnAction`), `engine/systems/goals.ts` (`GOAL_CHECKS`, `checkGoals`), `engine/newGame.ts`, the quick start in `engine/core/apply.ts` (`applyQuickStart`). The copy lives in `app/components/TutorialBanner.tsx` and `app/goals.ts`.
+**Code:** `engine/systems/reputation.ts` (`gainRep`, `spendClean`, `checkActs` — Act II "cleared" only), `engine/systems/tutorial.ts` (`TUTORIAL_STEPS`, `currentTutorialStep`, `tutorialOnAction`), `engine/systems/goals.ts` (`GOAL_CHECKS`, `checkGoals`, `checkActII` — the Act I → Act II transition), `engine/newGame.ts`, the quick start in `engine/core/apply.ts` (`applyQuickStart`). The copy lives in `app/components/TutorialBanner.tsx` and `app/goals.ts`.
 **Config:** `reputation.*`, the `unlockRep` fields in `rackets.types` and `fronts.types`, `tutorial.*`, `opening.quickStart`, `crew.openingPool`, `goals.*`, and the `vault.starting*` fields.
 
 ## Reputation
@@ -19,16 +19,14 @@ Reputation is the progress currency: it opens Act II, unlocks bigger rackets and
 
 ## Acts
 
-`checkActs` runs after every Rep gain.
-
-- **Act II** opens at `reputation.actThresholds[2]`. `state.act` becomes 2, `stats.actClearedAt[1]` is recorded, and `ACT_UNLOCKED` plus a note about Zhanna are emitted, and `gold.perActUnlocked[2]` gold bars are granted ([gold.md](gold.md)). What changes:
-  - Act II racket types (each still gated by its `unlockRep`) and the Restaurant (its own `unlockRep`);
+- **Act II** opens the instant every goal in `goals.list` is in `state.goals.done` ([ADR 0039](../decisions/0039-goals-gate-act-two.md)) — checked by `checkActII` (`engine/systems/goals.ts`), called once at the end of `checkGoals` after that boundary's goal completions are recorded. `state.act` becomes 2, `stats.actClearedAt[1]` is recorded, and `ACT_UNLOCKED` plus a note about Zhanna are emitted, and `gold.perActUnlocked[2]` gold bars are granted ([gold.md](gold.md)). What changes:
+  - Act II racket types (each still gated by its `unlockRep`) and the Restaurant (its own `unlockRep`, and unlike rackets/districts/officials, Rep-gated only — it doesn't check `state.act` at all);
   - the Port Quarter and Sovietsky Blocks, the Precinct Captain, and the Move a Shipment job;
   - `crew.slotsByAct[2]` crew slots, and recruits from `crew.statBandByAct[2]`;
   - recruit and raise costs scaled by act, and job Dirty × `2^ops.rewardActScaling`.
-- **Act II is cleared** at `reputation.actThresholds[3]`: `stats.actClearedAt[2]` and `ACT_CLEARED`. The game carries on in Act II. **Act III and later are not built**; the threshold is named 3 only to mark the end of Act II ([ADR 0015](../decisions/0015-act-ii-pacing.md)). The app says so in words: the header reads `Act II cleared`, and Home lists both act milestones from `stats.actClearedAt`, since the events themselves fall out of the 200-event log ([ADR 0022](../decisions/0022-end-of-prototype-state.md)).
+- **Act II is cleared** at `reputation.actThresholds[3]`: `stats.actClearedAt[2]` and `ACT_CLEARED`, still checked by `checkActs` (`engine/systems/reputation.ts`) after every Rep gain — this half is unchanged by ADR 0039. The game carries on in Act II. **Act III and later are not built**; the threshold is named 3 only to mark the end of Act II ([ADR 0015](../decisions/0015-act-ii-pacing.md)). The app says so in words: the header reads `Act II cleared`, and Home lists both act milestones from `stats.actClearedAt`, since the events themselves fall out of the 200-event log ([ADR 0022](../decisions/0022-end-of-prototype-state.md)).
 
-The unlock ladder (`rackets.types.*.unlockRep`) sits below the Act II clear threshold, so every business opens within the act. Every non-zero threshold includes the 38 Rep the opening's setup earns ([ADR 0035](../decisions/0035-guided-opening.md)).
+`reputation.actThresholds[2]` (143) is no longer read by any gate — it's kept as the historical reference point the unlock ladder (`rackets.types.*.unlockRep`) was tuned against, so every business still opens within the act it's tagged for even though nothing checks Act I → Act II against it directly any more. Every non-zero threshold includes the 38 Rep the opening's setup earns ([ADR 0035](../decisions/0035-guided-opening.md)).
 
 ## New game
 
@@ -77,18 +75,19 @@ Each step emits `TUTORIAL_STEP`.
 
 ## Act I goals
 
-([ADR 0035](../decisions/0035-guided-opening.md)) `goals.list`, checked by `checkGoals` after every action and at every reconcile boundary once the opening is over, so each is dated to the boundary where its condition first held. Each pays `goals.rewardGold` gold once (`GOAL_DONE { goalId, gold }`, a `goal` grant; [gold.md](gold.md)) and is kept in `state.goals.done`. Home lists them until all are done.
+([ADR 0035](../decisions/0035-guided-opening.md), gate [ADR 0039](../decisions/0039-goals-gate-act-two.md)) `goals.list`, checked by `checkGoals` after every action and at every reconcile boundary once the opening is over, so each is dated to the boundary where its condition first held. Each pays `goals.rewardGold` gold once (`GOAL_DONE { goalId, gold }`, a `goal` grant; [gold.md](gold.md)) and is kept in `state.goals.done`. Home lists them until all are done — and once all are, Act II opens (see Acts, above).
 
 | Goal | Done when |
 |---|---|
-| `secondDistrict` | you control at least two districts |
+| `secondDistrict` | two districts are controlled *and* fully built: every joint/racket slot they allow, and every premises lot, filled |
 | `factoryTier2` | a Tobacco Factory is at tier 2 or more |
 | `thirdCrew` | the crew is 3 |
 | `wardCop` | the Ward Cop is on the payroll |
-| `workFront` | a front's dial was changed, or a front has a capacity level |
-| `smuggleRun` | a smuggling job was sent |
+| `workFront` | both front types are owned, each at rate level 2 or more |
+| `smuggleRun` | 3 smuggling jobs have been sent |
 | `soldier` | anyone reached Soldier |
-| `actII` | Act II is open |
+
+There used to be an eighth goal, `actII` ("Reach Act II") — removed under ADR 0039, since it checked `state.act >= 2`, which can't hold before Act II opens once Act II requires every goal done.
 
 ## Playtest stats
 
@@ -106,4 +105,4 @@ Each step emits `TUTORIAL_STEP`.
 
 Sessions come from the app dispatching `SESSION_START` and `SESSION_END`.
 
-**Tests:** `tests/opening.test.ts` (an empty start; the scripted path in order and affordable, ending where Skip does; purchases out of order; skipping part-way; a skip short of Clean; the tutorial off), `tests/goals.test.ts` (each goal pays once; goals wait for the opening), `tests/apply.test.ts` (the first-session loop, reaching Act II), `tests/sim.test.ts` (act clear times for the bot).
+**Tests:** `tests/opening.test.ts` (an empty start; the scripted path in order and affordable, ending where Skip does; purchases out of order; skipping part-way; a skip short of Clean; the tutorial off), `tests/goals.test.ts` (each goal pays once, opens Act II when the last one lands; goals wait for the opening; Act II stays shut with one goal still open), `tests/apply.test.ts` (the first-session loop; completing every goal reaching Act II), `tests/sim.test.ts` (act clear times for the bot), `tests/migrate.test.ts` (an old save's completed `actII` goal is dropped, not carried forward).

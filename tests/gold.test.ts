@@ -66,12 +66,14 @@ describe('gold bars', () => {
   })
 
   it('opening Act II and Debug grant bars', () => {
-    const s = act(fresh(), [{ type: 'DEBUG_SET_REP', reputation: config.reputation.actThresholds[2] }], T0)
-    expect(s.gold).toBe(config.gold.starting + config.gold.perActUnlocked[2])
-    expect(s.log.find((e) => e.type === 'GOLD_GRANTED')).toMatchObject({ source: 'act', amount: config.gold.perActUnlocked[2] })
+    // Completing every goal (ADR 0039) pays each goal's own bar, plus the act-unlock grant.
+    const s = act(fresh(), [{ type: 'DEBUG_COMPLETE_GOALS' }], T0)
+    const goalGold = config.goals.list.length * config.goals.rewardGold
+    expect(s.gold).toBe(config.gold.starting + goalGold + config.gold.perActUnlocked[2])
+    expect(s.log.find((e) => e.type === 'GOLD_GRANTED' && e.source === 'act')).toMatchObject({ source: 'act', amount: config.gold.perActUnlocked[2] })
     const debug = act(s, [{ type: 'DEBUG_GRANT', gold: 10 }], T0)
     expect(debug.gold).toBe(s.gold + 10)
-    expect(debug.stats.gold.granted).toBe(config.gold.starting + config.gold.perActUnlocked[2] + 10)
+    expect(debug.stats.gold.granted).toBe(config.gold.starting + goalGold + config.gold.perActUnlocked[2] + 10)
   })
 
   it('a log with skips and rushes replays to the same game', () => {

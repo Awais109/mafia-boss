@@ -8,7 +8,7 @@ import { arrest, raid } from '../systems/heat'
 import { canAffordEffects, incidentNeedHolds, raiseIncident, resolveInboxItem } from '../systems/inbox'
 import { regenerateOffers } from '../systems/offers'
 import { opConfigAt, opMinutesFor, opUnlocked, resolveOp } from '../systems/ops'
-import { checkGoals } from '../systems/goals'
+import { checkActII, checkGoals } from '../systems/goals'
 import { grantGold, rushCost, skipCost } from '../systems/gold'
 import { checkActs, spendClean } from '../systems/reputation'
 import { bestHaggler, canHaggle, changeDisposition, changeZhanna, haggle, refuseDemand, surplusRoomToday, tolyaTick, zhannaDeals } from '../systems/rivals'
@@ -559,6 +559,19 @@ function handleDebug(state: PlayerState, ctx: Ctx, a: Action, t: number): string
       state.reputation = Math.max(0, a.reputation)
       note(String(state.reputation))
       checkActs(state, ctx, t)
+      return null
+    case 'DEBUG_COMPLETE_GOALS':
+      // Act II is gated by goals now, not Rep (ADR 0039) — this is Debug's fast path to it.
+      // Calls checkActII directly: checkGoals itself waits for the tutorial to end, which a
+      // Debug/test shortcut shouldn't have to satisfy first.
+      for (const id of c.goals.list) {
+        if (state.goals.done.includes(id)) continue
+        state.goals.done.push(id)
+        emit(ctx, t, { type: 'GOAL_DONE', goalId: id, gold: c.goals.rewardGold })
+        grantGold(state, ctx, t, c.goals.rewardGold, 'goal')
+      }
+      checkActII(state, ctx, t)
+      note()
       return null
     case 'DEBUG_FORCE_RAID':
       note()

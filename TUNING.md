@@ -173,6 +173,44 @@ New config, starting values from the expansion plan (ADRs 0031–0033):
             into cash on hand. Kept.
 ```
 
+## 2026-09-15 — Act II gated by Act I goals, not Reputation (ADR 0039)
+
+Structural change, not a number: Act I → Act II now requires every Act I goal done instead of
+`reputation >= actThresholds[2]`. `actII` (circular: it checked `state.act >= 2`) is removed from
+`goals.list`, leaving 7 goals; `secondDistrict` now needs two districts *fully built* (every allows-slot
+and premises lot, not just controlled), `workFront` needs both fronts at rate level 2 (not one dial
+change), `smuggleRun` needs 3 runs (not 1). Full reasoning and consequences in ADR 0039.
+
+```
+2026-09-15  goals.list: drop actII (7 goals, all required); secondDistrict/workFront/smuggleRun redefined harder
+            Symptom (expected, not a bug): the bot's normal economic logic doesn't trigger factoryTier2, smuggleRun or the new
+            workFront reliably — they only fire on a predicted shortage or high front utilization, both rare under the tuned
+            economy (this doc's own "Open" notes: shortages "none in Act I"; front util never logged above ~0.68). First sim
+            after the goal changes alone, before touching the bot: Act I never clears within 8 days for any of 10 seeds.
+2026-09-15  sim/persona.ts: goal-directed pursuit for factoryTier2, workFront, smuggleRun, secondDistrict
+            Added a block that bypasses each goal's normal economic trigger once its condition isn't met yet — a real player
+            would just do these deliberately once goals gate Act II, so the bot does too, ahead of its usual priority. First
+            placement (after crew upkeep, before dispatch): Act I 4.75 d mean (10 seeds) — huge improvement over "never," but
+            missed wages 0.00→0.30 (3/10 seeds), a real regression.
+2026-09-15  sim/persona.ts: capped new-premises upkeep at maxWageShare of yield in the district-completion logic (no effect)
+            Hypothesis: force-buying premises to complete a district was running upkeep away. Sim: byte-identical to the line
+            above (4.69/4.75 d, missed wages still 0.30) — wrong hypothesis, guard never actually bound.
+2026-09-15  sim/persona.ts: moved goal-pursuit block before the front-deposit step instead of after it (fixed)
+            Diagnosed the actual cause: deposits reserve based on wagesPerHr/upkeepPerHr computed *before* goal-pursuit's new
+            purchases that same session, so a session's deposit could drain Dirty past what a purchase later in the same
+            session was about to obligate it to. Moving goal-pursuit to run right after COLLECT, before deposits, means the
+            reserve always sees this session's new upkeep. Sim (10 seeds): missed wages 0.30→0.00, Act I 4.64 d, Act II 1.68 d
+            after Act I — otherwise unchanged. Kept.
+            Final (5 seeds 42–46, 8 d, matching tests/sim.test.ts): Act I 4.55 d, Act II 1.73 d after Act I, heat 34.05,
+            raids 0, missed wages 0, partial 0.47. goldRush (10 seeds, 6 d): Act I 3.25–5.04 d, still every seed ≥ 1 d — gold
+            barely accelerates Act I any more, since it speeds up jobs and the new gate is mostly building-driven.
+```
+
+**Test guards updated** (`tests/sim.test.ts`), not loosened past what the bot actually does: Act I clear
+2.1 d ceiling → 4–5.5 d band; Act II-after-Act-I 3–5 d → 1–2.2 d; the goldRush floor test's window
+3 d → 6 d (every seed now needs that long to reach the milestone at all). `sim/baseline.csv` regenerated
+(seed 42, 8 days) to match.
+
 ## Open
 
 - **Front utilization ~59% (target 70–90%) and Dirty idle ~68% (target 20–50%).** The bot keeps a large Dirty reserve and the fronts can wash more than it deposits. Dirty idle rose with M3's bigger Act I, and again with M6's Stash House, whose longer leash makes bigger collections.

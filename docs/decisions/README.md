@@ -47,10 +47,11 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0032](0032-supply-chain.md) | One city-wide cigarette stock: factories make, joints sell, warehouses keep | Accepted |
 | [0033](0033-bigger-act-i.md) | A bigger Act I: four new businesses, Station Square, a third crew slot | Accepted |
 | [0034](0034-gold-bars.md) | Gold bars buy time and nothing else: skip ahead, finish now | Accepted |
-| [0035](0035-guided-opening.md) | A guided opening: buy the starting setup yourself, then Act I goals | Accepted |
+| [0035](0035-guided-opening.md) | A guided opening: buy the starting setup yourself, then Act I goals | Accepted; the `actII` goal and "goals are optional" superseded by 0039 |
 | [0036](0036-zhanna-and-the-port.md) | Zhanna sells lots of cigarettes, buys the surplus, and makes smuggling past her Port harder | Accepted |
 | [0037](0037-act-ii-premises.md) | Act II premises: the Stash House and the Union Office, and their synergies | Accepted |
 | [0038](0038-live-event-notices.md) | Live event and unlock notices, queued one at a time; a `description` field on every business/front/district/official | Accepted |
+| [0039](0039-goals-gate-act-two.md) | Act II is gated by Act I goals, not Reputation; three goals redefined, `actII` removed | Accepted |
 
 ## Template
 

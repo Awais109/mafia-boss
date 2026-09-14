@@ -67,9 +67,9 @@ export type IncidentType = 'inspector' | 'drunkCrew' | 'shopkeeperLead' | 'copFa
 export const INCIDENT_TYPES: readonly IncidentType[] = ['inspector', 'drunkCrew', 'shopkeeperLead', 'copFavour', 'badBatch']
 export type IncidentNeed = 'idleCrew' | 'joint' | 'factory' | 'inspected'
 
-// Act I goals (ADR 0035), each paying gold once.
-export type GoalId = 'secondDistrict' | 'factoryTier2' | 'thirdCrew' | 'wardCop' | 'workFront' | 'smuggleRun' | 'soldier' | 'actII'
-export const GOAL_IDS: readonly GoalId[] = ['secondDistrict', 'factoryTier2', 'thirdCrew', 'wardCop', 'workFront', 'smuggleRun', 'soldier', 'actII']
+// Act I goals (ADR 0035, gate ADR 0039), each paying gold once. All of them must be done to open Act II.
+export type GoalId = 'secondDistrict' | 'factoryTier2' | 'thirdCrew' | 'wardCop' | 'workFront' | 'smuggleRun' | 'soldier'
+export const GOAL_IDS: readonly GoalId[] = ['secondDistrict', 'factoryTier2', 'thirdCrew', 'wardCop', 'workFront', 'smuggleRun', 'soldier']
 
 // One option on a pending decision (a crew report or an incident). Effects are materialized
 // into the save when the item is filed, so replays don't depend on later config edits.

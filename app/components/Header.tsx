@@ -7,13 +7,19 @@ import { Bar, colors, glyph } from './ui'
 export function Header({ game, onGold }: { game: Snapshot; onGold?: () => void }) {
   const { state: s, derived: d, config: c, now } = game
   const clearedAt = s.stats.actClearedAt[2]
-  const nextAct = s.act === 1 ? c.reputation.actThresholds[2] : c.reputation.actThresholds[3]
-  // Rep always says what the number is for: the Act II threshold, the Act II clear, or, once
-  // that's done, the day it happened. A bare "1,646/540" reads as a target that never fired.
+  const goalsTotal = c.goals.list.length
+  const goalsDone = s.goals.done.length
+  // Act I → Act II is goal-gated now (ADR 0039), so the bar tracks goals, not Rep, until then.
+  // Rep always says what the number is for otherwise: the Act II clear target, or, once that's
+  // done, the day it happened. A bare "1,646/540" reads as a target that never fired.
   const rep =
-    clearedAt !== undefined
-      ? `${fmt(s.reputation)} · Act II cleared on Day ${gameDay(c, s, clearedAt)}`
-      : `${fmt(s.reputation)}/${fmt(nextAct)} ${s.act === 1 ? 'to Act II' : 'to clear Act II'}`
+    s.act === 1
+      ? `${fmt(s.reputation)} · ${goalsDone}/${goalsTotal} goals to Act II`
+      : clearedAt !== undefined
+        ? `${fmt(s.reputation)} · Act II cleared on Day ${gameDay(c, s, clearedAt)}`
+        : `${fmt(s.reputation)}/${fmt(c.reputation.actThresholds[3])} to clear Act II`
+  const barValue = s.act === 1 ? goalsDone : s.reputation
+  const barMax = s.act === 1 ? goalsTotal : c.reputation.actThresholds[3]
   const heatColor = s.heat >= c.heat.raidThreshold ? colors.heat : s.heat >= c.heat.inspectThreshold ? colors.warn : colors.text
   const vaultFull = s.vault >= d.vaultCap - 1e-6
 
@@ -46,7 +52,7 @@ export function Header({ game, onGold }: { game: Snapshot; onGold?: () => void }
           {glyph.rep} Rep {rep}
         </Text>
         <View style={styles.repBar}>
-          <Bar value={s.reputation} max={nextAct} color={colors.rep} />
+          <Bar value={barValue} max={barMax} color={colors.rep} />
         </View>
       </View>
     </View>

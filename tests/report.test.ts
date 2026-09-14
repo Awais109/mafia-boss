@@ -8,7 +8,9 @@ import { config } from './helpers'
 // scored; measuring from the run's start reported a negative Act I clear on a second run.
 
 describe('sim report on a bot run over an existing save', () => {
-  const first = simulate({ config, preset: 'default', days: 3, seed: '42' })
+  // Act I now takes goal completion, not just Reputation (ADR 0039) — longer than the 3 days that
+  // used to comfortably clear it, so this needs enough days to reach the milestone the test checks.
+  const first = simulate({ config, preset: 'default', days: 6, seed: '42' })
   const second = botPlay(first.final, config, first.end, 5)
   const s1 = summarize(first)
   const s2 = summarize(second)

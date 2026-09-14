@@ -39,18 +39,21 @@ describe('fronts', () => {
 })
 
 describe('reputation and acts', () => {
-  it('crossing the Act II threshold unlocks the Restaurant and more crew slots', () => {
+  it('completing every Act I goal opens more crew slots (the Restaurant only ever needed Rep)', () => {
     let s = act(fresh(), [{ type: 'DEBUG_GRANT', clean: 1000 }], T0)
     expect(apply(s, { type: 'BUY_FRONT', frontType: 'restaurant' }, T0, config).error).toBeDefined()
-    s = act(s, [{ type: 'DEBUG_SET_REP', reputation: config.reputation.actThresholds[2] - 1 }, { type: 'BUY_RACKET', racketType: 'kiosk', districtId: 'kioskRow' }], T0)
+    // The Restaurant is gated by Rep alone, not by Act — buyable the moment Rep clears its unlockRep.
+    s = act(s, [{ type: 'DEBUG_SET_REP', reputation: config.fronts.types.restaurant.unlockRep }, { type: 'BUY_FRONT', frontType: 'restaurant' }], T0)
+    expect(derive(s, config).crewSlots).toBe(config.crew.slotsByAct[1])
+    // Rep alone no longer opens Act II (ADR 0039) — goals do.
+    s = act(s, [{ type: 'DEBUG_COMPLETE_GOALS' }], T0)
     expect(s.act).toBe(2)
     expect(s.stats.actClearedAt[1]).toBe(T0)
-    s = act(s, [{ type: 'BUY_FRONT', frontType: 'restaurant' }], T0)
-    expect(derive(s, config).crewSlots).toBe(4)
+    expect(derive(s, config).crewSlots).toBe(config.crew.slotsByAct[2])
   })
 
   it('districts only host their own kind of business', () => {
-    const s = act(fresh(), [{ type: 'DEBUG_GRANT', clean: 5000 }, { type: 'DEBUG_SET_REP', reputation: 900 }], T0)
+    const s = act(fresh(), [{ type: 'DEBUG_GRANT', clean: 5000 }, { type: 'DEBUG_COMPLETE_GOALS' }, { type: 'DEBUG_SET_REP', reputation: 900 }], T0)
     expect(apply(s, { type: 'BUY_RACKET', racketType: 'cargoBay', districtId: 'kioskRow' }, T0, config).error).toMatch(/fit/)
     expect(apply(s, { type: 'BUY_RACKET', racketType: 'kiosk', districtId: 'zarechye' }, T0, config).error).toMatch(/already/)
     expect(apply(s, { type: 'BUY_RACKET', racketType: 'cargoBay', districtId: 'portQuarter' }, T0, config).error).toBeUndefined()
@@ -109,7 +112,7 @@ describe('heat', () => {
   it('officials share a purchase cooldown', () => {
     const s = act(
       fresh(),
-      [{ type: 'DEBUG_GRANT', influence: 50 }, { type: 'DEBUG_SET_REP', reputation: config.reputation.actThresholds[2] }, { type: 'BUY_OFFICIAL', officialId: 'wardCop' }],
+      [{ type: 'DEBUG_GRANT', influence: 50 }, { type: 'DEBUG_COMPLETE_GOALS' }, { type: 'BUY_OFFICIAL', officialId: 'wardCop' }],
       T0,
     )
     expect(apply(s, { type: 'BUY_OFFICIAL', officialId: 'precinctCaptain' }, T0 + 24 * H, config).error).toMatch(/soon/)
@@ -208,7 +211,11 @@ describe('business kinds and premises lots', () => {
 
 describe('Act II premises', () => {
   const rich = () => {
-    const s = act(fresh(), [{ type: 'DEBUG_SET_REP', reputation: config.rackets.types.unionOffice.unlockRep }], T0)
+    const s = act(
+      fresh(),
+      [{ type: 'DEBUG_COMPLETE_GOALS' }, { type: 'DEBUG_SET_REP', reputation: config.rackets.types.unionOffice.unlockRep }],
+      T0,
+    )
     s.clean = 5000
     return s
   }
