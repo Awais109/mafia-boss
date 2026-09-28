@@ -3,6 +3,37 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-29 — Six acts, and Act III's Centre (M8)
+
+Branch: `feature/acts-iii-vi` (off `main` after `feature/expansion` merged). Reasoning: [ADR 0040](docs/decisions/0040-six-acts.md), [ADR 0041](docs/decisions/0041-act-iii-the-centre.md).
+
+### What changed, for a player
+
+- **The game has six acts now**, and the next one is always on screen: the header and Home show what it opens and every condition of its gate. Acts I–III are built; the rest follow.
+- **Act II is a full act again.** It leads to Act III at ★1,200 instead of ending the game at ★610, so it lasts about three days on the bot instead of two.
+- **Act III crosses the bridge to the Centre**: a Nightclub, a Card Club and a Print Shop; hotels; the Cooperative Bank, the best front yet; City Hall; the Big Score, a three-crew night's work.
+- **Prosperity**: from Act III every district has a prosperity from 0 to 100, and joints earn with it. Joints and hotels lift a street, rackets sour it, and running hot, getting raided or running out of cigarettes drags the whole city down. The Card Club needs a prosperous street; the Bank a prosperous city.
+- **Tier 6**, with a second greed-or-stealth choice on the way; Capo is a third perk choice.
+- **An investigator** comes for the Print Shop: shut it for a day or pay three hours of the city's takings.
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| Six acts and their gates | `engine/systems/acts.ts` (new; replaces `checkActII` and the old Act II clear), `engine/config/schema.ts` (`Act` 1–6, `ActGate`, `progression`), `app/acts.ts` (new) |
+| Prosperity | `engine/systems/prosperity.ts` (new), `engine/core/derive.ts`, `engine/core/reconcile.ts` (hourly step) |
+| One check for "can I buy this?" | `racketBlocked` (`engine/systems/districts.ts`), `frontBlocked` (`engine/systems/fronts.ts`), shared by the engine and the bot |
+| Shut businesses | `Racket.closedUntil`, `reopenBusinesses` (`engine/systems/rackets.ts`), `closeHours` / `dirtyHoursOfYield` choices (`engine/systems/inbox.ts`) |
+| Save schema v9 | `engine/model/migrate.ts` (`v8to9`) |
+| The bot | `sim/persona.ts` (sessions by act, `prosperityValues`, tier 6), `sim/report.ts` (a clear check for every built act) |
+| Tests | `tests/acts.test.ts`, `tests/prosperity.test.ts`, `tests/centre.test.ts` (new); an Act III fixture in the split test; the pacing guard runs 22 days |
+
+### Verified
+
+- `npm run check`: typecheck, lint, 145 tests.
+- `npm run sim -- --days 22 --runs 10`: Act II 3.28 d (10/10 in 3–5), Act III 6.47 d (8/10 in 6–8), heat 33.6, no raids, no missed wages. Every tuning move is in [TUNING.md](TUNING.md).
+- Not yet tried on a device.
+
 ## 2026-09-14 — Live event/unlock notices, a Stats page, a How It Works page, two economy fixes
 
 Branch: `feature/live-events-and-help` (off `feature/expansion`). Full plan and reasoning: [ADR 0038](docs/decisions/0038-live-event-notices.md).

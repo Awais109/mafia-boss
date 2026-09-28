@@ -23,11 +23,13 @@ import { addStock } from './supply'
 
 const EPS = 1e-6
 
-export function materializeChoice(choice: ChoiceConfig, act: number, jobDirty = 0): InboxOption {
+// yieldPerHr sizes options priced in hours of income (an investigator's price), fixed at filing.
+export function materializeChoice(choice: ChoiceConfig, act: number, jobDirty = 0, yieldPerHr = 0): InboxOption {
   const effects: InboxEffects = {}
-  const dirty = Math.round((choice.dirtyPct ?? 0) * jobDirty) + (choice.dirtyPerAct ?? 0) * act
+  const dirty =
+    Math.round((choice.dirtyPct ?? 0) * jobDirty) + (choice.dirtyPerAct ?? 0) * act + Math.round((choice.dirtyHoursOfYield ?? 0) * yieldPerHr)
   if (dirty) effects.dirty = dirty
-  for (const k of ['influence', 'rep', 'heat', 'loyalty', 'condition', 'disposition', 'cigarettes'] as const) {
+  for (const k of ['influence', 'rep', 'heat', 'loyalty', 'condition', 'disposition', 'cigarettes', 'closeHours'] as const) {
     if (choice[k]) effects[k] = choice[k]
   }
   return { id: choice.id, name: choice.name, effects }
@@ -76,7 +78,15 @@ export function incidentNeedHolds(state: PlayerState, c: Config, need: IncidentN
       return state.rackets.some((r) => (c.rackets.types[r.type].makesPerHr ?? 0) > 0)
     case 'inspected':
       return state.inspected
+    case 'printShop':
+      return state.rackets.some((r) => r.type === 'printShop' && r.closedUntil === undefined)
   }
+}
+
+// The business an incident is about, when its need names one.
+function incidentRacket(state: PlayerState, need: IncidentNeed | undefined): string | undefined {
+  if (need === 'printShop') return state.rackets.find((r) => r.type === 'printShop' && r.closedUntil === undefined)?.id
+  return undefined
 }
 
 export function raiseIncident(state: PlayerState, ctx: Ctx, t: number, type: IncidentType, pick: () => number): void {
@@ -84,19 +94,22 @@ export function raiseIncident(state: PlayerState, ctx: Ctx, t: number, type: Inc
   const cfg = c.incidents.types[type]
   const idle = state.crew.filter((m) => m.status === 'idle')
   const crewId = cfg.needs === 'idleCrew' && idle.length ? idle[Math.floor(pick() * idle.length)].id : undefined
+  const racketId = incidentRacket(state, cfg.needs)
+  const yieldPerHr = derive(state, c).yieldPerHr
   const item: InboxItem = {
     id: newId(state, 'in'),
     kind: 'incident',
     ref: type,
     ...(crewId ? { crewIds: [crewId] } : {}),
+    ...(racketId ? { racketId } : {}),
     createdAt: t,
     expiresAt: t + hoursToMs(c, c.inbox.incidentHours),
-    options: cfg.options.map((ch) => materializeChoice(ch, state.act)),
+    options: cfg.options.map((ch) => materializeChoice(ch, state.act, 0, yieldPerHr)),
     defaultOptionId: defaultOf(cfg.options),
   }
   state.inbox.push(item)
   state.stats.inbox.filed++
-  emit(ctx, t, { type: 'INCIDENT_RAISED', itemId: item.id, incidentType: type, crewId, expiresAt: item.expiresAt })
+  emit(ctx, t, { type: 'INCIDENT_RAISED', itemId: item.id, incidentType: type, crewId, racketId, expiresAt: item.expiresAt })
 }
 
 // Whole-hour roll, seeded by the hour: the same hour always rolls the same incident.
@@ -141,6 +154,13 @@ function applyEffects(state: PlayerState, ctx: Ctx, t: number, item: InboxItem, 
   if (e.condition && item.racketId) {
     const r = state.rackets.find((x) => x.id === item.racketId)
     if (r) r.condition = Math.max(0, Math.min(100, r.condition + e.condition))
+  }
+  if (e.closeHours && item.racketId) {
+    const r = state.rackets.find((x) => x.id === item.racketId)
+    if (r) {
+      r.closedUntil = Math.max(r.closedUntil ?? 0, t + hoursToMs(ctx.c, e.closeHours))
+      emit(ctx, t, { type: 'RACKET_CLOSED', racketId: r.id, until: r.closedUntil })
+    }
   }
   if (e.disposition) changeDisposition(state, e.disposition)
   if (e.rep && e.rep > 0) gainRep(state, ctx, t, e.rep)

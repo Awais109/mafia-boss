@@ -42,6 +42,27 @@ export function premisesBlocked(state: PlayerState, c: Config, id: DistrictId, t
   return null
 }
 
+// Why a business of this type can't open in this district right now, or null if it can (Clean aside).
+// BUY_RACKET and the bot share it, so the bot never offers itself a purchase the engine would refuse.
+export function racketBlocked(state: PlayerState, c: Config, type: RacketType, id: DistrictId): string | null {
+  const rt = c.rackets.types[type]
+  if (!rt) return 'Unknown racket'
+  if (rt.act > state.act || state.reputation < rt.unlockRep) return 'Not unlocked yet'
+  if (!c.districts.list[id] || !districtUnlocked(state, c, id)) return 'That district is not open yet'
+  if (rt.kind === 'premises') {
+    // Premises go on a free lot in any open district (ADR 0031).
+    const blocked = premisesBlocked(state, c, id, type)
+    if (blocked) return blocked
+  } else {
+    if (!c.districts.list[id].allows.includes(type)) return "That kind of business doesn't fit there"
+    if (state.rackets.some((r) => r.districtId === id && r.type === type)) return `You already run a ${rt.name} there`
+  }
+  if (rt.minProsperity !== undefined && getDistrict(state, id).prosperity < rt.minProsperity) {
+    return `The street needs a prosperity of ${rt.minProsperity}`
+  }
+  return null
+}
+
 export function canPressure(state: PlayerState, c: Config, id: DistrictId): string | null {
   if (!districtUnlocked(state, c, id)) return 'That district is not open yet'
   if (getDistrict(state, id).controller === 'player') return 'Already yours'

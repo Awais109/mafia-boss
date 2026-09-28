@@ -1,4 +1,5 @@
-import { FRONT_MODES, FRONT_TYPES } from '../../engine'
+import { FRONT_MODES, FRONT_TYPES, frontBlocked } from '../../engine'
+import { ACT_NAME } from '../acts'
 import { Bar, Btn, BtnRow, Card, colors, Money, Row, Screen, T, Tag } from '../components/ui'
 import { fmt, fmtDuration, fmtRate, pct } from '../format'
 import { store } from '../store'
@@ -112,15 +113,20 @@ export function FrontsScreen({ game }: ScreenProps) {
             <T small muted>
               Rate {pct(ft.rate)} · launders ◆{fmtRate(ft.throughput)}
             </T>
-            {d.unlocked.front[t] ? (
+            {ft.minProsperity !== undefined && (
+              <T small muted>{`Needs a city prosperity of ${ft.minProsperity} (now ${Math.round(d.cityProsperity)})`}</T>
+            )}
+            {!d.unlocked.front[t] ? (
+              <T small color={colors.rep}>{ft.act > s.act ? `Opens in Act ${ACT_NAME[ft.act]}` : `Unlocks at ★${fmt(ft.unlockRep)}`}</T>
+            ) : frontBlocked(s, c, t) ? (
+              <T small color={colors.faint}>{frontBlocked(s, c, t)}</T>
+            ) : (
               <Btn
                 kind="primary"
                 title={`Open for ●${fmt(ft.cost)}`}
                 disabled={s.clean < ft.cost}
                 onPress={() => store.dispatch({ type: 'BUY_FRONT', frontType: t })}
               />
-            ) : (
-              <T small color={colors.rep}>Unlocks at ★{fmt(ft.unlockRep)}</T>
             )}
           </Card>
         )

@@ -28,6 +28,7 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
 
     heat: c.heat.startHeat,
     inspected: c.heat.startHeat >= c.heat.inspectThreshold,
+    raidPenaltyUntil: 0,
 
     inventory: { cigarettes: c.supply.startingStock },
     stockEmpty: false,
@@ -42,7 +43,7 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
       refreshCount: 0,
     },
     ops: [],
-    districts: DISTRICT_IDS.map((id) => ({ id, controller: c.districts.list[id].startsAs, pressureCount: 0 })),
+    districts: DISTRICT_IDS.map((id) => ({ id, controller: c.districts.list[id].startsAs, pressureCount: 0, prosperity: c.prosperity.base })),
     officials: [],
     officialCooldownUntil: 0,
     bribeUntil: 0,

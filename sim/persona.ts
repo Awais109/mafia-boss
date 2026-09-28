@@ -20,12 +20,17 @@ import {
   OP_OUTCOMES,
   OP_TYPES,
   outcomeOdds,
+  frontBlocked,
   premisesBlocked,
+  prosperityOn,
+  prosperityYieldMult,
+  racketBlocked,
   rushCost,
   surplusRoomToday,
   RACKET_TYPES,
   STATS,
   zhannaDeals,
+  type Act,
   type Action,
   type Config,
   type CrewMember,
@@ -51,7 +56,7 @@ const PERK_PREFERENCE: readonly PerkId[] = ['earner', 'ghost', 'fixer', 'steady'
 
 export type PersonaOptions = {
   name: string
-  sessionHours: { 1: number[]; 2: number[] } // hours of day (game time) the persona checks in
+  sessionHours: Record<Act, number[]> // hours of day (game time) the persona checks in
   reserveWageHours: number // keep this many hours of wages in Dirty, plus one bribe
   bribeAboveHeat: number
   officialAboveHeat: number
@@ -73,8 +78,9 @@ export type PersonaOptions = {
 
 export const CASUAL: PersonaOptions = {
   name: 'casual',
-  // Act I checks in on the vault's 2.5 h leash through the day; Act II settles into four sessions.
-  sessionHours: { 1: [8, 10.5, 13, 15.5, 18, 20.5, 23], 2: [8, 13, 18, 22] },
+  // Act I checks in on the vault's 2.5 h leash through the day; Act II settles into four sessions; later
+  // acts follow their longer leashes down to one visit a day (ADR 0040).
+  sessionHours: { 1: [8, 10.5, 13, 15.5, 18, 20.5, 23], 2: [8, 13, 18, 22], 3: [8, 14, 20], 4: [8, 20], 5: [9, 21], 6: [9] },
   reserveWageHours: 12,
   bribeAboveHeat: 55,
   officialAboveHeat: 30,
@@ -100,7 +106,7 @@ export const GOLD_RUSH: PersonaOptions = { ...CASUAL, name: 'goldRush', rushJobs
 // N sessions spread evenly between 08:00 and 22:00, for both acts.
 export function withSessions(p: PersonaOptions, n: number): PersonaOptions {
   const hours = n <= 1 ? [12] : Array.from({ length: n }, (_, i) => 8 + (i * 14) / (n - 1))
-  return { ...p, name: `${p.name}-${n}s`, sessionHours: { 1: hours, 2: hours } }
+  return { ...p, name: `${p.name}-${n}s`, sessionHours: { 1: hours, 2: hours, 3: hours, 4: hours, 5: hours, 6: hours } }
 }
 
 export function nextSessionAfter(state: PlayerState, c: Config, p: PersonaOptions, t: number): number {
@@ -300,7 +306,7 @@ export function playSession(
   // A new front opens the throttle; nothing else comes first.
   for (const type of FRONT_TYPES) {
     const now = d()
-    if (now.unlocked.front[type] && !state.fronts.some((f) => f.type === type) && state.clean >= now.costs.front[type]) {
+    if (!frontBlocked(state, c, type) && state.clean >= now.costs.front[type]) {
       tryAct({ type: 'BUY_FRONT', frontType: type })
     }
   }
@@ -466,6 +472,43 @@ function influenceMultIf(c: Config, id: DistrictId, type: RacketType): number {
   )
 }
 
+const prosperityOf = (state: PlayerState, id: DistrictId) => state.districts.find((x) => x.id === id)?.prosperity ?? 0
+
+// What raising a district's prosperity is worth, per purchase (ADR 0041): its joints' extra income, plus
+// half of a business the street is too poor for or a front the city is too poor for, when it gets there.
+function prosperityValues(state: PlayerState, c: Config, d: Derived) {
+  const on = prosperityOn(state, c)
+  const slope = (c.prosperity.yieldMult[1] - c.prosperity.yieldMult[0]) / 100
+  const run = new Set(state.rackets.filter((r) => c.rackets.types[r.type].kind !== 'premises').map((r) => r.districtId))
+  const blockedFronts = FRONT_TYPES.filter((t) => {
+    const ft = c.fronts.types[t]
+    return d.unlocked.front[t] && !state.fronts.some((f) => f.type === t) && ft.minProsperity !== undefined && d.cityProsperity < ft.minProsperity
+  })
+  const jointYield = (id: DistrictId) =>
+    d.perRacket.reduce((sum, rd, i) => (rd.kind === 'joint' && state.rackets[i].districtId === id ? sum + rd.yield / Math.max(0.01, rd.prosperityMult) : sum), 0)
+  return {
+    gainOf(id: DistrictId, points: number): number {
+      if (!on || points <= 0) return 0
+      let gain = jointYield(id) * slope * points
+      const p = prosperityOf(state, id)
+      for (const t of c.districts.list[id].allows) {
+        const rt = c.rackets.types[t]
+        if (rt.minProsperity === undefined || p >= rt.minProsperity || p + points < rt.minProsperity) continue
+        if (!d.unlocked.racket[t] || state.rackets.some((r) => r.districtId === id && r.type === t)) continue
+        gain += rt.baseYield * 0.5
+      }
+      if (run.has(id)) {
+        for (const t of blockedFronts) {
+          const ft = c.fronts.types[t]
+          const gap = Math.max(1, ft.minProsperity! - d.cityProsperity)
+          gain += Math.min(1, points / run.size / gap) * ft.throughput * ft.rate * 0.5
+        }
+      }
+      return gain
+    },
+  }
+}
+
 type SpendOption = { action: Action; cost: number; gain: number; heatGain: number }
 
 // What the spend loop would buy next, affordable or not: a smuggling run won't eat into it.
@@ -482,10 +525,11 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
   const out: SpendOption[] = []
 
   for (const type of FRONT_TYPES) {
-    if (d.unlocked.front[type] && !state.fronts.some((f) => f.type === type)) {
+    if (!frontBlocked(state, c, type)) {
       out.push({ action: { type: 'BUY_FRONT', frontType: type }, cost: d.costs.front[type], gain: 1e6, heatGain: 0 })
     }
   }
+  const prosperity = prosperityValues(state, c, d)
   for (const f of d.perFront) {
     if (f.util < c.fronts.suspicionStartUtil) continue
     if (f.upgradeCost !== null) {
@@ -538,6 +582,7 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
         // A stash where the money is: raids are rare, so its shield only breaks ties between lots.
         if (rt.leashHoursPerTier) gain += stashValue(rt.leashHoursPerTier - d.stashHours) + yieldShare(id) * (rt.shieldPerTier ?? 0) * d.yieldPerHr * 0.02
         if (rt.influencePerHrPerTier) gain += rt.influencePerHrPerTier * influenceMultIf(c, id, type) * v.influenceValue
+        if (rt.prosperityPerTier) gain += prosperity.gainOf(id, rt.prosperityPerTier)
         if (!best || gain > best.gain) best = { id, gain }
       }
       if (best && best.gain > 0) {
@@ -548,10 +593,12 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
     let bestMult = 0
     let bestDistrict: DistrictId | null = null
     for (const id of DISTRICT_IDS) {
-      if (!d.unlocked.district[id] || !openSpots(state, c, id).includes(type)) continue
+      if (racketBlocked(state, c, type, id)) continue
       const dc = c.districts.list[id]
       const ours = controllerOf(state, id) === 'player'
-      const mult = ours ? (dc.mod.yieldMult?.[type] ?? 1) : controllerOf(state, id) === 'none' ? 1 : 1 - dc.tribute
+      // Joints follow their street's prosperity from Act III (ADR 0041).
+      const street = rt.kind === 'joint' && prosperityOn(state, c) ? prosperityYieldMult(c, prosperityOf(state, id)) : 1
+      const mult = (ours ? (dc.mod.yieldMult?.[type] ?? 1) : controllerOf(state, id) === 'none' ? 1 : 1 - dc.tribute) * street
       if (mult > bestMult) {
         bestMult = mult
         bestDistrict = id
@@ -583,6 +630,7 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
       if (rt.capPerTier) gain += surplusValue(rt.capPerTier * cond)
       if (rt.leashHoursPerTier) gain += stashValue(rt.leashHoursPerTier * (r.tier + 1) * cond - d.stashHours)
       if (rt.influencePerHrPerTier) gain += rt.influencePerHrPerTier * cond * influenceMultIf(c, r.districtId, r.type) * v.influenceValue
+      if (rt.prosperityPerTier) gain += prosperity.gainOf(r.districtId, rt.prosperityPerTier * cond)
       if (gain > 0) {
         out.push({ action: { type: 'UPGRADE_RACKET', racketId: r.id }, cost: rd.upgradeCost, gain, heatGain: rd.exposure * (c.rackets.tierHeatMult - 1) })
       }
@@ -590,7 +638,8 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
     }
     // A bigger joint sells more packs, and loses more when they run short.
     const risk = rd.kind === 'joint' ? jointRisk(d, rt.cigaretteShare ?? 0, rd.packsPerHr * (c.rackets.tierYieldMult - 1)) : 1
-    const spec = c.rackets.specialization
+    // Tier 3 and tier 6 are each a choice (ADRs 0027, 0041).
+    const spec = r.tier + 1 === c.rackets.specialization6.atTier ? c.rackets.specialization6 : c.rackets.specialization
     if (r.tier + 1 === spec.atTier) {
       // Both choices compete on gain ÷ cost; the heat-budget filter falls back to stealth when greed runs hot.
       for (const choice of ['greed', 'stealth'] as const) {
@@ -613,7 +662,7 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
   return out
 }
 
-type Valuation = { influenceValue: number; heatCost: number; packValue: number }
+type Valuation = { influenceValue: number; heatCost: number; packValue: number; racketYield: Record<string, number> }
 
 // What the bot thinks Influence and heat are worth right now, shared by dispatch and decisions.
 function valuation(state: PlayerState, c: Config, p: PersonaOptions): Valuation {
@@ -627,6 +676,7 @@ function valuation(state: PlayerState, c: Config, p: PersonaOptions): Valuation 
     heatCost: state.heat >= c.heat.inspectThreshold - 5 ? 8 : 2,
     // Packs matter when stock is running out; a surplus is worth little.
     packValue: packValue(d) * (d.supply.hoursToEmpty < p.stockReserveHours ? 1 : 0.2),
+    racketYield: Object.fromEntries(state.rackets.map((r, i) => [r.id, d.perRacket[i].yield])),
   }
 }
 
@@ -636,8 +686,10 @@ function valueOf(state: PlayerState, p: PersonaOptions, v: Valuation, item: Inbo
     const m = state.crew.find((x) => x.id === id)
     if (m) loyalty += (e.loyalty ?? 0) * p.loyaltyValue * (m.loyalty < p.raiseBelow ? 3 : 1)
   }
+  // Shutting a business costs what it would have earned while it's shut.
+  const closed = (e.closeHours ?? 0) * (item.racketId ? (v.racketYield[item.racketId] ?? 0) : 0)
   return (
-    (e.dirty ?? 0) + (e.clean ?? 0) * 2 + (e.cigarettes ?? 0) * v.packValue + (e.rep ?? 0) * p.repValue + (e.influence ?? 0) * v.influenceValue - (e.heat ?? 0) * v.heatCost + loyalty
+    (e.dirty ?? 0) + (e.clean ?? 0) * 2 + (e.cigarettes ?? 0) * v.packValue + (e.rep ?? 0) * p.repValue + (e.influence ?? 0) * v.influenceValue - (e.heat ?? 0) * v.heatCost + loyalty - closed
   )
 }
 

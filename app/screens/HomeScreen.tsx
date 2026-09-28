@@ -1,4 +1,5 @@
 import { dayMs } from '../../engine'
+import { ACT_NAME, ACT_OPENS, actMilestones, actProgress } from '../acts'
 import { InboxCard } from '../components/InboxCard'
 import { MoneyFlow } from '../components/MoneyFlow'
 import { SupplyCard } from '../components/SupplyCard'
@@ -19,12 +20,11 @@ export function HomeScreen({ game, go }: ScreenProps) {
   const idle = s.crew.filter((m) => m.status === 'idle').length
   const nextPayday = (Math.floor(now / dayMs(c)) + 1) * dayMs(c)
   const demand = s.rival.tolya.demand
-  // Only meaningful once in Act II: Act I → Act II is goal-gated now, not Rep-gated (ADR 0039).
-  const nextAct = c.reputation.actThresholds[3]
-  // Milestones come from stats, which persist; the ACT_* events fall out of the 200-event log.
-  const reachedActII = s.stats.actClearedAt[1]
-  const clearedActII = s.stats.actClearedAt[2]
-  const cleared = clearedActII !== undefined
+  // The next act's gate (ADR 0040). Milestones come from stats, which persist; the ACT_* events fall out
+  // of the 200-event log.
+  const progress = actProgress(s, c)
+  const milestones = actMilestones(s, c)
+  const cleared = progress.cleared
   const inbox = sortedInbox(s)
   const goals = goalsView(s, c)
   const alerts = homeAlerts(game).filter((a) => a.key !== 'vault')
@@ -128,30 +128,23 @@ export function HomeScreen({ game, go }: ScreenProps) {
 
       <Section title={cleared ? 'The end of the prototype' : 'Next'}>
         <Card>
-          {s.act === 1 ? (
-            <T small muted>
-              Act II opens once every Act I goal above is done: the Restaurant front, more crew slots, the Port Quarter and Sovietsky Blocks.
-            </T>
-          ) : !cleared ? (
-            <T small muted>
-              Act II is cleared at ★{fmt(nextAct)}, the end of the prototype. Bigger businesses unlock as your Reputation grows.
-            </T>
-          ) : (
+          {cleared ? (
             <T small color={colors.rep}>
-              Act II cleared. Acts I–II are all that’s built: nothing more unlocks, and Reputation keeps counting. Keep playing to see how
-              the late game holds up, or export the log and start over from Debug.
+              {`Act ${ACT_NAME[s.act]} cleared. Acts I–${ACT_NAME[c.progression.finalAct]} are all that’s built: nothing more unlocks, and Reputation keeps counting. Keep playing to see how the late game holds up, or export the log and start over from Debug.`}
             </T>
-          )}
-          {s.act === 1 ? (
-            <Row label="Reputation" value={`★${fmt(s.reputation)}`} color={colors.rep} />
+          ) : progress.nextAct !== null ? (
+            <T small muted>{`Act ${ACT_NAME[progress.nextAct]} opens ${ACT_OPENS[progress.nextAct]}. It needs:`}</T>
           ) : (
-            <>
-              <Bar value={s.reputation} max={nextAct} color={colors.rep} />
-              <Row label="Reputation" value={cleared ? `★${fmt(s.reputation)}` : `★${fmt(s.reputation)} / ${fmt(nextAct)}`} color={colors.rep} />
-            </>
+            <T small muted>{`Act ${ACT_NAME[s.act]} is the last act built. Clearing it needs:`}</T>
           )}
-          {reachedActII !== undefined && <Row label="Act II reached" value={fmtClock(reachedActII, s.createdAt, c)} />}
-          {clearedActII !== undefined && <Row label="Act II cleared" value={fmtClock(clearedActII, s.createdAt, c)} />}
+          {progress.requirements.map((r) => (
+            <Row key={r.text} label={r.text} value={r.done ? 'done' : '—'} color={r.done ? colors.good : colors.muted} />
+          ))}
+          {!cleared && progress.max > 1 && <Bar value={progress.value} max={progress.max} color={colors.rep} />}
+          <Row label="Reputation" value={`★${fmt(s.reputation)}`} color={colors.rep} />
+          {milestones.map((m) => (
+            <Row key={m.label} label={m.label} value={fmtClock(m.t, s.createdAt, c)} />
+          ))}
           {cleared && (
             <BtnRow>
               <Btn small title="Export log" onPress={() => void store.exportLog()} />

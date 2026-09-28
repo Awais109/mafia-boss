@@ -3,14 +3,16 @@ import { PASSIVE_ACTIONS, type Action } from '../model/actions'
 import type { GameEvent } from '../model/events'
 import type { CrewMember, PlayerState } from '../model/state'
 import { changeLoyalty, crewSlots, regeneratePool, unassignEnforcer } from '../systems/crew'
-import { canPressure, getDistrict, premisesBlocked, takeDistrict } from '../systems/districts'
+import { checkActs } from '../systems/acts'
+import { canPressure, getDistrict, racketBlocked, takeDistrict } from '../systems/districts'
+import { frontBlocked } from '../systems/fronts'
 import { arrest, raid } from '../systems/heat'
 import { canAffordEffects, incidentNeedHolds, raiseIncident, resolveInboxItem } from '../systems/inbox'
 import { regenerateOffers } from '../systems/offers'
 import { opConfigAt, opMinutesFor, opUnlocked, resolveOp } from '../systems/ops'
-import { checkActII, checkGoals } from '../systems/goals'
+import { checkGoals } from '../systems/goals'
 import { grantGold, rushCost, skipCost } from '../systems/gold'
-import { checkActs, spendClean } from '../systems/reputation'
+import { spendClean } from '../systems/reputation'
 import { bestHaggler, canHaggle, changeDisposition, changeZhanna, haggle, refuseDemand, surplusRoomToday, tolyaTick, zhannaDeals } from '../systems/rivals'
 import { addStock } from '../systems/supply'
 import { tutorialOnAction } from '../systems/tutorial'
@@ -99,21 +101,9 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
     }
 
     case 'BUY_RACKET': {
-      const d = derive(state, c)
-      if (!c.rackets.types[a.racketType]) return 'Unknown racket'
-      if (!d.unlocked.racket[a.racketType]) return 'Not unlocked yet'
-      if (!c.districts.list[a.districtId] || !d.unlocked.district[a.districtId]) return 'That district is not open yet'
-      if (F.isPremises(c, a.racketType)) {
-        // Premises go on a free lot in any open district (ADR 0031).
-        const blocked = premisesBlocked(state, c, a.districtId, a.racketType)
-        if (blocked) return blocked
-      } else {
-        if (!c.districts.list[a.districtId].allows.includes(a.racketType)) return "That kind of business doesn't fit there"
-        if (state.rackets.some((r) => r.districtId === a.districtId && r.type === a.racketType)) {
-          return `You already run a ${c.rackets.types[a.racketType].name} there`
-        }
-      }
-      const cost = d.costs.racket[a.racketType]
+      const blocked = racketBlocked(state, c, a.racketType, a.districtId)
+      if (blocked) return blocked
+      const cost = F.racketPurchaseCost(c, a.racketType)
       if (state.clean < cost - EPS) return 'Not enough Clean'
       const racketId = newId(state, 'r')
       state.rackets.push({ id: racketId, type: a.racketType, districtId: a.districtId, tier: 1, condition: 100, enforcerId: null })
@@ -126,19 +116,23 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       const r = state.rackets.find((x) => x.id === a.racketId)
       if (!r) return 'No such racket'
       if (r.tier >= F.racketMaxTier(c, r.type, state.act)) return 'Already at max tier'
+      // The upgrades to tier 3 and tier 6 are each a choice between greed and stealth (ADRs 0027, 0041).
       const atTier = c.rackets.specialization.atTier
+      const atTier6 = c.rackets.specialization6.atTier
+      const choosing = r.tier + 1 === atTier || r.tier + 1 === atTier6
       if (F.isPremises(c, r.type)) {
         if (a.specialization) return 'Premises don’t specialize'
-      } else if (r.tier + 1 === atTier) {
+      } else if (choosing) {
         if (a.specialization !== 'greed' && a.specialization !== 'stealth') return 'Pick greed or stealth'
       } else if (a.specialization) {
-        return `Businesses specialize on the way to tier ${atTier}`
+        return `Businesses specialize on the way to tiers ${atTier} and ${atTier6}`
       }
       const cost = F.racketUpgradeCost(c, r.type, r.tier)
       if (state.clean < cost - EPS) return 'Not enough Clean'
       r.tier++
       if (a.specialization) {
-        r.specialization = a.specialization
+        if (r.tier === atTier6) r.specialization6 = a.specialization
+        else r.specialization = a.specialization
         state.stats.specializations[a.specialization]++
       }
       emit(ctx, t, { type: 'RACKET_UPGRADED', racketId: r.id, tier: r.tier, cost, ...(a.specialization ? { specialization: a.specialization } : {}) })
@@ -345,10 +339,9 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
     }
 
     case 'BUY_FRONT': {
+      const blocked = frontBlocked(state, c, a.frontType)
+      if (blocked) return blocked
       const ft = c.fronts.types[a.frontType]
-      if (!ft) return 'No such front'
-      if (state.fronts.some((f) => f.type === a.frontType)) return 'You already run one'
-      if (state.reputation < ft.unlockRep) return 'Not unlocked yet'
       if (state.clean < ft.cost - EPS) return 'Not enough Clean'
       const frontId = newId(state, 'f')
       state.fronts.push({ id: frontId, type: a.frontType, level: 0, capacityLevel: 0, mode: 'normal', buffer: 0, convertedThisHour: 0, util: 0 })
@@ -562,7 +555,7 @@ function handleDebug(state: PlayerState, ctx: Ctx, a: Action, t: number): string
       return null
     case 'DEBUG_COMPLETE_GOALS':
       // Act II is gated by goals now, not Rep (ADR 0039) — this is Debug's fast path to it.
-      // Calls checkActII directly: checkGoals itself waits for the tutorial to end, which a
+      // Checks the acts directly: checkGoals itself waits for the tutorial to end, which a
       // Debug/test shortcut shouldn't have to satisfy first.
       for (const id of c.goals.list) {
         if (state.goals.done.includes(id)) continue
@@ -570,7 +563,7 @@ function handleDebug(state: PlayerState, ctx: Ctx, a: Action, t: number): string
         emit(ctx, t, { type: 'GOAL_DONE', goalId: id, gold: c.goals.rewardGold })
         grantGold(state, ctx, t, c.goals.rewardGold, 'goal')
       }
-      checkActII(state, ctx, t)
+      checkActs(state, ctx, t)
       note()
       return null
     case 'DEBUG_FORCE_RAID':

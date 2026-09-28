@@ -1,4 +1,5 @@
 import { RANK_NAMES, type Config, type GameEvent, type PlayerState } from '../engine'
+import { ACT_NAME, ACT_OPENS } from './acts'
 import { colors, glyph } from './components/ui'
 import { GOAL_TEXT } from './goals'
 import { fmt } from './format'
@@ -41,6 +42,10 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
       return { text: `${racketName(e.racketId)} → tier ${e.tier}${e.specialization ? `, ${e.specialization}` : ''} (${cl}${fmt(e.cost)})` }
     case 'RACKET_REPAIRED':
       return { text: `Repaired the ${racketName(e.racketId)} (${d}${fmt(e.cost)})`, quiet: true }
+    case 'RACKET_CLOSED':
+      return { text: `The ${racketName(e.racketId)} is shut for now`, color: colors.warn }
+    case 'RACKET_REOPENED':
+      return { text: `The ${racketName(e.racketId)} is open again`, quiet: true }
     case 'FRONT_BOUGHT':
       return { text: `Opened a ${c.fronts.types[e.frontType].name} (${cl}${fmt(e.cost)})`, color: colors.clean }
     case 'FRONT_UPGRADED':
@@ -173,9 +178,9 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
     case 'PERK_CHOSEN':
       return { text: `${e.name} is a ${c.crew.experience.perks[e.perk].name}: ${c.crew.experience.perks[e.perk].text}`, color: colors.rep }
     case 'ACT_UNLOCKED':
-      return { text: 'ACT II — the city opens up: Restaurant, new districts, more crew', color: colors.rep }
+      return { text: `ACT ${ACT_NAME[e.act]} — ${ACT_OPENS[e.act]}`, color: colors.rep }
     case 'ACT_CLEARED':
-      return { text: 'ACT II COMPLETE — the prototype ends here. Keep playing if you like.', color: colors.rep }
+      return { text: `ACT ${ACT_NAME[e.act]} COMPLETE — the built game ends here. Keep playing if you like.`, color: colors.rep }
     case 'NOTE':
       return { text: e.text, color: colors.muted }
     case 'TUTORIAL_STEP':

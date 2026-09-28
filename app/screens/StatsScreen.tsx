@@ -1,4 +1,5 @@
-import { RANK_NAMES, gameDay } from '../../engine'
+import { RANK_NAMES, gameCleared, gameDay } from '../../engine'
+import { ACT_NAME, actMilestones } from '../acts'
 import { Card, Row, Screen, Section, T, colors, glyph } from '../components/ui'
 import { fmt, fmtClock } from '../format'
 import type { ScreenProps } from './types'
@@ -19,12 +20,13 @@ export function StatsScreen({ game }: ScreenProps) {
       <Section title="Playtime & progress">
         <Card>
           <Row label="Day" value={String(day)} />
-          <Row label="Act" value={s.act === 2 && s.stats.actClearedAt[2] !== undefined ? '2 (cleared)' : String(s.act)} />
+          <Row label="Act" value={`${ACT_NAME[s.act]}${gameCleared(s, c) ? ' (cleared)' : ''}`} />
           <Row label="Reputation" value={`${glyph.rep}${fmt(s.reputation)}`} color={colors.rep} />
           <Row label="Sessions played" value={fmt(t.sessions)} />
           <Row label="Actions taken" value={fmt(t.actions)} />
-          {t.actClearedAt[1] !== undefined && <Row label="Act II reached" value={fmtClock(t.actClearedAt[1], s.createdAt, c)} />}
-          {t.actClearedAt[2] !== undefined && <Row label="Act II cleared" value={fmtClock(t.actClearedAt[2], s.createdAt, c)} />}
+          {actMilestones(s, c).map((m) => (
+            <Row key={m.label} label={m.label} value={fmtClock(m.t, s.createdAt, c)} />
+          ))}
         </Card>
       </Section>
 

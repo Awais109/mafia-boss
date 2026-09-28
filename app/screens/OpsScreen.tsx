@@ -21,6 +21,7 @@ import {
   type OpType,
 } from '../../engine'
 import { Btn, BtnRow, Card, colors, glyph, Row, Screen, Section, T, Tag } from '../components/ui'
+import { ACT_NAME } from '../acts'
 import { fmt, fmtDuration, pct } from '../format'
 import { store, type Snapshot } from '../store'
 import type { ScreenProps } from './types'
@@ -114,7 +115,7 @@ export function OpsScreen({ game }: ScreenProps) {
             return (
               <Card key={type}>
                 <T bold color={colors.faint}>{op.name}</T>
-                <T small color={colors.faint}>Act II</T>
+                <T small color={colors.faint}>{`Act ${ACT_NAME[op.act ?? 1]}`}</T>
               </Card>
             )
           }

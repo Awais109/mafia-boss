@@ -17,7 +17,7 @@ import type {
 } from '../config/schema'
 import type { GameEvent } from './events'
 
-export const SCHEMA_VERSION = 8
+export const SCHEMA_VERSION = 9
 export const LOG_CAP = 200
 export const LEDGER_ROWS = 8 // 7 closed days plus today's opening snapshot
 
@@ -29,6 +29,8 @@ export type Racket = {
   condition: number // 0–100; yield × condition/100
   enforcerId: string | null
   specialization?: Specialization // chosen on the way to rackets.specialization.atTier
+  specialization6?: Specialization // chosen on the way to rackets.specialization6.atTier (ADR 0041)
+  closedUntil?: number // shut (an investigation) until then: earns, sells and heats nothing
 }
 
 export type Front = {
@@ -79,6 +81,7 @@ export type District = {
   id: DistrictId
   controller: Controller
   pressureCount: number // successful pressure ops toward a flip
+  prosperity: number // 0–100, stepped toward its target at whole hours from prosperity.fromAct (ADR 0041)
 }
 
 export type TolyaState = {
@@ -110,6 +113,7 @@ export type InboxEffects = {
   disposition?: number // Tolya
   cigarettes?: number
   perk?: string
+  closeHours?: number // the business on the item shuts for this long
 }
 
 export type InboxOption = { id: string; name: string; effects: InboxEffects }
@@ -159,7 +163,7 @@ export type LedgerRow = { startsAt: number } & Record<LedgerCounter, number>
 export type PlaytestStats = {
   sessions: number
   actions: number
-  actClearedAt: { 1?: number; 2?: number }
+  actClearedAt: Partial<Record<Act, number>> // act n is cleared when act n + 1 opens (the final act: when its gate is met)
   raids: number
   arrests: number
   missedWages: number
@@ -219,6 +223,7 @@ export type PlayerState = {
 
   heat: number // displayed value; converges toward the target
   inspected: boolean // heat ≥ inspectThreshold at the last whole hour
+  raidPenaltyUntil: number // prosperity is down after a raid until then (ADR 0041)
 
   inventory: { cigarettes: number } // the city-wide stock (ADR 0032)
   stockEmpty: boolean // stock at zero with joints selling, at the last whole hour

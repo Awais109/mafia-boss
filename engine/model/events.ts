@@ -27,6 +27,8 @@ export type EventBody =
   | { type: 'RACKET_BOUGHT'; racketId: string; racketType: RacketType; districtId: DistrictId; cost: number }
   | { type: 'RACKET_UPGRADED'; racketId: string; tier: number; cost: number; specialization?: Specialization }
   | { type: 'RACKET_REPAIRED'; racketId: string; cost: number }
+  | { type: 'RACKET_CLOSED'; racketId: string; until: number }
+  | { type: 'RACKET_REOPENED'; racketId: string }
   | { type: 'FRONT_BOUGHT'; frontId: string; frontType: FrontType; cost: number }
   | { type: 'FRONT_UPGRADED'; frontId: string; level: number; cost: number; track?: 'rate' | 'capacity' }
   | { type: 'FRONT_MODE_SET'; frontId: string; mode: FrontMode }

@@ -23,6 +23,7 @@ Each entry in `districts.list` has:
 | Station Square | I | nobody | Beer Tent, Video Salon, Taxi Rank, Slot Hall | 2 | Taxi Rank and Slot Hall yield bonus |
 | Sovietsky Blocks | II | nobody | Auto Shop, Café, Bathhouse | 2 | lower crew wages |
 | Port Quarter | II | Zhanna | Petrol Station, Cargo Bay | 2 | none |
+| The Centre | III | nobody | Nightclub, Card Club, Print Shop | 2 | Card Club yield bonus |
 
 Station Square ([ADR 0033](../decisions/0033-bigger-act-i.md)) is Act I's unclaimed district: nobody takes tribute there, and like Sovietsky it can be bought out or taken with pressure jobs.
 

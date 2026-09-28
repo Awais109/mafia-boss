@@ -3,30 +3,35 @@
 // negative durations, unknown keys). It does not reject badly tuned ones — that's
 // what the sim is for (dev manual §2).
 
-export type Act = 1 | 2
-export const ACTS: readonly Act[] = [1, 2]
+// Six acts (ADR 0040). `progression.finalAct` is the last one built; later acts exist as types and numbers only.
+export type Act = 1 | 2 | 3 | 4 | 5 | 6
+export const ACTS: readonly Act[] = [1, 2, 3, 4, 5, 6]
+export type LaterAct = Exclude<Act, 1>
+export const LATER_ACTS: readonly LaterAct[] = [2, 3, 4, 5, 6]
 
 // Every business, whatever its kind (ADR 0031): joints, rackets and premises share one list.
 export type RacketType =
   | 'kiosk' | 'marketStall' | 'beerTent' | 'videoSalon' | 'taxiRank' | 'slotHall' | 'tobaccoFactory' | 'warehouse'
   | 'autoShop' | 'cafe' | 'bathhouse' | 'petrol' | 'cargoBay' | 'stashHouse' | 'unionOffice'
+  | 'cardClub' | 'nightclub' | 'printShop' | 'hotel'
 export const RACKET_TYPES: readonly RacketType[] = [
   'kiosk', 'marketStall', 'beerTent', 'videoSalon', 'taxiRank', 'slotHall', 'tobaccoFactory', 'warehouse',
   'autoShop', 'cafe', 'bathhouse', 'petrol', 'cargoBay', 'stashHouse', 'unionOffice',
+  'cardClub', 'nightclub', 'printShop', 'hotel',
 ]
 
-export type FrontType = 'currencyKiosk' | 'restaurant'
-export const FRONT_TYPES: readonly FrontType[] = ['currencyKiosk', 'restaurant']
+export type FrontType = 'currencyKiosk' | 'restaurant' | 'cooperativeBank'
+export const FRONT_TYPES: readonly FrontType[] = ['currencyKiosk', 'restaurant', 'cooperativeBank']
 
-export type OfficialId = 'wardCop' | 'precinctCaptain'
-export const OFFICIAL_IDS: readonly OfficialId[] = ['wardCop', 'precinctCaptain']
+export type OfficialId = 'wardCop' | 'precinctCaptain' | 'cityHall'
+export const OFFICIAL_IDS: readonly OfficialId[] = ['wardCop', 'precinctCaptain', 'cityHall']
 
 export type OpType =
   | 'shakeDown' | 'collectDebt' | 'leanOnWard' | 'pressure' | 'smuggleCigarettes' | 'moveShipment' | 'dinner'
-  | 'trainMuscle' | 'trainBrains' | 'trainNerve'
+  | 'trainMuscle' | 'trainBrains' | 'trainNerve' | 'bigScore'
 export const OP_TYPES: readonly OpType[] = [
   'shakeDown', 'collectDebt', 'leanOnWard', 'pressure', 'smuggleCigarettes', 'moveShipment', 'dinner',
-  'trainMuscle', 'trainBrains', 'trainNerve',
+  'trainMuscle', 'trainBrains', 'trainNerve', 'bigScore',
 ]
 
 export type FrontMode = 'push' | 'normal' | 'layLow'
@@ -48,8 +53,8 @@ export type PerkConfig = {
   noDrift?: boolean // steady: no daily loyalty drift
 }
 
-export type DistrictId = 'zarechye' | 'kioskRow' | 'stationSquare' | 'portQuarter' | 'sovietsky'
-export const DISTRICT_IDS: readonly DistrictId[] = ['zarechye', 'kioskRow', 'stationSquare', 'portQuarter', 'sovietsky']
+export type DistrictId = 'zarechye' | 'kioskRow' | 'stationSquare' | 'portQuarter' | 'sovietsky' | 'centre'
+export const DISTRICT_IDS: readonly DistrictId[] = ['zarechye', 'kioskRow', 'stationSquare', 'portQuarter', 'sovietsky', 'centre']
 
 export type Stat = 'muscle' | 'brains' | 'nerve'
 export const STATS: readonly Stat[] = ['muscle', 'brains', 'nerve']
@@ -63,9 +68,9 @@ export const OP_BANDS: readonly OpBand[] = ['quick', 'standard', 'long']
 export type OpOutcome = 'full' | 'partial' | 'fail'
 export const OP_OUTCOMES: readonly OpOutcome[] = ['full', 'partial', 'fail']
 
-export type IncidentType = 'inspector' | 'drunkCrew' | 'shopkeeperLead' | 'copFavour' | 'badBatch'
-export const INCIDENT_TYPES: readonly IncidentType[] = ['inspector', 'drunkCrew', 'shopkeeperLead', 'copFavour', 'badBatch']
-export type IncidentNeed = 'idleCrew' | 'joint' | 'factory' | 'inspected'
+export type IncidentType = 'inspector' | 'drunkCrew' | 'shopkeeperLead' | 'copFavour' | 'badBatch' | 'investigation'
+export const INCIDENT_TYPES: readonly IncidentType[] = ['inspector', 'drunkCrew', 'shopkeeperLead', 'copFavour', 'badBatch', 'investigation']
+export type IncidentNeed = 'idleCrew' | 'joint' | 'factory' | 'inspected' | 'printShop'
 
 // Act I goals (ADR 0035, gate ADR 0039), each paying gold once. All of them must be done to open Act II.
 export type GoalId = 'secondDistrict' | 'factoryTier2' | 'thirdCrew' | 'wardCop' | 'workFront' | 'smuggleRun' | 'soldier'
@@ -86,6 +91,8 @@ export type ChoiceConfig = {
   condition?: number // the business named on the item
   disposition?: number // Tolya
   cigarettes?: number
+  dirtyHoursOfYield?: number // Dirty = this × yield per hour, fixed when the item is filed
+  closeHours?: number // the business named on the item shuts for this long
 }
 
 export type IncidentConfig = {
@@ -131,6 +138,9 @@ export type RacketTypeConfig = {
   leashHoursPerTier?: number // stash houses: vault hours added per tier (the best one counts)
   shieldPerTier?: number // stash houses: share of a raid kept back per tier, weighted by the district's share of yield
   influencePerHrPerTier?: number // union offices: Influence per hour per tier
+  prosperity?: number // added to its district's prosperity target (negative for rackets that sour a street; ADR 0041)
+  prosperityPerTier?: number // hotels: prosperity target added per tier
+  minProsperity?: number // can only open where the district's prosperity is at least this
 }
 
 // Businesses that work better side by side in one district (plan (m)). Active in a district that has
@@ -151,6 +161,8 @@ export type SynergyConfig = {
 export type FrontTypeConfig = {
   name: string
   description: string // one plain-language sentence: what it does, shown on unlock and in How It Works
+  act: Act // opens in this act (and at unlockRep)
+  minProsperity?: number // city prosperity needed to open it (ADR 0041)
   rate: number // clean out per dirty in
   throughput: number // dirty/hr
   unlockRep: number
@@ -195,6 +207,14 @@ export type DistrictConfig = {
   }
 }
 
+// What opens the next act (ADR 0040). Every listed condition must hold.
+export type ActGate = {
+  goals?: boolean // every Act I goal done
+  rep?: number
+  holds?: DistrictId[] // districts you control
+  fronts?: FrontType[] // fronts you own
+}
+
 export type CrewSeed = {
   name: string
   muscle: number
@@ -226,6 +246,12 @@ export type Config = {
     enforcer: { yieldMult: number; heatMult: number }
     specialization: {
       atTier: number // the upgrade to this tier asks for greed or stealth
+      greed: { yieldMult: number; exposureMult: number }
+      stealth: { yieldMult: number; exposureMult: number }
+    }
+    // Act III's second choice, on the upgrade to tier 6 (ADR 0041).
+    specialization6: {
+      atTier: number
       greed: { yieldMult: number; exposureMult: number }
       stealth: { yieldMult: number; exposureMult: number }
     }
@@ -384,7 +410,22 @@ export type Config = {
     perCleanSpent: number
     perOpSuccess: number
     perDistrict: number
-    actThresholds: { 2: number; 3: number }
+  }
+  // Six acts (ADR 0040): what opens each one, and the last act this build has content for.
+  progression: {
+    finalAct: Act
+    acts: Record<LaterAct, ActGate>
+  }
+  // Districts earn more when they're doing well (ADR 0041), from `fromAct`.
+  prosperity: {
+    fromAct: Act
+    base: number // every district's target before its businesses
+    stepPerHr: number // share of the gap to target closed at each whole hour
+    yieldMult: [number, number] // joints earn × lerp(lo, hi, prosperity ÷ 100)
+    inspectedPenalty: number
+    raidPenalty: number
+    raidPenaltyHours: number
+    shortagePenalty: number
   }
   tutorial: { enabled: boolean; firstConversionInstant: boolean; tolyaAfterMinutes: number }
   // What Skip buys, and what a game starts with when the tutorial is off (ADR 0035).
@@ -395,7 +436,7 @@ export type Config = {
   // Gold bars buy time and nothing else (ADR 0034).
   gold: {
     starting: number
-    perActUnlocked: { 2: number; 3: number } // granted when that act opens
+    perActUnlocked: Record<LaterAct, number> // granted when that act opens
     hoursPerBar: number
     maxSkipHours: number
     skipChoices: number[]
@@ -442,7 +483,7 @@ function choices(e: string[], p: string, list: unknown) {
   if (defaults.length !== 1) e.push(`${p}: exactly one option must be the default`)
   const d = defaults[0]
   // Stock only ever falls to zero, so a default may lose packs; it may never cost Dirty (ADR 0032).
-  if (d && ((d.dirtyPct ?? 0) < 0 || (d.dirtyPerAct ?? 0) < 0)) {
+  if (d && ((d.dirtyPct ?? 0) < 0 || (d.dirtyPerAct ?? 0) < 0 || (d.dirtyHoursOfYield ?? 0) < 0)) {
     e.push(`${p}.${d.id}: the default option can't cost Dirty`)
   }
 }
@@ -478,6 +519,12 @@ export function validateConfig(c: Config): string[] {
       positive(e, 'rackets.specialization.stealth.yieldMult', sp.stealth.yieldMult)
       // Stealth may cool a tier, but never below the tier it came from: tiering can't lower exposure.
       num(e, 'rackets.specialization.stealth.exposureMult', sp.stealth.exposureMult, (n) => n >= 1 / r.tierHeatMult, '>= 1 / tierHeatMult')
+      const sp6 = r.specialization6
+      num(e, 'rackets.specialization6.atTier', sp6.atTier, (n) => Number.isInteger(n) && n > sp.atTier, '> specialization.atTier')
+      positive(e, 'rackets.specialization6.greed.yieldMult', sp6.greed.yieldMult)
+      num(e, 'rackets.specialization6.greed.exposureMult', sp6.greed.exposureMult, (n) => n >= sp6.greed.yieldMult, '>= greed.yieldMult')
+      positive(e, 'rackets.specialization6.stealth.yieldMult', sp6.stealth.yieldMult)
+      num(e, 'rackets.specialization6.stealth.exposureMult', sp6.stealth.exposureMult, (n) => n >= 1 / r.tierHeatMult, '>= 1 / tierHeatMult')
       int(e, 'rackets.premises.maxTier', r.premises.maxTier, 1)
       nonNeg(e, 'rackets.premises.missedUpkeepConditionHit', r.premises.missedUpkeepConditionHit)
       unit(e, 'rackets.premises.maxShield', r.premises.maxShield)
@@ -488,6 +535,10 @@ export function validateConfig(c: Config): string[] {
         if (!RACKET_KINDS.includes(rt.kind)) e.push(`${p}.kind: expected joint, racket or premises`)
         nonNeg(e, `${p}.baseHeat`, rt.baseHeat)
         nonNeg(e, `${p}.unlockRep`, rt.unlockRep)
+        if (!ACTS.includes(rt.act)) e.push(`${p}.act: expected an act`)
+        if (rt.prosperity !== undefined) num(e, `${p}.prosperity`, rt.prosperity, (n) => Math.abs(n) <= 100, 'in [-100, 100]')
+        if (rt.prosperityPerTier !== undefined) nonNeg(e, `${p}.prosperityPerTier`, rt.prosperityPerTier)
+        if (rt.minProsperity !== undefined) num(e, `${p}.minProsperity`, rt.minProsperity, (n) => n >= 0 && n <= 100, 'in [0, 100]')
         if (rt.kind === 'premises') {
           // Premises earn nothing directly: they make, keep or improve (ADR 0031).
           num(e, `${p}.baseYield`, rt.baseYield, (n) => n === 0, '0 for premises')
@@ -554,6 +605,8 @@ export function validateConfig(c: Config): string[] {
         num(e, `fronts.types.${t}.rate (max level)`, ft.rate + f.upgrade.rateStep * f.upgrade.levels,
           (n) => n <= 1, '<= 1 at max upgrade level')
         positive(e, `fronts.types.${t}.throughput`, ft.throughput)
+        if (!ACTS.includes(ft.act)) e.push(`fronts.types.${t}.act: expected an act`)
+        if (ft.minProsperity !== undefined) num(e, `fronts.types.${t}.minProsperity`, ft.minProsperity, (n) => n >= 0 && n <= 100, 'in [0, 100]')
         nonNeg(e, `fronts.types.${t}.unlockRep`, ft.unlockRep)
         nonNeg(e, `fronts.types.${t}.cost`, ft.cost)
       }
@@ -582,6 +635,7 @@ export function validateConfig(c: Config): string[] {
       for (const id of OFFICIAL_IDS) {
         nonNeg(e, `officials.list.${id}.control`, c.officials.list[id].control)
         nonNeg(e, `officials.list.${id}.cost`, c.officials.list[id].cost)
+        if (!ACTS.includes(c.officials.list[id].act)) e.push(`officials.list.${id}.act: expected an act`)
       }
     },
     (e) => {
@@ -591,7 +645,9 @@ export function validateConfig(c: Config): string[] {
         const [lo, hi] = cr.statBandByAct[a] ?? []
         num(e, `crew.statBandByAct.${a}`, lo, (n) => isNum(hi) && n >= 0 && n <= hi, '[lo, hi] with 0 <= lo <= hi')
       }
-      if (cr.slotsByAct[2] < cr.slotsByAct[1]) e.push('crew.slotsByAct: act 2 must not have fewer slots than act 1')
+      for (const a of LATER_ACTS) {
+        if (cr.slotsByAct[a] < cr.slotsByAct[(a - 1) as Act]) e.push(`crew.slotsByAct: act ${a} must not have fewer slots than act ${a - 1}`)
+      }
       unit(e, 'crew.extraSlotCostPctOfBudget', cr.extraSlotCostPctOfBudget)
       nonNeg(e, 'crew.extraSlotMinCost', cr.extraSlotMinCost)
       int(e, 'crew.extraSlotMax', cr.extraSlotMax, 0)
@@ -731,14 +787,31 @@ export function validateConfig(c: Config): string[] {
     (e) => {
       const r = c.reputation
       nonNeg(e, 'reputation.perCleanSpent', r.perCleanSpent)
-      positive(e, 'reputation.actThresholds.2', r.actThresholds[2])
-      num(e, 'reputation.actThresholds.3', r.actThresholds[3], (n) => n > r.actThresholds[2], '> actThresholds.2')
+      const pr = c.progression
+      if (!ACTS.includes(pr.finalAct)) e.push('progression.finalAct: expected an act')
+      for (const a of LATER_ACTS) {
+        const g = pr.acts[a]
+        const p = `progression.acts.${a}`
+        if (!g) { e.push(`${p}: missing`); continue }
+        if (g.rep !== undefined) nonNeg(e, `${p}.rep`, g.rep)
+        for (const id of g.holds ?? []) if (!DISTRICT_IDS.includes(id)) e.push(`${p}.holds: unknown district ${id}`)
+        for (const f of g.fronts ?? []) if (!FRONT_TYPES.includes(f)) e.push(`${p}.fronts: unknown front ${f}`)
+        if (!g.goals && g.rep === undefined && !(g.holds ?? []).length && !(g.fronts ?? []).length) e.push(`${p}: a gate needs at least one condition`)
+      }
+      const ps = c.prosperity
+      if (!ACTS.includes(ps.fromAct)) e.push('prosperity.fromAct: expected an act')
+      num(e, 'prosperity.base', ps.base, (n) => n >= 0 && n <= 100, 'in [0, 100]')
+      num(e, 'prosperity.stepPerHr', ps.stepPerHr, (n) => n > 0 && n <= 1, 'in (0, 1]')
+      range(e, 'prosperity.yieldMult', ps.yieldMult, (n) => n > 0)
+      nonNeg(e, 'prosperity.inspectedPenalty', ps.inspectedPenalty)
+      nonNeg(e, 'prosperity.raidPenalty', ps.raidPenalty)
+      positive(e, 'prosperity.raidPenaltyHours', ps.raidPenaltyHours)
+      nonNeg(e, 'prosperity.shortagePenalty', ps.shortagePenalty)
     },
     (e) => {
       const g = c.gold
       int(e, 'gold.starting', g.starting, 0)
-      int(e, 'gold.perActUnlocked.2', g.perActUnlocked[2], 0)
-      int(e, 'gold.perActUnlocked.3', g.perActUnlocked[3], 0)
+      for (const a of LATER_ACTS) int(e, `gold.perActUnlocked.${a}`, g.perActUnlocked[a], 0)
       positive(e, 'gold.hoursPerBar', g.hoursPerBar)
       int(e, 'gold.maxSkipHours', g.maxSkipHours, 1)
       if (!Array.isArray(g.skipChoices) || g.skipChoices.some((h) => !Number.isInteger(h) || h < 1 || h > g.maxSkipHours)) {
@@ -778,6 +851,7 @@ const OPEN_PATHS = [
   /^ops\.list\.[^.]+\.w$/,
   /^districts\.list\.[^.]+\.mod(\..+)?$/,
   /^offers\.templates$/,
+  /^progression\.acts\.[^.]+$/, // a gate may ask for conditions its default doesn't (ADR 0040)
 ]
 
 // Every key in `overlay` must exist in `base` (outside open maps). Catches preset typos.

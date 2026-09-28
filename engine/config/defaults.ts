@@ -15,7 +15,8 @@ export const defaults: Config = {
 
   vault: {
     floorCap: 40, // vault cap never drops below this
-    targetHoursByAct: { 1: 2.5, 2: 5.5 }, // vault cap = yield × this — the session leash (manual §4 Cadence)
+    // vault cap = yield × this — the session leash (manual §4 Cadence). Later acts ask for fewer, longer visits (ADR 0040).
+    targetHoursByAct: { 1: 2.5, 2: 5.5, 3: 8, 4: 12, 5: 18, 6: 24 },
     startingDirty: 0, // vault starts empty: nothing has been earned yet at launch
     startingDirtyOnHand: 120, // ready for the first wages and Tolya's first visit (ADR 0035); absorbs the 30 that used to sit pre-filled in the vault
     startingClean: 440, // Uncle Lyosha's money: the opening's setup costs ●380, leaving ●60 as the old start did (ADR 0035)
@@ -25,7 +26,7 @@ export const defaults: Config = {
   rackets: {
     tierYieldMult: 1.2, // spec §7.1 — must stay below tierHeatMult (manual §5)
     tierHeatMult: 1.35,
-    maxTierByAct: { 1: 5, 2: 5 },
+    maxTierByAct: { 1: 5, 2: 5, 3: 6, 4: 6, 5: 6, 6: 6 }, // tier 6 from Act III (ADR 0041)
     conditionDecayPerDay: 2,
     conditionRepairPct: 0.1, // repair = 10% of purchase price, paid in Dirty
     enforcer: { yieldMult: 1.3, heatMult: 0.7 }, // "strictly worth it below tier 4"
@@ -33,6 +34,12 @@ export const defaults: Config = {
     specialization: {
       atTier: 3,
       greed: { yieldMult: 1.25, exposureMult: 1.6 },
+      stealth: { yieldMult: 1.0, exposureMult: 0.8 },
+    },
+    // The upgrade to tier 6 is a second choice, from Act III (ADR 0041).
+    specialization6: {
+      atTier: 6,
+      greed: { yieldMult: 1.4, exposureMult: 1.8 },
       stealth: { yieldMult: 1.0, exposureMult: 0.8 },
     },
     // Premises (ADR 0031) tier up to maxTier in any act; a missed upkeep day knocks this off each one.
@@ -44,39 +51,41 @@ export const defaults: Config = {
       // Act II (ADR 0037)
       { id: 'stashWarehouse', a: 'stashHouse', b: 'warehouse', effect: { upkeepMultOf: { warehouse: 0 } } },
       { id: 'unionSovietsky', a: 'unionOffice', district: 'sovietsky', effect: { influenceMult: 1.5 } },
+      // Act III (ADR 0041): a hotel brings custom to every joint on its street.
+      { id: 'hotelJoints', a: 'hotel', b: 'joints', effect: { yieldMult: 1.15 } },
     ],
     // Every non-zero unlock sits 38 above its M4 value: buying the opening's setup earns 38 Rep (ADR 0035).
     types: {
       // Joints: cigaretteShare of the yield needs stock (ADR 0032). Purchase = yield × payback hours.
       kiosk: {
         name: 'Kiosk', description: 'A street kiosk selling cigarettes and odds and ends. Cheap, quiet, and always the first thing you own.',
-        act: 1, kind: 'joint', baseYield: 6, baseHeat: 0.8, unlockRep: 0, sellsPerHr: 0.5, cigaretteShare: 0.7,
+        act: 1, kind: 'joint', baseYield: 6, baseHeat: 0.8, unlockRep: 0, sellsPerHr: 0.5, cigaretteShare: 0.7, prosperity: 2,
       },
       marketStall: {
         name: 'Market Stall', description: 'A stall in the open market. More turnover than a Kiosk, a bit more heat to go with it.',
-        act: 1, kind: 'joint', baseYield: 10, baseHeat: 1.3, unlockRep: 0, sellsPerHr: 0.8, cigaretteShare: 0.5,
+        act: 1, kind: 'joint', baseYield: 10, baseHeat: 1.3, unlockRep: 0, sellsPerHr: 0.8, cigaretteShare: 0.5, prosperity: 3,
       },
       beerTent: {
         name: 'Beer Tent', description: 'A tent that sells beer and cigarettes on the side. Modest money, modest heat.',
-        act: 1, kind: 'joint', baseYield: 8, baseHeat: 1.0, unlockRep: 53, sellsPerHr: 0.6, cigaretteShare: 0.4,
+        act: 1, kind: 'joint', baseYield: 8, baseHeat: 1.0, unlockRep: 53, sellsPerHr: 0.6, cigaretteShare: 0.4, prosperity: 3,
       },
       videoSalon: {
         name: 'Video Salon', description: 'A pirated-video parlor. Earns Dirty directly — no cigarettes involved, but it runs hot for its size.',
-        act: 1, kind: 'racket', baseYield: 12, baseHeat: 1.6, unlockRep: 68,
+        act: 1, kind: 'racket', baseYield: 12, baseHeat: 1.6, unlockRep: 68, prosperity: -2,
       },
       taxiRank: {
         name: 'Taxi Rank', description: 'An unlicensed taxi stand. Earns Dirty directly, hotter still than a Video Salon.',
-        act: 1, kind: 'racket', baseYield: 14, baseHeat: 2.0, unlockRep: 83,
+        act: 1, kind: 'racket', baseYield: 14, baseHeat: 2.0, unlockRep: 83, prosperity: -1,
       },
       slotHall: {
         name: 'Slot Hall', description: 'A back-room slot machine hall. Your best Act I joint by far — and the hottest one.',
-        act: 1, kind: 'joint', baseYield: 18, baseHeat: 2.6, unlockRep: 98, sellsPerHr: 0.4, cigaretteShare: 0.2,
+        act: 1, kind: 'joint', baseYield: 18, baseHeat: 2.6, unlockRep: 98, sellsPerHr: 0.4, cigaretteShare: 0.2, prosperity: 4,
       },
       // Premises earn nothing: the factory rolls packs, the warehouse raises the stock cap.
       tobaccoFactory: {
         name: 'Tobacco Factory',
         description: "Makes cigarette packs for your joints to sell. Earns no Dirty itself — pair it with a Warehouse so packs don't go to waste.",
-        act: 1, kind: 'premises', baseYield: 0, baseHeat: 0.6, unlockRep: 0,
+        act: 1, kind: 'premises', baseYield: 0, baseHeat: 0.6, unlockRep: 0, prosperity: -2,
         purchase: 80, upkeepPerHr: 0.5, upkeepTierMult: 1.3, makesPerHr: 2, tierMakeMult: 1.5,
       },
       warehouse: {
@@ -84,26 +93,26 @@ export const defaults: Config = {
         act: 1, kind: 'premises', baseYield: 0, baseHeat: 0.3, unlockRep: 58,
         purchase: 120, upkeepPerHr: 1, upkeepTierMult: 1.2, capPerTier: 100,
       },
-      // Ladder sits under the Act II clear threshold (reputation.actThresholds[3]) so every spot opens in the act.
+      // Ladder sits under the Act III gate (progression.acts[3].rep) so every Act II spot opens in the act.
       autoShop: {
         name: 'Auto Shop', description: "Act II's entry-level racket: a chop shop dressed as a repair garage. Earns Dirty directly.",
-        act: 2, kind: 'racket', baseYield: 18, baseHeat: 2.5, unlockRep: 148,
+        act: 2, kind: 'racket', baseYield: 18, baseHeat: 2.5, unlockRep: 148, prosperity: -2,
       },
       cafe: {
         name: 'Café', description: 'A café that moves cigarettes quietly alongside the coffee.',
-        act: 2, kind: 'joint', baseYield: 14, baseHeat: 1.8, unlockRep: 208, sellsPerHr: 1.2, cigaretteShare: 0.3,
+        act: 2, kind: 'joint', baseYield: 14, baseHeat: 1.8, unlockRep: 208, sellsPerHr: 1.2, cigaretteShare: 0.3, prosperity: 6,
       },
       bathhouse: {
         name: 'Bathhouse', description: 'A banya where deals get made along with the steam. A strong Act II joint, but it runs hot.',
-        act: 2, kind: 'joint', baseYield: 24, baseHeat: 3.2, unlockRep: 288, sellsPerHr: 1.6, cigaretteShare: 0.3,
+        act: 2, kind: 'joint', baseYield: 24, baseHeat: 3.2, unlockRep: 288, sellsPerHr: 1.6, cigaretteShare: 0.3, prosperity: 8,
       },
       petrol: {
         name: 'Petrol Station', description: 'A skimmed-fuel racket. Earns Dirty directly, and earns it fast.',
-        act: 2, kind: 'racket', baseYield: 34, baseHeat: 4.5, unlockRep: 368,
+        act: 2, kind: 'racket', baseYield: 34, baseHeat: 4.5, unlockRep: 368, prosperity: -3,
       },
       cargoBay: {
         name: 'Cargo Bay', description: 'Your biggest earner: a shipping yard moving whatever pays. Also your hottest business by far.',
-        act: 2, kind: 'racket', baseYield: 55, baseHeat: 8.0, unlockRep: 458,
+        act: 2, kind: 'racket', baseYield: 55, baseHeat: 8.0, unlockRep: 458, prosperity: -4,
       },
       // Act II premises (ADR 0037): the stash lengthens the leash and hides part of a raid; the union makes Influence.
       stashHouse: {
@@ -118,6 +127,24 @@ export const defaults: Config = {
         act: 2, kind: 'premises', baseYield: 0, baseHeat: 0.5, unlockRep: 238, maxInCity: 1,
         purchase: 250, upkeepPerHr: 1.5, upkeepTierMult: 1.2, influencePerHrPerTier: 1 / 60,
       },
+      // Act III, the Centre (ADR 0041). Prosperity: joints lift a street, rackets sour it.
+      nightclub: {
+        name: 'Nightclub', description: 'A basement club off the embankment. Steady money, cigarettes at the bar, and a street that likes having it there.',
+        act: 3, kind: 'joint', baseYield: 50, baseHeat: 6, unlockRep: 1220, sellsPerHr: 2.5, cigaretteShare: 0.25, prosperity: 6,
+      },
+      cardClub: {
+        name: 'Card Club', description: 'The card room in the House of Officers. Big money, but only on a street that looks respectable enough to walk into.',
+        act: 3, kind: 'joint', baseYield: 70, baseHeat: 9, unlockRep: 1700, sellsPerHr: 3, cigaretteShare: 0.3, prosperity: 12, minProsperity: 55, // a tier-1 hotel and a nightclub get the Centre there
+      },
+      printShop: {
+        name: 'Print Shop', description: 'A print works turning out roubles that almost pass. The best racket in the Centre, and it draws investigators.',
+        act: 3, kind: 'racket', baseYield: 90, baseHeat: 14, unlockRep: 2400, prosperity: -6,
+      },
+      hotel: {
+        name: 'Hotel', description: 'A hotel on the street: every joint beside it earns more, and the whole district looks up. Earns no Dirty itself.',
+        act: 3, kind: 'premises', baseYield: 0, baseHeat: 1.5, unlockRep: 1300,
+        purchase: 500, upkeepPerHr: 3, upkeepTierMult: 1.2, prosperityPerTier: 8,
+      },
     },
   },
 
@@ -130,7 +157,8 @@ export const defaults: Config = {
 
   costs: {
     // spec §6.2: purchase = baseYield × payback hours for the racket's act
-    paybackHoursByAct: { 1: 10, 2: 18 }, // Act I 12 → 10: Act I cleared at 2.1 d (TUNING.md)
+    // Act I 12 → 10: Act I cleared at 2.1 d. Act III 24 → 40: the bot bought the Centre out in four days (TUNING.md).
+    paybackHoursByAct: { 1: 10, 2: 18, 3: 40, 4: 30, 5: 36, 6: 36 },
     upgradeBaseFactor: 0.5, // upgrade from tier t = purchase × 0.5 × upgradeTierMult^(t−1)
     upgradeTierMult: 1.4,
     overrides: {}, // { kiosk: { purchase: 40 } } — wins over the formula
@@ -157,13 +185,18 @@ export const defaults: Config = {
     types: {
       currencyKiosk: {
         name: 'Currency Kiosk', description: 'Turns Dirty into Clean at a modest rate. Your first front, and the cheapest.',
-        rate: 0.55, throughput: 25, unlockRep: 0, cost: 40,
+        act: 1, rate: 0.55, throughput: 25, unlockRep: 0, cost: 40,
       }, // bought in the opening (ADR 0035)
       // 185 → 120: Act II laundering grows through capacity upgrades (to 210) instead of arriving oversized (TUNING.md).
       // Opens just before Act II (143): opening it with Act II cost a seed a wage day (TUNING.md, M4).
       restaurant: {
         name: 'Restaurant', description: 'A better rate and much more laundering capacity than the Currency Kiosk — the front you grow into for Act II.',
-        rate: 0.65, throughput: 120, unlockRep: 133, cost: 60,
+        act: 1, rate: 0.65, throughput: 120, unlockRep: 133, cost: 60,
+      },
+      // Act III (ADR 0041): only a city that looks prosperous gets a bank.
+      cooperativeBank: {
+        name: 'Cooperative Bank', description: 'A co-operative bank on the embankment: the best rate yet and room for real money, once the city looks respectable.',
+        act: 3, minProsperity: 55, rate: 0.75, throughput: 500, unlockRep: 1500, cost: 1500,
       },
     },
   },
@@ -194,18 +227,22 @@ export const defaults: Config = {
         name: 'Precinct Captain', description: 'A captain who can make real trouble disappear. A huge, permanent boost to control.',
         control: 240, cost: 12, act: 2,
       },
+      cityHall: {
+        name: 'City Hall', description: 'The deputy mayor for trade, across the bridge. The city looks the other way for you now.',
+        control: 1300, cost: 24, act: 3, // 400 → 1300: a tier-6 portfolio ran Act III at heat 45 (TUNING.md, M8)
+      },
     },
   },
 
   crew: {
-    slotsByAct: { 1: 3, 2: 4 }, // Act I 2 → 3 with the bigger Act I (ADR 0033)
+    slotsByAct: { 1: 3, 2: 4, 3: 6, 4: 8, 5: 10, 6: 12 }, // Act I 2 → 3 with the bigger Act I (ADR 0033)
     extraSlotCostPctOfBudget: 0.05, // of lifetime Clean earned
     extraSlotMinCost: 150,
     extraSlotMax: 2,
     recruitCostPerAct: 50, // Clean × act
     poolSize: 3,
     poolRefreshHours: 24,
-    statBandByAct: { 1: [25, 50], 2: [35, 60] },
+    statBandByAct: { 1: [25, 50], 2: [35, 60], 3: [45, 70], 4: [50, 75], 5: [55, 80], 6: [55, 80] },
     recruitLoyalty: 50,
     traitChance: 0.35,
     wageDivisor: 60, // wage/hr = (M + B + N) / 60
@@ -277,6 +314,8 @@ export const defaults: Config = {
       },
       moveShipment: { name: 'Move a Shipment', band: 'standard', minutes: 180, crew: 2, w: { nerve: 0.5, brains: 0.5 }, diff: 50, spike: 3, dirty: 30, act: 2 },
       dinner: { name: 'Dinner with Officials', band: 'long', minutes: 360, crew: 2, w: { brains: 0.7, nerve: 0.3 }, diff: 55, spike: 1.5, influence: 2 },
+      // Act III: three crew, a night's work, a year's wages (plan §14).
+      bigScore: { name: 'The Big Score', band: 'long', minutes: 480, crew: 3, w: { muscle: 0.3, brains: 0.4, nerve: 0.3 }, diff: 60, spike: 8, dirty: 200, act: 3 },
       // Training (ADR 0030): one crew member, costs Dirty × act, no roll, no heat, no report.
       trainMuscle: { name: 'Boxing Gym', band: 'long', minutes: 240, crew: 1, w: { muscle: 1 }, diff: 0, spike: 0, training: 'muscle', costDirty: 15, xp: 8 },
       trainBrains: { name: 'Night School', band: 'long', minutes: 240, crew: 1, w: { brains: 1 }, diff: 0, spike: 0, training: 'brains', costDirty: 15, xp: 8 },
@@ -362,6 +401,17 @@ export const defaults: Config = {
           { id: 'sellAnyway', name: 'Sell it anyway', dirtyPerAct: 10, heat: 3 },
         ],
       },
+      // Act III (ADR 0041): the Print Shop draws a man from the state bank's security service.
+      investigation: {
+        name: 'An investigator',
+        text: 'Someone from the state bank is asking about roubles that almost pass. He has the Print Shop’s address.',
+        act: 3,
+        needs: 'printShop',
+        options: [
+          { id: 'shut', name: 'Close it for a day', default: true, closeHours: 24 },
+          { id: 'pay', name: 'Pay him three hours’ takings', dirtyHoursOfYield: -3 },
+        ],
+      },
     },
   },
 
@@ -402,6 +452,11 @@ export const defaults: Config = {
         name: 'Sovietsky Blocks', description: 'Unclaimed Act II turf. Take it and every crew wage in the city drops 10%.',
         act: 2, startsAs: 'none', allows: ['autoShop', 'cafe', 'bathhouse'], premisesLots: 2, buyout: 300, tribute: 0, mod: { wageMult: 0.9 },
       },
+      // Act III (ADR 0041): the old merchant town across the bridge. Nobody from the south bank has ever held it.
+      centre: {
+        name: 'The Centre', description: 'The old town across the bridge. Nobody holds it; its card club only opens on a street prosperous enough to walk into.',
+        act: 3, startsAs: 'none', allows: ['nightclub', 'cardClub', 'printShop'], premisesLots: 2, buyout: 900, tribute: 0, mod: { yieldMult: { cardClub: 1.1 } },
+      },
     },
   },
 
@@ -441,11 +496,31 @@ export const defaults: Config = {
     perCleanSpent: 0.1,
     perOpSuccess: 2, // partial success earns partialRewardPct of this. Ops season Rep; spending drives it
     perDistrict: 20,
-    // 3 = Act II cleared (Act III is stubbed). 480 ≈ Rep the casual bot holds 4 days after Act I (TUNING.md).
-    // 80/480 → 90/540 with gold (M4); +38 for the opening's setup Rep and +15/+32 for its faster start (M5): TUNING.md.
-    // [2] no longer gates Act I → Act II (ADR 0039: that's goals.list completion now) — kept as the historical
-    // reference point the unlock ladder was tuned against, and unread by checkActs.
-    actThresholds: { 2: 143, 3: 610 },
+  },
+
+  // Six acts (ADR 0040). Act II opens on the Act I goals; later acts on Reputation and what you hold.
+  // finalAct is the last act this build has content for: its gate marks the game cleared instead.
+  progression: {
+    finalAct: 3,
+    acts: {
+      2: { goals: true },
+      3: { rep: 1200 }, // 610 (Act II's old clear) → 1200: Act II ran 1.9 d against the manual's 3–5 (TUNING.md, M8)
+      4: { rep: 9000 }, // just under what the Centre's catalogue can earn (~10,200 on the bot)
+      5: { rep: 10000 },
+      6: { rep: 20000 },
+    },
+  },
+
+  // Act III (ADR 0041): each district has a prosperity from 0 to 100 that its joints' income follows.
+  prosperity: {
+    fromAct: 3,
+    base: 45, // before businesses: an Act II district lands near 50, so Act III opens without a cliff
+    stepPerHr: 0.1, // a tenth of the gap to target, at each whole hour
+    yieldMult: [0.7, 1.3], // joints at prosperity 0 and 100 (×1 at 50)
+    inspectedPenalty: 10,
+    raidPenalty: 15,
+    raidPenaltyHours: 24,
+    shortagePenalty: 10,
   },
 
   tutorial: { enabled: true, firstConversionInstant: true, tolyaAfterMinutes: 2 }, // Tolya's first visit, right after the heat lesson
@@ -474,7 +549,7 @@ export const defaults: Config = {
   // Gold bars (ADR 0034): each buys an hour of waiting. You start with some and get more when an act opens.
   gold: {
     starting: 10,
-    perActUnlocked: { 2: 5, 3: 10 },
+    perActUnlocked: { 2: 5, 3: 10, 4: 10, 5: 10, 6: 10 },
     hoursPerBar: 1,
     maxSkipHours: 8,
     skipChoices: [1, 2, 4, 8],

@@ -20,6 +20,7 @@ import {
 } from '../engine'
 import { botPlay, type Trace } from '../sim/driver'
 import type { LogExport, LogLine } from '../sim/replay'
+import { actMilestones } from './acts'
 import { buildAway, mergeAway, type AwaySummary } from './away'
 import { buildNotices, diffUnlocked, type QueuedNotice, type UnlockedMap } from './notices'
 import { FILES, storage } from './storage'
@@ -200,11 +201,9 @@ class GameStore {
     const final = { ...trace.final, debugOffsetMs: trace.final.debugOffsetMs + days * dayMs(this.config) }
     this.commit(final, [])
     // Name the act milestones the run passed: the events themselves scroll out of the log.
-    const at = final.stats.actClearedAt
-    const milestones = [
-      at[1] !== undefined && at[1] >= from ? `reached Act II on Day ${gameDay(this.config, final, at[1])}` : null,
-      at[2] !== undefined && at[2] >= from ? `cleared Act II on Day ${gameDay(this.config, final, at[2])}` : null,
-    ].filter((m): m is string => m !== null)
+    const milestones = actMilestones(final, this.config)
+      .filter((m) => m.t >= from)
+      .map((m) => `${m.label.charAt(0).toLowerCase()}${m.label.slice(1)} on Day ${gameDay(this.config, final, m.t)}`)
     this.flash(
       `Bot played ${days} day${days === 1 ? '' : 's'}: ${trace.sessions.length} sessions, ${trace.actions.length} actions${milestones.map((m) => ` · ${m}`).join('')}`,
     )

@@ -50,7 +50,7 @@ Leftover XP carries over. At the ceiling, banked XP for that stat is discarded. 
 
 Job and training XP is spent the moment it's granted. Enforcer XP is spent at whole hours (`crewXpHourBoundary`, right after condition decay), so any split of a reconcile agrees.
 
-**Ranks.** `rankFor(gained)`: Associate, then Soldier at `ranks.soldier`, Made at `ranks.made`, Capo at `ranks.capo` (`CREW_RANK_UP { crewId, name, rank }`). Reaching Soldier and Made each files a perk choice in the inbox: `perkChoices` perks the member doesn't have, drawn on `rng.derive('perk', crewId, rank)`, the first as default, expiring after `inbox.perkHours` ([inbox.md](inbox.md#perk-choices)). Choosing one emits `PERK_CHOSEN`.
+**Ranks.** `rankFor(gained)`: Associate, then Soldier at `ranks.soldier`, Made at `ranks.made`, Capo at `ranks.capo` (`CREW_RANK_UP { crewId, name, rank }`). Reaching Soldier, Made and Capo each files a perk choice in the inbox (Capo from [ADR 0041](../decisions/0041-act-iii-the-centre.md)): `perkChoices` perks the member doesn't have, drawn on `rng.derive('perk', crewId, rank)`, the first as default, expiring after `inbox.perkHours` ([inbox.md](inbox.md#perk-choices)). Choosing one emits `PERK_CHOSEN`.
 
 **Perks** (`crew.experience.perks`):
 

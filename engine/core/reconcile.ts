@@ -10,7 +10,8 @@ import { autoResolveInbox, rollIncident } from '../systems/inbox'
 import { ledgerDayBoundary } from '../systems/ledger'
 import { refreshOffersIfDue } from '../systems/offers'
 import { resolveOp } from '../systems/ops'
-import { accrueVault, decayCondition, settleUpkeep } from '../systems/rackets'
+import { prosperityHourBoundary } from '../systems/prosperity'
+import { accrueVault, decayCondition, reopenBusinesses, settleUpkeep } from '../systems/rackets'
 import { tolyaTick } from '../systems/rivals'
 import { accrueStock, supplyHourBoundary } from '../systems/supply'
 import { clone, emit, type Ctx } from './ctx'
@@ -68,6 +69,7 @@ function nextBoundary(state: PlayerState, c: Config, t: number, now: number): nu
   consider(state.rival.tolya.nextTickAt)
   for (const m of state.crew) if (m.status === 'jailed') consider(m.jailedUntil)
   for (const item of state.inbox) consider(item.expiresAt)
+  for (const r of state.rackets) consider(r.closedUntil)
   return b
 }
 
@@ -97,6 +99,7 @@ function hourBoundary(state: PlayerState, ctx: Ctx, t: number): void {
   crewXpHourBoundary(state, ctx, t) // enforcers' banked XP becomes stat points on the hour
   heatHourBoundary(state, ctx, t)
   supplyHourBoundary(state, ctx, t)
+  prosperityHourBoundary(state, ctx, t) // after the inspection and shortage flags it reads
   rollIncident(state, ctx, t)
   if (isDayStart(ctx.c, t)) {
     crewDayBoundary(state, ctx, t)
@@ -120,6 +123,7 @@ export function processDue(state: PlayerState, ctx: Ctx, t: number): void {
     emit(ctx, t, { type: 'BRIBE_EXPIRED' })
   }
   releaseJailed(state, ctx, t)
+  reopenBusinesses(state, ctx, t)
   refreshPoolIfDue(state, ctx, t)
   refreshOffersIfDue(state, ctx, t)
   if (state.rival.tolya.nextTickAt <= t) tolyaTick(state, ctx, t)

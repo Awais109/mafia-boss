@@ -29,6 +29,15 @@ export function accrueVault(
   }
 }
 
+// A business shut by an investigation opens again when its time is up.
+export function reopenBusinesses(state: PlayerState, ctx: Ctx, t: number): void {
+  for (const r of state.rackets) {
+    if (r.closedUntil === undefined || r.closedUntil > t) continue
+    delete r.closedUntil
+    emit(ctx, t, { type: 'RACKET_REOPENED', racketId: r.id })
+  }
+}
+
 export function decayCondition(state: PlayerState, c: Config): void {
   const perHour = c.rackets.conditionDecayPerDay / 24
   for (const r of state.rackets) r.condition = Math.max(0, r.condition - perHour)

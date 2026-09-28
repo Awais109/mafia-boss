@@ -101,7 +101,26 @@ function v7to8(doc: Doc): Doc {
   return { ...doc, schemaVersion: 8, goals: { ...goals, done: goals.done.filter((id) => id !== 'actII') } }
 }
 
-const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7, 7: v7to8 }
+// v9 (M8): six acts and the Centre (ADRs 0040, 0041). Every district gets a prosperity, which only
+// starts to move in Act III; the Centre joins the map. "Act II cleared" used to mean the end of the
+// prototype; now Act II leads to Act III at its own gate, so a save still in Act II loses that date and
+// gets a real one when Act III opens.
+function v8to9(doc: Doc): Doc {
+  const districts = (doc.districts as ({ id: string } & Record<string, unknown>)[]).map((d) => ({ prosperity: defaults.prosperity.base, ...d }))
+  const stats = doc.stats as { actClearedAt: Record<string, number> } & Record<string, unknown>
+  const { 2: _oldClear, ...cleared } = stats.actClearedAt ?? {}
+  return {
+    ...doc,
+    schemaVersion: 9,
+    stats: doc.act === 2 ? { ...stats, actClearedAt: cleared } : stats,
+    raidPenaltyUntil: doc.raidPenaltyUntil ?? 0,
+    districts: districts.some((d) => d.id === 'centre')
+      ? districts
+      : [...districts, { id: 'centre', controller: defaults.districts.list.centre.startsAs, pressureCount: 0, prosperity: defaults.prosperity.base }],
+  }
+}
+
+const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7, 7: v7to8, 8: v8to9 }
 
 export function migrate(doc: unknown): PlayerState {
   if (typeof doc !== 'object' || doc === null) throw new Error('Save is not an object')

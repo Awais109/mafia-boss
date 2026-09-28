@@ -211,14 +211,52 @@ change), `smuggleRun` needs 3 runs (not 1). Full reasoning and consequences in A
 3 d → 6 d (every seed now needs that long to reach the milestone at all). `sim/baseline.csv` regenerated
 (seed 42, 8 days) to match.
 
+## 2026-09-29 — M8: six acts and Act III's first half (ADRs 0040, 0041)
+
+New config, starting values from the six-act design; the sim now runs 22 days so Act III can clear.
+
+```
+2026-09-29  New config (ADR 0040): Act 1–6; vault.targetHoursByAct 3–6 = 8, 12, 18, 24; rackets.maxTierByAct 3–6 = 6;
+            costs.paybackHoursByAct 3–6 = 24, 30, 36, 36; crew.slotsByAct 3–6 = 6, 8, 10, 12; crew.statBandByAct 3–6 = [45,70],
+            [50,75], [55,80], [55,80]; gold.perActUnlocked 4–6 = 10 each; progression.finalAct 3, acts {2 goals, 3 ★610 (was
+            reputation.actThresholds[3]), 4 ★4,000, 5 ★10,000, 6 ★20,000}. reputation.actThresholds removed.
+2026-09-29  New config (ADR 0041): prosperity {fromAct 3, base 45, step 0.1/h, joints ×0.7–1.3, penalties inspected 10, raid 15 for
+            24 h, shortage 10}; business prosperity: kiosk 2, stall 3, beer tent 3, slot hall 4, café 6, bathhouse 8, video salon −2,
+            taxi rank −1, auto shop −2, petrol −3, cargo bay −4, tobacco factory −2; the Centre {buyout 900, lots 2}; Nightclub
+            {50/h, heat 6, ★620, sells 2.5, share .25, +6}; Card Club {70/h, heat 9, ★660, sells 3, share .3, +12, needs 60};
+            Print Shop {90/h, heat 14, ★900, −6}; Hotel {●500, upkeep 3/h ×1.2, heat 1.5, ★640, +8 a tier}; synergy hotelJoints
+            ×1.15; Cooperative Bank {75%, 500/h, ●1,500, ★700, needs city 55}; City Hall {+400 control, ✦24}; Big Score {8 h, 3
+            crew, diff 60, ◆200, spike 8}; specialization6 greed ×1.4 yield ×1.8 heat, stealth ×1 / ×0.8; investigation incident.
+            Sim (10 seeds, 22 d): Act I 4.64 d, Act II 1.9 d (0/10 in 3–5), Act III 4.2 d (0/10 in 6–8), Act III heat 45.
+2026-09-29  rackets.types.cardClub.minProsperity 60→55
+            A tier-1 hotel (+8) and a nightclub (+6) take the Centre from 45 to 59: at 60 the first hotel never unlocked the club,
+            so the bot had no reason to build it there. Kept.
+2026-09-29  officials.list.cityHall.control 400→900→1100→1300
+            Act III heat 45 at 400: a tier-6 portfolio's exposure (~835) swamps control (~785). 900: Act III heat 39; 1100: 36, run
+            heat 35.2 (2/5 in 25–35); 1300: run heat 33.6 (10/10), Act III length unchanged. Kept 1300.
+2026-09-29  progression.acts.4.rep 4000→7000→8500→9000
+            Rep flattens near ★7,900 by day 13 once the bot owns the whole Centre at tier 6, so Act IV's gate has to sit just under
+            what Act III's content can earn. 7000: Act III 5.6 d. Kept 9000 with the price change below.
+2026-09-29  costs.paybackHoursByAct.3 24→28→32→40
+            28: Act III 5.7 d; 32: 5.9 d; 40 with the gate at ★8,500: 6.4 d (9/10), content now earns ~★10,200. Kept 40.
+2026-09-29  progression.acts.3.rep 610→1000→1200
+            With ★610 as a door rather than the end, Act II ran 1.9 d. 1000: 2.9 d (7/10); 1200: 3.3 d (10/10). Kept 1200.
+2026-09-29  Act III unlock ladder spread above the new gate: Nightclub ★620→1220, Hotel 640→1300, Bank 700→1500, Card Club 660→1700,
+            Print Shop 900→2400 (all sat below ★1,200, so everything opened at once).
+            Final (10 seeds, 22 d): Act I 4.64 d, Act II 3.28 d (10/10), Act III 6.47 d (8/10), heat 33.6 (10/10; Act I ~38, II ~24,
+            III ~37), raids 0, partial 0.50, missed wages 0, front util 0.65, Dirty idle 0.86, wage share 0.02.
+            goldRush: Act I 4.19 d, Act II 3.16 d, Act III 6.36 d, heat 33.4, missed wages 0.
+2026-09-29  tests/sim.test.ts: 8 → 22 days; Act II band 1–2.2 → 3–5 (the manual's own); Act III 6–8 added.
+```
+
 ## Open
 
-- **Front utilization ~59% (target 70–90%) and Dirty idle ~68% (target 20–50%).** The bot keeps a large Dirty reserve and the fronts can wash more than it deposits. Dirty idle rose with M3's bigger Act I, and again with M6's Stash House, whose longer leash makes bigger collections.
-- **Wage share ~4%** (manual 10–25%). Wages are about a quarter of day-1 income but a few percent of late Act II income, and upkeep doesn't change that. No number fixes both ends: raising wages or upkeep enough for Act II breaks the first day. Running costs that scale with the act would be a new rule, which the expansion plan doesn't have.
+- **Front utilization ~65% (target 70–90%) and Dirty idle ~86% (target 20–50%).** The bot keeps a large Dirty reserve and the fronts can wash more than it deposits early on; by late Act III yield (~1,800/h) outruns laundering (~1,100 Clean/h with the Bank at full capacity), so Dirty piles up. The loan desk (next milestone) gives idle Dirty somewhere to go.
+- **Wage share ~2%** over 22 days (manual 10–25%). Wages are about a quarter of day-1 income but a few percent of late Act II income, and upkeep doesn't change that. No number fixes both ends: raising wages or upkeep enough for Act II breaks the first day. Running costs that scale with the act would be a new rule, which the expansion plan doesn't have.
 - **Shortages are rare** (about 3 h per 8-day run, none in Act I). The plan's M3 gate asks for some shortage in Act I, under 10% of its hours.
-- **Act I clears at 1.89 d** (4/10 seeds inside 1–2): the thresholds were raised twice to keep gold and the opening's head start from shortening it. **Act II clears at 3.07 d**, near the bottom of 3–5.
-- **Gold is a strong early accelerator:** with the goals' bars, spending every bar on quick jobs takes Act I from 1.89 to 1.03 days, right at the gold gate, and Act II in 2.99 days (not gated). Any new source of bars will break it.
-- **Heat mean 34.0**, with Act I around 36 while the bot fills its heat budget.
-- **The bot never builds a Union Office.** Influence buys only officials in Acts I–II, and the bot has bought the Precinct Captain before the office unlocks at ★238. A player can use it to reach the Captain sooner; its lasting use would be an Act III official.
+- **Act I clears at 4.64 d** against the manual's 1–2, since it's gated on seven build-out goals (ADR 0039). An owner decision: relax the goals or move the target. **Act II clears at 3.28 d** and **Act III at 6.47 d**, both in range.
+- **Gold barely accelerates Act I any more** (goldRush 4.19 d against 4.64): it speeds up jobs, and Act I is gated on building.
+- **Heat mean 33.6** over three acts: Act I around 38 while the bot fills its heat budget, Act II around 24 once the Captain arrives, Act III around 37 until City Hall does.
+- **The Union Office is built in Act III**, not before: City Hall is the first official after the Captain that Influence has to save for.
 - **Zhanna's lots are rare for the bot** (0.3 a run), because stock seldom gets within 12 hours of running out; surplus sales come to about ◆50 a run.
 - **No raids in the sim**, so only the tests exercise the Stash House's raid shield.

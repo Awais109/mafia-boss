@@ -1,25 +1,14 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { gameDay } from '../../engine'
+import { ACT_NAME, actProgress } from '../acts'
 import { fmt, fmtClock } from '../format'
 import type { Snapshot } from '../store'
 import { Bar, colors, glyph } from './ui'
 
 export function Header({ game, onGold }: { game: Snapshot; onGold?: () => void }) {
   const { state: s, derived: d, config: c, now } = game
-  const clearedAt = s.stats.actClearedAt[2]
-  const goalsTotal = c.goals.list.length
-  const goalsDone = s.goals.done.length
-  // Act I → Act II is goal-gated now (ADR 0039), so the bar tracks goals, not Rep, until then.
-  // Rep always says what the number is for otherwise: the Act II clear target, or, once that's
-  // done, the day it happened. A bare "1,646/540" reads as a target that never fired.
-  const rep =
-    s.act === 1
-      ? `${fmt(s.reputation)} · ${goalsDone}/${goalsTotal} goals to Act II`
-      : clearedAt !== undefined
-        ? `${fmt(s.reputation)} · Act II cleared on Day ${gameDay(c, s, clearedAt)}`
-        : `${fmt(s.reputation)}/${fmt(c.reputation.actThresholds[3])} to clear Act II`
-  const barValue = s.act === 1 ? goalsDone : s.reputation
-  const barMax = s.act === 1 ? goalsTotal : c.reputation.actThresholds[3]
+  // The Rep line always says what it's for: goals toward Act II, then the next act's gate (ADR 0040),
+  // then the day the last built act was cleared. A bare "1,646/540" reads as a target that never fired.
+  const progress = actProgress(s, c)
   const heatColor = s.heat >= c.heat.raidThreshold ? colors.heat : s.heat >= c.heat.inspectThreshold ? colors.warn : colors.text
   const vaultFull = s.vault >= d.vaultCap - 1e-6
 
@@ -29,8 +18,8 @@ export function Header({ game, onGold }: { game: Snapshot; onGold?: () => void }
         <Text style={styles.title}>SEVGOROD</Text>
         <View style={styles.topRight}>
           <Text style={styles.clock}>
-            {fmtClock(now, s.createdAt, c)} · Act {s.act === 1 ? 'I' : 'II'}
-            {clearedAt !== undefined ? ' cleared' : ''}
+            {fmtClock(now, s.createdAt, c)} · Act {ACT_NAME[s.act]}
+            {progress.cleared ? ' cleared' : ''}
             {s.skippedMs > 0 ? ` · +${fmt(s.skippedMs / c.time.hourMs)}h skipped` : ''}
             {c.meta.name !== 'default' ? ` · ${c.meta.name}` : ''}
           </Text>
@@ -49,10 +38,10 @@ export function Header({ game, onGold }: { game: Snapshot; onGold?: () => void }
       </View>
       <View style={styles.repRow}>
         <Text style={styles.repText}>
-          {glyph.rep} Rep {rep}
+          {glyph.rep} Rep {progress.label}
         </Text>
         <View style={styles.repBar}>
-          <Bar value={barValue} max={barMax} color={colors.rep} />
+          <Bar value={progress.value} max={progress.max} color={colors.rep} />
         </View>
       </View>
     </View>

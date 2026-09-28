@@ -12,7 +12,10 @@ export { makeRng, type Rand, type RngFactory } from './core/rng'
 export * from './core/time'
 export { newGame } from './newGame'
 export { baseWage, crewSlots, effectiveStat } from './systems/crew'
-export { canPressure, districtUnlocked, openLots, openSpots, premisesBlocked } from './systems/districts'
+export { canPressure, districtUnlocked, openLots, openSpots, premisesBlocked, racketBlocked } from './systems/districts'
+export { frontBlocked } from './systems/fronts'
+export { gameCleared, gateMet, nextGate } from './systems/acts'
+export { cityProsperity, prosperityOn, prosperityTarget, prosperityYieldMult } from './systems/prosperity'
 export {
   influenceRoom,
   opBaseScore,

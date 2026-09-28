@@ -73,6 +73,32 @@ function busy(): PlayerState {
   return s
 }
 
+// Act III (ADR 0041): prosperity stepping at whole hours, a hotel lifting its street, a Print Shop shut by
+// an investigator and opening again mid-window, a raid's penalty running out, heat near the inspection line.
+function centre(): PlayerState {
+  let s = act(fresh('centre-player'), [{ type: 'DEBUG_COMPLETE_GOALS' }, { type: 'DEBUG_SET_REP', reputation: config.rackets.types.printShop.unlockRep }], T0)
+  s.tutorial.done = true
+  s = act(
+    s,
+    [
+      { type: 'DEBUG_GRANT', dirty: 5000, clean: 100_000 },
+      { type: 'BUY_RACKET', racketType: 'nightclub', districtId: 'centre' },
+      { type: 'BUY_RACKET', racketType: 'printShop', districtId: 'centre' },
+      { type: 'BUY_RACKET', racketType: 'hotel', districtId: 'centre' },
+      { type: 'BUY_RACKET', racketType: 'hotel', districtId: 'zarechye' },
+      { type: 'DEBUG_FORCE_INCIDENT', incidentType: 'investigation' },
+    ],
+    T0,
+  )
+  const item = s.inbox.find((i) => i.ref === 'investigation')!
+  s = act(s, [{ type: 'RESOLVE_INBOX', itemId: item.id, optionId: 'shut' }, { type: 'DEBUG_FORCE_RAID' }, { type: 'DEBUG_SET_HEAT', heat: 41 }], T0)
+  // Shift the closures so they end inside the split windows at different offsets.
+  s.rackets.find((r) => r.type === 'printShop')!.closedUntil = T0 + Math.round(7.4 * H)
+  s.raidPenaltyUntil = T0 + Math.round(11.7 * H)
+  s.districts.find((d) => d.id === 'kioskRow')!.prosperity = 12
+  return s
+}
+
 describe('reconcile', () => {
   it('does nothing when now <= updatedAt', () => {
     const s = fresh()
@@ -81,7 +107,7 @@ describe('reconcile', () => {
   })
 
   it('reconcile(s, t2) equals reconcile(reconcile(s, t1), t2) on 1,000 random splits', () => {
-    const bases = [fresh(), busy()]
+    const bases = [fresh(), busy(), centre()]
     const rand = makeRng('split-test').derive('splits')
     for (let i = 0; i < 1000; i++) {
       const base = bases[i % bases.length]

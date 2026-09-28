@@ -30,6 +30,8 @@ export function shiftTimes(state: PlayerState, delta: number): PlayerState {
   s.updatedAt = shift(s.updatedAt)
   s.officialCooldownUntil = shift(s.officialCooldownUntil)
   s.bribeUntil = shift(s.bribeUntil)
+  s.raidPenaltyUntil = shift(s.raidPenaltyUntil)
+  for (const r of s.rackets) if (r.closedUntil !== undefined) r.closedUntil = shift(r.closedUntil)
   s.recruitPool.refreshAt = shift(s.recruitPool.refreshAt)
   s.rival.tolya.nextTickAt = shift(s.rival.tolya.nextTickAt)
   s.rival.zhanna.nextShipmentAt = shift(s.rival.zhanna.nextShipmentAt)
@@ -47,8 +49,9 @@ export function shiftTimes(state: PlayerState, delta: number): PlayerState {
   for (const row of s.ledger) row.startsAt = shift(row.startsAt)
   for (const e of s.log) e.t = shift(e.t)
   const st = s.stats
-  if (st.actClearedAt[1] !== undefined) st.actClearedAt[1] = shift(st.actClearedAt[1])
-  if (st.actClearedAt[2] !== undefined) st.actClearedAt[2] = shift(st.actClearedAt[2])
+  for (const k of Object.keys(st.actClearedAt) as unknown as (keyof typeof st.actClearedAt)[]) {
+    st.actClearedAt[k] = shift(st.actClearedAt[k]!)
+  }
   if (st.firstRaidAt !== null) st.firstRaidAt = shift(st.firstRaidAt)
   if (st.lastSessionAt !== null) st.lastSessionAt = shift(st.lastSessionAt)
   for (const k of Object.keys(st.officialBoughtAt) as (keyof typeof st.officialBoughtAt)[]) {

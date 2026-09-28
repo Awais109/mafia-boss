@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Platform, StyleSheet, TextInput, View } from 'react-native'
-import { configLeaves, getPath, PRESET_NAMES } from '../../engine'
+import { configLeaves, getPath, nextGate, PRESET_NAMES } from '../../engine'
+import { ACT_NAME } from '../acts'
 import { formatSummary, summarize } from '../../sim/report'
 import { Btn, BtnRow, Card, colors, Row, Screen, T } from '../components/ui'
 import { fmt, fmtClock, fmtDuration } from '../format'
@@ -75,7 +76,8 @@ function TimePanel({ game }: { game: Snapshot }) {
 }
 
 function StatePanel({ game }: { game: Snapshot }) {
-  const { state: s } = game
+  const { state: s, config: c } = game
+  const next = nextGate(s, c)
   const [heat, setHeat] = useState('')
   const [rep, setRep] = useState('')
   const d = store.dispatch
@@ -106,6 +108,9 @@ function StatePanel({ game }: { game: Snapshot }) {
           <Btn small title="Tolya visits" onPress={() => d({ type: 'DEBUG_FORCE_TOLYA' })} />
           <Btn small title={`Finish ${s.ops.length} jobs`} disabled={!s.ops.length} onPress={() => d({ type: 'DEBUG_COMPLETE_OPS' })} />
           <Btn small title="Complete goals → Act II" disabled={s.act !== 1} onPress={() => d({ type: 'DEBUG_COMPLETE_GOALS' })} />
+          {next?.gate.rep !== undefined && next.act <= c.progression.finalAct && (
+            <Btn small title={`Rep ${fmt(next.gate.rep)} → Act ${ACT_NAME[next.act]}`} onPress={() => d({ type: 'DEBUG_SET_REP', reputation: next.gate.rep! })} />
+          )}
           <Btn small title="New recruits" onPress={() => d({ type: 'DEBUG_REFRESH_POOL' })} />
           <Btn small title="Incident" onPress={() => d({ type: 'DEBUG_FORCE_INCIDENT' })} />
           <Btn small title="New offers" onPress={() => d({ type: 'DEBUG_REFRESH_OFFERS' })} />

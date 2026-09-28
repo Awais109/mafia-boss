@@ -1,5 +1,6 @@
 import { View } from 'react-native'
-import { DISTRICT_IDS, tolyaHostile, tolyaIntervalHours, type RacketType } from '../../engine'
+import { DISTRICT_IDS, prosperityOn, prosperityTarget, tolyaHostile, tolyaIntervalHours, type RacketType } from '../../engine'
+import { ACT_NAME } from '../acts'
 import { TributeCard } from '../components/TributeCard'
 import { ZhannaCard } from '../components/ZhannaCard'
 import { Btn, BtnRow, Card, colors, Row, Screen, Section, T, Tag } from '../components/ui'
@@ -37,9 +38,17 @@ export function TurfScreen({ game, go }: ScreenProps) {
                 <Tag text={dc.home ? 'home turf' : CONTROLLER[district.controller]} color={ours ? colors.good : colors.muted} />
               </View>
               {!d.unlocked.district[id] ? (
-                <T small muted>Opens in Act II.</T>
+                <T small muted>{`Opens in Act ${ACT_NAME[dc.act]}.`}</T>
               ) : (
                 <>
+                  {prosperityOn(s, c) && (
+                    <Row
+                      label="Prosperity"
+                      hint={`heading for ${Math.round(prosperityTarget(s, c, id, now))}`}
+                      value={String(Math.round(district.prosperity))}
+                      color={colors.good}
+                    />
+                  )}
                   <T small muted>{`Hosts ${dc.allows.map((t) => c.rackets.types[t].name).join(', ')} · ${count}/${dc.allows.length} running · premises lots ${lotsUsed}/${dc.premisesLots}`}</T>
                   {!ours && dc.tribute > 0 && (
                     <Row label="Tribute" hint={`${pct(dc.tribute)} of yield here`} value={`◆${fmtRate(tributeHere)}`} color={colors.warn} />

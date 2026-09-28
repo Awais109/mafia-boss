@@ -2,12 +2,12 @@
 
 Dirty money can't buy anything. Fronts turn it into Clean at a fixed rate per hour, which is the game's throttle. Each front has a dial (push, normal, lay low) and two upgrade tracks (rate and capacity).
 
-**Code:** `engine/systems/fronts.ts` (`convertFronts`, `frontsHourBoundary`), `engine/core/formulas.ts` (`frontRate`, `frontBaseThroughput`, `frontModeMult`, `frontThroughput`, `frontBufferCap`, `frontUpgradeCost`, `frontCapacityUpgradeCost`, `frontSuspicion`), `engine/core/derive.ts` (`perFront`), the `DEPOSIT`, `BUY_FRONT`, `UPGRADE_FRONT` and `SET_FRONT_MODE` handlers in `engine/core/apply.ts`.
+**Code:** `engine/systems/fronts.ts` (`frontBlocked`, `convertFronts`, `frontsHourBoundary`), `engine/core/formulas.ts` (`frontRate`, `frontBaseThroughput`, `frontModeMult`, `frontThroughput`, `frontBufferCap`, `frontUpgradeCost`, `frontCapacityUpgradeCost`, `frontSuspicion`), `engine/core/derive.ts` (`perFront`), the `DEPOSIT`, `BUY_FRONT`, `UPGRADE_FRONT` and `SET_FRONT_MODE` handlers in `engine/core/apply.ts`.
 **Config:** `fronts.*`, `tutorial.firstConversionInstant`.
 
 ## Types
 
-`fronts.types`: `currencyKiosk` (bought in the opening) and `restaurant` (unlocks at its `unlockRep`, just before Act II). Both cost Clean, and you can run one of each type. Each also carries a `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)).
+`fronts.types`: `currencyKiosk` (bought in the opening), `restaurant` (unlocks at its `unlockRep`, just before Act II) and `cooperativeBank` (Act III). Each costs Clean, and you can run one of each type. A front opens in its `act` and at its `unlockRep`; one with `minProsperity` also needs the city's prosperity to be that high ([prosperity.md](prosperity.md)). `frontBlocked(state, config, type)` says why a front can't be bought now, or returns null; `BUY_FRONT` and the bot both use it. Each also carries a `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)).
 
 ## Depositing and converting
 
@@ -73,7 +73,7 @@ suspicion = fronts.suspicionFactor × throughput × max(0, util − start)      
 | Action | Checks | Effect |
 |---|---|---|
 | `DEPOSIT { frontId, amount }` | amount > 0, enough Dirty, fits the buffer | `DEPOSITED` (with `instantClean` on the first conversion) |
-| `BUY_FRONT { frontType }` | unlocked, not already owned, enough Clean | new front at level 0, capacity 0, mode `normal`; `FRONT_BOUGHT` |
+| `BUY_FRONT { frontType }` | `frontBlocked` is null (act, Rep, not owned, city prosperity), enough Clean | new front at level 0, capacity 0, mode `normal`; `FRONT_BOUGHT` |
 | `UPGRADE_FRONT { frontId, track? }` | below that track's max ("Fully upgraded", "No room left to expand"), enough Clean | level or capacity level +1; `FRONT_UPGRADED` |
 | `SET_FRONT_MODE { frontId, mode }` | a known mode, not the current one ("Already running that way") | `FRONT_MODE_SET` |
 

@@ -30,7 +30,10 @@ function asV1(): Record<string, unknown> {
   delete s.skippedMs
   delete s.goals
   delete s.rival.zhanna
-  s.districts = s.districts.filter((d: { id: string }) => d.id !== 'stationSquare')
+  delete s.raidPenaltyUntil
+  s.districts = s.districts
+    .filter((d: { id: string }) => d.id !== 'stationSquare' && d.id !== 'centre')
+    .map(({ prosperity: _, ...d }: { prosperity: number }) => d)
   s.rackets = s.rackets.filter((r: { type: string }) => r.type === 'kiosk' || r.type === 'marketStall')
   s.stats.sessions = 3
   return { ...s, schemaVersion: 1 }
@@ -70,7 +73,27 @@ describe('migrate', () => {
     expect(m.inventory.cigarettes).toBe(config.supply.startingStock)
     expect(m.stockEmpty).toBe(false)
     expect(m.upkeepOwed).toBe(0)
-    expect(m.districts.find((d) => d.id === 'stationSquare')).toEqual({ id: 'stationSquare', controller: 'none', pressureCount: 0 })
+    expect(m.districts.find((d) => d.id === 'stationSquare')).toEqual({ id: 'stationSquare', controller: 'none', pressureCount: 0, prosperity: config.prosperity.base })
+  })
+
+  it('gives every district a prosperity and puts the Centre on the map', () => {
+    const m = migrate(asV1())
+    expect(m.districts.every((d) => d.prosperity === config.prosperity.base)).toBe(true)
+    expect(m.districts.find((d) => d.id === 'centre')).toEqual({ id: 'centre', controller: 'none', pressureCount: 0, prosperity: config.prosperity.base })
+    expect(m.raidPenaltyUntil).toBe(0)
+  })
+
+  it('turns an old "Act II cleared" into the road to Act III', () => {
+    // Before six acts, clearing Act II ended the prototype. Now it's a door: the old date goes, and Act III
+    // opens at its own gate, dated when it does.
+    const v8 = { ...JSON.parse(JSON.stringify(fresh())), schemaVersion: 8, act: 2, reputation: 700 }
+    v8.stats.actClearedAt = { 1: v8.updatedAt - 5 * H, 2: v8.updatedAt - H }
+    const m = migrate(v8)
+    expect(m.stats.actClearedAt).toEqual({ 1: v8.updatedAt - 5 * H })
+    m.reputation = config.progression.acts[3].rep!
+    const r = reconcile(m, m.updatedAt + H, config)
+    expect(r.state.act).toBe(3)
+    expect(r.state.stats.actClearedAt[2]).toBeGreaterThan(v8.updatedAt)
   })
 
   it("opens Zhanna's trade with her first lot ready", () => {

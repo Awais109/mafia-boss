@@ -27,14 +27,14 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0012](0012-op-resolution.md) | Jobs score the team's best stats plus a team bonus, with uniform noise | Accepted |
 | [0013](0013-front-suspicion-smoothing.md) | Front suspicion reads smoothed utilization | Accepted |
 | [0014](0014-sim-persona-policy.md) | The casual bot's policy, and where it deviates from the plan | Accepted |
-| [0015](0015-act-ii-pacing.md) | Act II ends at 480 Rep with a compressed unlock ladder | Accepted |
+| [0015](0015-act-ii-pacing.md) | Act II ends at 480 Rep with a compressed unlock ladder | Superseded by 0040: Act II leads to Act III |
 | [0016](0016-vault-and-dirty.md) | The vault and Dirty are separate buckets | Accepted |
 | [0017](0017-tolya-and-zhanna.md) | Tolya's visits and disposition; Zhanna is tribute only | Accepted; Zhanna superseded by 0036 |
 | [0018](0018-crew-rules.md) | Crew rules: wages, loyalty, walkouts, the nephew, traits, slots | Accepted |
 | [0019](0019-reputation-sources.md) | Rep comes from all Clean spending, jobs and districts | Accepted |
 | [0020](0020-sim-report-metrics.md) | How the sim report measures the dev manual's targets | Accepted; act clear rows superseded by 0022; vault fill amended by 0037 |
 | [0021](0021-environment-doctor-and-native-env.md) | Environment doctor, per-command toolchain wrapper, default app IDs | Accepted |
-| [0022](0022-end-of-prototype-state.md) | The end of the prototype is a cleared Act II, said in words; reports measure from game start | Accepted |
+| [0022](0022-end-of-prototype-state.md) | The end of the prototype is a cleared Act II, said in words; reports measure from game start | Accepted; the end state is now the last built act cleared (0040) |
 | [0023](0023-away-summary.md) | "While you were away" is built in the app from the catch-up reconcile | Accepted |
 | [0024](0024-inbox.md) | Pending decisions: crew reports and incidents with baked options and a default | Accepted; the default-option rule amended by 0032 |
 | [0025](0025-opportunities-board.md) | An opportunities board of generated, expiring job variants | Accepted |
@@ -52,6 +52,8 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0037](0037-act-ii-premises.md) | Act II premises: the Stash House and the Union Office, and their synergies | Accepted |
 | [0038](0038-live-event-notices.md) | Live event and unlock notices, queued one at a time; a `description` field on every business/front/district/official | Accepted |
 | [0039](0039-goals-gate-act-two.md) | Act II is gated by Act I goals, not Reputation; three goals redefined, `actII` removed | Accepted |
+| [0040](0040-six-acts.md) | Six acts, each opened by a gate; the last built act is cleared, not left | Accepted |
+| [0041](0041-act-iii-the-centre.md) | Act III, the Centre: prosperity, the Card Club, Print Shop, hotels, the Bank, City Hall, tier 6 | Accepted |
 
 ## Template
 

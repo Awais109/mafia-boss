@@ -2,7 +2,7 @@
 
 Your businesses make Dirty money into a capped vault. You collect it, launder it through fronts ([fronts.md](fronts.md)) into Clean, and spend Clean on more and better businesses. Joints and rackets earn; premises make, keep or improve something and cost upkeep ([ADR 0031](../decisions/0031-business-kinds.md)).
 
-**Code:** `engine/systems/rackets.ts` (`accrueVault`, `decayCondition`, `settleUpkeep`), `engine/systems/districts.ts` (`openSpots`, `openLots`, `premisesBlocked`), `engine/core/formulas.ts` (costs, tier curves, `racketMaxTier`, `premisesUpkeep`, `factoryOutput`, `jointSales`, `warehouseCapacity`, vault cap), `engine/core/derive.ts` (`perRacket`, `yieldPerHr`, `upkeepPerHr`, `influencePerHr`, `synergies`, `vaultCap`, `vaultCapBase`, `stashHours`, `raidShield`), handlers in `engine/core/apply.ts`.
+**Code:** `engine/systems/rackets.ts` (`accrueVault`, `decayCondition`, `settleUpkeep`, `reopenBusinesses`), `engine/systems/districts.ts` (`openSpots`, `openLots`, `premisesBlocked`, `racketBlocked`), `engine/core/formulas.ts` (costs, tier curves, `racketMaxTier`, `premisesUpkeep`, `factoryOutput`, `jointSales`, `warehouseCapacity`, vault cap), `engine/core/derive.ts` (`perRacket`, `yieldPerHr`, `upkeepPerHr`, `influencePerHr`, `synergies`, `vaultCap`, `vaultCapBase`, `stashHours`, `raidShield`), handlers in `engine/core/apply.ts`.
 **Config:** `vault.*`, `rackets.*` (including `rackets.premises` and `rackets.synergies`), `costs.*`, and `districts.list.*.allows` and `premisesLots` in `engine/config/defaults.ts`.
 
 ## Vault and Dirty
@@ -25,9 +25,9 @@ The cap is the session leash: once the vault is full, income stops until you col
 
 | Kind | Earns | Needs cigarettes | Goes on | Types |
 |---|---|---|---|---|
-| Joint | Dirty | for `cigaretteShare` of its yield | a spot its district allows | Kiosk, Market Stall, Beer Tent, Slot Hall; Café, Bathhouse |
-| Racket | Dirty, with more heat per Dirty | no | a spot its district allows | Video Salon, Taxi Rank; Auto Shop, Petrol Station, Cargo Bay |
-| Premises | nothing; costs upkeep | no | a lot in any open district | Tobacco Factory, Warehouse; Stash House, Union Office |
+| Joint | Dirty | for `cigaretteShare` of its yield | a spot its district allows | Kiosk, Market Stall, Beer Tent, Slot Hall; Café, Bathhouse; Nightclub, Card Club |
+| Racket | Dirty, with more heat per Dirty | no | a spot its district allows | Video Salon, Taxi Rank; Auto Shop, Petrol Station, Cargo Bay; Print Shop |
+| Premises | nothing; costs upkeep | no | a lot in any open district | Tobacco Factory, Warehouse; Stash House, Union Office; Hotel |
 | Front | Clean | no | one of each, city-wide ([fronts.md](fronts.md)) | Currency Kiosk, Restaurant |
 
 Every business except fronts lives in `state.rackets` and uses `BUY_RACKET`, `UPGRADE_RACKET` and `REPAIR_RACKET`; `rackets.types[type].kind` says which kind it is. The rule for any new type: joints and rackets answer "does it make money"; premises answer "does it supply, improve or protect something". Every type also carries a `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)).
@@ -81,6 +81,7 @@ exposure = baseHeat × tierHeatMult^(tier−1) × enforcer.heatMult (if enforced
 | `warehouseFactory` | a Warehouse and a Tobacco Factory | the Warehouse's upkeep × `effect.upkeepMultOf.warehouse` |
 | `stashWarehouse` | a Stash House and a Warehouse | the Warehouse's upkeep × `effect.upkeepMultOf.warehouse` (0: it's free) |
 | `unionSovietsky` | a Union Office, in Sovietsky Blocks only | its Influence × `effect.influenceMult` |
+| `hotelJoints` | a Hotel and any joint | the joints earn × `effect.yieldMult` ([ADR 0041](../decisions/0041-act-iii-the-centre.md)) |
 
 A `yieldMult` lands on the `b` businesses; `upkeepMultOf` names the types whose upkeep it changes; an `influenceMult` lands on the `a` premises.
 
@@ -92,6 +93,16 @@ A `yieldMult` lands on the `b` businesses; `upkeepMultOf` names the types whose 
 - **Stealth** (`stealth.yieldMult`, `stealth.exposureMult`): the same money, less heat than greed would have.
 
 `validateConfig` keeps both honest: `greed.exposureMult ≥ greed.yieldMult`, and `stealth.exposureMult ≥ 1 / tierHeatMult`, so a stealth tier 3 is never cooler than tier 2. Businesses that were already past tier 3 before specialization existed stay neutral.
+
+**Tier 6** ([ADR 0041](../decisions/0041-act-iii-the-centre.md)): from Act III, joints and rackets go to tier 6 (`rackets.maxTierByAct`), and the upgrade to `rackets.specialization6.atTier` is a second greed-or-stealth choice with its own multipliers, stored as `Racket.specialization6`. It multiplies on top of the tier-3 choice and follows the same validation.
+
+### Prosperity and requirements
+
+From Act III each joint's yield is also × its district's prosperity multiplier (`RacketDerived.prosperityMult`), and a type with `minProsperity` only opens on a street that prosperous. Businesses add to or take from their district's prosperity with `prosperity`; hotels with `prosperityPerTier`. See [prosperity.md](prosperity.md). `racketBlocked(state, config, type, districtId)` returns why a business can't open somewhere right now (unlock, district, spot or lot, prosperity), or null; `BUY_RACKET` and the bot both use it.
+
+### Shut businesses
+
+An incident can shut a business (the investigator at the Print Shop, [inbox.md](inbox.md)). While `Racket.closedUntil` is set it counts as condition 0 (no yield, no sales, no premises effect), draws no exposure and adds nothing to prosperity (`RacketDerived.closed`). `closedUntil` is a reconcile boundary; `reopenBusinesses` clears it and emits `RACKET_REOPENED`. `RACKET_CLOSED { racketId, until }` marks the start.
 
 ### Costs
 
@@ -127,10 +138,10 @@ Home's **Money flow** card reads `derive` directly: what the businesses put in t
 |---|---|---|
 | `COLLECT` | none | vault → Dirty; `COLLECTED` |
 | `BUY_RACKET { racketType, districtId }` | type unlocked, district open, enough Clean; a joint or racket needs a free spot the district allows, premises a free lot (`premisesBlocked`) | new business at tier 1, condition 100; `RACKET_BOUGHT` |
-| `UPGRADE_RACKET { racketId, specialization? }` | below `racketMaxTier`, enough Clean, a specialization exactly on a joint or racket's upgrade to `specialization.atTier` | tier +1; `RACKET_UPGRADED { racketId, tier, cost, specialization? }` |
+| `UPGRADE_RACKET { racketId, specialization? }` | below `racketMaxTier`, enough Clean, a specialization exactly on a joint or racket's upgrade to `specialization.atTier` or `specialization6.atTier` | tier +1; `RACKET_UPGRADED { racketId, tier, cost, specialization? }` |
 | `REPAIR_RACKET { racketId }` | condition below 100, enough Dirty | condition 100, `stats.repairsPaid`; `RACKET_REPAIRED` |
 | `ASSIGN_ENFORCER { crewId, racketId \| null }` | crew idle, a joint or racket with no enforcer (or `null` to unassign an enforcer) | `ENFORCER_ASSIGNED` / `ENFORCER_REMOVED` |
 
-Also emitted: `VAULT_CAPPED`, `UPKEEP_PAID` (quiet), `UPKEEP_MISSED`, and `OFFLINE_CAPPED` from the reconcile walk ([architecture.md](../architecture.md#the-reconcile-walk)).
+Also emitted: `VAULT_CAPPED`, `UPKEEP_PAID` (quiet), `UPKEEP_MISSED`, `RACKET_CLOSED`, `RACKET_REOPENED` (quiet), and `OFFLINE_CAPPED` from the reconcile walk ([architecture.md](../architecture.md#the-reconcile-walk)).
 
 **Tests:** `tests/apply.test.ts` (first session, districts host one of each, enforcer multipliers, tier-3 specialization, premises lots and the per-city limit, premises rules, upkeep paid and missed, a Stash House's leash and raid shield, the Union Office's Influence and its Sovietsky bonus, a free Warehouse beside a stash), `tests/reconcile.test.ts` (vault stops at its cap, offline cap), `tests/ledger.test.ts` (snapshots at day starts, rows add up to stats).

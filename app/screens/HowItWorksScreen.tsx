@@ -1,6 +1,7 @@
-import { DISTRICT_IDS, FRONT_TYPES, OFFICIAL_IDS, PERK_IDS, RACKET_TYPES } from '../../engine'
+import { DISTRICT_IDS, FRONT_TYPES, LATER_ACTS, OFFICIAL_IDS, PERK_IDS, RACKET_TYPES } from '../../engine'
+import { ACT_NAME, ACT_OPENS } from '../acts'
 import { Card, Row, Screen, Section, T, colors, glyph } from '../components/ui'
-import { pct } from '../format'
+import { fmt, pct } from '../format'
 import type { ScreenProps } from './types'
 
 // A player-facing explainer, not the engineering docs: what each system does and why it matters,
@@ -35,7 +36,8 @@ export function HowItWorksScreen({ game }: ScreenProps) {
             Joints sell cigarettes alongside their main earner; rackets earn Dirty outright but run hotter; premises earn nothing
             themselves and instead make, hold, or protect something. Every business decays a little every day — repair it before
             it drags your yield down, and upgrading past tier {c.rackets.specialization.atTier} locks in Greed (more money, more
-            heat) or Stealth (same money, less heat) for good.
+            heat) or Stealth (same money, less heat) for good. From Act III joints and rackets go to tier {c.rackets.specialization6.atTier}, with a second
+            choice on the way.
           </T>
           {RACKET_TYPES.map((t) => {
             const rt = c.rackets.types[t]
@@ -110,6 +112,27 @@ export function HowItWorksScreen({ game }: ScreenProps) {
             const dc = c.districts.list[id]
             return <Row key={id} label={dc.name} value={dc.description} />
           })}
+        </Card>
+      </Section>
+
+      <Section title="Acts">
+        <Card>
+          <T small muted style={{ marginBottom: 6 }}>
+            {`The city opens in acts. Each one needs something of you before it opens, and brings new districts, businesses and bigger money. Acts I–${ACT_NAME[c.progression.finalAct]} are built.`}
+          </T>
+          {LATER_ACTS.filter((a) => a <= c.progression.finalAct).map((a) => {
+            const g = c.progression.acts[a]
+            const needs = [g.goals ? 'every Act I goal' : '', g.rep !== undefined ? `★${fmt(g.rep)}` : ''].filter(Boolean).join(' and ')
+            return <Row key={a} label={`Act ${ACT_NAME[a]}`} value={`${ACT_OPENS[a]} — needs ${needs}`} />
+          })}
+        </Card>
+      </Section>
+
+      <Section title="Prosperity">
+        <Card>
+          <T small muted>
+            {`From Act ${ACT_NAME[c.prosperity.fromAct]}, every district has a prosperity from 0 to 100, and its joints earn with it: ×${c.prosperity.yieldMult[0]} at 0, ×${c.prosperity.yieldMult[1]} at 100. Joints lift a street, rackets sour it, and a hotel lifts it most. Inspections, a raid in the last ${c.prosperity.raidPenaltyHours} hours and running out of cigarettes drag every district down. It moves a little every hour toward where your businesses are pushing it. The Card Club only opens on a prosperous street, and the Cooperative Bank only in a prosperous city.`}
+          </T>
         </Card>
       </Section>
 

@@ -14,6 +14,7 @@ import {
 } from '../config/schema'
 import type { PlayerState, Racket } from '../model/state'
 import { baseWage, crewSlots } from '../systems/crew'
+import { cityProsperity, prosperityOn, prosperityYieldMult } from '../systems/prosperity'
 import * as F from './formulas'
 
 // Everything the game computes from state + config. Never persisted.
@@ -27,6 +28,8 @@ export type RacketDerived = {
   exposure: number
   conditionMult: number
   districtMult: number
+  prosperityMult: number // joints: × the district's prosperity (ADR 0041); 1 otherwise
+  closed: boolean // shut by an investigation: earns, sells and heats nothing
   synergyMult: number // side-by-side yield bonus (plan (m))
   upkeep: number // premises: Dirty/hr
   packsPerHr: number // joints: packs they sell; factories: packs they make
@@ -73,6 +76,7 @@ export type Derived = {
   vaultCapBase: number // without them: Tolya's demand and the report read this
   stashHours: number
   raidShield: number // share of a raid's seizure kept back
+  cityProsperity: number // mean prosperity where you run joints and rackets; the Bank reads it (ADR 0041)
   exposure: number
   racketExposure: number
   frontSuspicion: number
@@ -121,6 +125,8 @@ export function derive(state: PlayerState, c: Config): Derived {
   const maxTier = c.rackets.maxTierByAct[state.act]
   const kindOf = (t: RacketType) => c.rackets.types[t].kind
   const sells = state.act >= c.supply.sellFromAct
+  const prospering = prosperityOn(state, c)
+  const prosperityOf = (id: DistrictId) => state.districts.find((d) => d.id === id)?.prosperity ?? c.prosperity.base
 
   // Synergies are active in a district that has an `a`, and a `b` when one is named.
   const synergies: { districtId: DistrictId; id: string }[] = []
@@ -155,7 +161,8 @@ export function derive(state: PlayerState, c: Config): Derived {
   // The supply chain (ADR 0032): what the factories make, what the joints would sell, the stock cap.
   const base = state.rackets.map((r) => {
     const kind = kindOf(r.type)
-    const cond = r.condition / 100
+    // A shut business is as good as a wrecked one while it's shut.
+    const cond = r.closedUntil !== undefined ? 0 : r.condition / 100
     return {
       r,
       kind,
@@ -194,7 +201,10 @@ export function derive(state: PlayerState, c: Config): Derived {
     const districtMult = ours ? (district.mod.yieldMult?.[r.type] ?? 1) : 1
     const enforced = r.enforcerId !== null
     const spec = r.specialization ? c.rackets.specialization[r.specialization] : null
+    const spec6 = r.specialization6 ? c.rackets.specialization6[r.specialization6] : null
     const share = kind === 'joint' && sells ? (rt.cigaretteShare ?? 0) : 0
+    const prosperityMult = kind === 'joint' && prospering ? prosperityYieldMult(c, prosperityOf(r.districtId)) : 1
+    const closed = r.closedUntil !== undefined
     const fullYield =
       kind === 'premises'
         ? 0
@@ -204,6 +214,8 @@ export function derive(state: PlayerState, c: Config): Derived {
           inspectionMult *
           (enforced ? c.rackets.enforcer.yieldMult : 1) *
           (spec?.yieldMult ?? 1) *
+          (spec6?.yieldMult ?? 1) *
+          prosperityMult *
           fx.yieldMult
     const grossYield = fullYield * (1 - share + share * served[i])
     const tributeRate = ours || controller === 'none' ? 0 : district.tribute
@@ -214,9 +226,13 @@ export function derive(state: PlayerState, c: Config): Derived {
       yield: grossYield - tribute,
       grossYield,
       tribute,
-      exposure: F.tierHeat(c, r.type, r.tier) * (enforced ? c.rackets.enforcer.heatMult : 1) * (spec?.exposureMult ?? 1),
+      exposure: closed
+        ? 0
+        : F.tierHeat(c, r.type, r.tier) * (enforced ? c.rackets.enforcer.heatMult : 1) * (spec?.exposureMult ?? 1) * (spec6?.exposureMult ?? 1),
       conditionMult: cond,
       districtMult,
+      prosperityMult,
+      closed,
       synergyMult: fx.yieldMult,
       upkeep: kind === 'premises' ? F.premisesUpkeep(c, r.type, r.tier) * fx.upkeepMult : 0,
       packsPerHr: kind === 'joint' ? demand : made,
@@ -284,6 +300,7 @@ export function derive(state: PlayerState, c: Config): Derived {
     vaultCapBase: F.vaultCap(c, yieldPerHr, state.act),
     stashHours,
     raidShield,
+    cityProsperity: cityProsperity(state, c),
     exposure,
     racketExposure,
     frontSuspicion,
@@ -326,7 +343,7 @@ export function derive(state: PlayerState, c: Config): Derived {
         const rt = c.rackets.types[t]
         return rt.act <= state.act && state.reputation >= rt.unlockRep
       }),
-      front: mapKeys(FRONT_TYPES, (t) => state.reputation >= c.fronts.types[t].unlockRep),
+      front: mapKeys(FRONT_TYPES, (t) => c.fronts.types[t].act <= state.act && state.reputation >= c.fronts.types[t].unlockRep),
       district: mapKeys(DISTRICT_IDS, (id) => c.districts.list[id].act <= state.act),
       official: mapKeys(OFFICIAL_IDS, (id) => c.officials.list[id].act <= state.act),
     },

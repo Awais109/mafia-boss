@@ -37,7 +37,7 @@ Checked at every whole game hour (`heatHourBoundary`). The rolls are seeded by h
 | ≥ `raidThreshold` | `raidChancePerHr` chance: police seize `floor(vault × raidSeizePct × (1 − raidShield))` from the vault (not Dirty); stash houses keep back the rest ([economy.md](economy.md#premises)) | `RAID { heat, seized, shielded }` |
 | ≥ `arrestThreshold` | `arrestChancePerHr` chance: a random idle crew member or enforcer is jailed for `arrestHours` | `ARREST`, later `RELEASED` |
 
-Raids update `stats.raids`, `stats.seized` and `stats.firstRaidAt`; `RAID.shielded` is what stash houses kept back (`Derived.raidShield`, at most `rackets.premises.maxShield`). Arrests update `stats.arrests`.
+Raids update `stats.raids`, `stats.seized` and `stats.firstRaidAt`, and set `raidPenaltyUntil` `prosperity.raidPenaltyHours` ahead, which lowers every district's prosperity target until then ([prosperity.md](prosperity.md)); inspections lower it too; `RAID.shielded` is what stash houses kept back (`Derived.raidShield`, at most `rackets.premises.maxShield`). Arrests update `stats.arrests`.
 
 ## Bribes
 
@@ -52,7 +52,7 @@ The bribe lasts `heat.bribe.hours` and then expires. Its cost is added to `stats
 
 ## Officials
 
-Permanent control, bought with Influence. `officials.list` has a Ward Cop (Act I) and a Precinct Captain (Act II), each with a `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)).
+Permanent control, bought with Influence. `officials.list` has a Ward Cop (Act I), a Precinct Captain (Act II) and City Hall (Act III, [ADR 0041](../decisions/0041-act-iii-the-centre.md)), each available from its `act`, each with a `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)).
 
 `BUY_OFFICIAL { officialId }` requires:
 - the official's act has been reached, and they aren't already on the payroll;

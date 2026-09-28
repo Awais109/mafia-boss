@@ -1,6 +1,7 @@
 import { View } from 'react-native'
 import { influenceRoom, OFFICIAL_IDS } from '../../engine'
 import { Bar, Btn, Card, colors, Row, Screen, Section, T, Tag } from '../components/ui'
+import { ACT_NAME } from '../acts'
 import { fmt, fmtDuration, fmtRate, pct } from '../format'
 import { store } from '../store'
 import type { ScreenProps } from './types'
@@ -72,7 +73,7 @@ export function HeatScreen({ game }: ScreenProps) {
         <Card>
           <T small muted>
             Officials are permanent control. Influence comes from jobs (✦ {fmt(c.ops.influenceDailyCap - influenceRoom(s, c, now))}/
-            {c.ops.influenceDailyCap} today) and from officials already on the payroll.
+            {c.ops.influenceDailyCap} today), from officials already on the payroll, and from a Union Office.
           </T>
           {cooldown > 0 && <T small color={colors.warn}>{`Next official in ${fmtDuration(cooldown, c)}`}</T>}
         </Card>
@@ -83,7 +84,7 @@ export function HeatScreen({ game }: ScreenProps) {
             <Card key={id}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <T bold>{o.name}</T>
-                {owned ? <Tag text="on the payroll" color={colors.good} /> : !d.unlocked.official[id] ? <Tag text="Act II" /> : null}
+                {owned ? <Tag text="on the payroll" color={colors.good} /> : !d.unlocked.official[id] ? <Tag text={`Act ${ACT_NAME[o.act]}`} /> : null}
               </View>
               <T small muted>{`+${fmt(o.control)} control · +✦${fmt(c.officials.influencePerHrEach * 24)} a day`}</T>
               {!owned && d.unlocked.official[id] && (

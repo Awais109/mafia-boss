@@ -26,7 +26,7 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 
 `sim/persona.ts`, `CASUAL` options. It implements plan §11 with a few deviations that the plan's version needed to avoid stalling ([ADR 0014](decisions/0014-sim-persona-policy.md)).
 
-**Sessions** (game time): Act I at 08:00, 10:30, 13:00, 15:30, 18:00, 20:30, 23:00, following the 2.5 h vault leash. Act II at 08:00, 13:00, 18:00, 22:00.
+**Sessions** (game time, `sessionHours` by act): Act I at 08:00, 10:30, 13:00, 15:30, 18:00, 20:30, 23:00, following the 2.5 h vault leash. Act II at 08:00, 13:00, 18:00, 22:00. Later acts follow their longer leashes ([ADR 0040](decisions/0040-six-acts.md)): Act III at 08:00, 14:00, 20:00; Act IV at 08:00 and 20:00; Act V at 09:00 and 21:00; Act VI at 09:00.
 
 **Each session, in order** (`playSession`):
 1. `SESSION_START`; skip the tutorial, which buys the quick-start setup at the first session; `COLLECT`.
@@ -41,7 +41,7 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 10. Dispatch idle crew, one job at a time, greedily by value per crew member, over the fixed jobs and the offers on the board (below). Smuggling is a candidate only when stock would run out within `stockReserveHours` (12) and the Clean it costs isn't needed for the next planned purchase.
 11. Anyone still idle trains the stat with the most room under its ceiling, if Dirty after the lesson stays above the reserve. Then, from Act II, buy a lot from Zhanna when her next one is in, stock would run out within `stockReserveHours` (12), and Dirty after her price stays above the reserve.
 12. Buy a district when affordable and its tribute plus perks (yield bonuses on what the bot runs there, cheaper wages) over 48 h exceed the buy-out. It never saves Clean for one.
-13. Spend Clean, repeatedly, on the best gain ÷ cost: a new front first; front rate and capacity upgrades when utilization is at least `fronts.suspicionStartUtil`; a new joint or racket in the district with the best yield multiplier; premises on the lot where they help most (below); or a tier upgrade. Joints and joint tiers are discounted by the shortage they would cause. The upgrade to tier 3 is offered twice, greed and stealth, and the heat-budget filter leaves stealth when greed runs too hot. It skips anything that pushes the heat target above 55, unless an official is affordable right now.
+13. Spend Clean, repeatedly, on the best gain ÷ cost: a new front first; front rate and capacity upgrades when utilization is at least `fronts.suspicionStartUtil`; a new joint or racket in the district with the best yield multiplier (for joints, including the street's prosperity from Act III); premises on the lot where they help most (below); or a tier upgrade. It only considers what `racketBlocked` and `frontBlocked` allow. Joints and joint tiers are discounted by the shortage they would cause. The upgrades to tier 3 and tier 6 are each offered twice, greed and stealth, and the heat-budget filter leaves stealth when greed runs too hot. It skips anything that pushes the heat target above 55, unless an official is affordable right now.
 14. `SESSION_END`.
 
 **Job value** (`bestDispatch`) = expected Dirty + expected Rep × 10 + expected Influence × (3 h of yield × urgency) + P(success) × district flip value + growth + goods − expected heat spike × heat cost. Growth is, per member and stat, the expected XP ÷ that stat's point cost × `xpValue` (3), skipping stats at their ceiling. The total is divided by the number of sessions the job blocks. Urgency rises as heat or heat target climbs past 30, so the bot runs Influence jobs when it needs an official. Offers on the board are candidates too, valued with their own terms (`opDirtyRewardFor` on the offer's `cfg`). Training jobs aren't dispatch candidates; step 10 handles them.
@@ -49,6 +49,8 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 **Supply value.** A pack is worth the joints' `atStake` over the packs they sell. A new factory or factory tier is worth `0.6 × Σ atStake × (shortfall before − shortfall after)`, with `shortfall = max(0, 1 − made ÷ demand)`, but only while stock would run out within `supplyHorizonHours` (24): a casual player reacts to the Supply card, not to a deficit days away. A new factory also counts the joint bonus it switches on in its district. A warehouse or warehouse tier is worth half the surplus it would bank over a day, while production outruns sales and stock is within 10% of the cap. Upkeep comes off both. Smuggling's goods are its expected packs, up to the room in stock, × Dirty per pack, minus its Clean × 2.
 
 **Act II premises.** A Stash House, or a stash tier, is worth the overnight vault loss its extra hours would save: `min(extra hours, 10 − the act's target hours − hours already added) × yield ÷ 24`. A new stash also counts a small share of its raid shield, weighted by its district's yield, so it goes where the money is. A Union Office, or a tier, is worth its Influence × the Influence value jobs use, which is 0 once no official is left to buy. In practice the bot has bought the Precinct Captain before the office unlocks, so it never builds one.
+
+**Act III.** A Hotel, or a hotel tier, is worth its prosperity: the joints on its street earn more by `(yieldMult[1] − yieldMult[0]) ÷ 100` per point; half a blocked business's yield when the hotel gets its street to that business's `minProsperity` (the Card Club); and a share of a blocked front's washing (the Bank) when the city's mean is short, in proportion to how much of the gap it closes. Its synergy with the street's joints counts like any other. An option that shuts a business (the investigator) costs what the business would earn while shut. City Hall and the Big Score need nothing new: the official loop and job dispatch are generic.
 
 **Gold.** The casual bot never spends gold, so the pacing guard measures the free game. `GOLD_RUSH` (`--persona goldRush`) is the casual bot plus one habit: after dispatching, it rushes every running job it can afford, soonest first, and dispatches again ([systems/gold.md](systems/gold.md)).
 
@@ -73,8 +75,7 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 
 | Metric | Definition |
 |---|---|
-| Act I clear | Days from the game's start (`createdAt`) to `stats.actClearedAt[1]` |
-| Act II clear | Days from Act I clear to `stats.actClearedAt[2]` |
+| Act *n* clear | Days from the previous act's clear (Act I: the game's start, `createdAt`) to `stats.actClearedAt[n]`, for every act up to `progression.finalAct`. Scored against `ACT_TARGETS` in `sim/report.ts`: I and II are the manual's §3 targets, III–VI the six-act design's ([ADR 0040](decisions/0040-six-acts.md)) |
 | Heat mean, min, max | Over hourly rows |
 | hours ≥40 | Hourly rows with heat at or above `heat.inspectThreshold` |
 | Front util | Mean over hours of throughput-weighted smoothed utilization |

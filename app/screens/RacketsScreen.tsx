@@ -5,7 +5,10 @@ import {
   openLots,
   openSpots,
   premisesBlocked,
+  prosperityOn,
+  prosperityTarget,
   RACKET_TYPES,
+  racketBlocked,
   type Config,
   type DistrictId,
   type Racket,
@@ -13,9 +16,10 @@ import {
   type RacketType,
   type SynergyConfig,
 } from '../../engine'
+import { ACT_NAME } from '../acts'
 import { SupplyCard } from '../components/SupplyCard'
 import { Bar, Btn, BtnRow, Card, colors, glyph, Money, Row, Screen, Section, T, Tag } from '../components/ui'
-import { fmt, fmtRate, pct } from '../format'
+import { fmt, fmtDuration, fmtRate, pct } from '../format'
 import { store, type Snapshot } from '../store'
 import type { ScreenProps } from './types'
 
@@ -34,6 +38,7 @@ function premisesEffect(c: Config, type: RacketType, tier: number): string {
     rt.leashHoursPerTier ? `vault holds +${fmt(rt.leashHoursPerTier * tier)}h` : '',
     rt.shieldPerTier ? `hides ${pct(rt.shieldPerTier * tier)} of this district's share of a raid` : '',
     rt.influencePerHrPerTier ? `${glyph.influence}${fmt(rt.influencePerHrPerTier * tier * 24)} a day` : '',
+    rt.prosperityPerTier ? `district prosperity +${fmt(rt.prosperityPerTier * tier)}` : '',
   ]
     .filter(Boolean)
     .join(', ')
@@ -86,17 +91,19 @@ export function RacketsScreen({ game }: ScreenProps) {
 }
 
 function DistrictSection({ game, id, label }: { game: Snapshot; id: DistrictId; label: string }) {
-  const { state: s, derived: d, config: c } = game
+  const { state: s, derived: d, config: c, now } = game
   const dc = c.districts.list[id]
   if (!d.unlocked.district[id]) {
     return (
       <Section title={dc.name}>
         <Card>
-          <T small muted>Opens in Act II.</T>
+          <T small muted>{`Opens in Act ${ACT_NAME[dc.act]}.`}</T>
         </Card>
       </Section>
     )
   }
+  const prosperity = s.districts.find((x) => x.id === id)?.prosperity ?? 0
+  const prosperityText = prosperityOn(s, c) ? ` · prosperity ${Math.round(prosperity)}→${Math.round(prosperityTarget(s, c, id, now))}` : ''
   const here = s.rackets.map((r, i) => ({ r, rd: d.perRacket[i] })).filter(({ r }) => r.districtId === id)
   const spots = here.filter(({ rd }) => rd.kind !== 'premises')
   const premises = here.filter(({ rd }) => rd.kind === 'premises')
@@ -105,7 +112,7 @@ function DistrictSection({ game, id, label }: { game: Snapshot; id: DistrictId; 
   const active = d.synergies.filter((x) => x.districtId === id).flatMap((x) => c.rackets.synergies.filter((syn) => syn.id === x.id))
 
   return (
-    <Section title={dc.name} right={<T small muted>{`${label} · spots ${spots.length}/${dc.allows.length} · lots ${premises.length}/${dc.premisesLots}`}</T>}>
+    <Section title={dc.name} right={<T small muted>{`${label} · spots ${spots.length}/${dc.allows.length} · lots ${premises.length}/${dc.premisesLots}${prosperityText}`}</T>}>
       {active.map((syn) => (
         <T key={syn.id} small color={colors.good}>
           {synergyText(c, syn)}
@@ -125,7 +132,15 @@ function DistrictSection({ game, id, label }: { game: Snapshot; id: DistrictId; 
             if (!d.unlocked.racket[type]) {
               return (
                 <T key={type} small color={colors.faint}>
-                  {`${rt.name}: ${rt.act > s.act ? 'Act II' : `unlocks at ★${fmt(rt.unlockRep)}`}`}
+                  {`${rt.name}: ${rt.act > s.act ? `Act ${ACT_NAME[rt.act]}` : `unlocks at ★${fmt(rt.unlockRep)}`}`}
+                </T>
+              )
+            }
+            const why = racketBlocked(s, c, type, id)
+            if (why) {
+              return (
+                <T key={type} small color={colors.faint}>
+                  {`${rt.name}: ${why}`}
                 </T>
               )
             }
@@ -151,7 +166,7 @@ function DistrictSection({ game, id, label }: { game: Snapshot; id: DistrictId; 
             if (!d.unlocked.racket[type]) {
               return (
                 <T key={type} small color={colors.faint}>
-                  {`${rt.name}: ${rt.act > s.act ? 'Act II' : `unlocks at ★${fmt(rt.unlockRep)}`}`}
+                  {`${rt.name}: ${rt.act > s.act ? `Act ${ACT_NAME[rt.act]}` : `unlocks at ★${fmt(rt.unlockRep)}`}`}
                 </T>
               )
             }
@@ -208,21 +223,33 @@ function Condition({ r, rd }: { r: Racket; rd: RacketDerived }) {
 function BusinessCard({ game, r, rd }: { game: Snapshot; r: Racket; rd: RacketDerived }) {
   const { state: s, config: c } = game
   const rt = c.rackets.types[r.type]
-  const sp = c.rackets.specialization
-  const specMult = r.specialization ? sp[r.specialization] : { yieldMult: 1, exposureMult: 1 }
+  // The upgrades to tier 3 and tier 6 are each a choice (ADRs 0027, 0041); both past choices multiply.
+  const sp = r.tier + 1 === c.rackets.specialization6.atTier ? c.rackets.specialization6 : c.rackets.specialization
+  const specMult = {
+    yieldMult: (r.specialization ? c.rackets.specialization[r.specialization].yieldMult : 1) * (r.specialization6 ? c.rackets.specialization6[r.specialization6].yieldMult : 1),
+    exposureMult: (r.specialization ? c.rackets.specialization[r.specialization].exposureMult : 1) * (r.specialization6 ? c.rackets.specialization6[r.specialization6].exposureMult : 1),
+  }
   const nextYield = (formulas.tierYield(c, r.type, r.tier + 1) - formulas.tierYield(c, r.type, r.tier)) * specMult.yieldMult
   const nextHeat = (formulas.tierHeat(c, r.type, r.tier + 1) - formulas.tierHeat(c, r.type, r.tier)) * specMult.exposureMult
   const choosing = rd.upgradeCost !== null && r.tier + 1 === sp.atTier
   const enforcer = s.crew.find((m) => m.id === r.enforcerId)
+  const specTag = (spec: 'greed' | 'stealth', tier: number) => ({ text: `${spec} (T${tier})`, color: spec === 'greed' ? colors.warn : colors.influence })
   const tags = [
     { text: rt.kind, color: KIND_COLOR[rt.kind] },
-    ...(r.specialization ? [{ text: r.specialization, color: r.specialization === 'greed' ? colors.warn : colors.influence }] : []),
+    ...(r.specialization ? [specTag(r.specialization, c.rackets.specialization.atTier)] : []),
+    ...(r.specialization6 ? [specTag(r.specialization6, c.rackets.specialization6.atTier)] : []),
+    ...(rd.closed ? [{ text: 'shut', color: colors.heat }] : []),
     ...(enforcer ? [{ text: `enforcer: ${enforcer.name}`, color: colors.accent }] : []),
   ]
   return (
     <Card>
       <CardHeader title={`${rt.name} · tier ${r.tier}`} tags={tags} />
-      <Row label="Yield" hint={rd.tribute > 0 ? `−◆${fmt(rd.tribute)} tribute` : undefined} value={<Money kind="dirty" value={fmtRate(rd.yield)} />} />
+      <Row
+        label="Yield"
+        hint={[rd.tribute > 0 ? `−◆${fmt(rd.tribute)} tribute` : '', rd.prosperityMult !== 1 ? `×${rd.prosperityMult.toFixed(2)} prosperity` : ''].filter(Boolean).join(' · ') || undefined}
+        value={<Money kind="dirty" value={fmtRate(rd.yield)} />}
+      />
+      {rd.closed && r.closedUntil !== undefined && <T small color={colors.heat}>{`Shut after an investigation. Opens again in ${fmtDuration(r.closedUntil - game.now, c)}.`}</T>}
       {rd.kind === 'joint' && (
         <Row
           label="Cigarettes"
@@ -240,8 +267,8 @@ function BusinessCard({ game, r, rd }: { game: Snapshot; r: Racket; rd: RacketDe
         ) : choosing ? (
           (['greed', 'stealth'] as const).map((choice) => {
             const m = sp[choice]
-            const dy = formulas.tierYield(c, r.type, r.tier + 1) * m.yieldMult - formulas.tierYield(c, r.type, r.tier)
-            const dh = formulas.tierHeat(c, r.type, r.tier + 1) * m.exposureMult - formulas.tierHeat(c, r.type, r.tier)
+            const dy = (formulas.tierYield(c, r.type, r.tier + 1) * m.yieldMult - formulas.tierYield(c, r.type, r.tier)) * specMult.yieldMult
+            const dh = (formulas.tierHeat(c, r.type, r.tier + 1) * m.exposureMult - formulas.tierHeat(c, r.type, r.tier)) * specMult.exposureMult
             const cost = rd.upgradeCost!
             return (
               <Btn
