@@ -31,6 +31,9 @@ function asV1(): Record<string, unknown> {
   delete s.goals
   delete s.rival.zhanna
   delete s.raidPenaltyUntil
+  delete s.loan
+  delete s.lending
+  for (const k of ['loans', 'lending', 'injuries', 'attacks', 'contests']) delete s.stats[k]
   s.districts = s.districts
     .filter((d: { id: string }) => d.id !== 'stationSquare' && d.id !== 'centre')
     .map(({ prosperity: _, ...d }: { prosperity: number }) => d)
@@ -74,6 +77,14 @@ describe('migrate', () => {
     expect(m.stockEmpty).toBe(false)
     expect(m.upkeepOwed).toBe(0)
     expect(m.districts.find((d) => d.id === 'stationSquare')).toEqual({ id: 'stationSquare', controller: 'none', pressureCount: 0, prosperity: config.prosperity.base })
+  })
+
+  it('opens Act III\'s credit with nothing owed or lent, and zeroed counters', () => {
+    const m = migrate(asV1())
+    expect(m.loan).toBeNull()
+    expect(m.lending).toBeNull()
+    expect(m.stats.loans).toEqual({ borrowed: 0, interest: 0, repaid: 0, missed: 0, seized: 0 })
+    expect(m.stats.contests).toEqual({ won: 0, lost: 0 })
   })
 
   it('gives every district a prosperity and puts the Centre on the map', () => {

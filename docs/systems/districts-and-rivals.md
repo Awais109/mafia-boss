@@ -96,6 +96,18 @@ Both emit `TRIBUTE_HAGGLED { crewId, name, won, demand, paid }`. `haggleOdds(sta
 | Buying out his district | `dispositionOnBuyout` |
 | Flipping his district by pressure | `dispositionOnFlip` |
 
+### His boys
+
+([ADR 0042](../decisions/0042-act-iii-credit-and-consequences.md)) From `rivals.tolya.attack.fromAct`, each visit may also send his boys against one of your joints or rackets (drawn on the visit's own stream): with `attack.chanceHostile` while he's hostile, `attack.chanceNoTurf` once you've taken the district he started with, `attack.chance` otherwise, and only while fewer than `inbox.maxPending` incidents are waiting. It's an `attack` incident ([inbox.md](inbox.md#filed-incidents)):
+
+| Option | Effect |
+|---|---|
+| Board it up (default) | the business loses condition, half as much with a Stash House on its street |
+| Pay them | an hour of the city's Dirty yield |
+| Send someone out | a Muscle contest, easier with an enforcer there; win: Rep and a little more of his ill will; lose: condition and an injury |
+
+`stats.attacks` counts them.
+
 `DEBUG_FORCE_TOLYA` triggers a visit now.
 
 ## Zhanna

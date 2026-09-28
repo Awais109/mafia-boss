@@ -14,12 +14,13 @@ What is built, how it works, and why. Written so a person or an LLM new to the r
 | [systems/gold.md](systems/gold.md) | Gold bars: skipping ahead, finishing jobs now, where bars come from |
 | [systems/fronts.md](systems/fronts.md) | Laundering Dirty into Clean, buffers, rates, the push / lay low dial, capacity, suspicion |
 | [systems/heat.md](systems/heat.md) | Exposure, control, heat target, inspections, raids, arrests, bribes, officials, Influence |
-| [systems/crew.md](systems/crew.md) | Crew stats and traits, experience, ranks and perks, wages, loyalty, recruiting, slots, jail |
+| [systems/crew.md](systems/crew.md) | Crew stats and traits, experience, ranks and perks, wages, loyalty, recruiting, slots, jail, injuries and the Clinic |
 | [systems/ops.md](systems/ops.md) | Jobs, training, resolution formula, rewards, district pressure, the opportunities board |
-| [systems/inbox.md](systems/inbox.md) | Pending decisions: crew reports, incidents, perk choices, defaults and expiry |
+| [systems/inbox.md](systems/inbox.md) | Pending decisions: crew reports, incidents (rolled and filed), contests, perk choices, defaults and expiry |
 | [systems/districts-and-rivals.md](systems/districts-and-rivals.md) | Districts, tribute, buy-outs and flips, Tolya and answering his demands, Zhanna's lots and surplus trade |
 | [systems/progression.md](systems/progression.md) | Reputation, the six acts and their gates, the unlock ladder, the guided opening, Act I goals |
 | [systems/prosperity.md](systems/prosperity.md) | Act III: each district's prosperity, what raises and lowers it, what it pays and unlocks |
+| [systems/credit.md](systems/credit.md) | Act III: borrowing Clean and paying it back, the collectors, lending Dirty through a loan desk |
 | [app.md](app.md) | The React Native app: store, storage, screens, Debug tab, export |
 | [sim.md](sim.md) | The headless bot, report metrics, CLI, log replay, baseline |
 | [testing.md](testing.md) | What each test file guards |
@@ -55,6 +56,8 @@ When you change a path on the left, update the doc on the right in the same comm
 | `engine/systems/districts.ts`, `engine/systems/rivals.ts` | [systems/districts-and-rivals.md](systems/districts-and-rivals.md) |
 | `engine/systems/reputation.ts`, `engine/systems/acts.ts`, `engine/systems/tutorial.ts`, `engine/systems/goals.ts` | [systems/progression.md](systems/progression.md) |
 | `engine/systems/prosperity.ts` | [systems/prosperity.md](systems/prosperity.md) |
+| `engine/systems/credit.ts` | [systems/credit.md](systems/credit.md) |
+| `engine/systems/injuries.ts` | [systems/crew.md](systems/crew.md) |
 | `App.tsx`, `app/` | [app.md](app.md) |
 | `sim/` | [sim.md](sim.md) |
 | `tests/`, `vitest.config.mts` | [testing.md](testing.md) |

@@ -17,7 +17,7 @@ import type {
 } from '../config/schema'
 import type { GameEvent } from './events'
 
-export const SCHEMA_VERSION = 9
+export const SCHEMA_VERSION = 10
 export const LOG_CAP = 200
 export const LEDGER_ROWS = 8 // 7 closed days plus today's opening snapshot
 
@@ -44,7 +44,7 @@ export type Front = {
   util: number // smoothed utilization, updated at each whole hour; drives suspicion
 }
 
-export type CrewStatus = 'idle' | 'on_op' | 'enforcer' | 'jailed'
+export type CrewStatus = 'idle' | 'on_op' | 'enforcer' | 'jailed' | 'injured'
 
 export type CrewMember = {
   id: string
@@ -57,6 +57,7 @@ export type CrewMember = {
   status: CrewStatus
   nephew?: boolean
   jailedUntil?: number
+  injuredUntil?: number // hurt until then (ADR 0042): can't work, still draws wages
   assignedTo?: string // racket id (enforcer) or op id (on_op)
   xp: Record<Stat, number> // toward the next point in each stat
   potential: Record<Stat, number> // ceilings
@@ -101,6 +102,11 @@ export type ZhannaState = {
   surplusToday: { day: number; packs: number } // packs she's bought today
 }
 
+// Borrowed Clean (ADR 0042): one loan at a time, paid down from Clean at each day start.
+export type Loan = { principal: number; owed: number; missed: number }
+// Dirty lent out through a loan desk, due back with interest unless the borrower defaults.
+export type Lending = { id: string; amount: number; dueAt: number }
+
 // What an inbox option does, materialized when the item is filed.
 export type InboxEffects = {
   dirty?: number
@@ -114,6 +120,9 @@ export type InboxEffects = {
   cigarettes?: number
   perk?: string
   closeHours?: number // the business on the item shuts for this long
+  injureHours?: number // the crew member who fought is hurt for this long
+  // Resolved when the option is chosen (ADR 0042): the best available crew member's stat + luck against diff.
+  contest?: { stat: Stat; diff: number; win: InboxEffects; lose: InboxEffects }
 }
 
 export type InboxOption = { id: string; name: string; effects: InboxEffects }
@@ -199,6 +208,11 @@ export type PlaytestStats = {
   haggles: { won: number; lost: number }
   statPointsGained: number
   gold: { granted: number; spentSkip: number; spentRush: number; hoursSkipped: number }
+  loans: { borrowed: number; interest: number; repaid: number; missed: number; seized: number }
+  lending: { lent: number; returned: number; defaults: number }
+  injuries: number
+  attacks: number
+  contests: { won: number; lost: number }
   firstRaidAt: number | null
   officialBoughtAt: Partial<Record<OfficialId, number>>
   lastSessionAt: number | null
@@ -242,6 +256,8 @@ export type PlayerState = {
 
   wagesOwed: number // accrues continuously, settled at each day boundary
   upkeepOwed: number // premises upkeep: accrues continuously, settled after wages
+  loan: Loan | null
+  lending: Lending | null
   influenceToday: { day: number; amount: number } // ops Influence, for the daily cap
   rival: { tolya: TolyaState; zhanna: ZhannaState }
   tutorial: { step: number; done: boolean }
@@ -296,6 +312,11 @@ export function emptyStats(): PlaytestStats {
     haggles: { won: 0, lost: 0 },
     statPointsGained: 0,
     gold: { granted: 0, spentSkip: 0, spentRush: 0, hoursSkipped: 0 },
+    loans: { borrowed: 0, interest: 0, repaid: 0, missed: 0, seized: 0 },
+    lending: { lent: 0, returned: 0, defaults: 0 },
+    injuries: 0,
+    attacks: 0,
+    contests: { won: 0, lost: 0 },
     firstRaidAt: null,
     officialBoughtAt: {},
     lastSessionAt: null,

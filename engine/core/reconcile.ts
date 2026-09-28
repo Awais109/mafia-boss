@@ -2,6 +2,8 @@ import type { Config } from '../config/schema'
 import type { GameEvent } from '../model/events'
 import { LOG_CAP, type PlayerState } from '../model/state'
 import { crewDayBoundary, refreshPoolIfDue, releaseJailed } from '../systems/crew'
+import { creditDayBoundary, lendingDue } from '../systems/credit'
+import { releaseInjured } from '../systems/injuries'
 import { accrueEnforcerXp, crewXpHourBoundary } from '../systems/experience'
 import { convertFronts, frontsHourBoundary } from '../systems/fronts'
 import { checkGoals } from '../systems/goals'
@@ -67,7 +69,11 @@ function nextBoundary(state: PlayerState, c: Config, t: number, now: number): nu
   consider(state.recruitPool.refreshAt)
   consider(state.offers.refreshAt)
   consider(state.rival.tolya.nextTickAt)
-  for (const m of state.crew) if (m.status === 'jailed') consider(m.jailedUntil)
+  for (const m of state.crew) {
+    if (m.status === 'jailed') consider(m.jailedUntil)
+    if (m.status === 'injured') consider(m.injuredUntil)
+  }
+  consider(state.lending?.dueAt)
   for (const item of state.inbox) consider(item.expiresAt)
   for (const r of state.rackets) consider(r.closedUntil)
   return b
@@ -104,6 +110,7 @@ function hourBoundary(state: PlayerState, ctx: Ctx, t: number): void {
   if (isDayStart(ctx.c, t)) {
     crewDayBoundary(state, ctx, t)
     settleUpkeep(state, ctx, t) // after wages: the crew get paid first
+    creditDayBoundary(state, ctx, t) // then the loan, from Clean
     ledgerDayBoundary(state, t) // last: the snapshot sees the day's settled costs
   }
 }
@@ -123,7 +130,9 @@ export function processDue(state: PlayerState, ctx: Ctx, t: number): void {
     emit(ctx, t, { type: 'BRIBE_EXPIRED' })
   }
   releaseJailed(state, ctx, t)
+  releaseInjured(state, ctx, t)
   reopenBusinesses(state, ctx, t)
+  lendingDue(state, ctx, t)
   refreshPoolIfDue(state, ctx, t)
   refreshOffersIfDue(state, ctx, t)
   if (state.rival.tolya.nextTickAt <= t) tolyaTick(state, ctx, t)

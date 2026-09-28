@@ -27,7 +27,7 @@ The cap is the session leash: once the vault is full, income stops until you col
 |---|---|---|---|---|
 | Joint | Dirty | for `cigaretteShare` of its yield | a spot its district allows | Kiosk, Market Stall, Beer Tent, Slot Hall; Café, Bathhouse; Nightclub, Card Club |
 | Racket | Dirty, with more heat per Dirty | no | a spot its district allows | Video Salon, Taxi Rank; Auto Shop, Petrol Station, Cargo Bay; Print Shop |
-| Premises | nothing; costs upkeep | no | a lot in any open district | Tobacco Factory, Warehouse; Stash House, Union Office; Hotel |
+| Premises | nothing; costs upkeep | no | a lot in any open district | Tobacco Factory, Warehouse; Stash House, Union Office; Hotel, Clinic, Loan Desk |
 | Front | Clean | no | one of each, city-wide ([fronts.md](fronts.md)) | Currency Kiosk, Restaurant |
 
 Every business except fronts lives in `state.rackets` and uses `BUY_RACKET`, `UPGRADE_RACKET` and `REPAIR_RACKET`; `rackets.types[type].kind` says which kind it is. The rule for any new type: joints and rackets answer "does it make money"; premises answer "does it supply, improve or protect something". Every type also carries a `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)).

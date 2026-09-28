@@ -249,9 +249,32 @@ New config, starting values from the six-act design; the sim now runs 22 days so
 2026-09-29  tests/sim.test.ts: 8 → 22 days; Act II band 1–2.2 → 3–5 (the manual's own); Act III 6–8 added.
 ```
 
+## 2026-09-29 — M9: Act III's consequences (ADR 0042)
+
+```
+2026-09-29  New config: injuries {fromAct 3, 30% on a failed job ≥ half Muscle, 12 h}; Clinic {●600, upkeep 2/h ×1.2, heat 0.5,
+            ★1,400, one per city, injuries ×0.5, +1 loyalty a day}; Loan Desk {●800, upkeep 2/h ×1.2, heat 1, ★1,600, one per city,
+            lends 2 h of yield a tier}; credit {fromAct 3, 2 days of Clean, min ●2,000, 5% a day, 25% of the principal a day,
+            second miss takes 30% of the vault; lending 48 h at 25%, default 25% − 0.3% × the desk's prosperity, min 2%};
+            rivals.tolya.attack {fromAct 3, 15%, 30% once his district is taken, 45% hostile}; incidents attack, collectors,
+            lendingDefault.
+            Sim (10 seeds, 22 d): Act III 6.4 d, heat 34 in the act, but 11–50 attacks a run (the bot takes Kiosk Row), and the
+            bot never built a loan desk (it valued a desk at the risk of an unbuilt one, worst case).
+2026-09-29  rivals.tolya.attack 15/30/45% → 8/15/30% → 5/10/20%; the attack's fight win disposition −10 → −5
+            8/15/30: 6–35 a run; winning fights soured him into the hostile rate. 5/10/20 with a softer win: 3–26 a run, about
+            one a day, more for a hostile Tolya. Kept.
+2026-09-29  Bot fix (not a number): a hotel gets credit for opening a business its street reaches over the hotel's tiers, not only
+            its first. Without it, three seeds never opened the Card Club and stalled at ★8,500, short of Act IV's gate.
+2026-09-29  rackets.types.loanDesk.lendHoursPerTier 2→4; credit.lending.returnPct 0.25→0.3
+            At 2 h and 25% no seed found a premises lot worth giving it once hotels were valued properly. At 4 h and 30% every
+            seed builds one and lends ~180k over a run; Act III length and heat unchanged. Kept.
+            Final (10 seeds, 22 d): Act I 4.64 d, Act II 3.28 d (10/10), Act III 6.39 d (8/10), heat 33.3 (10/10), raids 0,
+            missed wages 0, partial 0.50, front util 0.65, Dirty idle 0.86, wage share 0.02. goldRush: Act III 6.41 d, heat 33.0.
+```
+
 ## Open
 
-- **Front utilization ~65% (target 70–90%) and Dirty idle ~86% (target 20–50%).** The bot keeps a large Dirty reserve and the fronts can wash more than it deposits early on; by late Act III yield (~1,800/h) outruns laundering (~1,100 Clean/h with the Bank at full capacity), so Dirty piles up. The loan desk (next milestone) gives idle Dirty somewhere to go.
+- **Front utilization ~65% (target 70–90%) and Dirty idle ~86% (target 20–50%).** The bot keeps a large Dirty reserve and the fronts can wash more than it deposits early on; by late Act III yield (~1,800/h) outruns laundering (~1,100 Clean/h with the Bank at full capacity), so Dirty piles up. The loan desk (M9) takes one loan at a time, so it doesn't move the metric, which is measured at session end.
 - **Wage share ~2%** over 22 days (manual 10–25%). Wages are about a quarter of day-1 income but a few percent of late Act II income, and upkeep doesn't change that. No number fixes both ends: raising wages or upkeep enough for Act II breaks the first day. Running costs that scale with the act would be a new rule, which the expansion plan doesn't have.
 - **Shortages are rare** (about 3 h per 8-day run, none in Act I). The plan's M3 gate asks for some shortage in Act I, under 10% of its hours.
 - **Act I clears at 4.64 d** against the manual's 1–2, since it's gated on seven build-out goals (ADR 0039). An owner decision: relax the goals or move the target. **Act II clears at 3.28 d** and **Act III at 6.47 d**, both in range.

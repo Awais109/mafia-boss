@@ -27,7 +27,7 @@ export function EventNoticeModal({ notice, game }: { notice: QueuedNotice; game:
         <T small muted>{itemBody(item, s, c)}</T>
         <View style={{ gap: 6, marginTop: 4 }}>
           {item.options.map((o) => {
-            const effects = effectsText(o.effects, c)
+            const effects = effectsText(o.effects, c, game)
             const affordable = canAffordEffects(s, o.effects)
             return (
               <Btn

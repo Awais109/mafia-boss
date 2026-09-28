@@ -98,6 +98,16 @@ export type EventBody =
   | { type: 'TRIBUTE_REFUSED'; amount: number; racketId?: string; explicit?: true }
   | { type: 'ACT_UNLOCKED'; act: Act }
   | { type: 'ACT_CLEARED'; act: Act }
+  | { type: 'CONTEST_RESOLVED'; itemId: string; stat: Stat; diff: number; won: boolean; crewId?: string; name?: string }
+  | { type: 'CREW_INJURED'; crewId: string; name: string; until: number }
+  | { type: 'CREW_RECOVERED'; crewId: string; name: string }
+  | { type: 'LOAN_TAKEN'; amount: number; owed: number }
+  | { type: 'LOAN_PAYMENT'; paid: number; owed: number }
+  | { type: 'LOAN_MISSED'; due: number; missed: number; seized: number }
+  | { type: 'LOAN_REPAID'; paid: number }
+  | { type: 'LENT'; amount: number; dueAt: number }
+  | { type: 'LENDING_REPAID'; amount: number; returned: number }
+  | { type: 'LENDING_DEFAULTED'; amount: number }
   | { type: 'NOTE'; text: string }
   | { type: 'TUTORIAL_STEP'; step: number; done: boolean }
   | { type: 'SESSION_START' }

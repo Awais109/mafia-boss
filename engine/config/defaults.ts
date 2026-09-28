@@ -145,6 +145,17 @@ export const defaults: Config = {
         act: 3, kind: 'premises', baseYield: 0, baseHeat: 1.5, unlockRep: 1300,
         purchase: 500, upkeepPerHr: 3, upkeepTierMult: 1.2, prosperityPerTier: 8,
       },
+      // Act III's consequences (ADR 0042): a doctor who doesn't ask, and a desk that lends your money out.
+      clinic: {
+        name: 'Clinic', description: 'A private clinic with a doctor who doesn’t ask. Hurt crew are back in half the time, and everyone is a little more loyal.',
+        act: 3, kind: 'premises', baseYield: 0, baseHeat: 0.5, unlockRep: 1400, maxInCity: 1,
+        purchase: 600, upkeepPerHr: 2, upkeepTierMult: 1.2, injuryMult: 0.5, loyaltyPerDay: 1,
+      },
+      loanDesk: {
+        name: 'Loan Desk', description: 'A desk that lends your Dirty out for two days at interest. Most borrowers pay; a prosperous street means fewer who skip town.',
+        act: 3, kind: 'premises', baseYield: 0, baseHeat: 1, unlockRep: 1600, maxInCity: 1,
+        purchase: 800, upkeepPerHr: 2, upkeepTierMult: 1.2, lendHoursPerTier: 4, // 2 → 4: at 2 no lot was worth it (TUNING.md, M9)
+      },
     },
   },
 
@@ -412,6 +423,42 @@ export const defaults: Config = {
           { id: 'pay', name: 'Pay him three hours’ takings', dirtyHoursOfYield: -3 },
         ],
       },
+      // Act III (ADR 0042): filed by Tolya's visits, a missed loan payment and a defaulted loan; never rolled.
+      attack: {
+        name: 'Tolya’s boys',
+        text: 'Four of Tolya’s boys are outside one of your places with bats, waiting to see what you’ll do.',
+        act: 3,
+        filed: true,
+        options: [
+          { id: 'hunker', name: 'Board it up and wait', default: true, condition: -15, stashConditionMult: 0.5 },
+          { id: 'pay', name: 'Pay them an hour’s takings', dirtyHoursOfYield: -1 },
+          {
+            id: 'fight', name: 'Send someone out',
+            contest: { stat: 'muscle', diff: 50, enforcerBonus: 10, win: { rep: 5, disposition: -5 }, lose: { condition: -25, injureHours: 12 } },
+          },
+        ],
+      },
+      collectors: {
+        name: 'The collectors',
+        text: 'Your lender sent two men to talk about the payment you missed. They’d like to see one of your businesses.',
+        act: 3,
+        filed: true,
+        options: [
+          { id: 'letThem', name: 'Let them make a point', default: true, condition: -30, heat: 10 },
+          { id: 'payDouble', name: 'Pay double, in Clean', cleanPerDue: -2 },
+          { id: 'fight', name: 'Show them out', contest: { stat: 'muscle', diff: 55, win: {}, lose: { condition: -30, injureHours: 12 } } },
+        ],
+      },
+      lendingDefault: {
+        name: 'A borrower skips town',
+        text: 'Someone the loan desk lent to has left the city, and your money went with him.',
+        act: 3,
+        filed: true,
+        options: [
+          { id: 'writeOff', name: 'Write it off', default: true },
+          { id: 'chase', name: 'Send someone after him', contest: { stat: 'nerve', diff: 50, win: { dirtyPerDue: 0.5 }, lose: { injureHours: 12 } } },
+        ],
+      },
     },
   },
 
@@ -478,6 +525,8 @@ export const defaults: Config = {
       hostileTickMult: 0.5,
       // Pay, haggle or refuse (ADR 0029). One haggle per demand: best idle Nerve + U(±noise) vs diff.
       haggle: { diff: 45, noise: 15, pricePct: 0.5, dispositionOnWin: 5, dispositionOnInsult: -10 },
+      // From Act III (ADR 0042): a chance at each visit that his boys come for a business, as an incident.
+      attack: { fromAct: 3, chance: 0.05, chanceNoTurf: 0.1, chanceHostile: 0.2 },
     },
     // From Act II (ADR 0036): lots of cigarettes for Dirty, a buyer for the surplus, eyes on every crate at the Port.
     zhanna: {
@@ -509,6 +558,20 @@ export const defaults: Config = {
       5: { rep: 10000 },
       6: { rep: 20000 },
     },
+  },
+
+  // Act III (ADR 0042): a failed job that leans on Muscle can hurt someone on it.
+  injuries: { fromAct: 3, chanceOnFail: 0.3, minMuscleWeight: 0.5, hours: 12 },
+
+  // Act III (ADR 0042): borrow Clean against your laundering, and lend Dirty out through a loan desk.
+  credit: {
+    fromAct: 3,
+    maxDaysOfClean: 2, // up to two days of the ledger's mean daily Clean
+    minCap: 2000,
+    interestPerDay: 0.05,
+    repayPctPerDay: 0.25, // of the principal, from Clean, at each day start
+    secondMissVaultPct: 0.3,
+    lending: { termHours: 48, returnPct: 0.3, defaultBase: 0.25, defaultPerProsperity: 0.003, minDefault: 0.02 },
   },
 
   // Act III (ADR 0041): each district has a prosperity from 0 to 100 that its joints' income follows.

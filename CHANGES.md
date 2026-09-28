@@ -3,6 +3,37 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-29 — Act III's consequences (M9)
+
+Branch: `feature/acts-iii-vi`. Reasoning: [ADR 0042](docs/decisions/0042-act-iii-credit-and-consequences.md).
+
+### What changed, for a player
+
+- **Some decisions are fights now.** "Send someone out" rolls your best crew member's Muscle (or Nerve) against the odds shown on the card; win and lose each do something different.
+- **Crew get hurt**: a failed rough job, or a lost fight, can put someone out for half a day. A **Clinic** halves that and keeps everyone a little more loyal.
+- **Tolya's boys** come for a business from Act III: board it up, pay them off, or send someone out. More often once you've taken his street, more still when he's hostile.
+- **Borrowing**: take a loan in Clean against what you've been laundering; a share comes out of Clean each morning. Miss a payment and the collectors come; miss two and the lender takes from the vault.
+- **Lending**: a **Loan Desk** puts idle Dirty out for two days at interest. A prosperous street means fewer borrowers who skip town.
+- Credit lives on the Fronts screen.
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| Contests, filed incidents, materialization context | `engine/systems/inbox.ts` (`materializeChoice`, `contestFighter`, `contestOdds`), `engine/config/schema.ts` (`ChoiceEffectsConfig`) |
+| Injuries and the Clinic | `engine/systems/injuries.ts` (new), `engine/systems/ops.ts`, `engine/systems/crew.ts` |
+| Loans and lending | `engine/systems/credit.ts` (new), `app/components/CreditCard.tsx` (new) |
+| Tolya's attacks | `engine/systems/rivals.ts` (`tolyaTick`) |
+| Save schema v10 | `engine/model/migrate.ts` (`v9to10`) |
+| The bot | `sim/persona.ts` (contest value, lending, borrowing, desk and Clinic value) |
+| Tests | `tests/credit.test.ts`, `tests/consequences.test.ts` (new); the split test adds a loan, lending and an injury |
+
+### Verified
+
+- `npm run check`: typecheck, lint, 158 tests.
+- `npm run sim -- --days 22 --runs 10`: Act III 6.39 d, heat 33.3, no missed wages; tuning in [TUNING.md](TUNING.md).
+- Not yet tried on a device.
+
 ## 2026-09-29 — Six acts, and Act III's Centre (M8)
 
 Branch: `feature/acts-iii-vi` (off `main` after `feature/expansion` merged). Reasoning: [ADR 0040](docs/decisions/0040-six-acts.md), [ADR 0041](docs/decisions/0041-act-iii-the-centre.md).

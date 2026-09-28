@@ -1,18 +1,21 @@
 import {
   INCIDENT_TYPES,
   type ChoiceConfig,
+  type ChoiceEffectsConfig,
   type Config,
   type IncidentNeed,
   type IncidentType,
   type OpConfig,
   type OpOutcome,
   type PerkId,
+  type Stat,
 } from '../config/schema'
 import { emit, newId, type Ctx } from '../core/ctx'
 import { derive } from '../core/derive'
 import { hourIndex, hoursToMs } from '../core/time'
 import type { InboxEffects, InboxItem, InboxOption, OpInstance, PlayerState } from '../model/state'
-import { changeLoyalty } from './crew'
+import { changeLoyalty, effectiveStat } from './crew'
+import { injure } from './injuries'
 import { gainRep } from './reputation'
 import { changeDisposition } from './rivals'
 import { addStock } from './supply'
@@ -23,16 +26,39 @@ import { addStock } from './supply'
 
 const EPS = 1e-6
 
-// yieldPerHr sizes options priced in hours of income (an investigator's price), fixed at filing.
-export function materializeChoice(choice: ChoiceConfig, act: number, jobDirty = 0, yieldPerHr = 0): InboxOption {
+// What an item is filed against: the act, a job's Dirty (reports), the city's income (an investigator's
+// price), the amount it's about (a missed payment, a defaulted loan), and the business it names.
+export type MaterializeContext = { act: number; jobDirty?: number; yieldPerHr?: number; due?: number; stash?: boolean; enforced?: boolean }
+
+function materializeEffects(fx: ChoiceEffectsConfig, m: MaterializeContext): InboxEffects {
   const effects: InboxEffects = {}
   const dirty =
-    Math.round((choice.dirtyPct ?? 0) * jobDirty) + (choice.dirtyPerAct ?? 0) * act + Math.round((choice.dirtyHoursOfYield ?? 0) * yieldPerHr)
+    Math.round((fx.dirtyPct ?? 0) * (m.jobDirty ?? 0)) +
+    (fx.dirtyPerAct ?? 0) * m.act +
+    Math.round((fx.dirtyHoursOfYield ?? 0) * (m.yieldPerHr ?? 0)) +
+    Math.round((fx.dirtyPerDue ?? 0) * (m.due ?? 0))
   if (dirty) effects.dirty = dirty
-  for (const k of ['influence', 'rep', 'heat', 'loyalty', 'condition', 'disposition', 'cigarettes', 'closeHours'] as const) {
-    if (choice[k]) effects[k] = choice[k]
+  const clean = Math.round((fx.cleanPerDue ?? 0) * (m.due ?? 0))
+  if (clean) effects.clean = clean
+  for (const k of ['influence', 'rep', 'heat', 'loyalty', 'disposition', 'cigarettes', 'closeHours', 'injureHours'] as const) {
+    if (fx[k]) effects[k] = fx[k]
   }
-  return { id: choice.id, name: choice.name, effects }
+  // A Stash House on the street takes some of the damage (ADR 0042).
+  if (fx.condition) effects.condition = Math.round(fx.condition * (m.stash && fx.stashConditionMult !== undefined ? fx.stashConditionMult : 1))
+  if (fx.contest) {
+    const k = fx.contest
+    effects.contest = {
+      stat: k.stat,
+      diff: k.diff - (m.enforced ? (k.enforcerBonus ?? 0) : 0),
+      win: materializeEffects(k.win, m),
+      lose: materializeEffects(k.lose, m),
+    }
+  }
+  return effects
+}
+
+export function materializeChoice(choice: ChoiceConfig, m: MaterializeContext): InboxOption {
+  return { id: choice.id, name: choice.name, effects: materializeEffects(choice, m) }
 }
 
 const defaultOf = (choices: ChoiceConfig[]) => (choices.find((ch) => ch.default) ?? choices[0]).id
@@ -58,7 +84,7 @@ export function fileReport(
     crewIds: op.crewIds.filter((id) => state.crew.some((m) => m.id === id)),
     createdAt: t,
     expiresAt: t + hoursToMs(c, c.inbox.reportHours),
-    options: choices.map((ch) => materializeChoice(ch, state.act, jobDirty)),
+    options: choices.map((ch) => materializeChoice(ch, { act: state.act, jobDirty })),
     defaultOptionId: defaultOf(choices),
   }
   state.inbox.push(item)
@@ -89,13 +115,24 @@ function incidentRacket(state: PlayerState, need: IncidentNeed | undefined): str
   return undefined
 }
 
-export function raiseIncident(state: PlayerState, ctx: Ctx, t: number, type: IncidentType, pick: () => number): void {
+// `about` names what a system files the incident over: the business (an attack, the collectors' target) and
+// the amount (a missed payment, a defaulted loan).
+export function raiseIncident(
+  state: PlayerState,
+  ctx: Ctx,
+  t: number,
+  type: IncidentType,
+  pick: () => number,
+  about: { racketId?: string; due?: number } = {},
+): void {
   const { c } = ctx
   const cfg = c.incidents.types[type]
   const idle = state.crew.filter((m) => m.status === 'idle')
   const crewId = cfg.needs === 'idleCrew' && idle.length ? idle[Math.floor(pick() * idle.length)].id : undefined
-  const racketId = incidentRacket(state, cfg.needs)
-  const yieldPerHr = derive(state, c).yieldPerHr
+  const racketId = about.racketId ?? incidentRacket(state, cfg.needs)
+  const racket = racketId ? state.rackets.find((r) => r.id === racketId) : undefined
+  const stash = racket !== undefined && state.rackets.some((r) => r.districtId === racket.districtId && c.rackets.types[r.type].shieldPerTier !== undefined)
+  const context: MaterializeContext = { act: state.act, yieldPerHr: derive(state, c).yieldPerHr, due: about.due, stash, enforced: !!racket?.enforcerId }
   const item: InboxItem = {
     id: newId(state, 'in'),
     kind: 'incident',
@@ -104,7 +141,7 @@ export function raiseIncident(state: PlayerState, ctx: Ctx, t: number, type: Inc
     ...(racketId ? { racketId } : {}),
     createdAt: t,
     expiresAt: t + hoursToMs(c, c.inbox.incidentHours),
-    options: cfg.options.map((ch) => materializeChoice(ch, state.act, 0, yieldPerHr)),
+    options: cfg.options.map((ch) => materializeChoice(ch, context)),
     defaultOptionId: defaultOf(cfg.options),
   }
   state.inbox.push(item)
@@ -122,7 +159,7 @@ export function rollIncident(state: PlayerState, ctx: Ctx, t: number): void {
   if (!rand.chance(c.incidents.chancePerHr)) return
   const eligible = INCIDENT_TYPES.filter((type) => {
     const inc = c.incidents.types[type]
-    return (inc.act ?? 1) <= state.act && incidentNeedHolds(state, c, inc.needs)
+    return !inc.filed && (inc.act ?? 1) <= state.act && incidentNeedHolds(state, c, inc.needs)
   })
   if (eligible.length === 0) return
   raiseIncident(state, ctx, t, rand.pick(eligible), rand.next)
@@ -134,7 +171,40 @@ export function canAffordEffects(state: PlayerState, e: InboxEffects): boolean {
   return true
 }
 
-function applyEffects(state: PlayerState, ctx: Ctx, t: number, item: InboxItem, e: InboxEffects): void {
+// Who fights a contest: the best available crew member for the stat, idle first, then an enforcer.
+export function contestFighter(state: PlayerState, c: Config, stat: Stat) {
+  const pool = state.crew.filter((m) => m.status === 'idle')
+  const fallback = state.crew.filter((m) => m.status === 'enforcer')
+  const from = pool.length ? pool : fallback
+  return from.reduce<(typeof from)[number] | null>((best, m) => (!best || effectiveStat(c, m, stat) > effectiveStat(c, best, stat) ? m : best), null)
+}
+
+// The chance a contest is won, in closed form: the fighter's stat + U(−noise, noise) ≥ diff.
+export function contestOdds(state: PlayerState, c: Config, contest: { stat: Stat; diff: number }): number {
+  const m = contestFighter(state, c, contest.stat)
+  if (!m) return 0
+  const n = c.ops.noise
+  const score = effectiveStat(c, m, contest.stat)
+  if (n <= 0) return score >= contest.diff ? 1 : 0
+  return Math.min(1, Math.max(0, (score + n - contest.diff) / (2 * n)))
+}
+
+function applyEffects(state: PlayerState, ctx: Ctx, t: number, item: InboxItem, e: InboxEffects, fighterId?: string): void {
+  // A contest rolls once, on the item's own stream, when the option is chosen (ADR 0042).
+  if (e.contest) {
+    const k = e.contest
+    const m = contestFighter(state, ctx.c, k.stat)
+    const score = m ? effectiveStat(ctx.c, m, k.stat) + ctx.rng.derive('contest', item.id).range(-ctx.c.ops.noise, ctx.c.ops.noise) : 0
+    const won = m !== null && score >= k.diff
+    if (won) state.stats.contests.won++
+    else state.stats.contests.lost++
+    emit(ctx, t, { type: 'CONTEST_RESOLVED', itemId: item.id, stat: k.stat, diff: k.diff, won, ...(m ? { crewId: m.id, name: m.name } : {}) })
+    applyEffects(state, ctx, t, item, won ? k.win : k.lose, m?.id)
+  }
+  if (e.injureHours && fighterId) {
+    const m = state.crew.find((x) => x.id === fighterId)
+    if (m) injure(state, ctx, t, m, e.injureHours)
+  }
   if (e.dirty) {
     const delta = Math.max(-state.dirty, e.dirty)
     state.dirty += delta

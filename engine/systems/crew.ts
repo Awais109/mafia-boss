@@ -3,6 +3,7 @@ import { emit, type Ctx } from '../core/ctx'
 import type { Rand } from '../core/rng'
 import { dayIndex, hoursToMs } from '../core/time'
 import type { CrewMember, PlayerState } from '../model/state'
+import { clinicLoyaltyPerDay } from './injuries'
 
 export function effectiveStat(c: Config, m: CrewMember, stat: Stat): number {
   let v = m[stat]
@@ -149,6 +150,9 @@ export function crewDayBoundary(state: PlayerState, ctx: Ctx, t: number): void {
   }
 
   for (const m of state.crew) if (!m.perks.includes('steady')) changeLoyalty(m, c.crew.loyalty.driftPerDay)
+  // A Clinic looks after everyone a little (ADR 0042).
+  const cared = clinicLoyaltyPerDay(state, c)
+  if (cared > 0) for (const m of state.crew) changeLoyalty(m, cared)
 
   const day = dayIndex(c, t)
   for (const m of [...state.crew]) {

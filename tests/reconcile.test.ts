@@ -73,8 +73,9 @@ function busy(): PlayerState {
   return s
 }
 
-// Act III (ADR 0041): prosperity stepping at whole hours, a hotel lifting its street, a Print Shop shut by
-// an investigator and opening again mid-window, a raid's penalty running out, heat near the inspection line.
+// Act III (ADRs 0041, 0042): prosperity stepping at whole hours, a hotel lifting its street, a Print Shop shut by
+// an investigator and opening again mid-window, a raid's penalty running out, heat near the inspection line,
+// a loan paid each morning, money lent out and falling due, a hurt crew member coming back.
 function centre(): PlayerState {
   let s = act(fresh('centre-player'), [{ type: 'DEBUG_COMPLETE_GOALS' }, { type: 'DEBUG_SET_REP', reputation: config.rackets.types.printShop.unlockRep }], T0)
   s.tutorial.done = true
@@ -86,6 +87,8 @@ function centre(): PlayerState {
       { type: 'BUY_RACKET', racketType: 'printShop', districtId: 'centre' },
       { type: 'BUY_RACKET', racketType: 'hotel', districtId: 'centre' },
       { type: 'BUY_RACKET', racketType: 'hotel', districtId: 'zarechye' },
+      { type: 'BUY_RACKET', racketType: 'loanDesk', districtId: 'stationSquare' },
+      { type: 'TAKE_LOAN', amount: 1500 },
       { type: 'DEBUG_FORCE_INCIDENT', incidentType: 'investigation' },
     ],
     T0,
@@ -96,6 +99,11 @@ function centre(): PlayerState {
   s.rackets.find((r) => r.type === 'printShop')!.closedUntil = T0 + Math.round(7.4 * H)
   s.raidPenaltyUntil = T0 + Math.round(11.7 * H)
   s.districts.find((d) => d.id === 'kioskRow')!.prosperity = 12
+  s = act(s, [{ type: 'LEND', amount: 40 }], T0)
+  s.lending!.dueAt = T0 + Math.round(9.3 * H)
+  const hurt = s.crew[1]
+  hurt.status = 'injured'
+  hurt.injuredUntil = T0 + Math.round(5.2 * H)
   return s
 }
 

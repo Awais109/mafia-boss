@@ -2,7 +2,7 @@
 
 Pending decisions. Every job that comes back files a report with a fork, and one or two things a day happen to the player and ask for an answer. Each item offers 2–3 options with their effects spelled out, and a default that applies if nobody answers in time, so an absence never blocks the game ([ADR 0024](../decisions/0024-inbox.md)).
 
-**Code:** `engine/systems/inbox.ts` (`fileReport`, `rollIncident`, `raiseIncident`, `incidentNeedHolds`, `canAffordEffects`, `resolveInboxItem`, `autoResolveInbox`, `materializeChoice`), the `RESOLVE_INBOX` and `DEBUG_FORCE_INCIDENT` handlers in `engine/core/apply.ts`. App: `app/inbox.ts`, `app/components/InboxCard.tsx`, Home.
+**Code:** `engine/systems/inbox.ts` (`fileReport`, `rollIncident`, `raiseIncident`, `incidentNeedHolds`, `canAffordEffects`, `resolveInboxItem`, `autoResolveInbox`, `materializeChoice`, `contestFighter`, `contestOdds`), the `RESOLVE_INBOX` and `DEBUG_FORCE_INCIDENT` handlers in `engine/core/apply.ts`. App: `app/inbox.ts`, `app/components/InboxCard.tsx`, Home.
 **Config:** `inbox.*`, `ops.reports.*`, `incidents.*`.
 
 ## Items
@@ -27,7 +27,10 @@ Effects are **materialized when the item is filed**: a report's "−25% of the j
 - `dirtyPct` is a share of the job's Dirty reward, so the options move value around rather than add it.
 - `dirtyPerAct` is a flat amount × act.
 - `dirtyHoursOfYield` is that many hours of the city's Dirty yield at filing time (the investigator's price).
-- The other fields are copied as they are, including `closeHours` (shut the business named on the item for that long).
+- `dirtyPerDue` and `cleanPerDue` are that many times the amount the item is about (a defaulted loan, a missed payment; [credit.md](credit.md)).
+- `condition` × `stashConditionMult` when a Stash House shares the named business's street.
+- A `contest`'s branches are materialized the same way, and its `enforcerBonus` comes off its difficulty when the named business has an enforcer.
+- The other fields are copied as they are, including `closeHours` (shut the business named on the item for that long) and `injureHours` (hurt the crew member who fought).
 
 Reports always file, even during the tutorial. They expire after `inbox.reportHours`.
 
@@ -42,6 +45,14 @@ Reports always file, even during the tutorial. They expire after `inbox.reportHo
 The Act III investigator (`investigation`, [ADR 0041](../decisions/0041-act-iii-the-centre.md)): close the Print Shop for a day (default) or pay three hours of the city's income.
 
 Incidents expire after `inbox.incidentHours`.
+
+## Filed incidents
+
+Some incidents come from a system rather than the hourly roll (`filed: true` keeps them out of it): `attack` (Tolya's boys, at his visits from Act III; [districts-and-rivals.md](districts-and-rivals.md#tolya)), `collectors` (a missed loan payment) and `lendingDefault` (a borrower who skipped town; [credit.md](credit.md)). `raiseIncident` takes what they're about: the business (`racketId`) and the amount (`due`).
+
+## Contests
+
+([ADR 0042](../decisions/0042-act-iii-credit-and-consequences.md)) An option's `contest { stat, diff, win, lose }` resolves when it's chosen. `contestFighter` picks the best available crew member for the stat (idle first, then an enforcer; none means a loss). They roll `effective stat + U(−ops.noise, ops.noise)` on `rng.derive('contest', itemId)`, once per item; at least `diff` wins. The branch applies like any option's effects, with the fighter as the one `injureHours` hurts. `CONTEST_RESOLVED { itemId, stat, diff, won, crewId?, name? }`; `stats.contests { won, lost }`. `contestOdds(state, config, contest)` is the closed form the card shows and the bot uses. A default option can't be a contest, and contests don't nest.
 
 ## Perk choices
 
@@ -60,6 +71,7 @@ Effect rules: Dirty can't go below zero (the change is recorded in `stats.inboxD
 - `REPORT_FILED { itemId, opId, opType, outcome, expiresAt }` (quiet in the Log)
 - `INCIDENT_RAISED { itemId, incidentType, crewId?, racketId?, expiresAt }`
 - `INBOX_RESOLVED { itemId, kind, ref, optionId, optionName, auto, effects }`; an auto-resolution is shown on Home and in the away popup
+- `CONTEST_RESOLVED { itemId, stat, diff, won, crewId?, name? }` when a contest option is chosen
 - `PERK_CHOSEN { crewId, name, perk }` after a perk option applies
 
 `stats.inbox` counts `filed`, `resolved` and `auto`. `DEBUG_FORCE_INCIDENT { incidentType? }` files one immediately.

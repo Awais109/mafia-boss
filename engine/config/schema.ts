@@ -13,11 +13,11 @@ export const LATER_ACTS: readonly LaterAct[] = [2, 3, 4, 5, 6]
 export type RacketType =
   | 'kiosk' | 'marketStall' | 'beerTent' | 'videoSalon' | 'taxiRank' | 'slotHall' | 'tobaccoFactory' | 'warehouse'
   | 'autoShop' | 'cafe' | 'bathhouse' | 'petrol' | 'cargoBay' | 'stashHouse' | 'unionOffice'
-  | 'cardClub' | 'nightclub' | 'printShop' | 'hotel'
+  | 'cardClub' | 'nightclub' | 'printShop' | 'hotel' | 'clinic' | 'loanDesk'
 export const RACKET_TYPES: readonly RacketType[] = [
   'kiosk', 'marketStall', 'beerTent', 'videoSalon', 'taxiRank', 'slotHall', 'tobaccoFactory', 'warehouse',
   'autoShop', 'cafe', 'bathhouse', 'petrol', 'cargoBay', 'stashHouse', 'unionOffice',
-  'cardClub', 'nightclub', 'printShop', 'hotel',
+  'cardClub', 'nightclub', 'printShop', 'hotel', 'clinic', 'loanDesk',
 ]
 
 export type FrontType = 'currencyKiosk' | 'restaurant' | 'cooperativeBank'
@@ -68,20 +68,19 @@ export const OP_BANDS: readonly OpBand[] = ['quick', 'standard', 'long']
 export type OpOutcome = 'full' | 'partial' | 'fail'
 export const OP_OUTCOMES: readonly OpOutcome[] = ['full', 'partial', 'fail']
 
-export type IncidentType = 'inspector' | 'drunkCrew' | 'shopkeeperLead' | 'copFavour' | 'badBatch' | 'investigation'
-export const INCIDENT_TYPES: readonly IncidentType[] = ['inspector', 'drunkCrew', 'shopkeeperLead', 'copFavour', 'badBatch', 'investigation']
+export type IncidentType =
+  | 'inspector' | 'drunkCrew' | 'shopkeeperLead' | 'copFavour' | 'badBatch' | 'investigation' | 'attack' | 'collectors' | 'lendingDefault'
+export const INCIDENT_TYPES: readonly IncidentType[] = [
+  'inspector', 'drunkCrew', 'shopkeeperLead', 'copFavour', 'badBatch', 'investigation', 'attack', 'collectors', 'lendingDefault',
+]
 export type IncidentNeed = 'idleCrew' | 'joint' | 'factory' | 'inspected' | 'printShop'
 
 // Act I goals (ADR 0035, gate ADR 0039), each paying gold once. All of them must be done to open Act II.
 export type GoalId = 'secondDistrict' | 'factoryTier2' | 'thirdCrew' | 'wardCop' | 'workFront' | 'smuggleRun' | 'soldier'
 export const GOAL_IDS: readonly GoalId[] = ['secondDistrict', 'factoryTier2', 'thirdCrew', 'wardCop', 'workFront', 'smuggleRun', 'soldier']
 
-// One option on a pending decision (a crew report or an incident). Effects are materialized
-// into the save when the item is filed, so replays don't depend on later config edits.
-export type ChoiceConfig = {
-  id: string
-  name: string
-  default?: boolean // exactly one per list; applied when the item expires unanswered
+// What an option does, before it's materialized into the save (ChoiceConfig without its id and name).
+export type ChoiceEffectsConfig = {
   dirtyPct?: number // share of the job's Dirty reward (reports)
   dirtyPerAct?: number // flat Dirty × act
   influence?: number
@@ -93,6 +92,20 @@ export type ChoiceConfig = {
   cigarettes?: number
   dirtyHoursOfYield?: number // Dirty = this × yield per hour, fixed when the item is filed
   closeHours?: number // the business named on the item shuts for this long
+  dirtyPerDue?: number // × the amount the item is about (a defaulted loan), fixed at filing
+  cleanPerDue?: number // × the amount the item is about (a missed payment), fixed at filing
+  stashConditionMult?: number // condition × this when a Stash House stands in the business's district
+  injureHours?: number // the crew member who fought is hurt for this long (ADR 0042)
+  // A contest (ADR 0042): the best available crew member's stat + luck against diff; each branch is an effect.
+  contest?: { stat: Stat; diff: number; enforcerBonus?: number; win: ChoiceEffectsConfig; lose: ChoiceEffectsConfig }
+}
+
+// One option on a pending decision (a crew report or an incident). Effects are materialized
+// into the save when the item is filed, so replays don't depend on later config edits.
+export type ChoiceConfig = ChoiceEffectsConfig & {
+  id: string
+  name: string
+  default?: boolean // exactly one per list; applied when the item expires unanswered
 }
 
 export type IncidentConfig = {
@@ -100,6 +113,7 @@ export type IncidentConfig = {
   text: string
   act?: Act
   needs?: IncidentNeed
+  filed?: boolean // filed by a system (an attack, a missed payment), never rolled at random
   options: ChoiceConfig[]
 }
 
@@ -141,6 +155,9 @@ export type RacketTypeConfig = {
   prosperity?: number // added to its district's prosperity target (negative for rackets that sour a street; ADR 0041)
   prosperityPerTier?: number // hotels: prosperity target added per tier
   minProsperity?: number // can only open where the district's prosperity is at least this
+  injuryMult?: number // clinics: injuries last × this (the best one counts)
+  loyaltyPerDay?: number // clinics: every crew member gains this at each day start
+  lendHoursPerTier?: number // loan desks: lend up to this many hours of Dirty yield per tier
 }
 
 // Businesses that work better side by side in one district (plan (m)). Active in a district that has
@@ -386,6 +403,8 @@ export type Config = {
       hostileBelow: number
       hostileTickMult: number
       haggle: { diff: number; noise: number; pricePct: number; dispositionOnWin: number; dispositionOnInsult: number }
+      // From Act III his boys come for a business (ADR 0042): likelier once he's lost the Row, likelier still when hostile.
+      attack: { fromAct: Act; chance: number; chanceNoTurf: number; chanceHostile: number }
     }
     // Zhanna sells cigarettes by the lot and buys the surplus (ADR 0036).
     zhanna: {
@@ -415,6 +434,28 @@ export type Config = {
   progression: {
     finalAct: Act
     acts: Record<LaterAct, ActGate>
+  }
+  // Act III's consequences (ADR 0042): hurt crew, borrowing, lending.
+  injuries: {
+    fromAct: Act
+    chanceOnFail: number // a failed job leaning on Muscle hurts someone on it
+    minMuscleWeight: number
+    hours: number
+  }
+  credit: {
+    fromAct: Act
+    maxDaysOfClean: number // borrow up to this many days of Clean income (the ledger's closed days)
+    minCap: number
+    interestPerDay: number // on what's owed, at each day start
+    repayPctPerDay: number // of the principal, due from Clean at each day start
+    secondMissVaultPct: number // two missed payments: the lender takes this share of the vault
+    lending: {
+      termHours: number
+      returnPct: number
+      defaultBase: number // chance a borrower defaults, before the desk's street
+      defaultPerProsperity: number // − this × the desk district's prosperity
+      minDefault: number
+    }
   }
   // Districts earn more when they're doing well (ADR 0041), from `fromAct`.
   prosperity: {
@@ -482,9 +523,28 @@ function choices(e: string[], p: string, list: unknown) {
   const defaults = opts.filter((o) => o.default)
   if (defaults.length !== 1) e.push(`${p}: exactly one option must be the default`)
   const d = defaults[0]
-  // Stock only ever falls to zero, so a default may lose packs; it may never cost Dirty (ADR 0032).
-  if (d && ((d.dirtyPct ?? 0) < 0 || (d.dirtyPerAct ?? 0) < 0 || (d.dirtyHoursOfYield ?? 0) < 0)) {
-    e.push(`${p}.${d.id}: the default option can't cost Dirty`)
+  // Stock only ever falls to zero, so a default may lose packs; it may never cost Dirty or Clean (ADR 0032).
+  if (d && ((d.dirtyPct ?? 0) < 0 || (d.dirtyPerAct ?? 0) < 0 || (d.dirtyHoursOfYield ?? 0) < 0 || (d.dirtyPerDue ?? 0) < 0 || (d.cleanPerDue ?? 0) < 0)) {
+    e.push(`${p}.${d.id}: the default option can't cost Dirty or Clean`)
+  }
+  if (d?.contest) e.push(`${p}.${d.id}: the default option can't be a contest`)
+  for (const o of opts) effectsCheck(e, `${p}.${o.id}`, o)
+}
+
+// A contest's stat and difficulty, and its branches, which may not nest another contest.
+function effectsCheck(e: string[], p: string, fx: ChoiceEffectsConfig) {
+  if (fx.injureHours !== undefined) nonNeg(e, `${p}.injureHours`, fx.injureHours)
+  if (fx.closeHours !== undefined) nonNeg(e, `${p}.closeHours`, fx.closeHours)
+  if (fx.stashConditionMult !== undefined) unit(e, `${p}.stashConditionMult`, fx.stashConditionMult)
+  const k = fx.contest
+  if (!k) return
+  if (!STATS.includes(k.stat)) e.push(`${p}.contest.stat: unknown stat ${k.stat}`)
+  nonNeg(e, `${p}.contest.diff`, k.diff)
+  if (k.enforcerBonus !== undefined) nonNeg(e, `${p}.contest.enforcerBonus`, k.enforcerBonus)
+  for (const [branch, sub] of [['win', k.win], ['lose', k.lose]] as const) {
+    if (!sub) { e.push(`${p}.contest.${branch}: missing`); continue }
+    if (sub.contest) e.push(`${p}.contest.${branch}: a contest can't nest another`)
+    effectsCheck(e, `${p}.contest.${branch}`, sub)
   }
 }
 
@@ -552,6 +612,9 @@ export function validateConfig(c: Config): string[] {
           if (rt.leashHoursPerTier !== undefined) nonNeg(e, `${p}.leashHoursPerTier`, rt.leashHoursPerTier)
           if (rt.shieldPerTier !== undefined) unit(e, `${p}.shieldPerTier`, rt.shieldPerTier)
           if (rt.influencePerHrPerTier !== undefined) nonNeg(e, `${p}.influencePerHrPerTier`, rt.influencePerHrPerTier)
+          if (rt.injuryMult !== undefined) rate(e, `${p}.injuryMult`, rt.injuryMult)
+          if (rt.loyaltyPerDay !== undefined) nonNeg(e, `${p}.loyaltyPerDay`, rt.loyaltyPerDay)
+          if (rt.lendHoursPerTier !== undefined) nonNeg(e, `${p}.lendHoursPerTier`, rt.lendHoursPerTier)
         } else {
           positive(e, `${p}.baseYield`, rt.baseYield)
         }
@@ -774,6 +837,10 @@ export function validateConfig(c: Config): string[] {
       nonNeg(e, 'rivals.tolya.haggle.diff', t.haggle.diff)
       nonNeg(e, 'rivals.tolya.haggle.noise', t.haggle.noise)
       rate(e, 'rivals.tolya.haggle.pricePct', t.haggle.pricePct)
+      if (!ACTS.includes(t.attack.fromAct)) e.push('rivals.tolya.attack.fromAct: expected an act')
+      unit(e, 'rivals.tolya.attack.chance', t.attack.chance)
+      unit(e, 'rivals.tolya.attack.chanceNoTurf', t.attack.chanceNoTurf)
+      unit(e, 'rivals.tolya.attack.chanceHostile', t.attack.chanceHostile)
       const z = c.rivals.zhanna
       positive(e, 'rivals.zhanna.shipment.cigarettes', z.shipment.cigarettes)
       positive(e, 'rivals.zhanna.shipment.basePrice', z.shipment.basePrice)
@@ -798,6 +865,23 @@ export function validateConfig(c: Config): string[] {
         for (const f of g.fronts ?? []) if (!FRONT_TYPES.includes(f)) e.push(`${p}.fronts: unknown front ${f}`)
         if (!g.goals && g.rep === undefined && !(g.holds ?? []).length && !(g.fronts ?? []).length) e.push(`${p}: a gate needs at least one condition`)
       }
+      const inj = c.injuries
+      if (!ACTS.includes(inj.fromAct)) e.push('injuries.fromAct: expected an act')
+      unit(e, 'injuries.chanceOnFail', inj.chanceOnFail)
+      unit(e, 'injuries.minMuscleWeight', inj.minMuscleWeight)
+      positive(e, 'injuries.hours', inj.hours)
+      const cr = c.credit
+      if (!ACTS.includes(cr.fromAct)) e.push('credit.fromAct: expected an act')
+      nonNeg(e, 'credit.maxDaysOfClean', cr.maxDaysOfClean)
+      nonNeg(e, 'credit.minCap', cr.minCap)
+      nonNeg(e, 'credit.interestPerDay', cr.interestPerDay)
+      rate(e, 'credit.repayPctPerDay', cr.repayPctPerDay)
+      unit(e, 'credit.secondMissVaultPct', cr.secondMissVaultPct)
+      positive(e, 'credit.lending.termHours', cr.lending.termHours)
+      nonNeg(e, 'credit.lending.returnPct', cr.lending.returnPct)
+      unit(e, 'credit.lending.defaultBase', cr.lending.defaultBase)
+      nonNeg(e, 'credit.lending.defaultPerProsperity', cr.lending.defaultPerProsperity)
+      unit(e, 'credit.lending.minDefault', cr.lending.minDefault)
       const ps = c.prosperity
       if (!ACTS.includes(ps.fromAct)) e.push('prosperity.fromAct: expected an act')
       num(e, 'prosperity.base', ps.base, (n) => n >= 0 && n <= 100, 'in [0, 100]')

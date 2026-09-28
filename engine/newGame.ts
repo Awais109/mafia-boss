@@ -51,6 +51,8 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
 
     wagesOwed: 0,
     upkeepOwed: 0,
+    loan: null,
+    lending: null,
     influenceToday: { day: dayIndex(c, now), amount: 0 },
     rival: {
       tolya: { disposition: 0, nextTickAt: now + hoursToMs(c, c.rivals.tolya.tickHours), tickCount: 0, demand: null, haggledTick: null },

@@ -24,6 +24,9 @@ export type Action =
   | { type: 'RUSH_OP'; opId: string }
   | { type: 'BUY_SHIPMENT' }
   | { type: 'SELL_SURPLUS'; packs: number }
+  | { type: 'TAKE_LOAN'; amount: number }
+  | { type: 'REPAY_LOAN'; amount: number }
+  | { type: 'LEND'; amount: number }
   | { type: 'TUTORIAL_ADVANCE' }
   | { type: 'TUTORIAL_SKIP' }
   | { type: 'SESSION_START' }

@@ -120,7 +120,13 @@ function v8to9(doc: Doc): Doc {
   }
 }
 
-const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7, 7: v7to8, 8: v8to9 }
+// v10 (M9): Act III's consequences (ADR 0042): no loan out, no money lent, new stat counters.
+function v9to10(doc: Doc): Doc {
+  const stats = { ...emptyStats(), ...(doc.stats as object) }
+  return { ...doc, schemaVersion: 10, stats, loan: doc.loan ?? null, lending: doc.lending ?? null }
+}
+
+const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7, 7: v7to8, 8: v8to9, 9: v9to10 }
 
 export function migrate(doc: unknown): PlayerState {
   if (typeof doc !== 'object' || doc === null) throw new Error('Save is not an object')

@@ -54,6 +54,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0039](0039-goals-gate-act-two.md) | Act II is gated by Act I goals, not Reputation; three goals redefined, `actII` removed | Accepted |
 | [0040](0040-six-acts.md) | Six acts, each opened by a gate; the last built act is cleared, not left | Accepted |
 | [0041](0041-act-iii-the-centre.md) | Act III, the Centre: prosperity, the Card Club, Print Shop, hotels, the Bank, City Hall, tier 6 | Accepted |
+| [0042](0042-act-iii-credit-and-consequences.md) | Act III's consequences: contests in the inbox, injuries and the Clinic, Tolya's attacks, loans and the loan desk | Accepted |
 
 ## Template
 

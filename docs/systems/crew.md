@@ -2,7 +2,7 @@
 
 The people who work jobs and mind rackets. They cost wages, their loyalty decides whether they stay, and they get better with work.
 
-**Code:** `engine/systems/crew.ts` (`effectiveStat`, `baseWage`, `crewSlots`, `freshProgress`, `crewFromSeed`, `generateCandidates`, `regeneratePool`, `refreshPoolIfDue`, `releaseJailed`, `unassignEnforcer`, `crewDayBoundary`), `engine/systems/experience.ts` (`RANK_NAMES`, `rankFor`, `hasPerk`, `jobXp`, `grantXp`, `levelUp`, `filePerkChoice`, `accrueEnforcerXp`, `crewXpHourBoundary`), the crew handlers in `engine/core/apply.ts`.
+**Code:** `engine/systems/crew.ts` (`effectiveStat`, `baseWage`, `crewSlots`, `freshProgress`, `crewFromSeed`, `generateCandidates`, `regeneratePool`, `refreshPoolIfDue`, `releaseJailed`, `unassignEnforcer`, `crewDayBoundary`), `engine/systems/injuries.ts` (`injure`, `maybeInjureTeam`, `releaseInjured`, `injuryMult`, `clinicLoyaltyPerDay`), `engine/systems/experience.ts` (`RANK_NAMES`, `rankFor`, `hasPerk`, `jobXp`, `grantXp`, `levelUp`, `filePerkChoice`, `accrueEnforcerXp`, `crewXpHourBoundary`), the crew handlers in `engine/core/apply.ts`.
 **Config:** `crew.*`.
 
 ## A crew member
@@ -11,7 +11,7 @@ The people who work jobs and mind rackets. They cost wages, their loyalty decide
 - Stats: `muscle`, `brains`, `nerve`.
 - `loyalty`, from 0 to 100.
 - `traits` (zero or one).
-- `status`: `idle`, `on_op`, `enforcer` or `jailed`, plus `assignedTo` (racket or op id) and `jailedUntil`.
+- `status`: `idle`, `on_op`, `enforcer`, `jailed` or `injured`, plus `assignedTo` (racket or op id), `jailedUntil` and `injuredUntil`.
 - An optional `nephew` flag.
 - Progress: `xp` and `potential` per stat, `gained` (stat points earned), `rank`, `perks`.
 
@@ -111,6 +111,16 @@ Training jobs don't change loyalty.
 ## Jail
 
 Arrests come from heat ([heat.md](heat.md)). A jailed member keeps drawing wages, can't work, and returns to `idle` at `jailedUntil` (`RELEASED`).
+
+## Injuries
+
+([ADR 0042](../decisions/0042-act-iii-credit-and-consequences.md)) From `injuries.fromAct`:
+- **A failed job** whose stat weights lean at least `injuries.minMuscleWeight` on Muscle hurts one of its team with `injuries.chanceOnFail`, on `rng.derive('injury', opId)`, for `injuries.hours`.
+- **A lost contest** hurts the crew member who fought for the option's `injureHours` ([inbox.md](inbox.md#contests)).
+
+`injure` sets `status: 'injured'` and `injuredUntil` (a reconcile boundary; an enforcer stops minding their business), counts `stats.injuries` and emits `CREW_INJURED { crewId, name, until }`. A hurt member can't work, can't be arrested and keeps drawing wages; `releaseInjured` brings them back (`CREW_RECOVERED`).
+
+**The Clinic** (premises, one per city): the best working one scales injury time by its `injuryMult` (`injuryMult(state, config)`) and gives every crew member its `loyaltyPerDay` at each day start, after the daily drift (`clinicLoyaltyPerDay`).
 
 ## Debug
 

@@ -1,5 +1,6 @@
 import { FRONT_MODES, FRONT_TYPES, frontBlocked } from '../../engine'
 import { ACT_NAME } from '../acts'
+import { CreditCard } from '../components/CreditCard'
 import { Bar, Btn, BtnRow, Card, colors, Money, Row, Screen, T, Tag } from '../components/ui'
 import { fmt, fmtDuration, fmtRate, pct } from '../format'
 import { store } from '../store'
@@ -131,6 +132,8 @@ export function FrontsScreen({ game }: ScreenProps) {
           </Card>
         )
       })}
+
+      <CreditCard game={game} />
     </Screen>
   )
 }

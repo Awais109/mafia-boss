@@ -4,6 +4,11 @@ import {
   canAffordEffects,
   canHaggle,
   canPressure,
+  contestOdds,
+  creditOpen,
+  lendCap,
+  loanCap,
+  loanDue,
   derive,
   DISTRICT_IDS,
   formulas,
@@ -227,7 +232,7 @@ export function playSession(
     const best =
       item.kind === 'perk'
         ? [...affordable].sort((a, b) => rankOf(a.id) - rankOf(b.id))[0]
-        : affordable.reduce((a, b) => (valueOf(state, p, v, item, b.effects) > valueOf(state, p, v, item, a.effects) ? b : a))
+        : affordable.reduce((a, b) => (valueOf(state, c, p, v, item, b.effects) > valueOf(state, c, p, v, item, a.effects) ? b : a))
     tryAct({ type: 'RESOLVE_INBOX', itemId: item.id, optionId: best.id })
   }
 
@@ -286,6 +291,14 @@ export function playSession(
       const amount = Math.floor(Math.min(state.dirty - reserve, f.bufferCap - buffer))
       if (amount >= 1) tryAct({ type: 'DEPOSIT', frontId: f.id, amount })
     }
+  }
+
+  // Idle Dirty goes out through the loan desk, above the running-cost reserve (ADR 0042).
+  if (creditOpen(state, c) && !state.lending) {
+    const now = d()
+    const reserve = (now.wagesPerHr + now.upkeepPerHr) * p.reserveWageHours + now.costs.bribe
+    const amount = Math.floor(Math.min(lendCap(state, c), state.dirty - reserve))
+    if (amount >= 1) tryAct({ type: 'LEND', amount })
   }
 
   // 3. Bribe when hot
@@ -375,20 +388,35 @@ export function playSession(
     }
   }
 
-  // 6. Spend Clean on the best yield gain ÷ cost, within the heat budget
+  // 6. Spend Clean on the best yield gain ÷ cost, within the heat budget. Clean for the next loan payment
+  // stays back (ADR 0042).
+  let borrowed = false
   for (let guard = 0; guard < 60; guard++) {
     const now = d()
-    const budget = state.clean
+    const budget = state.clean - loanDue(state, c)
     const controlBuyable = canBuyControl(state, c, now, t)
     const options = spendOptions(state, c, now, p).filter((o) => {
       if (o.cost > budget) return false
       if (o.heatGain <= 0 || controlBuyable) return true
       return formulas.heatTarget(now.exposure + o.heatGain, now.control) <= p.heatBudget
     })
-    if (options.length === 0) break
+    if (options.length === 0) {
+      // Borrow for one purchase that pays for itself inside two days, then spend again (ADR 0042).
+      if (borrowed || state.loan || !creditOpen(state, c)) break
+      const cap = loanCap(state, c)
+      const wanted = spendOptions(state, c, now, p)
+        .filter((o) => o.cost > budget && o.cost <= budget + cap && o.gain > 0 && o.cost / o.gain <= 48)
+        .filter((o) => o.heatGain <= 0 || controlBuyable || formulas.heatTarget(now.exposure + o.heatGain, now.control) <= p.heatBudget)
+        .sort((a, b) => b.gain / b.cost - a.gain / a.cost)[0]
+      if (!wanted || !tryAct({ type: 'TAKE_LOAN', amount: Math.ceil(wanted.cost - budget) })) break
+      borrowed = true
+      continue
+    }
     options.sort((a, b) => b.gain / Math.max(1, b.cost) - a.gain / Math.max(1, a.cost))
     if (!tryAct(options[0].action)) break
   }
+  // Clean left over pays the loan down.
+  if (state.loan && !borrowed && state.clean >= 1) tryAct({ type: 'REPAY_LOAN', amount: Math.floor(Math.min(state.clean, state.loan.owed + 1)) })
 
   return { state, actions }
 }
@@ -487,15 +515,17 @@ function prosperityValues(state: PlayerState, c: Config, d: Derived) {
   const jointYield = (id: DistrictId) =>
     d.perRacket.reduce((sum, rd, i) => (rd.kind === 'joint' && state.rackets[i].districtId === id ? sum + rd.yield / Math.max(0.01, rd.prosperityMult) : sum), 0)
   return {
-    gainOf(id: DistrictId, points: number): number {
+    // `points` is what this purchase adds; `reach` is what it could add over the tiers still to come, so a
+    // hotel that gets its street there in two tiers still counts, at half the credit per tier needed.
+    gainOf(id: DistrictId, points: number, reach = points): number {
       if (!on || points <= 0) return 0
       let gain = jointYield(id) * slope * points
       const p = prosperityOf(state, id)
       for (const t of c.districts.list[id].allows) {
         const rt = c.rackets.types[t]
-        if (rt.minProsperity === undefined || p >= rt.minProsperity || p + points < rt.minProsperity) continue
+        if (rt.minProsperity === undefined || p >= rt.minProsperity || p + reach < rt.minProsperity) continue
         if (!d.unlocked.racket[t] || state.rackets.some((r) => r.districtId === id && r.type === t)) continue
-        gain += rt.baseYield * 0.5
+        gain += (rt.baseYield * 0.5) / Math.max(1, Math.ceil((rt.minProsperity - p) / points))
       }
       if (run.has(id)) {
         for (const t of blockedFronts) {
@@ -507,6 +537,16 @@ function prosperityValues(state: PlayerState, c: Config, d: Derived) {
       return gain
     },
   }
+}
+
+// Dirty an hour a loan desk (or a tier of one) earns on the extra it can lend: the return, less what borrowers
+// who skip town take, over the loan's term.
+function lendingValue(state: PlayerState, c: Config, d: Derived, hoursPerTier: number, id: DistrictId): number {
+  const l = c.credit.lending
+  const amount = hoursPerTier * d.yieldPerHr
+  // The desk's street sets the risk: a new desk goes where borrowers are likeliest to pay.
+  const p = Math.max(l.minDefault, l.defaultBase - l.defaultPerProsperity * prosperityOf(state, id))
+  return (amount * ((1 - p) * (1 + l.returnPct) - 1)) / l.termHours
 }
 
 type SpendOption = { action: Action; cost: number; gain: number; heatGain: number }
@@ -582,7 +622,10 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
         // A stash where the money is: raids are rare, so its shield only breaks ties between lots.
         if (rt.leashHoursPerTier) gain += stashValue(rt.leashHoursPerTier - d.stashHours) + yieldShare(id) * (rt.shieldPerTier ?? 0) * d.yieldPerHr * 0.02
         if (rt.influencePerHrPerTier) gain += rt.influencePerHrPerTier * influenceMultIf(c, id, type) * v.influenceValue
-        if (rt.prosperityPerTier) gain += prosperity.gainOf(id, rt.prosperityPerTier)
+        if (rt.prosperityPerTier) gain += prosperity.gainOf(id, rt.prosperityPerTier, rt.prosperityPerTier * c.rackets.premises.maxTier)
+        // A Clinic keeps the crew working and loyal; a loan desk earns on idle Dirty (ADR 0042).
+        if (rt.injuryMult) gain += state.crew.length * 2
+        if (rt.lendHoursPerTier) gain += lendingValue(state, c, d, rt.lendHoursPerTier, id)
         if (!best || gain > best.gain) best = { id, gain }
       }
       if (best && best.gain > 0) {
@@ -630,7 +673,8 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
       if (rt.capPerTier) gain += surplusValue(rt.capPerTier * cond)
       if (rt.leashHoursPerTier) gain += stashValue(rt.leashHoursPerTier * (r.tier + 1) * cond - d.stashHours)
       if (rt.influencePerHrPerTier) gain += rt.influencePerHrPerTier * cond * influenceMultIf(c, r.districtId, r.type) * v.influenceValue
-      if (rt.prosperityPerTier) gain += prosperity.gainOf(r.districtId, rt.prosperityPerTier * cond)
+      if (rt.prosperityPerTier) gain += prosperity.gainOf(r.districtId, rt.prosperityPerTier * cond, rt.prosperityPerTier * cond * (c.rackets.premises.maxTier - r.tier))
+      if (rt.lendHoursPerTier) gain += lendingValue(state, c, d, rt.lendHoursPerTier * cond, r.districtId)
       if (gain > 0) {
         out.push({ action: { type: 'UPGRADE_RACKET', racketId: r.id }, cost: rd.upgradeCost, gain, heatGain: rd.exposure * (c.rackets.tierHeatMult - 1) })
       }
@@ -662,7 +706,7 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
   return out
 }
 
-type Valuation = { influenceValue: number; heatCost: number; packValue: number; racketYield: Record<string, number> }
+type Valuation = { influenceValue: number; heatCost: number; packValue: number; racketYield: Record<string, number>; injuryHourCost: number }
 
 // What the bot thinks Influence and heat are worth right now, shared by dispatch and decisions.
 function valuation(state: PlayerState, c: Config, p: PersonaOptions): Valuation {
@@ -677,19 +721,42 @@ function valuation(state: PlayerState, c: Config, p: PersonaOptions): Valuation 
     // Packs matter when stock is running out; a surplus is worth little.
     packValue: packValue(d) * (d.supply.hoursToEmpty < p.stockReserveHours ? 1 : 0.2),
     racketYield: Object.fromEntries(state.rackets.map((r, i) => [r.id, d.perRacket[i].yield])),
+    // A crew member out hurt: roughly their share of a day's jobs.
+    injuryHourCost: 5 + d.yieldPerHr * 0.02,
   }
 }
 
-function valueOf(state: PlayerState, p: PersonaOptions, v: Valuation, item: InboxItem, e: InboxEffects): number {
+function valueOf(state: PlayerState, c: Config, p: PersonaOptions, v: Valuation, item: InboxItem, e: InboxEffects): number {
+  // A contest is worth its odds of each branch (ADR 0042).
+  const contest = e.contest
+    ? (() => {
+        const odds = contestOdds(state, c, e.contest)
+        return odds * valueOf(state, c, p, v, item, e.contest.win) + (1 - odds) * valueOf(state, c, p, v, item, e.contest.lose)
+      })()
+    : 0
+  const racketYield = item.racketId ? (v.racketYield[item.racketId] ?? 0) : 0
+  // A point of condition is about a day of a percent of that business's income.
+  const damage = (e.condition ?? 0) * racketYield * 0.24
+  const hurt = (e.injureHours ?? 0) * v.injuryHourCost
   let loyalty = 0
   for (const id of item.crewIds ?? []) {
     const m = state.crew.find((x) => x.id === id)
     if (m) loyalty += (e.loyalty ?? 0) * p.loyaltyValue * (m.loyalty < p.raiseBelow ? 3 : 1)
   }
   // Shutting a business costs what it would have earned while it's shut.
-  const closed = (e.closeHours ?? 0) * (item.racketId ? (v.racketYield[item.racketId] ?? 0) : 0)
+  const closed = (e.closeHours ?? 0) * racketYield
   return (
-    (e.dirty ?? 0) + (e.clean ?? 0) * 2 + (e.cigarettes ?? 0) * v.packValue + (e.rep ?? 0) * p.repValue + (e.influence ?? 0) * v.influenceValue - (e.heat ?? 0) * v.heatCost + loyalty - closed
+    (e.dirty ?? 0) +
+    (e.clean ?? 0) * 2 +
+    (e.cigarettes ?? 0) * v.packValue +
+    (e.rep ?? 0) * p.repValue +
+    (e.influence ?? 0) * v.influenceValue -
+    (e.heat ?? 0) * v.heatCost +
+    loyalty -
+    closed +
+    damage -
+    hurt +
+    contest
   )
 }
 

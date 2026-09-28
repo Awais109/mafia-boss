@@ -1,6 +1,6 @@
-import { dayMs, RANK_NAMES, type Config, type IncidentType, type InboxEffects, type InboxItem, type OpType, type PerkId, type PlayerState } from '../engine'
+import { contestOdds, dayMs, RANK_NAMES, type Config, type IncidentType, type InboxEffects, type InboxItem, type OpType, type PerkId, type PlayerState } from '../engine'
 import { colors, glyph } from './components/ui'
-import { fmt, fmtDuration } from './format'
+import { fmt, fmtDuration, pct } from './format'
 import type { TabId } from './screens/types'
 import type { Snapshot } from './store'
 
@@ -26,7 +26,7 @@ export function itemBody(item: InboxItem, s: PlayerState, c: Config): string {
   return `${names} made ${m ? RANK_NAMES[m.rank] : 'a new rank'}. Pick a perk: it stays for good.`
 }
 
-export function effectsText(e: InboxEffects, c?: Config): string {
+export function effectsText(e: InboxEffects, c?: Config, game?: Snapshot): string {
   if (e.perk) return c ? c.crew.experience.perks[e.perk as PerkId].text : e.perk
   const sign = (n: number) => (n > 0 ? '+' : '−')
   const parts = [
@@ -39,9 +39,21 @@ export function effectsText(e: InboxEffects, c?: Config): string {
     e.condition ? `${sign(e.condition)}${Math.abs(e.condition)}% condition` : '',
     e.disposition ? `Tolya ${sign(e.disposition)}${Math.abs(e.disposition)}` : '',
     e.cigarettes ? `${sign(e.cigarettes)}${fmt(Math.abs(e.cigarettes))} packs` : '',
+    e.closeHours ? `shut for ${fmt(e.closeHours)}h` : '',
+    e.injureHours ? `hurt for ${fmt(e.injureHours)}h` : '',
   ].filter(Boolean)
+  // A contest: who'd go, the odds, and what each branch does (ADR 0042).
+  if (e.contest) {
+    const k = e.contest
+    const odds = game ? ` (${pct(contestOdds(game.state, game.config, k))})` : ''
+    const win = effectsText(k.win, c) || 'nothing more'
+    const lose = effectsText(k.lose, c) || 'nothing more'
+    parts.push(`best ${STAT_WORD[k.stat]} vs ${fmt(k.diff)}${odds}: win ${win}; lose ${lose}`)
+  }
   return parts.join(' · ')
 }
+
+const STAT_WORD = { muscle: 'Muscle', brains: 'Brains', nerve: 'Nerve' } as const
 
 export type HomeAlert = { key: string; text: string; color: string; tab?: TabId; cta?: string }
 

@@ -6,6 +6,7 @@ import type { Rand } from '../core/rng'
 import { dayIndex, hoursToMs } from '../core/time'
 import type { CrewMember, PlayerState, Racket } from '../model/state'
 import { effectiveStat } from './crew'
+import { raiseIncident } from './inbox'
 
 // Tolya: the neighbourhood's old boss. Ticks on a schedule; each tick he either
 // damages a racket, demands tribute, or does nothing. Unpaid demands are refused
@@ -141,6 +142,20 @@ export function tolyaTick(state: PlayerState, ctx: Ctx, t: number): void {
     emit(ctx, t, { type: 'TOLYA_TICK', result: 'tribute', amount, hostile })
   } else {
     emit(ctx, t, { type: 'TOLYA_TICK', result: 'nothing', hostile })
+  }
+
+  // From Act III his boys may come for a business as well (ADR 0042): likelier once he's lost Kiosk Row,
+  // likelier still when he's hostile. It's an incident: board up, pay, or send someone out.
+  const a = cfg.attack
+  if (state.act >= a.fromAct) {
+    const lostRow = state.districts.some((d) => c.districts.list[d.id].startsAs === 'tolya' && d.controller === 'player')
+    const chance = hostile ? a.chanceHostile : lostRow ? a.chanceNoTurf : a.chance
+    const targets = state.rackets.filter((r) => c.rackets.types[r.type].kind !== 'premises' && r.closedUntil === undefined)
+    const pending = state.inbox.filter((i) => i.kind === 'incident').length
+    if (targets.length && pending < c.inbox.maxPending && rand.chance(chance)) {
+      state.stats.attacks++
+      raiseIncident(state, ctx, t, 'attack', rand.next, { racketId: rand.pick(targets).id })
+    }
   }
 
   tol.tickCount++

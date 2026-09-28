@@ -5,6 +5,7 @@ import type { CrewMember, PlayerState } from '../model/state'
 import { changeLoyalty, crewSlots, regeneratePool, unassignEnforcer } from '../systems/crew'
 import { checkActs } from '../systems/acts'
 import { canPressure, getDistrict, racketBlocked, takeDistrict } from '../systems/districts'
+import { lend, repayLoan, takeLoan } from '../systems/credit'
 import { frontBlocked } from '../systems/fronts'
 import { arrest, raid } from '../systems/heat'
 import { canAffordEffects, incidentNeedHolds, raiseIncident, resolveInboxItem } from '../systems/inbox'
@@ -477,6 +478,15 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       emit(ctx, t, { type: 'SURPLUS_SOLD', packs: a.packs, dirty })
       return null
     }
+
+    case 'TAKE_LOAN':
+      return takeLoan(state, ctx, t, a.amount)
+
+    case 'REPAY_LOAN':
+      return repayLoan(state, ctx, t, a.amount)
+
+    case 'LEND':
+      return lend(state, ctx, t, a.amount)
 
     case 'TUTORIAL_ADVANCE':
       return null

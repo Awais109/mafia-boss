@@ -2,7 +2,7 @@ import { RANK_NAMES, type Config, type GameEvent, type PlayerState } from '../en
 import { ACT_NAME, ACT_OPENS } from './acts'
 import { colors, glyph } from './components/ui'
 import { GOAL_TEXT } from './goals'
-import { fmt } from './format'
+import { fmt, fmtDuration } from './format'
 
 export type EventLine = { text: string; color?: string; quiet?: boolean }
 
@@ -181,6 +181,32 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
       return { text: `ACT ${ACT_NAME[e.act]} — ${ACT_OPENS[e.act]}`, color: colors.rep }
     case 'ACT_CLEARED':
       return { text: `ACT ${ACT_NAME[e.act]} COMPLETE — the built game ends here. Keep playing if you like.`, color: colors.rep }
+    case 'CONTEST_RESOLVED':
+      return {
+        text: `${e.name ?? 'Nobody'} ${e.won ? 'won' : 'lost'} (${STAT_NAME[e.stat]} against ${fmt(e.diff)})`,
+        color: e.won ? colors.good : colors.warn,
+      }
+    case 'CREW_INJURED':
+      return { text: `${e.name} is hurt: out for ${fmtDuration(e.until - e.t, c)}`, color: colors.warn }
+    case 'CREW_RECOVERED':
+      return { text: `${e.name} is back on their feet`, quiet: true }
+    case 'LOAN_TAKEN':
+      return { text: `Borrowed ${cl}${fmt(e.amount)}`, color: colors.clean }
+    case 'LOAN_PAYMENT':
+      return { text: `Paid ${cl}${fmt(e.paid)} on the loan (${cl}${fmt(e.owed)} still owed)`, quiet: true }
+    case 'LOAN_MISSED':
+      return {
+        text: `Missed a loan payment of ${cl}${fmt(e.due)}: the collectors are coming${e.seized ? `, and the lender took ${d}${fmt(e.seized)} from the vault` : ''}`,
+        color: colors.heat,
+      }
+    case 'LOAN_REPAID':
+      return { text: 'The loan is paid off', color: colors.good }
+    case 'LENT':
+      return { text: `Lent out ${d}${fmt(e.amount)} through the loan desk`, quiet: true }
+    case 'LENDING_REPAID':
+      return { text: `The loan desk got ${d}${fmt(e.returned)} back on ${d}${fmt(e.amount)}`, color: colors.dirty }
+    case 'LENDING_DEFAULTED':
+      return { text: `A borrower skipped town with ${d}${fmt(e.amount)}`, color: colors.heat }
     case 'NOTE':
       return { text: e.text, color: colors.muted }
     case 'TUTORIAL_STEP':

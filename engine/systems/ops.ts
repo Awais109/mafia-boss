@@ -9,6 +9,7 @@ import { changeLoyalty, effectiveStat } from './crew'
 import { addPressure } from './districts'
 import { grantXp, hasPerk, jobXp } from './experience'
 import { fileReport } from './inbox'
+import { maybeInjureTeam } from './injuries'
 import { gainRep } from './reputation'
 import { zhannaHoldsPort } from './rivals'
 import { addStock } from './supply'
@@ -173,6 +174,8 @@ export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: numbe
         : c.ops.failLoyalty
   for (const m of team) changeLoyalty(m, loyalty)
   freeCrew(team, op)
+  // A failed job that leans on Muscle can put someone in the Clinic (ADR 0042), on the job's own stream.
+  if (outcome === 'fail') maybeInjureTeam(state, ctx, t, cfg, team, ctx.rng.derive('injury', op.id))
   state.stats.opOutcomes[outcome]++
 
   const rep = c.reputation.perOpSuccess * share

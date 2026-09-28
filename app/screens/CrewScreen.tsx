@@ -57,6 +57,8 @@ export function CrewScreen({ game }: ScreenProps) {
       }
       case 'jailed':
         return { text: `jailed · out in ${fmtDuration((m.jailedUntil ?? now) - now, c)}`, color: colors.heat }
+      case 'injured':
+        return { text: `hurt · back in ${fmtDuration((m.injuredUntil ?? now) - now, c)}`, color: colors.warn }
     }
   }
 
