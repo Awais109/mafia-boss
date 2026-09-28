@@ -5,6 +5,7 @@ import type { CrewMember, PlayerState } from '../model/state'
 import { changeLoyalty, crewSlots, regeneratePool, unassignEnforcer } from '../systems/crew'
 import { checkActs } from '../systems/acts'
 import { canPressure, getDistrict, racketBlocked, takeDistrict } from '../systems/districts'
+import { buyPassage } from '../systems/convoys'
 import { lend, repayLoan, takeLoan } from '../systems/credit'
 import { frontBlocked } from '../systems/fronts'
 import { arrest, raid } from '../systems/heat'
@@ -444,19 +445,28 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
     case 'BUY_SHIPMENT': {
       const z = state.rival.zhanna
       const zc = c.rivals.zhanna
+      const premium = a.product === 'premium'
       if (!zhannaDeals(state, c)) return 'Zhanna deals from Act II'
+      if (premium && state.act < zc.premium.fromAct) return 'She sells premium from Act IV'
       if (z.nextShipmentAt > t) return 'Her next lot isn’t in yet'
-      const price = F.shipmentPrice(c, z.disposition)
+      // Her premium lots are dearer and share the cooldown (ADR 0043).
+      const price = F.shipmentPrice(c, z.disposition) * (premium ? zc.premium.priceMult : 1)
       if (state.dirty < price - EPS) return 'Not enough Dirty'
       state.dirty -= price
       state.stats.shipmentsPaid += price
-      const packs = addStock(state, derive(state, c).supply.cap, zc.shipment.cigarettes)
+      const d = derive(state, c)
+      const packs = premium
+        ? addStock(state, d.premium.cap, zc.premium.packs, 'premium')
+        : addStock(state, d.supply.cap, zc.shipment.cigarettes)
       z.shipmentsBought++
       z.nextShipmentAt = t + hoursToMs(c, zc.shipment.cooldownHours)
       changeZhanna(state, zc.dispositionPerShipment)
-      emit(ctx, t, { type: 'SHIPMENT_BOUGHT', packs, cost: price })
+      emit(ctx, t, { type: 'SHIPMENT_BOUGHT', packs, cost: price, ...(premium ? { product: 'premium' as const } : {}) })
       return null
     }
+
+    case 'BUY_PASSAGE':
+      return buyPassage(state, ctx, t)
 
     case 'SELL_SURPLUS': {
       const z = state.rival.zhanna
@@ -551,8 +561,9 @@ function handleDebug(state: PlayerState, ctx: Ctx, a: Action, t: number): string
       state.clean += a.clean ?? 0
       state.influence += a.influence ?? 0
       if (a.cigarettes) state.inventory.cigarettes = Math.max(0, state.inventory.cigarettes + a.cigarettes)
+      if (a.premium) state.inventory.premium = Math.max(0, state.inventory.premium + a.premium)
       if (a.gold) grantGold(state, ctx, t, a.gold, 'debug')
-      note(JSON.stringify({ dirty: a.dirty, clean: a.clean, influence: a.influence, cigarettes: a.cigarettes, gold: a.gold }))
+      note(JSON.stringify({ dirty: a.dirty, clean: a.clean, influence: a.influence, cigarettes: a.cigarettes, premium: a.premium, gold: a.gold }))
       return null
     case 'DEBUG_SET_HEAT':
       state.heat = Math.max(0, Math.min(100, a.heat))

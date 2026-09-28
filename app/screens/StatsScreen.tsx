@@ -72,6 +72,15 @@ export function StatsScreen({ game }: ScreenProps) {
           <Row label="Raids" hint={t.firstRaidAt !== undefined && t.firstRaidAt !== null ? `first ${fmtClock(t.firstRaidAt, s.createdAt, c)}` : undefined} value={fmt(t.raids)} color={t.raids > 0 ? colors.heat : undefined} />
           <Row label="Arrests" value={fmt(t.arrests)} color={t.arrests > 0 ? colors.heat : undefined} />
           <Row label="Decisions" hint={`${t.inbox.resolved} answered · ${t.inbox.auto} auto`} value={fmt(t.inbox.filed)} />
+          {t.convoys.run > 0 && (
+            <Row
+              label="Convoys"
+              hint={`${t.convoys.landed} landed · ${t.convoys.hijacked} taken on the road · ${t.convoys.seized} seized`}
+              value={fmt(t.convoys.run)}
+              color={t.convoys.hijacked + t.convoys.seized > 0 ? colors.warn : undefined}
+            />
+          )}
+          {t.passagesPaid > 0 && <Row label="Paid for passage" value={`${glyph.dirty}${fmt(t.passagesPaid)}`} />}
         </Card>
       </Section>
 

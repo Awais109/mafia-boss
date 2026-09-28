@@ -14,24 +14,26 @@ export type RacketType =
   | 'kiosk' | 'marketStall' | 'beerTent' | 'videoSalon' | 'taxiRank' | 'slotHall' | 'tobaccoFactory' | 'warehouse'
   | 'autoShop' | 'cafe' | 'bathhouse' | 'petrol' | 'cargoBay' | 'stashHouse' | 'unionOffice'
   | 'cardClub' | 'nightclub' | 'printShop' | 'hotel' | 'clinic' | 'loanDesk'
+  | 'truckStop' | 'motel' | 'foreignShop' | 'freightYard' | 'fuelDepot' | 'bondedWarehouse' | 'convoyDepot'
 export const RACKET_TYPES: readonly RacketType[] = [
   'kiosk', 'marketStall', 'beerTent', 'videoSalon', 'taxiRank', 'slotHall', 'tobaccoFactory', 'warehouse',
   'autoShop', 'cafe', 'bathhouse', 'petrol', 'cargoBay', 'stashHouse', 'unionOffice',
   'cardClub', 'nightclub', 'printShop', 'hotel', 'clinic', 'loanDesk',
+  'truckStop', 'motel', 'foreignShop', 'freightYard', 'fuelDepot', 'bondedWarehouse', 'convoyDepot',
 ]
 
-export type FrontType = 'currencyKiosk' | 'restaurant' | 'cooperativeBank'
-export const FRONT_TYPES: readonly FrontType[] = ['currencyKiosk', 'restaurant', 'cooperativeBank']
+export type FrontType = 'currencyKiosk' | 'restaurant' | 'cooperativeBank' | 'importExport'
+export const FRONT_TYPES: readonly FrontType[] = ['currencyKiosk', 'restaurant', 'cooperativeBank', 'importExport']
 
-export type OfficialId = 'wardCop' | 'precinctCaptain' | 'cityHall'
-export const OFFICIAL_IDS: readonly OfficialId[] = ['wardCop', 'precinctCaptain', 'cityHall']
+export type OfficialId = 'wardCop' | 'precinctCaptain' | 'cityHall' | 'customsChief'
+export const OFFICIAL_IDS: readonly OfficialId[] = ['wardCop', 'precinctCaptain', 'cityHall', 'customsChief']
 
 export type OpType =
   | 'shakeDown' | 'collectDebt' | 'leanOnWard' | 'pressure' | 'smuggleCigarettes' | 'moveShipment' | 'dinner'
-  | 'trainMuscle' | 'trainBrains' | 'trainNerve' | 'bigScore'
+  | 'trainMuscle' | 'trainBrains' | 'trainNerve' | 'bigScore' | 'runConvoy' | 'greasePost'
 export const OP_TYPES: readonly OpType[] = [
   'shakeDown', 'collectDebt', 'leanOnWard', 'pressure', 'smuggleCigarettes', 'moveShipment', 'dinner',
-  'trainMuscle', 'trainBrains', 'trainNerve', 'bigScore',
+  'trainMuscle', 'trainBrains', 'trainNerve', 'bigScore', 'runConvoy', 'greasePost',
 ]
 
 export type FrontMode = 'push' | 'normal' | 'layLow'
@@ -53,8 +55,8 @@ export type PerkConfig = {
   noDrift?: boolean // steady: no daily loyalty drift
 }
 
-export type DistrictId = 'zarechye' | 'kioskRow' | 'stationSquare' | 'portQuarter' | 'sovietsky' | 'centre'
-export const DISTRICT_IDS: readonly DistrictId[] = ['zarechye', 'kioskRow', 'stationSquare', 'portQuarter', 'sovietsky', 'centre']
+export type DistrictId = 'zarechye' | 'kioskRow' | 'stationSquare' | 'portQuarter' | 'sovietsky' | 'centre' | 'zastava'
+export const DISTRICT_IDS: readonly DistrictId[] = ['zarechye', 'kioskRow', 'stationSquare', 'portQuarter', 'sovietsky', 'centre', 'zastava']
 
 export type Stat = 'muscle' | 'brains' | 'nerve'
 export const STATS: readonly Stat[] = ['muscle', 'brains', 'nerve']
@@ -62,7 +64,7 @@ export const STATS: readonly Stat[] = ['muscle', 'brains', 'nerve']
 export type TraitId = 'exArmy' | 'gambler' | 'alcoholic'
 export const TRAIT_IDS: readonly TraitId[] = ['exArmy', 'gambler', 'alcoholic']
 
-export type Controller = 'player' | 'tolya' | 'zhanna' | 'none'
+export type Controller = 'player' | 'tolya' | 'zhanna' | 'colonel' | 'none'
 export type OpBand = 'quick' | 'standard' | 'long'
 export const OP_BANDS: readonly OpBand[] = ['quick', 'standard', 'long']
 export type OpOutcome = 'full' | 'partial' | 'fail'
@@ -158,6 +160,14 @@ export type RacketTypeConfig = {
   injuryMult?: number // clinics: injuries last × this (the best one counts)
   loyaltyPerDay?: number // clinics: every crew member gains this at each day start
   lendHoursPerTier?: number // loan desks: lend up to this many hours of Dirty yield per tier
+  // Act IV's second product (ADR 0043): premium imported cigarettes.
+  premiumSellsPerHr?: number // premium joints: premium packs sold per hour at tier 1, × tierYieldMult per tier
+  premiumShare?: number // premium joints: the share of yield that needs premium packs
+  premiumCapPerTier?: number // bonded warehouses: premium stock cap added per tier
+  premiumMakesPerHr?: number // the Combine (Act V): premium packs per hour at tier 1, × tierMakeMult
+  seizureMult?: number // bonded warehouses: customs seizure × this while one stands in the crossing's district
+  convoyBonusPerTier?: number // convoy depots: a convoy lands × (1 + this × tier) packs
+  hijackMult?: number // convoy depots: the Colonel's hijack chance × this
 }
 
 // Businesses that work better side by side in one district (plan (m)). Active in a district that has
@@ -180,13 +190,14 @@ export type FrontTypeConfig = {
   description: string // one plain-language sentence: what it does, shown on unlock and in How It Works
   act: Act // opens in this act (and at unlockRep)
   minProsperity?: number // city prosperity needed to open it (ADR 0041)
+  coverPerPremiumPack?: number // launders at most this × premium packs sold per hour: the trade has to plausibly cover it (ADR 0043)
   rate: number // clean out per dirty in
   throughput: number // dirty/hr
   unlockRep: number
   cost: number // clean
 }
 
-export type OfficialConfig = { name: string; description: string; control: number; cost: number; act: Act }
+export type OfficialConfig = { name: string; description: string; control: number; cost: number; act: Act; seizureMult?: number }
 
 export type OpConfig = {
   name: string
@@ -206,6 +217,7 @@ export type OpConfig = {
   xp?: number // training XP to `training`
   districtPressure?: boolean
   act?: Act
+  premium?: number // premium packs a convoy lands on success (× the reward share); hijack and customs apply (ADR 0043)
 }
 
 export type DistrictConfig = {
@@ -280,6 +292,18 @@ export type Config = {
     baseCap: number // cigarettes the city holds without a warehouse
     startingStock: number
     sellFromAct: Act // joints' cigarette share applies from this act
+  }
+  // Act IV (ADR 0043): a second stock, premium imported cigarettes, brought in by convoy and sold by premium joints.
+  premium: {
+    fromAct: Act
+    baseCap: number
+    startingStock: number
+  }
+  convoys: {
+    customsBase: number // chance customs takes a load, before heat
+    customsPerHeat: number // + this × heat
+    hijackChance: number // while the Colonel holds the crossing and you haven't bought passage
+    hijackHostileMult: number // × this while he's hostile
   }
   costs: {
     paybackHoursByAct: Record<Act, number>
@@ -423,6 +447,17 @@ export type Config = {
       dispositionOnFlip: number
       hostileBelow: number
       seizureDiff: number // added to smuggling difficulty while she holds the Port
+      // From Act IV she also sells premium lots, dearer, on the same cooldown (ADR 0043).
+      premium: { fromAct: Act; packs: number; priceMult: number }
+    }
+    // The Colonel runs the road to the border (ADR 0043). Pay for passage or lose convoys.
+    colonel: {
+      passage: { hoursOfYield: number; hours: number } // Dirty = hoursOfYield × yield per hour, for this many hours
+      dispositionPerPassage: number
+      dispositionPerPressure: number
+      dispositionOnBuyout: number
+      dispositionOnFlip: number
+      hostileBelow: number
     }
   }
   reputation: {
@@ -615,12 +650,20 @@ export function validateConfig(c: Config): string[] {
           if (rt.injuryMult !== undefined) rate(e, `${p}.injuryMult`, rt.injuryMult)
           if (rt.loyaltyPerDay !== undefined) nonNeg(e, `${p}.loyaltyPerDay`, rt.loyaltyPerDay)
           if (rt.lendHoursPerTier !== undefined) nonNeg(e, `${p}.lendHoursPerTier`, rt.lendHoursPerTier)
+          if (rt.premiumCapPerTier !== undefined) nonNeg(e, `${p}.premiumCapPerTier`, rt.premiumCapPerTier)
+          if (rt.premiumMakesPerHr !== undefined) nonNeg(e, `${p}.premiumMakesPerHr`, rt.premiumMakesPerHr)
+          if (rt.seizureMult !== undefined) unit(e, `${p}.seizureMult`, rt.seizureMult)
+          if (rt.convoyBonusPerTier !== undefined) nonNeg(e, `${p}.convoyBonusPerTier`, rt.convoyBonusPerTier)
+          if (rt.hijackMult !== undefined) unit(e, `${p}.hijackMult`, rt.hijackMult)
         } else {
           positive(e, `${p}.baseYield`, rt.baseYield)
         }
         if (rt.kind === 'joint') {
           nonNeg(e, `${p}.sellsPerHr`, rt.sellsPerHr)
           unit(e, `${p}.cigaretteShare`, rt.cigaretteShare)
+          if (rt.premiumSellsPerHr !== undefined) nonNeg(e, `${p}.premiumSellsPerHr`, rt.premiumSellsPerHr)
+          if (rt.premiumShare !== undefined) unit(e, `${p}.premiumShare`, rt.premiumShare)
+          num(e, `${p}.cigaretteShare + premiumShare`, (rt.cigaretteShare ?? 0) + (rt.premiumShare ?? 0), (n) => n <= 1, '<= 1')
         }
       }
       for (const syn of r.synergies) {
@@ -633,6 +676,13 @@ export function validateConfig(c: Config): string[] {
         for (const [k, v] of Object.entries(syn.effect.upkeepMultOf ?? {})) nonNeg(e, `${p}.effect.upkeepMultOf.${k}`, v)
       }
       positive(e, 'supply.baseCap', c.supply.baseCap)
+      if (!ACTS.includes(c.premium.fromAct)) e.push('premium.fromAct: expected an act')
+      positive(e, 'premium.baseCap', c.premium.baseCap)
+      nonNeg(e, 'premium.startingStock', c.premium.startingStock)
+      unit(e, 'convoys.customsBase', c.convoys.customsBase)
+      nonNeg(e, 'convoys.customsPerHeat', c.convoys.customsPerHeat)
+      unit(e, 'convoys.hijackChance', c.convoys.hijackChance)
+      num(e, 'convoys.hijackHostileMult', c.convoys.hijackHostileMult, (n) => n >= 1, '>= 1')
       nonNeg(e, 'supply.startingStock', c.supply.startingStock)
       if (!ACTS.includes(c.supply.sellFromAct)) e.push('supply.sellFromAct: expected an act')
     },
@@ -670,6 +720,7 @@ export function validateConfig(c: Config): string[] {
         positive(e, `fronts.types.${t}.throughput`, ft.throughput)
         if (!ACTS.includes(ft.act)) e.push(`fronts.types.${t}.act: expected an act`)
         if (ft.minProsperity !== undefined) num(e, `fronts.types.${t}.minProsperity`, ft.minProsperity, (n) => n >= 0 && n <= 100, 'in [0, 100]')
+        if (ft.coverPerPremiumPack !== undefined) positive(e, `fronts.types.${t}.coverPerPremiumPack`, ft.coverPerPremiumPack)
         nonNeg(e, `fronts.types.${t}.unlockRep`, ft.unlockRep)
         nonNeg(e, `fronts.types.${t}.cost`, ft.cost)
       }
@@ -699,6 +750,7 @@ export function validateConfig(c: Config): string[] {
         nonNeg(e, `officials.list.${id}.control`, c.officials.list[id].control)
         nonNeg(e, `officials.list.${id}.cost`, c.officials.list[id].cost)
         if (!ACTS.includes(c.officials.list[id].act)) e.push(`officials.list.${id}.act: expected an act`)
+        if (c.officials.list[id].seizureMult !== undefined) unit(e, `officials.list.${id}.seizureMult`, c.officials.list[id].seizureMult)
       }
     },
     (e) => {
@@ -776,6 +828,7 @@ export function validateConfig(c: Config): string[] {
         if (op.costClean !== undefined) nonNeg(e, `ops.list.${t}.costClean`, op.costClean)
         if (op.cigarettes !== undefined) nonNeg(e, `ops.list.${t}.cigarettes`, op.cigarettes)
         if (op.heatDiffPerPoint !== undefined) nonNeg(e, `ops.list.${t}.heatDiffPerPoint`, op.heatDiffPerPoint)
+        if (op.premium !== undefined) nonNeg(e, `ops.list.${t}.premium`, op.premium)
       }
       for (const b of o.reports.bands) if (!OP_BANDS.includes(b)) e.push(`ops.reports.bands: unknown band ${b}`)
       for (const outcome of OP_OUTCOMES) choices(e, `ops.reports.byOutcome.${outcome}`, o.reports.byOutcome[outcome])
@@ -850,6 +903,12 @@ export function validateConfig(c: Config): string[] {
       nonNeg(e, 'rivals.zhanna.surplus.pricePerPack', z.surplus.pricePerPack)
       int(e, 'rivals.zhanna.surplus.maxPerDay', z.surplus.maxPerDay, 0)
       nonNeg(e, 'rivals.zhanna.seizureDiff', z.seizureDiff)
+      if (!ACTS.includes(z.premium.fromAct)) e.push('rivals.zhanna.premium.fromAct: expected an act')
+      positive(e, 'rivals.zhanna.premium.packs', z.premium.packs)
+      positive(e, 'rivals.zhanna.premium.priceMult', z.premium.priceMult)
+      const col = c.rivals.colonel
+      nonNeg(e, 'rivals.colonel.passage.hoursOfYield', col.passage.hoursOfYield)
+      positive(e, 'rivals.colonel.passage.hours', col.passage.hours)
     },
     (e) => {
       const r = c.reputation

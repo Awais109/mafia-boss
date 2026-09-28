@@ -52,18 +52,22 @@ export type EventBody =
       name?: string // an offer's own name
       offerId?: string
       cigarettes?: number // packs a smuggling run put in stock
+      premium?: number // premium packs a convoy put in stock (ADR 0043)
+      hijacked?: true // the Colonel's men took the load
+      seized?: true // customs took the load
     }
   | { type: 'UPKEEP_PAID'; amount: number }
   | { type: 'UPKEEP_MISSED'; owed: number; paid: number }
-  | { type: 'STOCK_OUT' }
-  | { type: 'STOCK_CAPPED'; cap: number }
-  | { type: 'SHORTAGE_STARTED'; demand: number; made: number }
-  | { type: 'SHORTAGE_ENDED' }
+  | { type: 'STOCK_OUT'; product?: 'premium' } // no product: cigarettes
+  | { type: 'STOCK_CAPPED'; cap: number; product?: 'premium' }
+  | { type: 'SHORTAGE_STARTED'; demand: number; made: number; product?: 'premium' }
+  | { type: 'SHORTAGE_ENDED'; product?: 'premium' }
   | { type: 'GOLD_GRANTED'; amount: number; source: GoldSource }
   | { type: 'TIME_SKIPPED'; hours: number; bars: number }
   | { type: 'OP_RUSHED'; opId: string; opType: OpType; bars: number; name?: string }
   | { type: 'GOAL_DONE'; goalId: GoalId; gold: number }
-  | { type: 'SHIPMENT_BOUGHT'; packs: number; cost: number }
+  | { type: 'SHIPMENT_BOUGHT'; packs: number; cost: number; product?: 'premium' }
+  | { type: 'PASSAGE_BOUGHT'; cost: number; until: number }
   | { type: 'SURPLUS_SOLD'; packs: number; dirty: number }
   | { type: 'REPORT_FILED'; itemId: string; opId: string; opType: OpType; outcome: OpOutcome; expiresAt: number }
   | { type: 'INCIDENT_RAISED'; itemId: string; incidentType: IncidentType; crewId?: string; racketId?: string; expiresAt: number }

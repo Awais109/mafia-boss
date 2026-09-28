@@ -25,10 +25,10 @@ The cap is the session leash: once the vault is full, income stops until you col
 
 | Kind | Earns | Needs cigarettes | Goes on | Types |
 |---|---|---|---|---|
-| Joint | Dirty | for `cigaretteShare` of its yield | a spot its district allows | Kiosk, Market Stall, Beer Tent, Slot Hall; Café, Bathhouse; Nightclub, Card Club |
-| Racket | Dirty, with more heat per Dirty | no | a spot its district allows | Video Salon, Taxi Rank; Auto Shop, Petrol Station, Cargo Bay; Print Shop |
-| Premises | nothing; costs upkeep | no | a lot in any open district | Tobacco Factory, Warehouse; Stash House, Union Office; Hotel, Clinic, Loan Desk |
-| Front | Clean | no | one of each, city-wide ([fronts.md](fronts.md)) | Currency Kiosk, Restaurant |
+| Joint | Dirty | for `cigaretteShare` of its yield, and premium for `premiumShare` | a spot its district allows | Kiosk, Market Stall, Beer Tent, Slot Hall; Café, Bathhouse; Nightclub, Card Club; Truck Stop, Motel, Foreign Goods Shop |
+| Racket | Dirty, with more heat per Dirty | no | a spot its district allows | Video Salon, Taxi Rank; Auto Shop, Petrol Station, Cargo Bay; Print Shop; Freight Yard, Fuel Depot |
+| Premises | nothing; costs upkeep | no | a lot in any open district | Tobacco Factory, Warehouse; Stash House, Union Office; Hotel, Clinic, Loan Desk; Bonded Warehouse, Convoy Depot |
+| Front | Clean | no | one of each, city-wide ([fronts.md](fronts.md)) | Currency Kiosk, Restaurant; Cooperative Bank; Import–Export Company |
 
 Every business except fronts lives in `state.rackets` and uses `BUY_RACKET`, `UPGRADE_RACKET` and `REPAIR_RACKET`; `rackets.types[type].kind` says which kind it is. The rule for any new type: joints and rackets answer "does it make money"; premises answer "does it supply, improve or protect something". Every type also carries a `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)).
 
@@ -50,7 +50,8 @@ gross    = baseYield × tierYieldMult^(tier−1)
            × enforcer.yieldMult     (if an enforcer is assigned)
            × specialization.yieldMult    (greed or stealth, from tier 3)
            × synergy yieldMult      (see Synergies)
-           × (1 − cigaretteShare + cigaretteShare × served)    (joints; served is 1 unless stock is out)
+           × (1 − cigaretteShare − premiumShare
+              + cigaretteShare × served + premiumShare × premiumServed)    (joints; each served is 1 unless that stock is out)
 tribute  = gross × district.tribute (while Tolya or Zhanna controls the district)
 yield    = gross − tribute
 exposure = baseHeat × tierHeatMult^(tier−1) × enforcer.heatMult (if enforced) × specialization.exposureMult
@@ -66,6 +67,9 @@ exposure = baseHeat × tierHeatMult^(tier−1) × enforcer.heatMult (if enforced
 - **Act II premises** ([ADR 0037](../decisions/0037-act-ii-premises.md)):
   - A **Stash House** lengthens the vault leash and hides part of a raid. Your best one adds `leashHoursPerTier × tier × condition/100` hours to the vault cap (`Derived.stashHours`; several don't stack). Each also shields `shieldPerTier × tier × condition/100 × (its district's joint and racket yield ÷ total yield)` of a raid, and the shares add up to at most `rackets.premises.maxShield` (`Derived.raidShield`, [heat.md](heat.md)). So a stash belongs where the money is.
   - A **Union Office**, one per city, makes `influencePerHrPerTier × tier × condition/100` Influence an hour, times any synergy `influenceMult`. It's added to `Derived.influencePerHr` beside the officials' and sits outside the daily cap on Influence from jobs.
+- **Act IV premises** ([ADR 0043](../decisions/0043-act-iv-zastava.md), [convoys.md](convoys.md)):
+  - A **Bonded Warehouse** adds `premiumCapPerTier × tier × condition/100` to the premium stock cap, and one in Zastava scales customs seizures by `seizureMult`.
+  - A **Convoy Depot**, one per city, adds `convoyBonusPerTier × tier × condition/100` to every convoy's load and scales the chance the Colonel's men take a convoy by `hijackMult`.
 
 **Upkeep.** `upkeep = upkeepPerHr × upkeepTierMult^(tier−1) × synergy upkeep multipliers`. `Derived.upkeepPerHr` accrues into `upkeepOwed` continuously. At every day start, right after wages, `settleUpkeep` pays it from Dirty, then the vault:
 - **Paid in full:** `UPKEEP_PAID` (quiet), `stats.upkeepPaid`.

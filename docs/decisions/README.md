@@ -55,6 +55,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0040](0040-six-acts.md) | Six acts, each opened by a gate; the last built act is cleared, not left | Accepted |
 | [0041](0041-act-iii-the-centre.md) | Act III, the Centre: prosperity, the Card Club, Print Shop, hotels, the Bank, City Hall, tier 6 | Accepted |
 | [0042](0042-act-iii-credit-and-consequences.md) | Act III's consequences: contests in the inbox, injuries and the Clinic, Tolya's attacks, loans and the loan desk | Accepted |
+| [0043](0043-act-iv-zastava.md) | Act IV, Zastava: premium cigarettes as a second stock, convoys past the Colonel and customs, passage, the importer that washes only what its trade explains | Accepted |
 
 ## Template
 

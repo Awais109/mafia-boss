@@ -30,8 +30,9 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
     inspected: c.heat.startHeat >= c.heat.inspectThreshold,
     raidPenaltyUntil: 0,
 
-    inventory: { cigarettes: c.supply.startingStock },
+    inventory: { cigarettes: c.supply.startingStock, premium: c.premium.startingStock },
     stockEmpty: false,
+    premiumEmpty: false,
 
     rackets: [],
     fronts: [],
@@ -57,6 +58,7 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
     rival: {
       tolya: { disposition: 0, nextTickAt: now + hoursToMs(c, c.rivals.tolya.tickHours), tickCount: 0, demand: null, haggledTick: null },
       zhanna: { disposition: 0, nextShipmentAt: now, shipmentsBought: 0, surplusToday: { day: dayIndex(c, now), packs: 0 } },
+      colonel: { disposition: 0, passageUntil: 0, passagesBought: 0 },
     },
     tutorial: { step: 0, done: false },
     goals: { done: [] },

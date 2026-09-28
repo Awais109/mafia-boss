@@ -10,7 +10,7 @@ export const ACT_OPENS: Record<Act, string> = {
   1: 'the streets: three districts, a factory, a front and a crew',
   2: 'the Restaurant front, more crew slots, the Port Quarter and Sovietsky Blocks',
   3: 'the Centre across the bridge: prosperity, the Card Club and Print Shop, hotels, the Cooperative Bank, City Hall and tier 6',
-  4: 'the road out to the border',
+  4: 'Zastava and the road to the border: premium cigarettes by convoy, the Colonel, the Import–Export Company and the Customs Chief',
   5: 'the Combine upriver',
   6: 'the hills above the city',
 }

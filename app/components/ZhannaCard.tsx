@@ -14,6 +14,8 @@ export function ZhannaCard({ game }: { game: Snapshot }) {
   const wait = z.nextShipmentAt - now
   const room = surplusRoomToday(s, c, now)
   const spare = Math.floor(Math.min(room, s.inventory.cigarettes))
+  const premium = s.act >= zc.premium.fromAct
+  const premiumPrice = price * zc.premium.priceMult
   const p = glyph.packs
   const d = glyph.dirty
   return (
@@ -23,20 +25,30 @@ export function ZhannaCard({ game }: { game: Snapshot }) {
       </T>
       <Row label="Mood" hint={`disposition ${fmt(z.disposition)}`} value={mood} color={hostile ? colors.heat : z.disposition < 0 ? colors.warn : colors.good} />
       <Row label="Her next lot" hint={wait > 0 ? `in ${fmtDuration(wait, c)}` : 'ready now'} value={`${p}${zc.shipment.cigarettes} for ${d}${fmt(price)}`} />
-      <Btn
-        small
-        kind="primary"
-        title={`Buy ${p}${zc.shipment.cigarettes} for ${d}${fmt(price)}`}
-        disabled={wait > 0 || s.dirty < price}
-        onPress={() => store.dispatch({ type: 'BUY_SHIPMENT' })}
-      />
+      <BtnRow>
+        <Btn
+          small
+          kind="primary"
+          title={`Buy ${p}${zc.shipment.cigarettes} for ${d}${fmt(price)}`}
+          disabled={wait > 0 || s.dirty < price}
+          onPress={() => store.dispatch({ type: 'BUY_SHIPMENT' })}
+        />
+        {premium && (
+          <Btn
+            small
+            title={`Buy ${glyph.premium}${zc.premium.packs} for ${d}${fmt(premiumPrice)}`}
+            disabled={wait > 0 || s.dirty < premiumPrice}
+            onPress={() => store.dispatch({ type: 'BUY_SHIPMENT', product: 'premium' })}
+          />
+        )}
+      </BtnRow>
       <Row label="Surplus" hint={`she'll take ${room} more today`} value={`${d}${fmt(zc.surplus.pricePerPack)} a pack`} />
       <BtnRow>
         <Btn small title={`Sell ${p}10`} disabled={spare < 10} onPress={() => store.dispatch({ type: 'SELL_SURPLUS', packs: 10 })} />
         <Btn small title={`Sell ${p}${spare}`} disabled={spare < 1} onPress={() => store.dispatch({ type: 'SELL_SURPLUS', packs: spare })} />
       </BtnRow>
       <T small color={colors.faint}>
-        {`Buying from her warms her; smuggling past her cools her. While she holds the Port, smuggling runs are ${zc.seizureDiff} harder. Below ${zc.hostileBelow} her lots cost ×${zc.shipment.hostileMarkup}.`}
+        {`${premium ? 'Her premium lots share the cooldown. ' : ''}Buying from her warms her; smuggling past her cools her. While she holds the Port, smuggling runs are ${zc.seizureDiff} harder. Below ${zc.hostileBelow} her lots cost ×${zc.shipment.hostileMarkup}.`}
       </T>
     </Card>
   )

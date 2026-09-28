@@ -39,6 +39,13 @@ function premisesEffect(c: Config, type: RacketType, tier: number): string {
     rt.shieldPerTier ? `hides ${pct(rt.shieldPerTier * tier)} of this district's share of a raid` : '',
     rt.influencePerHrPerTier ? `${glyph.influence}${fmt(rt.influencePerHrPerTier * tier * 24)} a day` : '',
     rt.prosperityPerTier ? `district prosperity +${fmt(rt.prosperityPerTier * tier)}` : '',
+    rt.injuryMult !== undefined ? `injuries heal in ×${rt.injuryMult} the time` : '',
+    rt.loyaltyPerDay ? `+${fmt(rt.loyaltyPerDay)} loyalty a day for everyone` : '',
+    rt.lendHoursPerTier ? `lends up to ${fmt(rt.lendHoursPerTier * tier)}h of Dirty yield` : '',
+    rt.premiumCapPerTier ? `holds +${glyph.premium}${fmt(rt.premiumCapPerTier * tier)}` : '',
+    rt.seizureMult !== undefined ? `customs takes ×${rt.seizureMult} as often, in Zastava` : '',
+    rt.convoyBonusPerTier ? `convoys land +${pct(rt.convoyBonusPerTier * tier)}` : '',
+    rt.hijackMult !== undefined ? `road losses ×${rt.hijackMult}` : '',
   ]
     .filter(Boolean)
     .join(', ')
@@ -82,6 +89,12 @@ export function RacketsScreen({ game }: ScreenProps) {
       <Section title="Cigarettes">
         <SupplyCard game={game} />
       </Section>
+
+      {s.act >= c.premium.fromAct && (
+        <Section title="Premium">
+          <SupplyCard game={game} product="premium" />
+        </Section>
+      )}
 
       {DISTRICT_IDS.map((id) => (
         <DistrictSection key={id} game={game} id={id} label={controllerLabel(id)} />
@@ -250,7 +263,7 @@ function BusinessCard({ game, r, rd }: { game: Snapshot; r: Racket; rd: RacketDe
         value={<Money kind="dirty" value={fmtRate(rd.yield)} />}
       />
       {rd.closed && r.closedUntil !== undefined && <T small color={colors.heat}>{`Shut after an investigation. Opens again in ${fmtDuration(r.closedUntil - game.now, c)}.`}</T>}
-      {rd.kind === 'joint' && (
+      {rd.kind === 'joint' && (rt.cigaretteShare ?? 0) > 0 && (
         <Row
           label="Cigarettes"
           hint={`${pct(rt.cigaretteShare ?? 0)} of its trade${rd.synergyMult > 1 ? ` · ×${rd.synergyMult.toFixed(2)} beside a factory` : ''}`}
@@ -259,6 +272,15 @@ function BusinessCard({ game, r, rd }: { game: Snapshot; r: Racket; rd: RacketDe
         />
       )}
       {rd.served < 1 && <T small color={colors.heat}>{`Short of cigarettes: only ${pct(rd.served)} of its cigarette trade is supplied.`}</T>}
+      {rd.kind === 'joint' && (rt.premiumShare ?? 0) > 0 && s.act >= c.premium.fromAct && (
+        <Row
+          label="Premium"
+          hint={`${pct(rt.premiumShare!)} of its trade`}
+          value={`${glyph.premium}${fmtRate(rd.premiumPacksPerHr)}`}
+          color={rd.premiumServed < 1 ? colors.heat : colors.premium}
+        />
+      )}
+      {rd.premiumServed < 1 && <T small color={colors.heat}>{`Short of premium: only ${pct(rd.premiumServed)} of its premium trade is supplied.`}</T>}
       <Row label="Exposure" value={`▲ ${fmt(rd.exposure)}`} />
       <Condition r={r} rd={rd} />
       <BtnRow>

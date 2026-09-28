@@ -80,6 +80,13 @@ const ABBREV: Record<RacketType, string> = {
   hotel: 'HO',
   clinic: 'CL',
   loanDesk: 'LD',
+  truckStop: 'TS',
+  motel: 'MO',
+  foreignShop: 'FS',
+  freightYard: 'FY',
+  fuelDepot: 'FD',
+  bondedWarehouse: 'BW',
+  convoyDepot: 'CD',
 }
 
 const mean = (xs: number[]): number => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : NaN)

@@ -19,6 +19,8 @@ Crew go out on timed jobs for Dirty, Influence and Rep, at the cost of a heat sp
 | `moveShipment` | 2 | Nerve, Brains | Dirty | standard; Act II |
 | `dinner` | 2 | Brains, Nerve | Influence | long |
 | `bigScore` | 3 | Brains, Muscle, Nerve | Dirty | long; Act III ([ADR 0041](../decisions/0041-act-iii-the-centre.md)) |
+| `runConvoy` | 3 | Nerve, Muscle, Brains | Premium packs | long; Act IV; costs Clean up front; the road and customs can take the load ([convoys.md](convoys.md)) |
+| `greasePost` | 2 | Brains, Nerve | Influence | standard; Act IV ([ADR 0043](../decisions/0043-act-iv-zastava.md)) |
 | `trainMuscle`, `trainBrains`, `trainNerve` | 1 | the stat trained | XP only | long; training, costs Dirty (below) |
 
 ## Starting a job
@@ -29,7 +31,7 @@ Crew go out on timed jobs for Dirty, Influence and Rep, at the cost of a heat sp
 - exactly `crew` distinct crew members are chosen, and all are idle;
 - for Pressure, a `districtId` that's open and not already yours;
 - for a job with `costDirty`, at least `costDirty × act` Dirty, which is charged now (`stats.trainingPaid` for training);
-- for a job with `costClean`, at least that much Clean, charged now. It earns no Rep and isn't counted as Clean spent (`stats.smugglingPaid`).
+- for a job with `costClean`, at least that much Clean, charged now. It earns no Rep and isn't counted as Clean spent (`stats.smugglingPaid`, which counts convoys too).
 
 The chosen crew become `on_op`, `stats.opsByCrew` and `stats.opsByType` count the dispatch, and the job completes `opMinutesFor(team)` of game time later: `minutes`, × the Fixer perk's `jobMinutesMult` when a Fixer is on the team (`OP_STARTED`). A job taken from the board stores `offerId`, its `name`, and a snapshot of its `cfg`, and the offer leaves the board. A job with `heatDiffPerPoint` starts `round(heatDiffPerPoint × heat)` harder: `opConfigAt` works out those terms when it starts and stores them on the job the same way, so the odds shown are the odds rolled.
 

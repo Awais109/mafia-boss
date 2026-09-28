@@ -1,6 +1,7 @@
 import { View } from 'react-native'
 import { DISTRICT_IDS, prosperityOn, prosperityTarget, tolyaHostile, tolyaIntervalHours, type RacketType } from '../../engine'
 import { ACT_NAME } from '../acts'
+import { ColonelCard } from '../components/ColonelCard'
 import { TributeCard } from '../components/TributeCard'
 import { ZhannaCard } from '../components/ZhannaCard'
 import { Btn, BtnRow, Card, colors, Row, Screen, Section, T, Tag } from '../components/ui'
@@ -8,7 +9,7 @@ import { fmt, fmtDuration, fmtRate, pct } from '../format'
 import { store } from '../store'
 import type { ScreenProps } from './types'
 
-const CONTROLLER = { player: 'yours', tolya: 'Tolya’s', zhanna: 'Zhanna’s', none: 'nobody’s' } as const
+const CONTROLLER = { player: 'yours', tolya: 'Tolya’s', zhanna: 'Zhanna’s', colonel: 'the Colonel’s', none: 'nobody’s' } as const
 
 export function TurfScreen({ game, go }: ScreenProps) {
   const { state: s, derived: d, config: c, now } = game
@@ -93,6 +94,12 @@ export function TurfScreen({ game, go }: ScreenProps) {
       {s.act >= 2 && (
         <Section title="Zhanna">
           <ZhannaCard game={game} />
+        </Section>
+      )}
+
+      {s.act >= c.premium.fromAct && (
+        <Section title="The Colonel">
+          <ColonelCard game={game} />
         </Section>
       )}
     </Screen>

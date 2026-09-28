@@ -272,9 +272,42 @@ New config, starting values from the six-act design; the sim now runs 22 days so
             missed wages 0, partial 0.50, front util 0.65, Dirty idle 0.86, wage share 0.02. goldRush: Act III 6.41 d, heat 33.0.
 ```
 
+## 2026-09-29 — M10: Act IV, Zastava (ADR 0043)
+
+The sim now runs 34 days so Act IV can clear.
+
+```
+2026-09-29  New config (ADR 0043): premium {fromAct 4, baseCap 30, startingStock 0}; convoys {customs 8% + 0.4% per heat, road 40%,
+            ×1.5 while the Colonel is hostile}; Truck Stop {120/h, heat 12, ★9,200, sells 5, share .3}; Motel {150/h, heat 14,
+            ★9,600, premium 1.5/h, share .5}; Foreign Goods Shop {180/h, heat 15, ★11,000, premium 2/h, share .6}; Freight Yard
+            {280/h, heat 36, ★13,000}; Fuel Depot {360/h, heat 45, ★16,000}; Bonded Warehouse {●5,000, upkeep 20/h ×1.2, heat 3,
+            ★9,400, +60 premium a tier, customs ×0.5 in Zastava}; Convoy Depot {●6,000, upkeep 25/h ×1.2, heat 4, ★10,000, one per
+            city, +15% load a tier, road ×0.5}; Import–Export {80%, 1,500/h, ●20,000, ★9,800, 100 per premium pack}; Customs Chief
+            {+2,000 control, ✦40, customs ×0.5}; Run a Convoy {6 h, 3 crew, diff 60, spike 5, ●800, 60 packs}; Grease the Post
+            {4 h, 2 crew, diff 60, spike 2, ✦3}; Zastava {Colonel, tribute .2, buyout ●15,000, 3 lots}; Zhanna premium lots {20
+            packs, ×4 price}; the Colonel {passage 2 h of yield for 24 h, +5 a passage, −5 pressure, −10 buyout, −25 flip,
+            hostile below −30}; progression.finalAct 3→4.
+2026-09-29  costs.paybackHoursByAct 4–6 = 30, 36, 36 → 40, 40, 40
+            The same payback as Act III (M8), so an Act IV purchase is as long a wait as an Act III one and the act's
+            content can't outrun its gate. Kept.
+2026-09-29  progression.acts.5 {★10,000} → {★30,000, hold Zastava, own the Import–Export Company}
+            Act IV opens at ★9,000, so ★10,000 would have cleared it almost at once. The gate now asks for the act's two
+            decisions as well as Rep. Kept.
+2026-09-29  Bot fixes (not numbers): Zhanna's premium price was multiplied by packs instead of priceMult; convoys were keyed to
+            cigarette stock, so the bot never ran one; the importer waited days for savings, so the bot now borrows to open an
+            unaffordable front. Before them: Act IV 9.8 d (target 8–10), convoys 21–47 a run.
+2026-09-29  premium.baseCap 30→60
+            A convoy lands 60, so at 30 half of every early convoy was wasted before a Bonded Warehouse. 30: Act IV 9.64 d (9/10),
+            heat 31.7. 60: 9.43 d (10/10), heat 32.0. Kept 60.
+            Final (10 seeds, 34 d): Act I 4.64 d, Act II 3.28 d (10/10), Act III 6.44 d (8/10), Act IV 9.43 d (10/10), heat 32.0
+            (10/10), raids 0, partial 0.47, missed wages 0, front util 0.58, Dirty idle 0.87, wage share 0.02.
+            goldRush (at cap 30): Act IV 9.53 d, heat 32.1, missed wages 0.
+2026-09-29  tests/sim.test.ts: 22 → 34 days; Act IV 8–10 added.
+```
+
 ## Open
 
-- **Front utilization ~65% (target 70–90%) and Dirty idle ~86% (target 20–50%).** The bot keeps a large Dirty reserve and the fronts can wash more than it deposits early on; by late Act III yield (~1,800/h) outruns laundering (~1,100 Clean/h with the Bank at full capacity), so Dirty piles up. The loan desk (M9) takes one loan at a time, so it doesn't move the metric, which is measured at session end.
+- **Front utilization ~58% (target 70–90%) and Dirty idle ~87% (target 20–50%)** over 34 days. The importer (Act IV) is capped by premium sales, so a premium shortage leaves it idle; `coverPerPremiumPack` is the knob to watch. The bot keeps a large Dirty reserve and the fronts can wash more than it deposits early on; by late Act III yield (~1,800/h) outruns laundering (~1,100 Clean/h with the Bank at full capacity), so Dirty piles up. The loan desk (M9) takes one loan at a time, so it doesn't move the metric, which is measured at session end.
 - **Wage share ~2%** over 22 days (manual 10–25%). Wages are about a quarter of day-1 income but a few percent of late Act II income, and upkeep doesn't change that. No number fixes both ends: raising wages or upkeep enough for Act II breaks the first day. Running costs that scale with the act would be a new rule, which the expansion plan doesn't have.
 - **Shortages are rare** (about 3 h per 8-day run, none in Act I). The plan's M3 gate asks for some shortage in Act I, under 10% of its hours.
 - **Act I clears at 4.64 d** against the manual's 1–2, since it's gated on seven build-out goals (ADR 0039). An owner decision: relax the goals or move the target. **Act II clears at 3.28 d** and **Act III at 6.47 d**, both in range.

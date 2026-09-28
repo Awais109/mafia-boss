@@ -8,6 +8,7 @@ import type { CrewMember, OpInstance, PlayerState } from '../model/state'
 import { changeLoyalty, effectiveStat } from './crew'
 import { addPressure } from './districts'
 import { grantXp, hasPerk, jobXp } from './experience'
+import { landConvoy } from './convoys'
 import { fileReport } from './inbox'
 import { maybeInjureTeam } from './injuries'
 import { gainRep } from './reputation'
@@ -160,6 +161,8 @@ export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: numbe
 
   // A smuggling run lands its packs: what fits in stock goes in (ADR 0032).
   const cigarettes = cfg.cigarettes && share > 0 ? addStock(state, derive(state, c).supply.cap, Math.round(cfg.cigarettes * share)) : 0
+  // A convoy that got through still has the highway and the crossing ahead of it (ADR 0043).
+  const convoy = cfg.premium && share > 0 ? landConvoy(state, ctx, t, cfg, share, ctx.rng.derive('convoy', op.id)) : null
 
   // Spikes land on displayed heat immediately and feed the next hour's raid roll (spec §10).
   const ghost = hasPerk(team, 'ghost') ? (c.crew.experience.perks.ghost.jobSpikeMult ?? 1) : 1
@@ -196,6 +199,7 @@ export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: numbe
     ...(op.name ? { name: op.name } : {}),
     ...(op.offerId ? { offerId: op.offerId } : {}),
     ...(cigarettes > 0 ? { cigarettes } : {}),
+    ...(convoy ? { premium: convoy.premium, ...(convoy.hijacked ? { hijacked: true as const } : {}), ...(convoy.seized ? { seized: true as const } : {}) } : {}),
   })
   gainRep(state, ctx, t, rep)
   if (cfg.districtPressure && op.districtId && outcome !== 'fail') addPressure(state, ctx, t, op.districtId)

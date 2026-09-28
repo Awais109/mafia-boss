@@ -22,7 +22,8 @@ export type Action =
   | { type: 'PAY_TRIBUTE'; choice?: 'pay' | 'haggle' | 'refuse' }
   | { type: 'SKIP_TIME'; hours: number }
   | { type: 'RUSH_OP'; opId: string }
-  | { type: 'BUY_SHIPMENT' }
+  | { type: 'BUY_SHIPMENT'; product?: 'premium' }
+  | { type: 'BUY_PASSAGE' }
   | { type: 'SELL_SURPLUS'; packs: number }
   | { type: 'TAKE_LOAN'; amount: number }
   | { type: 'REPAY_LOAN'; amount: number }
@@ -36,7 +37,7 @@ export type Action =
 export type DebugAction =
   | { type: 'DEBUG_ADD_OFFSET'; ms: number }
   | { type: 'DEBUG_RESET_OFFSET' }
-  | { type: 'DEBUG_GRANT'; dirty?: number; clean?: number; influence?: number; cigarettes?: number; gold?: number }
+  | { type: 'DEBUG_GRANT'; dirty?: number; clean?: number; influence?: number; cigarettes?: number; premium?: number; gold?: number }
   | { type: 'DEBUG_SET_HEAT'; heat: number }
   | { type: 'DEBUG_SET_REP'; reputation: number }
   | { type: 'DEBUG_COMPLETE_GOALS' }

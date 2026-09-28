@@ -4,6 +4,12 @@ import {
   canAffordEffects,
   canHaggle,
   canPressure,
+  colonelHolds,
+  convoyLoad,
+  customsChance,
+  hijackChance,
+  passageActive,
+  passageCost,
   contestOdds,
   creditOpen,
   lendCap,
@@ -368,6 +374,23 @@ export function playSession(
     tryAct({ type: 'START_OP', opType: type, crewIds: [m.id] })
   }
 
+  // Passage before a convoy goes out, when the Colonel still holds the road and premium is running low (ADR 0043).
+  {
+    const now = d()
+    const reserve = (now.wagesPerHr + now.upkeepPerHr) * p.reserveWageHours + now.costs.bribe
+    const wantConvoy = state.act >= c.premium.fromAct && now.premium.demandPerHr > 0 && now.premium.hoursToEmpty < p.stockReserveHours * 2
+    if (wantConvoy && colonelHolds(state) && !passageActive(state, t) && state.dirty - passageCost(state, c) >= reserve) {
+      tryAct({ type: 'BUY_PASSAGE' })
+      dispatchIdle()
+    }
+    // Zhanna's premium lots cover the gap between convoys.
+    const price = formulas.shipmentPrice(c, state.rival.zhanna.disposition) * c.rivals.zhanna.premium.priceMult
+    const premiumReady = state.act >= c.rivals.zhanna.premium.fromAct && state.rival.zhanna.nextShipmentAt <= t
+    if (premiumReady && now.premium.demandPerHr > 0 && now.premium.hoursToEmpty < p.stockReserveHours && state.dirty - price >= reserve) {
+      tryAct({ type: 'BUY_SHIPMENT', product: 'premium' })
+    }
+  }
+
   // A lot from Zhanna when stock would run out soon and Dirty covers it above the reserve (plan (p)).
   {
     const now = d()
@@ -386,6 +409,15 @@ export function playSession(
     if (state.clean >= buyout && (districtTributePerHr(state, now, id) + districtPerkPerHr(state, c, now, id)) * p.districtPaybackHours > buyout) {
       tryAct({ type: 'BUY_DISTRICT', districtId: id })
     }
+  }
+
+  // A new front is worth borrowing for: laundering is the throttle, and waiting to save for one while
+  // cheaper purchases drain Clean every session means it never comes (ADR 0042).
+  if (creditOpen(state, c) && !state.loan) {
+    const now = d()
+    const front = FRONT_TYPES.find((ty) => !frontBlocked(state, c, ty) && state.clean < now.costs.front[ty])
+    const short = front ? now.costs.front[front] - state.clean + loanDue(state, c) : 0
+    if (front && short <= loanCap(state, c) && tryAct({ type: 'TAKE_LOAN', amount: Math.ceil(short) })) tryAct({ type: 'BUY_FRONT', frontType: front })
   }
 
   // 6. Spend Clean on the best yield gain ÷ cost, within the heat budget. Clean for the next loan payment
@@ -447,6 +479,25 @@ const shortfall = (made: number, demand: number) => (demand > 0 ? Math.max(0, 1 
 function packValue(d: Derived): number {
   return d.supply.demandPerHr > 0 ? d.perRacket.reduce((sum, r) => sum + r.atStake, 0) / d.supply.demandPerHr : 0
 }
+
+// Dirty per premium pack sold: the premium share of joints' yield over what they sell (ADR 0043).
+function premiumPackValue(d: Derived): number {
+  return d.premium.demandPerHr > 0 ? d.perRacket.reduce((sum, r) => sum + r.premiumAtStake, 0) / d.premium.demandPerHr : 0
+}
+
+// A premium pack sold also covers an importer's washing: `cover` Dirty through it at its rate, Clean worth 2.
+function premiumCoverValue(state: PlayerState, c: Config, d: Derived): number {
+  let v = 0
+  state.fronts.forEach((f, i) => {
+    const cover = c.fronts.types[f.type].coverPerPremiumPack
+    if (cover !== undefined) v += cover * d.perFront[i].rate * 2
+  })
+  return v
+}
+
+// Premium supply comes only in convoy loads and Zhanna's lots, so a premium joint is discounted by how
+// likely its stock is to be out: little while there's a day's stock, a lot when there isn't.
+const premiumRisk = (d: Derived) => (d.premium.hoursToEmpty >= 24 ? 0.2 : 0.6)
 
 // A joint's income, discounted for running short once it sells `extraDemand` more packs an hour.
 function jointRisk(d: Derived, share: number, extraDemand: number): number {
@@ -549,6 +600,21 @@ function lendingValue(state: PlayerState, c: Config, d: Derived, hoursPerTier: n
   return (amount * ((1 - p) * (1 + l.returnPct) - 1)) / l.termHours
 }
 
+// What a tier of a bonded warehouse or a convoy depot is worth per hour to the premium line (ADR 0043), with a
+// convoy every six hours: packs a full stock would have wasted, packs customs or the Colonel would have taken,
+// and a depot's bigger loads.
+function premiumPremisesValue(state: PlayerState, c: Config, d: Derived, rt: Config['rackets']['types'][RacketType], cond: number, id: DistrictId): number {
+  if (d.premium.demandPerHr <= 0 && state.act < c.premium.fromAct) return 0
+  const perPremium = premiumPackValue(d) || 30
+  const load = convoyLoad(state, c, c.ops.list.runConvoy)
+  let packsPerConvoy = 0
+  if (rt.premiumCapPerTier) packsPerConvoy += Math.min(rt.premiumCapPerTier * cond, Math.max(0, load - (d.premium.cap - d.premium.stock)))
+  if (rt.seizureMult !== undefined && id === 'zastava') packsPerConvoy += customsChance(state, c) * (1 - rt.seizureMult) * load
+  if (rt.convoyBonusPerTier) packsPerConvoy += rt.convoyBonusPerTier * cond * (c.ops.list.runConvoy.premium ?? 0)
+  if (rt.hijackMult !== undefined) packsPerConvoy += hijackChance(state, c, 0) * (1 - rt.hijackMult) * load
+  return (packsPerConvoy * perPremium) / 6
+}
+
 type SpendOption = { action: Action; cost: number; gain: number; heatGain: number }
 
 // What the spend loop would buy next, affordable or not: a smuggling run won't eat into it.
@@ -626,6 +692,7 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
         // A Clinic keeps the crew working and loyal; a loan desk earns on idle Dirty (ADR 0042).
         if (rt.injuryMult) gain += state.crew.length * 2
         if (rt.lendHoursPerTier) gain += lendingValue(state, c, d, rt.lendHoursPerTier, id)
+        gain += premiumPremisesValue(state, c, d, rt, 1, id)
         if (!best || gain > best.gain) best = { id, gain }
       }
       if (best && best.gain > 0) {
@@ -648,7 +715,7 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
       }
     }
     if (!bestDistrict) continue
-    const risk = rt.kind === 'joint' ? jointRisk(d, rt.cigaretteShare ?? 0, formulas.jointSales(c, type, 1)) : 1
+    const risk = rt.kind === 'joint' ? jointRisk(d, rt.cigaretteShare ?? 0, formulas.jointSales(c, type, 1)) * (1 - (rt.premiumShare ?? 0) * premiumRisk(d)) : 1
     out.push({
       action: { type: 'BUY_RACKET', racketType: type, districtId: bestDistrict },
       cost: d.costs.racket[type],
@@ -675,13 +742,15 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
       if (rt.influencePerHrPerTier) gain += rt.influencePerHrPerTier * cond * influenceMultIf(c, r.districtId, r.type) * v.influenceValue
       if (rt.prosperityPerTier) gain += prosperity.gainOf(r.districtId, rt.prosperityPerTier * cond, rt.prosperityPerTier * cond * (c.rackets.premises.maxTier - r.tier))
       if (rt.lendHoursPerTier) gain += lendingValue(state, c, d, rt.lendHoursPerTier * cond, r.districtId)
+      gain += premiumPremisesValue(state, c, d, rt, cond, r.districtId)
       if (gain > 0) {
         out.push({ action: { type: 'UPGRADE_RACKET', racketId: r.id }, cost: rd.upgradeCost, gain, heatGain: rd.exposure * (c.rackets.tierHeatMult - 1) })
       }
       return
     }
     // A bigger joint sells more packs, and loses more when they run short.
-    const risk = rd.kind === 'joint' ? jointRisk(d, rt.cigaretteShare ?? 0, rd.packsPerHr * (c.rackets.tierYieldMult - 1)) : 1
+    const risk =
+      rd.kind === 'joint' ? jointRisk(d, rt.cigaretteShare ?? 0, rd.packsPerHr * (c.rackets.tierYieldMult - 1)) * (1 - (rt.premiumShare ?? 0) * premiumRisk(d)) : 1
     // Tier 3 and tier 6 are each a choice (ADRs 0027, 0041).
     const spec = r.tier + 1 === c.rackets.specialization6.atTier ? c.rackets.specialization6 : c.rackets.specialization
     if (r.tier + 1 === spec.atTier) {
@@ -777,13 +846,17 @@ function bestDispatch(state: PlayerState, c: Config, p: PersonaOptions, t: numbe
 
   const sup = d.supply
   const perPack = packValue(d)
+  const prem = d.premium
+  const perPremium = premiumPackValue(d) + premiumCoverValue(state, c, d)
   let plannedCost: number | null = null
 
   for (const { type, op: listed, offerId } of jobs) {
     const op = opConfigAt(c, state, listed)
     // Smuggle only when stock is running out, and never with Clean the next purchase needs (plan (o)).
+    // A convoy answers the premium stock instead, which only ever arrives in loads (ADR 0043).
     if (op.costClean) {
-      if (sup.hoursToEmpty >= p.stockReserveHours || state.clean < op.costClean) continue
+      const short = op.premium ? prem.demandPerHr > 0 && prem.hoursToEmpty < p.stockReserveHours * 2 : sup.hoursToEmpty < p.stockReserveHours
+      if (!short || state.clean < op.costClean) continue
       plannedCost ??= plannedPurchaseCost(state, c, d, p, t)
       if (state.clean - op.costClean < plannedCost) continue
     }
@@ -827,7 +900,14 @@ function bestDispatch(state: PlayerState, c: Config, p: PersonaOptions, t: numbe
       }
       const spike = op.spike * (odds.full + odds.partial * c.ops.partialSpikePct + odds.fail * c.ops.failSpikePct)
       const packs = op.cigarettes ? (odds.full + odds.partial * c.ops.partialRewardPct) * op.cigarettes : 0
-      const goods = Math.min(packs, Math.max(0, sup.cap - sup.stock)) * perPack - (op.costClean ?? 0) * 2
+      // A convoy's expected landing: through the highway and the crossing, into whatever room there is.
+      const landed = op.premium
+        ? (odds.full + odds.partial * c.ops.partialRewardPct) * convoyLoad(state, c, op) * (1 - hijackChance(state, c, t)) * (1 - customsChance(state, c))
+        : 0
+      const goods =
+        Math.min(packs, Math.max(0, sup.cap - sup.stock)) * perPack +
+        Math.min(landed, Math.max(0, prem.cap - prem.stock)) * perPremium -
+        (op.costClean ?? 0) * 2
       const sessionsBlocked = Math.max(1, Math.ceil(op.minutes / gapMinutes))
       const value =
         (dirty + rep * p.repValue + influence * influenceValue + success * flipValue + growth + goods - spike * heatCost) /

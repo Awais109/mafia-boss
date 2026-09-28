@@ -88,7 +88,7 @@ function accrue(state: PlayerState, ctx: Ctx, t: number, hours: number): void {
   const from = ctx.events.length
   accrueVault(state, ctx, t, hours, d.yieldPerHr, d.vaultCap)
   state.stats.tributeLost += d.tributePerHr * hours
-  convertFronts(state, c, hours)
+  convertFronts(state, c, hours, d)
   accrueStock(state, ctx, t, hours, d)
   state.heat = convergeHeat(state.heat, d.heatTarget, hours, c.heat.convergePerHr)
   state.wagesOwed += d.wagesPerHr * hours
@@ -100,7 +100,7 @@ function accrue(state: PlayerState, ctx: Ctx, t: number, hours: number): void {
 }
 
 function hourBoundary(state: PlayerState, ctx: Ctx, t: number): void {
-  frontsHourBoundary(state, ctx.c)
+  frontsHourBoundary(state, ctx.c, derive(state, ctx.c))
   decayCondition(state, ctx.c)
   crewXpHourBoundary(state, ctx, t) // enforcers' banked XP becomes stat points on the hour
   heatHourBoundary(state, ctx, t)

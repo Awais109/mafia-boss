@@ -2,7 +2,10 @@ import { useState } from 'react'
 import { View } from 'react-native'
 import {
   canPressure,
+  convoyLoad,
+  customsChance,
   DISTRICT_IDS,
+  hijackChance,
   effectiveStat,
   influenceRoom,
   jobXp,
@@ -12,6 +15,7 @@ import {
   opUnlocked,
   OP_TYPES,
   outcomeOdds,
+  passageActive,
   rushCost,
   STATS,
   type CrewMember,
@@ -173,6 +177,7 @@ function JobCard({
     cfg.dirty ? `◆${fmt(opDirtyRewardFor(c, s, cfg, 'full', ready ? team : []))}` : '',
     cfg.influence ? `✦${cfg.influence}` : '',
     cfg.cigarettes ? `▮${cfg.cigarettes}` : '',
+    cfg.premium ? `${glyph.premium}${fmt(convoyLoad(s, c, cfg))}` : '',
     `★${fmt(c.reputation.perOpSuccess)}`,
   ].filter(Boolean)
   const minutes = opMinutesFor(c, cfg, ready ? team : [])
@@ -199,6 +204,11 @@ function JobCard({
         <>
           <T small muted>{`Needs ${weights} · difficulty ${live.diff}${live.diff !== cfg.diff ? ` (${cfg.diff} + heat)` : ''} · +▲${fmt(cfg.spike)} heat`}</T>
           {cfg.costClean ? <T small color={colors.clean}>{`Costs ●${fmt(cfg.costClean)} up front: no Rep, and it’s gone if the run fails`}</T> : null}
+          {cfg.premium ? (
+            <T small color={colors.premium}>
+              {`At the border: taken on the road ${pct(hijackChance(s, c, now))}${passageActive(s, now) ? ' (passage paid)' : ''} · seized at customs ${pct(customsChance(s, c))}`}
+            </T>
+          ) : null}
           <T small>{`Pays ${rewards.join(' ')} on a clean job, ${pct(c.ops.partialRewardPct)} if partial`}</T>
         </>
       )}

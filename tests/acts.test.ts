@@ -25,13 +25,14 @@ describe('acts', () => {
   })
 
   it('clears the last built act, rather than leaving it, when the next gate holds', () => {
-    let s = act(actTwo(), [{ type: 'DEBUG_SET_REP', reputation: gate(3) }], T0)
-    expect(config.progression.finalAct).toBe(3)
-    expect(gameCleared(s, config)).toBe(false)
-    s = act(s, [{ type: 'DEBUG_SET_REP', reputation: gate(4) }], T0)
+    // Pinned to a build whose last act is III, so the test is about the rule, not today's content.
+    const { config: c } = tryBuildConfig({ progression: { finalAct: 3 } })
+    let s = act(act(fresh('acts', c), [{ type: 'DEBUG_COMPLETE_GOALS' }], T0, c), [{ type: 'DEBUG_SET_REP', reputation: gate(3) }], T0, c)
+    expect(gameCleared(s, c)).toBe(false)
+    s = act(s, [{ type: 'DEBUG_SET_REP', reputation: gate(4) }], T0, c)
     expect(s.act).toBe(3)
     expect(s.stats.actClearedAt[3]).toBe(T0)
-    expect(gameCleared(s, config)).toBe(true)
+    expect(gameCleared(s, c)).toBe(true)
     expect(s.log.filter((e) => e.type === 'ACT_CLEARED')).toHaveLength(1)
   })
 

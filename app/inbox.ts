@@ -72,6 +72,12 @@ export function homeAlerts(game: Snapshot): HomeAlert[] {
     const left = fmtDuration(d.supply.hoursToEmpty * c.time.hourMs, c)
     out.push({ key: 'stock', text: `Cigarettes run out in ${left}.`, color: colors.warn, tab: 'rackets', cta: 'Business →' })
   }
+  if (s.premiumEmpty) {
+    out.push({ key: 'premium', text: 'Out of premium: the road joints are losing trade.', color: colors.heat, tab: 'ops', cta: 'Ops →' })
+  } else if (d.premium.hoursToEmpty < 6) {
+    const left = fmtDuration(d.premium.hoursToEmpty * c.time.hourMs, c)
+    out.push({ key: 'premium', text: `Premium runs out in ${left}.`, color: colors.warn, tab: 'ops', cta: 'Ops →' })
+  }
   const soon = s.offers.items.filter((o) => o.expiresAt > now && o.expiresAt - now <= c.time.hourMs)
   if (soon.length && s.crew.some((m) => m.status === 'idle')) {
     out.push({

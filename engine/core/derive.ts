@@ -35,6 +35,9 @@ export type RacketDerived = {
   packsPerHr: number // joints: packs they sell; factories: packs they make
   served: number // joints: share of their cigarette trade being supplied (1 unless stock is out)
   atStake: number // joints: Dirty/hr of yield that needs cigarettes, at full supply
+  premiumPacksPerHr: number // premium joints: premium packs they sell (ADR 0043)
+  premiumServed: number // premium joints: share of their premium trade being supplied
+  premiumAtStake: number // premium joints: Dirty/hr of yield that needs premium packs, at full supply
   capacity: number // warehouses: stock cap they add
   leashHours: number // stash houses: vault hours they add (only the best counts)
   shield: number // stash houses: their part of the raid shield
@@ -95,6 +98,7 @@ export type Derived = {
   perRacket: RacketDerived[]
   perFront: FrontDerived[]
   supply: SupplyDerived
+  premium: SupplyDerived // premium imported cigarettes, from Act IV (ADR 0043)
   synergies: { districtId: DistrictId; id: string }[]
   costs: {
     racket: Record<RacketType, number>
@@ -125,6 +129,7 @@ export function derive(state: PlayerState, c: Config): Derived {
   const maxTier = c.rackets.maxTierByAct[state.act]
   const kindOf = (t: RacketType) => c.rackets.types[t].kind
   const sells = state.act >= c.supply.sellFromAct
+  const premiumOn = state.act >= c.premium.fromAct
   const prospering = prosperityOn(state, c)
   const prosperityOf = (id: DistrictId) => state.districts.find((d) => d.id === id)?.prosperity ?? c.prosperity.base
 
@@ -171,6 +176,9 @@ export function derive(state: PlayerState, c: Config): Derived {
       demand: kind === 'joint' && sells ? F.jointSales(c, r.type, r.tier) * cond : 0,
       made: kind === 'premises' ? F.factoryOutput(c, r.type, r.tier) * cond : 0,
       capacity: kind === 'premises' ? F.warehouseCapacity(c, r.type, r.tier) * cond : 0,
+      premiumDemand: kind === 'joint' && premiumOn ? F.premiumSales(c, r.type, r.tier) * cond : 0,
+      premiumMade: kind === 'premises' && premiumOn ? F.premiumOutput(c, r.type, r.tier) * cond : 0,
+      premiumCapacity: kind === 'premises' ? (c.rackets.types[r.type].premiumCapPerTier ?? 0) * r.tier * cond : 0,
       leash: (c.rackets.types[r.type].leashHoursPerTier ?? 0) * r.tier * cond,
       shieldRaw: (c.rackets.types[r.type].shieldPerTier ?? 0) * r.tier * cond,
     }
@@ -179,6 +187,11 @@ export function derive(state: PlayerState, c: Config): Derived {
   const demandPerHr = sum(base.map((b) => b.demand))
   const cap = c.supply.baseCap + sum(base.map((b) => b.capacity))
   const stock = state.inventory.cigarettes
+  const premiumMade = sum(base.map((b) => b.premiumMade))
+  const premiumDemand = sum(base.map((b) => b.premiumDemand))
+  const premiumCap = c.premium.baseCap + sum(base.map((b) => b.premiumCapacity))
+  // While premium stock is out, what's made (by the Combine, Act V) is shared in proportion to demand.
+  const premiumServedAll = state.premiumEmpty && premiumDemand > 0 ? Math.min(1, premiumMade / premiumDemand) : 1
 
   // While stock is out, what comes off the line goes first to joints beside a factory, then to the
   // rest in proportion to what they'd sell.
@@ -193,7 +206,7 @@ export function derive(state: PlayerState, c: Config): Derived {
     })
   }
 
-  const perRacket: RacketDerived[] = base.map(({ r, kind, cond, fx, demand, made, capacity, leash }, i) => {
+  const perRacket: RacketDerived[] = base.map(({ r, kind, cond, fx, demand, made, capacity, leash, premiumDemand: pDemand }, i) => {
     const rt = c.rackets.types[r.type]
     const district = c.districts.list[r.districtId]
     const controller = controllerOf(r.districtId)
@@ -203,6 +216,8 @@ export function derive(state: PlayerState, c: Config): Derived {
     const spec = r.specialization ? c.rackets.specialization[r.specialization] : null
     const spec6 = r.specialization6 ? c.rackets.specialization6[r.specialization6] : null
     const share = kind === 'joint' && sells ? (rt.cigaretteShare ?? 0) : 0
+    const pShare = kind === 'joint' && premiumOn ? (rt.premiumShare ?? 0) : 0
+    const pServed = pDemand > 0 ? premiumServedAll : 1
     const prosperityMult = kind === 'joint' && prospering ? prosperityYieldMult(c, prosperityOf(r.districtId)) : 1
     const closed = r.closedUntil !== undefined
     const fullYield =
@@ -217,7 +232,7 @@ export function derive(state: PlayerState, c: Config): Derived {
           (spec6?.yieldMult ?? 1) *
           prosperityMult *
           fx.yieldMult
-    const grossYield = fullYield * (1 - share + share * served[i])
+    const grossYield = fullYield * (1 - share - pShare + share * served[i] + pShare * pServed)
     const tributeRate = ours || controller === 'none' ? 0 : district.tribute
     const tribute = grossYield * tributeRate
     return {
@@ -238,6 +253,9 @@ export function derive(state: PlayerState, c: Config): Derived {
       packsPerHr: kind === 'joint' ? demand : made,
       served: served[i],
       atStake: fullYield * share,
+      premiumPacksPerHr: pDemand,
+      premiumServed: pServed,
+      premiumAtStake: fullYield * pShare,
       capacity,
       leashHours: leash,
       shield: 0, // set below, once total yield is known
@@ -247,8 +265,11 @@ export function derive(state: PlayerState, c: Config): Derived {
     }
   })
 
+  const premiumSold = state.premiumEmpty ? Math.min(premiumDemand, premiumMade) : premiumDemand
   const perFront: FrontDerived[] = state.fronts.map((f) => {
-    const throughput = F.frontThroughput(c, f)
+    // An importer only washes what its premium trade would explain (ADR 0043).
+    const cover = c.fronts.types[f.type].coverPerPremiumPack
+    const throughput = cover === undefined ? F.frontThroughput(c, f) : Math.min(F.frontThroughput(c, f), premiumSold * cover)
     return {
       id: f.id,
       type: f.type,
@@ -263,7 +284,7 @@ export function derive(state: PlayerState, c: Config): Derived {
       capacityLevel: f.capacityLevel,
       capacityUpgradeCost:
         f.capacityLevel < c.fronts.upgrade.capacity.levels ? F.frontCapacityUpgradeCost(c, f.type, f.capacityLevel) : null,
-      hoursToEmpty: f.buffer / throughput,
+      hoursToEmpty: throughput > 0 ? f.buffer / throughput : Infinity,
     }
   })
 
@@ -326,6 +347,15 @@ export function derive(state: PlayerState, c: Config): Derived {
       stock,
       hoursToEmpty: demandPerHr > madePerHr ? Math.max(0, stock) / (demandPerHr - madePerHr) : Infinity,
       hoursToFull: madePerHr > demandPerHr ? Math.max(0, cap - stock) / (madePerHr - demandPerHr) : Infinity,
+    },
+    premium: {
+      madePerHr: premiumMade,
+      demandPerHr: premiumDemand,
+      soldPerHr: premiumSold,
+      cap: premiumCap,
+      stock: state.inventory.premium,
+      hoursToEmpty: premiumDemand > premiumMade ? Math.max(0, state.inventory.premium) / (premiumDemand - premiumMade) : Infinity,
+      hoursToFull: premiumMade > premiumDemand ? Math.max(0, premiumCap - state.inventory.premium) / (premiumMade - premiumDemand) : Infinity,
     },
     synergies,
     costs: {

@@ -3,6 +3,40 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-29 — Act IV, Zastava (M10)
+
+Branch: `feature/acts-iii-vi`. Reasoning: [ADR 0043](docs/decisions/0043-act-iv-zastava.md).
+
+### What changed, for a player
+
+- **Act IV opens the road to the border.** Zastava, sixty kilometres west, belongs to the Colonel, a retired border-guard officer who takes a fifth of what runs there.
+- **Premium cigarettes**, a second stock (▣) next to the ordinary packs. The Motel and the Foreign Goods Shop live on them; nobody makes them in the city.
+- **Convoys** bring them over the border: Clean up front, three crew, six hours. The Colonel's men may take a convoy on the highway unless you've **paid for passage**, and customs may seize one at the crossing, more often the hotter you run. The Ops card shows both chances.
+- **Take Zastava** and the road is yours. A **Customs Chief** and a **Bonded Warehouse** in Zastava cut seizures; a **Convoy Depot** makes loads bigger and harder to stop.
+- The **Import–Export Company** launders at the best rate in the city, but only as much as your premium sales explain.
+- Zhanna sells premium lots too, dearer, between convoys.
+- To clear Act IV: Reputation, Zastava held, and the importer running.
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| The premium line | `engine/systems/supply.ts` (generic `accrueLine`, both lines in `accrueStock` and `supplyHourBoundary`), `engine/core/derive.ts` (`Derived.premium`, per-joint premium) |
+| Convoys, the Colonel, passage, customs | `engine/systems/convoys.ts` (new), `engine/systems/ops.ts` (`landConvoy` in `resolveOp`), `engine/systems/districts.ts` |
+| The importer | `engine/core/derive.ts` (cover-capped throughput), `engine/systems/fronts.ts` (reads the derived throughput) |
+| Act IV content and gates | `engine/config/defaults.ts`, `engine/config/schema.ts` (`finalAct` 4) |
+| Save schema v11 | `engine/model/migrate.ts` (`v10to11`), `engine/core/time.ts` (`passageUntil`) |
+| The app | `app/components/ColonelCard.tsx` (new), `SupplyCard.tsx` (`product`), `Header.tsx`, `ZhannaCard.tsx`; Ops, Fronts, Business, Home, Stats, How It Works, Debug (`DEBUG_GRANT { premium }`) |
+| The bot | `sim/persona.ts` (convoys, passage, premium lots, premium joints and premises, borrowing for a front) |
+| Tests | `tests/zastava.test.ts` (new); the split test adds an Act IV game; migration covers v11; the pacing guard runs 34 days and adds Act IV |
+| Docs | [convoys.md](docs/systems/convoys.md) (new); supply chain, economy, fronts, heat, ops, districts and rivals, progression, architecture, app, sim, testing |
+
+### Verified
+
+- `npm run check`: typecheck, lint, 171 tests.
+- `npm run sim -- --days 34 --runs 10`: Act IV 9.43 d (10/10 in 8–10), heat 32.0, no raids, no missed wages; tuning in [TUNING.md](TUNING.md).
+- Not yet tried on a device.
+
 ## 2026-09-29 — Act III's consequences (M9)
 
 Branch: `feature/acts-iii-vi`. Reasoning: [ADR 0042](docs/decisions/0042-act-iii-credit-and-consequences.md).

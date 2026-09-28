@@ -33,7 +33,17 @@ export function Header({ game, onGold }: { game: Snapshot; onGold?: () => void }
         <Resource label={`${glyph.dirty} Dirty`} value={fmt(s.dirty)} color={colors.dirty} />
         <Resource label={`${glyph.clean} Clean`} value={fmt(s.clean)} color={colors.clean} />
         <Resource label={`${glyph.influence} Infl.`} value={fmt(s.influence)} color={colors.influence} />
-        <Resource label={`${glyph.packs} Packs`} value={fmt(s.inventory.cigarettes)} color={s.stockEmpty ? colors.heat : colors.packs} />
+        {s.act >= c.premium.fromAct ? (
+          <Resource
+            label={`${glyph.packs} ${glyph.premium} Packs`}
+            value={fmt(s.inventory.cigarettes)}
+            color={s.stockEmpty ? colors.heat : colors.packs}
+            sub={fmt(s.inventory.premium)}
+            subColor={s.premiumEmpty ? colors.heat : colors.premium}
+          />
+        ) : (
+          <Resource label={`${glyph.packs} Packs`} value={fmt(s.inventory.cigarettes)} color={s.stockEmpty ? colors.heat : colors.packs} />
+        )}
         <Resource label={`${glyph.heat} Heat`} value={String(Math.round(s.heat))} color={heatColor} />
       </View>
       <View style={styles.repRow}>
@@ -48,11 +58,15 @@ export function Header({ game, onGold }: { game: Snapshot; onGold?: () => void }
   )
 }
 
-function Resource({ label, value, color }: { label: string; value: string; color: string }) {
+// `sub` puts a second stock beside the first (premium packs from Act IV, ADR 0043).
+function Resource({ label, value, color, sub, subColor }: { label: string; value: string; color: string; sub?: string; subColor?: string }) {
   return (
     <View style={styles.resource}>
       <Text style={styles.resLabel}>{label}</Text>
-      <Text style={[styles.resValue, { color }]}>{value}</Text>
+      <Text style={[styles.resValue, { color }]}>
+        {value}
+        {sub !== undefined && <Text style={[styles.resSub, { color: subColor }]}>{` ${sub}`}</Text>}
+      </Text>
     </View>
   )
 }
@@ -69,6 +83,7 @@ const styles = StyleSheet.create({
   resource: { alignItems: 'flex-start' },
   resLabel: { color: colors.faint, fontSize: 10, fontWeight: '600' },
   resValue: { fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  resSub: { fontSize: 12, fontWeight: '700' },
   repRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   repText: { color: colors.rep, fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'] },
   repBar: { flex: 1 },

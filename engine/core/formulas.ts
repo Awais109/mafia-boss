@@ -38,6 +38,17 @@ export function jointSales(c: Config, type: RacketType, tier: number): number {
   return (c.rackets.types[type].sellsPerHr ?? 0) * Math.pow(c.rackets.tierYieldMult, tier - 1)
 }
 
+// Premium packs per hour a premium joint sells at full condition (ADR 0043).
+export function premiumSales(c: Config, type: RacketType, tier: number): number {
+  return (c.rackets.types[type].premiumSellsPerHr ?? 0) * Math.pow(c.rackets.tierYieldMult, tier - 1)
+}
+
+// Premium packs per hour a premium-making premises (the Combine) makes at full condition.
+export function premiumOutput(c: Config, type: RacketType, tier: number): number {
+  const t = c.rackets.types[type]
+  return (t.premiumMakesPerHr ?? 0) * Math.pow(t.tierMakeMult ?? 1, tier - 1)
+}
+
 // Stock cap a warehouse adds at full condition.
 export function warehouseCapacity(c: Config, type: RacketType, tier: number): number {
   return (c.rackets.types[type].capPerTier ?? 0) * tier

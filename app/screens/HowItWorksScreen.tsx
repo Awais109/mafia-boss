@@ -1,4 +1,4 @@
-import { DISTRICT_IDS, FRONT_TYPES, LATER_ACTS, OFFICIAL_IDS, PERK_IDS, RACKET_TYPES } from '../../engine'
+import { DISTRICT_IDS, FRONT_TYPES, LATER_ACTS, OFFICIAL_IDS, PERK_IDS, RACKET_TYPES, type ActGate, type Config, type LaterAct } from '../../engine'
 import { ACT_NAME, ACT_OPENS } from '../acts'
 import { Card, Row, Screen, Section, T, colors, glyph } from '../components/ui'
 import { fmt, pct } from '../format'
@@ -122,9 +122,14 @@ export function HowItWorksScreen({ game }: ScreenProps) {
           </T>
           {LATER_ACTS.filter((a) => a <= c.progression.finalAct).map((a) => {
             const g = c.progression.acts[a]
-            const needs = [g.goals ? 'every Act I goal' : '', g.rep !== undefined ? `★${fmt(g.rep)}` : ''].filter(Boolean).join(' and ')
-            return <Row key={a} label={`Act ${ACT_NAME[a]}`} value={`${ACT_OPENS[a]} — needs ${needs}`} />
+            return <Row key={a} label={`Act ${ACT_NAME[a]}`} value={`${ACT_OPENS[a]} — needs ${gateText(c, g)}`} />
           })}
+          {c.progression.finalAct < 6 && (
+            <Row
+              label={`Clearing Act ${ACT_NAME[c.progression.finalAct]}`}
+              value={`needs ${gateText(c, c.progression.acts[(c.progression.finalAct + 1) as LaterAct])}`}
+            />
+          )}
         </Card>
       </Section>
 
@@ -135,6 +140,16 @@ export function HowItWorksScreen({ game }: ScreenProps) {
           </T>
         </Card>
       </Section>
+
+      {c.progression.finalAct >= c.premium.fromAct && (
+        <Section title="Premium and the road">
+          <Card>
+            <T small muted>
+              {`From Act ${ACT_NAME[c.premium.fromAct]}, the road joints sell premium imported cigarettes: a second stock, with its own cap, that no factory makes. A convoy (●${fmt(c.ops.list.runConvoy.costClean ?? 0)}, three crew) brings ${glyph.premium}${c.ops.list.runConvoy.premium} back from the border, and a Convoy Depot adds to every load. While the Colonel holds Zastava his men take ${pct(c.convoys.hijackChance)} of convoys that haven't paid for passage. Customs seizes ${pct(c.convoys.customsBase)} plus ${pct(c.convoys.customsPerHeat)} per point of heat, less with the Customs Chief or a Bonded Warehouse in Zastava. The Import–Export Company launders at the best rate in the city, but only as much as your premium sales would explain.`}
+            </T>
+          </Card>
+        </Section>
+      )}
 
       <Section title="Officials">
         <Card>
@@ -148,4 +163,16 @@ export function HowItWorksScreen({ game }: ScreenProps) {
       <T small color={colors.faint}>{`Every number here reads live from today's config, so it never falls out of date with what you're actually playing.`}</T>
     </Screen>
   )
+}
+
+// What a gate asks for, in words: "every Act I goal", "★9,000 and hold Zastava".
+function gateText(c: Config, g: ActGate): string {
+  return [
+    g.goals ? 'every Act I goal' : '',
+    g.rep !== undefined ? `★${fmt(g.rep)}` : '',
+    ...(g.holds ?? []).map((id) => `hold ${c.districts.list[id].name}`),
+    ...(g.fronts ?? []).map((f) => `own the ${c.fronts.types[f].name}`),
+  ]
+    .filter(Boolean)
+    .join(' and ')
 }

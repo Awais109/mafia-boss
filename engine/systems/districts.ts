@@ -2,6 +2,7 @@ import type { Config, DistrictId, RacketType } from '../config/schema'
 import { emit, type Ctx } from '../core/ctx'
 import type { District, PlayerState } from '../model/state'
 import { gainRep } from './reputation'
+import { changeColonel } from './convoys'
 import { changeDisposition, changeZhanna } from './rivals'
 
 export function getDistrict(state: PlayerState, id: DistrictId): District {
@@ -78,6 +79,8 @@ export function takeDistrict(state: PlayerState, ctx: Ctx, t: number, id: Distri
   if (from === 'tolya') changeDisposition(state, how === 'buyout' ? cfg.dispositionOnBuyout : cfg.dispositionOnFlip)
   const z = ctx.c.rivals.zhanna
   if (from === 'zhanna') changeZhanna(state, how === 'buyout' ? z.dispositionOnBuyout : z.dispositionOnFlip)
+  const col = ctx.c.rivals.colonel
+  if (from === 'colonel') changeColonel(state, how === 'buyout' ? col.dispositionOnBuyout : col.dispositionOnFlip)
   if (how === 'pressure') emit(ctx, t, { type: 'DISTRICT_FLIPPED', districtId: id, from })
   gainRep(state, ctx, t, ctx.c.reputation.perDistrict)
 }
@@ -87,6 +90,7 @@ export function addPressure(state: PlayerState, ctx: Ctx, t: number, id: Distric
   if (d.controller === 'player') return
   d.pressureCount++
   if (d.controller === 'tolya') changeDisposition(state, ctx.c.rivals.tolya.dispositionPerPressure)
+  if (d.controller === 'colonel') changeColonel(state, ctx.c.rivals.colonel.dispositionPerPressure)
   const needed = ctx.c.districts.pressureOpsToFlip
   emit(ctx, t, { type: 'DISTRICT_PRESSURED', districtId: id, count: d.pressureCount, needed })
   if (d.pressureCount >= needed) takeDistrict(state, ctx, t, id, 'pressure')

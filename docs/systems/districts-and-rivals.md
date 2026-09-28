@@ -1,15 +1,15 @@
 # Districts and rivals
 
-The city is five districts. Rivals take a cut of what you run on their turf until you buy them out or push them out, and Tolya, the old boss, keeps sending his boys around.
+The city opens district by district as the acts go on. Rivals take a cut of what you run on their turf until you buy them out or push them out; Tolya, the old boss, keeps sending his boys around; and from Act IV the Colonel holds the road to the border.
 
-**Code:** `engine/systems/districts.ts` (`getDistrict`, `districtUnlocked`, `takenDistrictCount`, `openSpots`, `openLots`, `premisesBlocked`, `canPressure`, `takeDistrict`, `addPressure`), `engine/systems/rivals.ts` (`changeDisposition`, `tolyaHostile`, `tolyaIntervalHours`, `refuseDemand`, `bestHaggler`, `haggleOdds`, `canHaggle`, `haggle`, `tolyaTick`, `changeZhanna`, `zhannaHostile`, `zhannaDeals`, `zhannaHoldsPort`, `surplusRoomToday`), `shipmentPrice` in `engine/core/formulas.ts`, tribute in `engine/core/derive.ts`, the `PAY_TRIBUTE`, `BUY_SHIPMENT` and `SELL_SURPLUS` handlers in `engine/core/apply.ts`. App: `app/components/TributeCard.tsx`, `app/components/ZhannaCard.tsx`.
-**Config:** `districts.*`, `rivals.tolya.*` (including `rivals.tolya.haggle`), `rivals.zhanna.*`.
+**Code:** `engine/systems/districts.ts` (`getDistrict`, `districtUnlocked`, `takenDistrictCount`, `openSpots`, `openLots`, `premisesBlocked`, `canPressure`, `takeDistrict`, `addPressure`), `engine/systems/rivals.ts` (`changeDisposition`, `tolyaHostile`, `tolyaIntervalHours`, `refuseDemand`, `bestHaggler`, `haggleOdds`, `canHaggle`, `haggle`, `tolyaTick`, `changeZhanna`, `zhannaHostile`, `zhannaDeals`, `zhannaHoldsPort`, `surplusRoomToday`), `engine/systems/convoys.ts` (`colonelHolds`, `colonelHostile`, `changeColonel`, `passageActive`, `passageCost`, `buyPassage`), `shipmentPrice` in `engine/core/formulas.ts`, tribute in `engine/core/derive.ts`, the `PAY_TRIBUTE`, `BUY_SHIPMENT`, `SELL_SURPLUS` and `BUY_PASSAGE` handlers in `engine/core/apply.ts`. App: `app/components/TributeCard.tsx`, `app/components/ZhannaCard.tsx`, `app/components/ColonelCard.tsx`.
+**Config:** `districts.*`, `rivals.tolya.*` (including `rivals.tolya.haggle`), `rivals.zhanna.*`, `rivals.colonel.*`.
 
 ## Districts
 
 Each entry in `districts.list` has:
 - `name`, `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)), and `act`;
-- `startsAs`: the starting controller (`player`, `tolya`, `zhanna` or `none`);
+- `startsAs`: the starting controller (`player`, `tolya`, `zhanna`, `colonel` or `none`);
 - `home`: your starting turf;
 - `allows`: the joints and rackets it can host, one of each ([ADR 0009](../decisions/0009-districts-one-of-each-business.md));
 - `premisesLots`: lots for premises of any type, one of each type ([economy.md](economy.md#kinds-of-business));
@@ -24,10 +24,11 @@ Each entry in `districts.list` has:
 | Sovietsky Blocks | II | nobody | Auto Shop, Café, Bathhouse | 2 | lower crew wages |
 | Port Quarter | II | Zhanna | Petrol Station, Cargo Bay | 2 | none |
 | The Centre | III | nobody | Nightclub, Card Club, Print Shop | 2 | Card Club yield bonus |
+| Zastava | IV | the Colonel | Truck Stop, Motel, Foreign Goods Shop, Freight Yard, Fuel Depot | 3 | Freight Yard and Fuel Depot yield bonus; the road is yours ([below](#the-colonel)) |
 
 Station Square ([ADR 0033](../decisions/0033-bigger-act-i.md)) is Act I's unclaimed district: nobody takes tribute there, and like Sovietsky it can be bought out or taken with pressure jobs.
 
-**Tribute.** Rackets in a district Tolya or Zhanna controls lose `district.tribute` of their gross yield, tracked in `stats.tributeLost`. Unclaimed and home districts take no tribute.
+**Tribute.** Rackets in a district Tolya, Zhanna or the Colonel controls lose `district.tribute` of their gross yield, tracked in `stats.tributeLost`. Unclaimed and home districts take no tribute.
 
 ## Taking a district
 
@@ -137,6 +138,25 @@ price = round(shipment.basePrice
 | Starting a smuggling run (from Act II) | `dispositionPerSmuggle` |
 | Buying out her Port | `dispositionOnBuyout` |
 | Flipping her Port by pressure | `dispositionOnFlip` |
+
+**Premium lots** ([ADR 0043](../decisions/0043-act-iv-zastava.md)). From `rivals.zhanna.premium.fromAct`, `BUY_SHIPMENT { product: 'premium' }` sells `premium.packs` premium packs at her cigarette price × `premium.priceMult` ("She sells premium from Act IV" before then). It shares the cigarette lots' cooldown and disposition, and `SHIPMENT_BOUGHT` carries `product: 'premium'`.
+
+## The Colonel
+
+([ADR 0043](../decisions/0043-act-iv-zastava.md)) A retired border-guard colonel who holds Zastava, the road to the border, when Act IV opens. Businesses there pay him tribute like any rival. What matters about him is the road: while he holds Zastava and you haven't paid, his men may take a convoy ([convoys.md](convoys.md)). His state is `rival.colonel = { disposition, passageUntil, passagesBought }`; he has no visits and nothing of his runs in the reconcile walk (`passageUntil` is compared when a convoy lands).
+
+**Passage.** `BUY_PASSAGE` needs Act IV ("Nobody runs the road yet"), the Colonel still holding Zastava ("The road is yours") and the Dirty. It costs `round(passage.hoursOfYield × Dirty yield per hour)` (`passageCost`), extends `passageUntil` by `passage.hours` from now or from when the current passage ends, counts in `stats.passagesPaid`, and emits `PASSAGE_BOUGHT { cost, until }`.
+
+**Disposition** runs from −100 to 100 and starts at 0. Below `hostileBelow` he's hostile and his men take convoys `convoys.hijackHostileMult` times as often.
+
+| Your move | Disposition change |
+|---|---|
+| Buying passage | `dispositionPerPassage` |
+| A pressure job on Zastava | `dispositionPerPressure` |
+| Buying out Zastava | `dispositionOnBuyout` |
+| Flipping Zastava by pressure | `dispositionOnFlip` |
+
+Take Zastava and the road is yours: no more passage, no more convoys lost on the highway. Customs at the crossing is a separate risk that stays.
 
 The Turf tab's Zhanna card shows her mood, her next lot and its price, Buy, and Sell 10 or everything she'll still take today.
 

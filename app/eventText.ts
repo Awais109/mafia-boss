@@ -66,6 +66,9 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
         e.influence ? `+${glyph.influence}${e.influence}` : '',
         e.influenceLostToCap ? `(${glyph.influence} daily cap)` : '',
         e.cigarettes ? `+${glyph.packs}${fmt(e.cigarettes)}` : '',
+        e.premium ? `+${glyph.premium}${fmt(e.premium)}` : '',
+        e.hijacked ? 'the Colonel’s men took the load' : '',
+        e.seized ? 'customs took the load' : '',
         e.rep ? `+${glyph.rep}${fmt(e.rep)}` : '',
         `+${glyph.heat}${fmt(e.spike)}`,
       ].filter(Boolean)
@@ -77,16 +80,21 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
     case 'UPKEEP_MISSED':
       return { text: `Couldn't cover upkeep (${d}${fmt(e.paid)} of ${fmt(e.owed)}). Your premises are falling apart.`, color: colors.heat }
     case 'STOCK_OUT':
-      return { text: 'The last pack of cigarettes is gone', color: colors.warn }
+      return { text: e.product === 'premium' ? 'The last premium pack is gone' : 'The last pack of cigarettes is gone', color: colors.warn }
     case 'STOCK_CAPPED':
-      return { text: `Cigarette stock full at ${glyph.packs}${fmt(e.cap)}: more is wasted`, quiet: true }
+      return e.product === 'premium'
+        ? { text: `Premium stock full at ${glyph.premium}${fmt(e.cap)}: more is wasted`, quiet: true }
+        : { text: `Cigarette stock full at ${glyph.packs}${fmt(e.cap)}: more is wasted`, quiet: true }
     case 'SHORTAGE_STARTED':
       return {
-        text: `Shortage: joints want ${glyph.packs}${e.demand.toFixed(1)}/h and the factories make ${e.made.toFixed(1)}/h`,
+        text:
+          e.product === 'premium'
+            ? `Premium shortage: joints want ${glyph.premium}${e.demand.toFixed(1)}/h and nothing's coming in`
+            : `Shortage: joints want ${glyph.packs}${e.demand.toFixed(1)}/h and the factories make ${e.made.toFixed(1)}/h`,
         color: colors.heat,
       }
     case 'SHORTAGE_ENDED':
-      return { text: 'Cigarettes are back on the shelves', color: colors.good }
+      return { text: e.product === 'premium' ? 'Premium packs are back on the shelves' : 'Cigarettes are back on the shelves', color: colors.good }
     case 'GOLD_GRANTED':
       return { text: `+${glyph.gold}${fmt(e.amount)} ${GOLD_SOURCE[e.source]}`, color: colors.gold }
     case 'TIME_SKIPPED':
@@ -96,7 +104,7 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
     case 'GOAL_DONE':
       return { text: `Goal done: ${GOAL_TEXT[e.goalId]} (+${glyph.gold}${e.gold})`, color: colors.gold }
     case 'SHIPMENT_BOUGHT':
-      return { text: `Bought a lot from Zhanna: +${glyph.packs}${fmt(e.packs)} for ${d}${fmt(e.cost)}`, color: colors.packs }
+      return { text: `Bought a lot from Zhanna: +${e.product === 'premium' ? glyph.premium : glyph.packs}${fmt(e.packs)} for ${d}${fmt(e.cost)}`, color: e.product === 'premium' ? colors.premium : colors.packs }
     case 'SURPLUS_SOLD':
       return { text: `Sold Zhanna ${glyph.packs}${fmt(e.packs)} for ${d}${fmt(e.dirty)}`, quiet: true }
     case 'REPORT_FILED':
@@ -205,6 +213,8 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
       return { text: `Lent out ${d}${fmt(e.amount)} through the loan desk`, quiet: true }
     case 'LENDING_REPAID':
       return { text: `The loan desk got ${d}${fmt(e.returned)} back on ${d}${fmt(e.amount)}`, color: colors.dirty }
+    case 'PASSAGE_BOUGHT':
+      return { text: `Paid the Colonel ${d}${fmt(e.cost)} for a day on the road`, color: colors.dirty }
     case 'LENDING_DEFAULTED':
       return { text: `A borrower skipped town with ${d}${fmt(e.amount)}`, color: colors.heat }
     case 'NOTE':

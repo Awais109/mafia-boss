@@ -91,6 +91,12 @@ export function HomeScreen({ game, go }: ScreenProps) {
         <SupplyCard game={game} />
       </Section>
 
+      {s.act >= c.premium.fromAct && (
+        <Section title="Premium" right={<Btn small kind="ghost" title="Convoys →" onPress={() => go('ops')} />}>
+          <SupplyCard game={game} product="premium" />
+        </Section>
+      )}
+
       <Section title="Operation">
         <Card>
           <Row label="Crew idle" value={`${idle} of ${s.crew.length}`} color={idle ? colors.dirty : undefined} />

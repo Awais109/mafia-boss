@@ -126,7 +126,24 @@ function v9to10(doc: Doc): Doc {
   return { ...doc, schemaVersion: 10, stats, loan: doc.loan ?? null, lending: doc.lending ?? null }
 }
 
-const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7, 7: v7to8, 8: v8to9, 9: v9to10 }
+// v11 (M10): Act IV (ADR 0043): an empty premium stock, the Colonel, and Zastava on the map.
+function v10to11(doc: Doc): Doc {
+  const inventory = doc.inventory as Record<string, number>
+  const rival = doc.rival as Record<string, unknown>
+  const districts = doc.districts as { id: string }[]
+  const zastava = { id: 'zastava', controller: defaults.districts.list.zastava.startsAs, pressureCount: 0, prosperity: defaults.prosperity.base }
+  return {
+    ...doc,
+    schemaVersion: 11,
+    stats: { ...emptyStats(), ...(doc.stats as object) },
+    inventory: { premium: defaults.premium.startingStock, ...inventory },
+    premiumEmpty: doc.premiumEmpty ?? false,
+    rival: { colonel: { disposition: 0, passageUntil: 0, passagesBought: 0 }, ...rival },
+    districts: districts.some((d) => d.id === 'zastava') ? districts : [...districts, zastava],
+  }
+}
+
+const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7, 7: v7to8, 8: v8to9, 9: v9to10, 10: v10to11 }
 
 export function migrate(doc: unknown): PlayerState {
   if (typeof doc !== 'object' || doc === null) throw new Error('Save is not an object')

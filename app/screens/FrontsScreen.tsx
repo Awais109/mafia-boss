@@ -1,7 +1,7 @@
 import { FRONT_MODES, FRONT_TYPES, frontBlocked } from '../../engine'
 import { ACT_NAME } from '../acts'
 import { CreditCard } from '../components/CreditCard'
-import { Bar, Btn, BtnRow, Card, colors, Money, Row, Screen, T, Tag } from '../components/ui'
+import { Bar, Btn, BtnRow, Card, colors, glyph, Money, Row, Screen, T, Tag } from '../components/ui'
 import { fmt, fmtDuration, fmtRate, pct } from '../format'
 import { store } from '../store'
 import type { ScreenProps } from './types'
@@ -75,6 +75,11 @@ export function FrontsScreen({ game }: ScreenProps) {
             </T>
             <Row label="Rate" hint={`◆100 → ●${fmt(f.rate * 100)}`} value={pct(f.rate)} color={colors.clean} />
             <Row label="Throughput" hint={f.mode !== 'normal' ? `◆${fmtRate(f.baseThroughput)} at normal` : undefined} value={`◆${fmtRate(f.throughput)}`} />
+            {c.fronts.types[f.type].coverPerPremiumPack !== undefined && (
+              <T small color={colors.premium}>
+                {`Washes only what its trade explains: ◆${fmt(c.fronts.types[f.type].coverPerPremiumPack!)} for each premium pack sold, ${glyph.premium}${fmtRate(d.premium.soldPerHr)} now.`}
+              </T>
+            )}
             <Bar value={front.buffer} max={f.bufferCap} color={colors.dirty} marks={[f.throughput]} />
             <Row
               label="Buffer"
@@ -113,6 +118,7 @@ export function FrontsScreen({ game }: ScreenProps) {
             <T bold>{ft.name}</T>
             <T small muted>
               Rate {pct(ft.rate)} · launders ◆{fmtRate(ft.throughput)}
+              {ft.coverPerPremiumPack !== undefined ? `, up to ◆${fmt(ft.coverPerPremiumPack)} per premium pack sold` : ''}
             </T>
             {ft.minProsperity !== undefined && (
               <T small muted>{`Needs a city prosperity of ${ft.minProsperity} (now ${Math.round(d.cityProsperity)})`}</T>

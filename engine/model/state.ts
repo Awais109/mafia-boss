@@ -17,7 +17,7 @@ import type {
 } from '../config/schema'
 import type { GameEvent } from './events'
 
-export const SCHEMA_VERSION = 10
+export const SCHEMA_VERSION = 11
 export const LOG_CAP = 200
 export const LEDGER_ROWS = 8 // 7 closed days plus today's opening snapshot
 
@@ -101,6 +101,9 @@ export type ZhannaState = {
   shipmentsBought: number
   surplusToday: { day: number; packs: number } // packs she's bought today
 }
+
+// The Colonel (ADR 0043): he runs the road to the border; passage keeps his men off your convoys.
+export type ColonelState = { disposition: number; passageUntil: number; passagesBought: number }
 
 // Borrowed Clean (ADR 0042): one loan at a time, paid down from Clean at each day start.
 export type Loan = { principal: number; owed: number; missed: number }
@@ -202,6 +205,12 @@ export type PlaytestStats = {
   packsSold: number
   packsLostToCap: number // made or brought in with no room in stock
   shortageHours: number // whole hours that found stock empty with joints selling
+  premiumMade: number
+  premiumSold: number
+  premiumLostToCap: number
+  premiumShortageHours: number
+  convoys: { run: number; landed: number; hijacked: number; seized: number }
+  passagesPaid: number // Dirty
   inbox: { filed: number; resolved: number; auto: number }
   specializations: { greed: number; stealth: number }
   frontModeChanges: number
@@ -239,8 +248,9 @@ export type PlayerState = {
   inspected: boolean // heat ≥ inspectThreshold at the last whole hour
   raidPenaltyUntil: number // prosperity is down after a raid until then (ADR 0041)
 
-  inventory: { cigarettes: number } // the city-wide stock (ADR 0032)
+  inventory: { cigarettes: number; premium: number } // the city-wide stocks (ADRs 0032, 0043)
   stockEmpty: boolean // stock at zero with joints selling, at the last whole hour
+  premiumEmpty: boolean // premium stock at zero with premium joints selling, at the last whole hour
 
   rackets: Racket[]
   fronts: Front[]
@@ -259,7 +269,7 @@ export type PlayerState = {
   loan: Loan | null
   lending: Lending | null
   influenceToday: { day: number; amount: number } // ops Influence, for the daily cap
-  rival: { tolya: TolyaState; zhanna: ZhannaState }
+  rival: { tolya: TolyaState; zhanna: ZhannaState; colonel: ColonelState }
   tutorial: { step: number; done: boolean }
   goals: { done: GoalId[] } // Act I goals completed (ADR 0035)
   firstConversionDone: boolean
@@ -306,6 +316,12 @@ export function emptyStats(): PlaytestStats {
     packsSold: 0,
     packsLostToCap: 0,
     shortageHours: 0,
+    premiumMade: 0,
+    premiumSold: 0,
+    premiumLostToCap: 0,
+    premiumShortageHours: 0,
+    convoys: { run: 0, landed: 0, hijacked: 0, seized: 0 },
+    passagesPaid: 0,
     inbox: { filed: 0, resolved: 0, auto: 0 },
     specializations: { greed: 0, stealth: 0 },
     frontModeChanges: 0,

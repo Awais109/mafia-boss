@@ -92,6 +92,7 @@ function StatePanel({ game }: { game: Snapshot }) {
           <Btn small title="+●1000" onPress={() => d({ type: 'DEBUG_GRANT', clean: 1000 })} />
           <Btn small title="+✦5" onPress={() => d({ type: 'DEBUG_GRANT', influence: 5 })} />
           <Btn small title="+▮40" onPress={() => d({ type: 'DEBUG_GRANT', cigarettes: 40 })} />
+          <Btn small title="+▣20" onPress={() => d({ type: 'DEBUG_GRANT', premium: 20 })} />
           <Btn small title="+▰10" onPress={() => d({ type: 'DEBUG_GRANT', gold: 10 })} />
         </BtnRow>
       </Card>

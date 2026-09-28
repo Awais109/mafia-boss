@@ -46,9 +46,10 @@ What each act changes, beyond its own businesses, fronts, officials, districts a
 | I | the streets: Zarechye, Kiosk Row, Station Square | — | yes |
 | II | the Port Quarter and Sovietsky Blocks | every Act I goal ([ADR 0039](../decisions/0039-goals-gate-act-two.md)) | yes |
 | III | the Centre ([ADR 0041](../decisions/0041-act-iii-the-centre.md)) | `progression.acts[3].rep` | yes |
-| IV–VI | the road out, the Combine, the hills | `progression.acts[4–6]` | not yet: IV's gate clears Act III |
+| IV | Zastava and the road to the border ([ADR 0043](../decisions/0043-act-iv-zastava.md)) | `progression.acts[4].rep` | yes |
+| V–VI | the Combine, the hills | `progression.acts[5–6]` | not yet: V's gate (Rep, hold Zastava, own the Import–Export Company) clears Act IV |
 
-The unlock ladder (`unlockRep`) sits inside each act: every Act II business opens below Act III's gate, and Act III's businesses spread from just above it. Every non-zero threshold includes the 38 Rep the opening's setup earns ([ADR 0035](../decisions/0035-guided-opening.md)).
+The unlock ladder (`unlockRep`) sits inside each act: every Act II business opens below Act III's gate, and each later act's businesses spread from just above its own gate. Every non-zero threshold includes the 38 Rep the opening's setup earns ([ADR 0035](../decisions/0035-guided-opening.md)).
 
 ## New game
 

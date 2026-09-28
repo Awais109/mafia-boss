@@ -10,14 +10,15 @@ What is built, how it works, and why. Written so a person or an LLM new to the r
 |---|---|
 | [architecture.md](architecture.md) | Layers and the one rule, reconcile/apply/derive, game time, RNG, config layering, persistence |
 | [systems/economy.md](systems/economy.md) | Businesses: the vault; joints, rackets and premises; spots, lots, upkeep and synergies; tiers and the tier-3 and tier-6 specializations; shut businesses; costs, condition, enforcers; the daily ledger and Money flow |
-| [systems/supply-chain.md](systems/supply-chain.md) | Cigarettes: factories, joints and warehouses, stock and shortages, smuggling runs |
+| [systems/supply-chain.md](systems/supply-chain.md) | Cigarettes and, from Act IV, premium: factories, joints and warehouses, stock and shortages, smuggling runs, Zhanna's lots |
+| [systems/convoys.md](systems/convoys.md) | Act IV: convoys over the border, the road and customs, passage, the bonded warehouse and convoy depot |
 | [systems/gold.md](systems/gold.md) | Gold bars: skipping ahead, finishing jobs now, where bars come from |
 | [systems/fronts.md](systems/fronts.md) | Laundering Dirty into Clean, buffers, rates, the push / lay low dial, capacity, suspicion |
 | [systems/heat.md](systems/heat.md) | Exposure, control, heat target, inspections, raids, arrests, bribes, officials, Influence |
 | [systems/crew.md](systems/crew.md) | Crew stats and traits, experience, ranks and perks, wages, loyalty, recruiting, slots, jail, injuries and the Clinic |
 | [systems/ops.md](systems/ops.md) | Jobs, training, resolution formula, rewards, district pressure, the opportunities board |
 | [systems/inbox.md](systems/inbox.md) | Pending decisions: crew reports, incidents (rolled and filed), contests, perk choices, defaults and expiry |
-| [systems/districts-and-rivals.md](systems/districts-and-rivals.md) | Districts, tribute, buy-outs and flips, Tolya and answering his demands, Zhanna's lots and surplus trade |
+| [systems/districts-and-rivals.md](systems/districts-and-rivals.md) | Districts, tribute, buy-outs and flips, Tolya and answering his demands, Zhanna's lots and surplus trade, the Colonel and passage |
 | [systems/progression.md](systems/progression.md) | Reputation, the six acts and their gates, the unlock ladder, the guided opening, Act I goals |
 | [systems/prosperity.md](systems/prosperity.md) | Act III: each district's prosperity, what raises and lowers it, what it pays and unlocks |
 | [systems/credit.md](systems/credit.md) | Act III: borrowing Clean and paying it back, the collectors, lending Dirty through a loan desk |
@@ -57,6 +58,7 @@ When you change a path on the left, update the doc on the right in the same comm
 | `engine/systems/reputation.ts`, `engine/systems/acts.ts`, `engine/systems/tutorial.ts`, `engine/systems/goals.ts` | [systems/progression.md](systems/progression.md) |
 | `engine/systems/prosperity.ts` | [systems/prosperity.md](systems/prosperity.md) |
 | `engine/systems/credit.ts` | [systems/credit.md](systems/credit.md) |
+| `engine/systems/convoys.ts` | [systems/convoys.md](systems/convoys.md) (the Colonel's disposition and passage also in [systems/districts-and-rivals.md](systems/districts-and-rivals.md)) |
 | `engine/systems/injuries.ts` | [systems/crew.md](systems/crew.md) |
 | `App.tsx`, `app/` | [app.md](app.md) |
 | `sim/` | [sim.md](sim.md) |

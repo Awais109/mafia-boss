@@ -107,6 +107,33 @@ function centre(): PlayerState {
   return s
 }
 
+// Act IV (ADR 0043): premium joints selling down a small stock that runs out mid-window, a convoy on the road
+// landing mid-window, passage running out, a bonded warehouse and the importer washing against premium sales.
+function zastava(): PlayerState {
+  let s = act(fresh('zastava-player'), [{ type: 'DEBUG_COMPLETE_GOALS' }, { type: 'DEBUG_SET_REP', reputation: config.rackets.types.fuelDepot.unlockRep }], T0)
+  s.tutorial.done = true
+  s = act(
+    s,
+    [
+      { type: 'DEBUG_GRANT', dirty: 60_000, clean: 200_000 },
+      { type: 'RECRUIT', candidateId: s.recruitPool.candidates[0].id },
+      { type: 'BUY_RACKET', racketType: 'motel', districtId: 'zastava' },
+      { type: 'BUY_RACKET', racketType: 'foreignShop', districtId: 'zastava' },
+      { type: 'BUY_RACKET', racketType: 'bondedWarehouse', districtId: 'zastava' },
+      { type: 'BUY_RACKET', racketType: 'convoyDepot', districtId: 'zarechye' },
+      { type: 'BUY_FRONT', frontType: 'importExport' },
+      { type: 'BUY_PASSAGE' },
+      { type: 'DEBUG_GRANT', premium: 9 },
+    ],
+    T0,
+  )
+  const importer = s.fronts.find((f) => f.type === 'importExport')!
+  s = act(s, [{ type: 'DEPOSIT', frontId: importer.id, amount: 500 }, { type: 'START_OP', opType: 'runConvoy', crewIds: s.crew.slice(0, 3).map((m) => m.id) }], T0)
+  s.rival.colonel.passageUntil = T0 + Math.round(3.3 * H)
+  s.ops[0].completesAt = T0 + Math.round(4.6 * H)
+  return s
+}
+
 describe('reconcile', () => {
   it('does nothing when now <= updatedAt', () => {
     const s = fresh()
@@ -115,7 +142,7 @@ describe('reconcile', () => {
   })
 
   it('reconcile(s, t2) equals reconcile(reconcile(s, t1), t2) on 1,000 random splits', () => {
-    const bases = [fresh(), busy(), centre()]
+    const bases = [fresh(), busy(), centre(), zastava()]
     const rand = makeRng('split-test').derive('splits')
     for (let i = 0; i < 1000; i++) {
       const base = bases[i % bases.length]

@@ -52,7 +52,7 @@ The bribe lasts `heat.bribe.hours` and then expires. Its cost is added to `stats
 
 ## Officials
 
-Permanent control, bought with Influence. `officials.list` has a Ward Cop (Act I), a Precinct Captain (Act II) and City Hall (Act III, [ADR 0041](../decisions/0041-act-iii-the-centre.md)), each available from its `act`, each with a `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)).
+Permanent control, bought with Influence. `officials.list` has a Ward Cop (Act I), a Precinct Captain (Act II), City Hall (Act III, [ADR 0041](../decisions/0041-act-iii-the-centre.md)) and the Customs Chief (Act IV, [ADR 0043](../decisions/0043-act-iv-zastava.md): besides control, his `seizureMult` scales the chance customs take a convoy, [convoys.md](convoys.md)), each available from its `act`, each with a `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)).
 
 `BUY_OFFICIAL { officialId }` requires:
 - the official's act has been reached, and they aren't already on the payroll;
