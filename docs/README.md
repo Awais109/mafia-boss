@@ -76,4 +76,4 @@ When you change a path on the left, update the doc on the right in the same comm
 
 - Describe mechanics, formulas, config keys, actions, events and file paths. For the numbers themselves, point at `engine/config/defaults.ts`; copied numbers go stale. Quote a number only when it is the point, and date it or link [TUNING.md](../TUNING.md).
 - Name config keys exactly as in code (`heat.bribe.controlPct`), so they can be searched.
-- Say what isn't built when it matters (for example, Act III), so no one assumes it exists.
+- Say what isn't built when it matters (for example, a mechanic a design proposed and the build dropped), so no one assumes it exists.

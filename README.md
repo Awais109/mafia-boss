@@ -33,7 +33,7 @@ The **Debug** tab holds the time skip, a config editor with presets (`fast` runs
 | `npm run sim -- --set heat.baseControl=6` | Try a config change before a human plays it |
 | `npm run sim -- --replay tester-log.json` | Same report over a tester's exported log |
 
-`sim/baseline.csv` is the seed-42, 8-day run on the current defaults. Diff new runs against it.
+`sim/baseline.csv` is the seed-42, 60-day run on the current defaults: every act, through an ending. Diff new runs against it.
 
 ## Layout
 

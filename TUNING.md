@@ -380,12 +380,18 @@ The sim now runs 60 days so an ending can be reached; so does the pacing guard.
 
 ## Open
 
-- **Front utilization ~58% (target 70–90%) and Dirty idle ~87% (target 20–50%)** over 34 days. The importer (Act IV) is capped by premium sales, so a premium shortage leaves it idle; `coverPerPremiumPack` is the knob to watch. The bot keeps a large Dirty reserve and the fronts can wash more than it deposits early on; by late Act III yield (~1,800/h) outruns laundering (~1,100 Clean/h with the Bank at full capacity), so Dirty piles up. The loan desk (M9) takes one loan at a time, so it doesn't move the metric, which is measured at session end.
-- **Wage share ~2%** over 22 days (manual 10–25%). Wages are about a quarter of day-1 income but a few percent of late Act II income, and upkeep doesn't change that. No number fixes both ends: raising wages or upkeep enough for Act II breaks the first day. Running costs that scale with the act would be a new rule, which the expansion plan doesn't have.
-- **Shortages are rare** (about 3 h per 8-day run, none in Act I). The plan's M3 gate asks for some shortage in Act I, under 10% of its hours.
-- **Act I clears at 4.64 d** against the manual's 1–2, since it's gated on seven build-out goals (ADR 0039). An owner decision: relax the goals or move the target. **Act II clears at 3.28 d** and **Act III at 6.47 d**, both in range.
-- **Gold barely accelerates Act I any more** (goldRush 4.19 d against 4.64): it speeds up jobs, and Act I is gated on building.
-- **Heat mean 33.6** over three acts: Act I around 38 while the bot fills its heat budget, Act II around 24 once the Captain arrives, Act III around 37 until City Hall does.
+Whole game, 10 seeds, 60 days (2026-09-29, after M13): Act I 4.64 d, Act II 3.28, Act III 6.44, Act IV 9.78, Act V 12.86, Act VI 13.08; heat over Acts I–V 29.4 (by act about 38, 24, 25, 27, 31; Act VI about 11, since legal businesses draw none); no raids, no missed wages, partial 0.46.
+
+- **Act I clears at 4.64 d** against the manual's 1–2, since it's gated on seven build-out goals (ADR 0039). An owner decision: relax the goals or move the target. Acts II–VI are all in range on 10/10 seeds, except Act III at 8/10.
+- **Front utilization ~52% (target 70–90%) and Dirty idle ~90% (target 20–50%)** over 60 days. Yield outruns laundering from late Act III on, and the loan desk takes one loan at a time. Act V's campaigns are the first large Dirty sink, and in Act VI legal Clean makes laundering matter less, so these metrics mean less the later the act. The importer (Act IV) is capped by premium sales; `coverPerPremiumPack` is the knob to watch.
+- **Wage share ~9%** over 60 days (manual 10–25%): a few percent through Acts II–V, rising in Act VI as legal businesses stop earning Dirty. Running costs that scale with the act would be a new rule, which no plan has.
+- **Act V clears at either ~10 d or 14.0 d**: on the first election won, or the second (ADR 0044). The bot wins the first in about a third of runs; its media come too late for the rest.
+- **The bot rarely reaches the Empire**: it legalizes everything and reaches the Holding first in 9 runs of 10. The Empire path is exercised by tests.
+- **Rep flattens after about day 40** once the bot owns the whole catalogue at max tier; only legalizing and upgrades are left to buy.
+- **Opinion reaches 100 about a week into Act V** once the media and the Palace are up, after which it stops being a choice until Legalize needs it.
+- **The Ministry freezes a front 3–12 times a run**, mostly after the election, when yield outgrows the Governor and a full opinion.
+- **Shortages are rare** (none in Act I). The plan's M3 gate asked for some shortage in Act I, under 10% of its hours.
+- **Gold barely accelerates Act I** (goldRush 4.19 d against 4.64): it speeds up jobs, and Act I is gated on building. Later acts clear within a day of the casual bot.
 - **The Union Office is built in Act III**, not before: City Hall is the first official after the Captain that Influence has to save for.
 - **Zhanna's lots are rare for the bot** (0.3 a run), because stock seldom gets within 12 hours of running out; surplus sales come to about ◆50 a run.
 - **No raids in the sim**, so only the tests exercise the Stash House's raid shield.

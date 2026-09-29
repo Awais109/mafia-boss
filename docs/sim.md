@@ -20,7 +20,7 @@
 
 A config that fails validation, an unreadable file, or a file that isn't a log export exits with code 1 and a message.
 
-`sim/baseline.csv` is the seed-42, 8-day run on current defaults. Regenerate it when defaults change and diff new runs against it.
+`sim/baseline.csv` is the seed-42, 60-day run on current defaults (`npm run sim -- --days 60 --seed 42`, then copy the CSV from `sim/out/`): every act, through an ending. Regenerate it when defaults change and diff new runs against it.
 
 ## The casual bot
 

@@ -31,7 +31,7 @@ Every grant goes through `grantGold(state, ctx, t, amount, source)` and emits `G
 
 | Source | When |
 |---|---|
-| `act` | Act II opens: `gold.perActUnlocked[2]`. `[3]` is for Act III, which isn't built |
+| `act` | Act II opens: `gold.perActUnlocked[2]`. `[3]`–`[6]` for each later act as it opens |
 | `debug` | `DEBUG_GRANT { gold }` |
 | `goal` | An Act I goal done: `goals.rewardGold` each ([progression.md](progression.md#act-i-goals)) |
 | `ad`, `purchase` | Reserved: rewarded ads and purchases aren't built |
