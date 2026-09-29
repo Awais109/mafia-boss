@@ -2,7 +2,7 @@
 
 Act VI turns the game's one rule around: money with a story needs no front. A business made legal earns Clean directly. The past keeps its books, though, and hearings come while any of the business is still illegal. The game has two endings, both recorded, neither final ([ADR 0045](../decisions/0045-act-vi-nagornaya.md)).
 
-**Code:** `engine/systems/legal.ts` (`legalOn`, `legalizeCost`, `legalizeBlocked`, `legalize`, `caseFile`, `illegalShare`, `hearingChance`, `reckoningDayBoundary`, `endingMet`, `checkEndings`); legal businesses and the Holding in `engine/core/derive.ts`; legal Clean in `accrue` (`engine/core/reconcile.ts`); the hearing's effects in `engine/systems/inbox.ts`; `freezeBusiestFront` in `engine/systems/politics.ts`. App: the Legalize button on Business, `app/components/ReckoningCard.tsx` on Turf.
+**Code:** `engine/systems/legal.ts` (`legalOn`, `legalizeCost`, `legalizeBlocked`, `legalize`, `caseFile`, `illegalShare`, `hearingChance`, `reckoningDayBoundary`, `endingMet`, `checkEndings`); legal businesses and the Holding in `engine/core/derive.ts`; legal Clean in `accrue` (`engine/core/reconcile.ts`); the hearing's effects in `engine/systems/inbox.ts`; `freezeBusiestFront` in `engine/systems/politics.ts`. App: the Legalize button on Business, `app/components/ReckoningCard.tsx` on the Map.
 **Config:** `legalize.*`, `reckoning.*`, `rackets.types.holding` (`legalBonusPerTier`), `districts.list.nagornaya` (`grantedOnOpen`, `lotsFor`), `incidents.types.hearing`.
 
 ## Nagornaya

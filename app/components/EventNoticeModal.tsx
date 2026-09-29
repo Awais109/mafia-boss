@@ -1,5 +1,7 @@
 import { View } from 'react-native'
-import { canAffordEffects } from '../../engine'
+import { canAffordEffects, DISTRICT_IDS, type LaterAct } from '../../engine'
+import { ACT_NAME, ACT_OPENS } from '../acts'
+import { ACT_TITLE, ACT_TURN, DISTRICT_STORY, revealedBy } from '../story'
 import { describeEvent } from '../eventText'
 import { fmtDuration } from '../format'
 import { effectsText, itemBody, itemTitle } from '../inbox'
@@ -69,6 +71,30 @@ export function EventNoticeModal({ notice, game }: { notice: QueuedNotice; game:
           })}
         </View>
         <Btn kind="primary" title="Got it" onPress={store.dismissNotice} />
+      </ModalPanel>
+    )
+  }
+
+  // An act opening is a page of Lyosha's notebook inking in (ADR 0046): the turn that brought you here, the
+  // district someone has just shown you, and what the act opens.
+  if (notice.event.type === 'ACT_UNLOCKED') {
+    const a = notice.event.act
+    const ids = revealedBy(c, a, DISTRICT_IDS)
+    return (
+      <ModalPanel onRequestClose={store.dismissNotice}>
+        <T small color={colors.faint}>{`ACT ${ACT_NAME[a]}`}</T>
+        <T bold color={colors.rep} style={{ fontSize: 19 }}>
+          {ACT_TITLE[a]}
+        </T>
+        <T style={{ fontStyle: 'italic' }}>{ACT_TURN[a as LaterAct]}</T>
+        {ids.map((id) => (
+          <View key={id} style={{ gap: 2, marginTop: 6 }}>
+            <T bold color={colors.accent}>{`New on the map: ${c.districts.list[id].name}`}</T>
+            <T small style={{ fontStyle: 'italic' }}>{DISTRICT_STORY[id].reveal}</T>
+          </View>
+        ))}
+        <T small muted>{`Opens ${ACT_OPENS[a]}.`}</T>
+        <Btn kind="primary" title="Turn the page" onPress={store.dismissNotice} />
       </ModalPanel>
     )
   }

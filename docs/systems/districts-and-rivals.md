@@ -163,6 +163,6 @@ price = round(shipment.basePrice
 
 Take Zastava and the road is yours: no more passage, no more convoys lost on the highway. Customs at the crossing is a separate risk that stays.
 
-The Turf tab's Zhanna card shows her mood, her next lot and its price, Buy, and Sell 10 or everything she'll still take today.
+The Map tab’s Zhanna card shows her mood, her next lot and its price, Buy, and Sell 10 or everything she'll still take today.
 
 **Tests:** `tests/apply.test.ts` (three pressure jobs flip a district and end its tribute, a refused demand damages a racket, paying clears it, a good talker pays the haggled price, a failed haggle insults him once and the demand stands, an explicit refusal breaks a business now, Station Square hosts the new businesses and falls to pressure, Tolya's visits speed up with joints and rackets but not premises, his demand reads the vault's base cap), `tests/zhanna.test.ts` (her price by mood and the hostile markup, lots only from Act II and once per cooldown, the daily surplus limit, smuggling harder while she holds the Port, taking her Port sours her).

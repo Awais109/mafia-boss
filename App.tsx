@@ -31,7 +31,7 @@ const TABS: { id: TabId; title: string; debugOnly?: boolean; render: (p: ScreenP
   { id: 'ops', title: 'Ops', render: (p) => <OpsScreen {...p} /> },
   { id: 'crew', title: 'Crew', render: (p) => <CrewScreen {...p} /> },
   { id: 'heat', title: 'Heat', render: (p) => <HeatScreen {...p} /> },
-  { id: 'turf', title: 'Turf', render: (p) => <TurfScreen {...p} /> },
+  { id: 'turf', title: 'Map', render: (p) => <TurfScreen {...p} /> },
   { id: 'stats', title: 'Stats', render: (p) => <StatsScreen {...p} /> },
   { id: 'help', title: 'How it works', render: (p) => <HowItWorksScreen {...p} /> },
   { id: 'log', title: 'Log', render: (p) => <LogScreen {...p} /> },

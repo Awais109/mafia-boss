@@ -2,7 +2,7 @@
 
 From Act IV, premium imported cigarettes come over the border by convoy. A convoy costs Clean and three crew for a long job. When it comes home it can be taken on the highway by the Colonel's men or seized by customs at the crossing; what gets through lands in premium stock ([ADR 0043](../decisions/0043-act-iv-zastava.md)).
 
-**Code:** `engine/systems/convoys.ts` (`colonelHolds`, `passageActive`, `colonelHostile`, `passageCost`, `changeColonel`, `convoyLoad`, `hijackChance`, `customsChance`, `buyPassage`, `landConvoy`), called from `resolveOp` in `engine/systems/ops.ts`; the `BUY_PASSAGE` handler in `engine/core/apply.ts`. App: `app/components/ColonelCard.tsx` on Turf; convoy odds on Ops.
+**Code:** `engine/systems/convoys.ts` (`colonelHolds`, `passageActive`, `colonelHostile`, `passageCost`, `changeColonel`, `convoyLoad`, `hijackChance`, `customsChance`, `buyPassage`, `landConvoy`), called from `resolveOp` in `engine/systems/ops.ts`; the `BUY_PASSAGE` handler in `engine/core/apply.ts`. App: `app/components/ColonelCard.tsx` on the Map; convoy odds on Ops.
 **Config:** `ops.list.runConvoy` (`costClean`, `premium`), `convoys.*`, `rivals.colonel.*`, `officials.list.customsChief.seizureMult`, and on `rackets.types`: `convoyBonusPerTier`, `hijackMult` (Convoy Depot), `premiumCapPerTier`, `seizureMult` (Bonded Warehouse).
 
 ## A convoy

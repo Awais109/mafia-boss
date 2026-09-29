@@ -1,8 +1,9 @@
-import { RANK_NAMES, type Config, type GameEvent, type PlayerState } from '../engine'
+import { RANK_NAMES, type Config, type GameEvent, type LaterAct, type PlayerState } from '../engine'
 import { ACT_NAME, ACT_OPENS } from './acts'
 import { colors, glyph } from './components/ui'
 import { GOAL_TEXT } from './goals'
 import { fmt, fmtDuration } from './format'
+import { ACT_TITLE, ACT_TURN } from './story'
 
 export type EventLine = { text: string; color?: string; quiet?: boolean }
 
@@ -155,9 +156,9 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
       // Once a day, and the only sign a payday happened: keep it on Home.
       return { text: `Paid wages ${d}${fmt(e.amount)}`, color: colors.dirty }
     case 'WAGES_MISSED':
-      return { text: `Couldn't cover wages (${d}${fmt(e.paid)} of ${fmt(e.owed)}). The crew is unhappy.`, color: colors.heat }
+      return { text: `Wages came due and there was only ${d}${fmt(e.paid)} of ${fmt(e.owed)}. Vitya said nothing, which is how you know.`, color: colors.heat }
     case 'WALKOUT':
-      return { text: `${e.name} walked out${e.stolen ? ` with ${d}${fmt(e.stolen)}` : ''}`, color: colors.heat }
+      return { text: `${e.name} left in the night${e.stolen ? ` with ${d}${fmt(e.stolen)}` : ''}. Nobody’s surprised.`, color: colors.heat }
     case 'DISTRICT_BOUGHT':
       return { text: `Bought out ${c.districts.list[e.districtId].name} (${cl}${fmt(e.cost)})`, color: colors.rep }
     case 'DISTRICT_PRESSURED':
@@ -187,9 +188,15 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
     case 'PERK_CHOSEN':
       return { text: `${e.name} is a ${c.crew.experience.perks[e.perk].name}: ${c.crew.experience.perks[e.perk].text}`, color: colors.rep }
     case 'ACT_UNLOCKED':
-      return { text: `ACT ${ACT_NAME[e.act]} — ${ACT_OPENS[e.act]}`, color: colors.rep }
+      return { text: `ACT ${ACT_NAME[e.act]} · ${ACT_TITLE[e.act]}. ${ACT_TURN[e.act as LaterAct]} Opens ${ACT_OPENS[e.act]}.`, color: colors.rep }
     case 'ACT_CLEARED':
-      return { text: `ACT ${ACT_NAME[e.act]} COMPLETE — the built game ends here. Keep playing if you like.`, color: colors.rep }
+      return {
+        text:
+          e.act === 6
+            ? `ACT ${ACT_NAME[e.act]} COMPLETE: the story is told. The city runs on, and so can you.`
+            : `ACT ${ACT_NAME[e.act]} COMPLETE: the built game ends here. Keep playing if you like.`,
+        color: colors.rep,
+      }
     case 'CONTEST_RESOLVED':
       return {
         text: `${e.name ?? 'Nobody'} ${e.won ? 'won' : 'lost'} (${STAT_NAME[e.stat]} against ${fmt(e.diff)})`,

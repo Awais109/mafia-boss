@@ -3,6 +3,33 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-29 — The map and the story (M13)
+
+Branch: `feature/acts-iii-vi`. Reasoning: [ADR 0046](docs/decisions/0046-map-and-story.md); canon: [docs/story.md](docs/story.md).
+
+### What changed, for a player
+
+- **The Turf tab is now the Map**: Lyosha's notebook. The city is drawn from the story, and each district is a pencil outline with a note in his hand until someone shows it to you. Tolya's boys show you Kiosk Row, Vitya the station, Zhanna the tram east, and so on to the hills, where you drive up yourself. Your businesses are marks on it. Tap a district for who holds it and what it's worth.
+- **Each act opens as a page**: its title, the line that brought you there, the district that's just been inked in with its line, and what the act opens.
+- The last line, either ending, is Vitya's.
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| The story as data, the reveal rules | `app/story.ts` (new) |
+| The map drawing | `app/components/CityMap.tsx` (new), `app/screens/TurfScreen.tsx` (the Map), `App.tsx` (the tab's title) |
+| The act page, the story's voice | `app/components/EventNoticeModal.tsx`, `app/eventText.ts` |
+| Tests | `tests/story.test.ts` (new) |
+| Docs | [story.md](docs/story.md) (new), [ADR 0046](docs/decisions/0046-map-and-story.md), app, testing, the Turf-to-Map renames |
+
+No engine, config or save change.
+
+### Verified
+
+- `npm run check`: typecheck, lint, 203 tests.
+- Not yet tried on a device: the map's layout needs a look on a phone.
+
 ## 2026-09-29 — Act VI, Nagornaya (M12)
 
 Branch: `feature/acts-iii-vi`. Reasoning: [ADR 0045](docs/decisions/0045-act-vi-nagornaya.md).

@@ -2,7 +2,7 @@
 
 From Act III, every district has a prosperity from 0 to 100, and its joints earn with it ([ADR 0041](../decisions/0041-act-iii-the-centre.md)). Joints lift a street; rackets sour it; a hotel lifts it a lot. The Card Club only opens on a prosperous street, and the Cooperative Bank only in a prosperous city.
 
-**Code:** `engine/systems/prosperity.ts` (`prosperityOn`, `prosperityTarget`, `prosperityHourBoundary`, `initProsperity`, `prosperityYieldMult`, `cityProsperity`), the joint multiplier in `engine/core/derive.ts` (`RacketDerived.prosperityMult`, `Derived.cityProsperity`), the checks in `engine/systems/districts.ts` (`racketBlocked`) and `engine/systems/fronts.ts` (`frontBlocked`). App: the district header on Business and the district cards on Turf.
+**Code:** `engine/systems/prosperity.ts` (`prosperityOn`, `prosperityTarget`, `prosperityHourBoundary`, `initProsperity`, `prosperityYieldMult`, `cityProsperity`), the joint multiplier in `engine/core/derive.ts` (`RacketDerived.prosperityMult`, `Derived.cityProsperity`), the checks in `engine/systems/districts.ts` (`racketBlocked`) and `engine/systems/fronts.ts` (`frontBlocked`). App: the district header on Business and the district cards on the Map.
 **Config:** `prosperity.*`; `prosperity`, `prosperityPerTier` and `minProsperity` on `rackets.types`; `minProsperity` on `fronts.types`.
 
 ## The number
