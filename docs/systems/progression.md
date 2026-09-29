@@ -34,9 +34,10 @@ Reputation is the progress currency: it unlocks bigger businesses, fronts and of
 - `gold.perActUnlocked[n]` bars ([gold.md](gold.md));
 - when *n* is `prosperity.fromAct`, every open district's prosperity starts at its target ([prosperity.md](prosperity.md));
 - when *n* is `opinion.fromAct`, opinion starts at its target and the first election is scheduled ([politics.md](politics.md));
+- any district with `grantedOnOpen` in act *n* becomes yours (Nagornaya);
 - Act II also emits the note about Zhanna.
 
-When the gate after `finalAct` holds, the final act is **cleared** instead: `stats.actClearedAt[finalAct] = t` and `ACT_CLEARED`, once. The game carries on (`gameCleared`), and the app says so in words ([ADR 0022](../decisions/0022-end-of-prototype-state.md)).
+With `finalAct` at 6 there's no gate after it: the first ending clears Act VI ([endgame.md](endgame.md#the-endings)). With a lower `finalAct` (a preset or a test), when the gate after `finalAct` holds, the final act is **cleared** instead: `stats.actClearedAt[finalAct] = t` and `ACT_CLEARED`, once. The game carries on (`gameCleared`), and the app says so in words ([ADR 0022](../decisions/0022-end-of-prototype-state.md)).
 
 What each act changes, beyond its own businesses, fronts, officials, districts and jobs (tagged `act` in config):
 - the vault leash `vault.targetHoursByAct`, the max tier `rackets.maxTierByAct` (6 from Act III), the price of a business `costs.paybackHoursByAct`;
@@ -50,7 +51,7 @@ What each act changes, beyond its own businesses, fronts, officials, districts a
 | III | the Centre ([ADR 0041](../decisions/0041-act-iii-the-centre.md)) | `progression.acts[3].rep` | yes |
 | IV | Zastava and the road to the border ([ADR 0043](../decisions/0043-act-iv-zastava.md)) | `progression.acts[4].rep` | yes |
 | V | the Kombinat: the auction, opinion, the Ministry, elections ([ADR 0044](../decisions/0044-act-v-kombinat.md)) | `progression.acts[5]`: Rep, hold Zastava, own the Import–Export Company | yes |
-| VI | the hills | `progression.acts[6]`: Rep and the mayor's office | not yet: VI's gate clears Act V |
+| VI | Nagornaya, the hills: Legalize, the Holding, the reckoning ([ADR 0045](../decisions/0045-act-vi-nagornaya.md)) | `progression.acts[6]`: Rep and the mayor's office | yes: an ending clears it ([endgame.md](endgame.md)) |
 
 The unlock ladder (`unlockRep`) sits inside each act: every Act II business opens below Act III's gate, and each later act's businesses spread from just above its own gate. Every non-zero threshold includes the 38 Rep the opening's setup earns ([ADR 0035](../decisions/0035-guided-opening.md)).
 

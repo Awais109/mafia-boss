@@ -58,6 +58,8 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 
 **Act V** ([ADR 0044](decisions/0044-act-v-kombinat.md)). An auctioned district is bought as soon as it can be, with a loan when Clean falls short. A point of public opinion is worth `opinionValuePct` (1%) of yield an hour, half once mayor, plus what it adds to the Construction Trust; the media and the Palace of Culture are valued by the opinion they add, the Combine by the premium it makes against the premium shortage risk. In the `campaignWithinHours` (48) before a count, before depositing or lending, it buys campaign points until its chance of winning reaches `campaignTarget` (0.9): Influence first, keeping back what the officials still to come will cost, then Dirty above its reserve. Deliver the Vote is worth the Dirty its points would cost while the election still needs them. It never deposits into a frozen front, and buys the Governor once mayor when the Ministry's attention reaches half the freeze line or its target reaches the line. Premises are placed only where `racketBlocked` allows, so the Kombinat's reserved lots and `onlyIn` hold for the bot too.
 
+**Act VI** ([ADR 0045](decisions/0045-act-vi-nagornaya.md)). It buys every district it can afford, for the Empire. Legalizing is a spend option worth the legal Clean × 2 (the Dirty it gives up mostly sat idle), with the heat it sheds counted as a negative heat gain, so legalizations compete with everything else on gain ÷ cost. The Holding is worth its bonus on the legal Clean, counting half of what isn't legal yet. In decisions, a frozen front costs the Clean the busiest front would have washed × 2, and a hearing won is worth `hearingWinHours` (6) of yield while the Empire still needs wins.
+
 **Gold.** The casual bot never spends gold, so the pacing guard measures the free game. `GOLD_RUSH` (`--persona goldRush`) is the casual bot plus one habit: after dispatching, it rushes every running job it can afford, soonest first, and dispatches again ([systems/gold.md](systems/gold.md)).
 
 **Decision value** (`valueOf`) = Dirty + Clean × 2 + packs × pack value (full while stock would run out within `stockReserveHours`, a fifth otherwise) + Rep × `repValue` + Influence × the same Influence value + loyalty × `loyaltyValue` for each named crew member (×3 for anyone below `raiseBelow`) − heat × the same heat cost. `valuation()` computes the Influence value and heat cost once for both.
@@ -82,7 +84,7 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 | Metric | Definition |
 |---|---|
 | Act *n* clear | Days from the previous act's clear (Act I: the game's start, `createdAt`) to `stats.actClearedAt[n]`, for every act up to `progression.finalAct`. Scored against `ACT_TARGETS` in `sim/report.ts`: I and II are the manual's §3 targets, III–VI the six-act design's ([ADR 0040](decisions/0040-six-acts.md)) |
-| Heat mean, min, max | Over hourly rows |
+| Heat mean, min, max | Over hourly rows before `legalize.fromAct`: legal businesses draw no heat by design, so Act VI isn't scored ([ADR 0045](decisions/0045-act-vi-nagornaya.md)) |
 | hours ≥40 | Hourly rows with heat at or above `heat.inspectThreshold` |
 | Front util | Mean over hours of throughput-weighted smoothed utilization |
 | Dirty idle | Mean over sessions of `min(1, dirtyAfter ÷ income)` |

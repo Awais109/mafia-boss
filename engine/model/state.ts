@@ -2,6 +2,7 @@ import type {
   Act,
   Controller,
   DistrictId,
+  Ending,
   FrontMode,
   GoalId,
   FrontType,
@@ -17,7 +18,7 @@ import type {
 } from '../config/schema'
 import type { GameEvent } from './events'
 
-export const SCHEMA_VERSION = 12
+export const SCHEMA_VERSION = 13
 export const LOG_CAP = 200
 export const LEDGER_ROWS = 8 // 7 closed days plus today's opening snapshot
 
@@ -31,6 +32,7 @@ export type Racket = {
   specialization?: Specialization // chosen on the way to rackets.specialization.atTier
   specialization6?: Specialization // chosen on the way to rackets.specialization6.atTier (ADR 0041)
   closedUntil?: number // shut (an investigation) until then: earns, sells and heats nothing
+  legal?: true // legalized (ADR 0045): earns Clean directly, draws no heat, pays no tribute
 }
 
 export type Front = {
@@ -135,6 +137,8 @@ export type InboxEffects = {
   perk?: string
   closeHours?: number // the business on the item shuts for this long
   injureHours?: number // the crew member who fought is hurt for this long
+  freezeHours?: number // the front moving the most money freezes for this long (ADR 0045)
+  hearingWon?: true // a hearing beaten in court: counts toward the Empire (ADR 0045)
   // Resolved when the option is chosen (ADR 0042): the best available crew member's stat + luck against diff.
   contest?: { stat: Stat; diff: number; win: InboxEffects; lose: InboxEffects }
 }
@@ -223,6 +227,10 @@ export type PlaytestStats = {
   convoys: { run: number; landed: number; hijacked: number; seized: number }
   passagesPaid: number // Dirty
   elections: { held: number; won: number }
+  legalized: number
+  legalClean: number // Clean earned by legal businesses
+  hearings: { held: number; won: number }
+  endings: Partial<Record<Ending, number>> // when each was first reached (ADR 0045)
   campaignPaid: { dirty: number; influence: number }
   frontsFrozen: number
   inbox: { filed: number; resolved: number; auto: number }
@@ -338,6 +346,10 @@ export function emptyStats(): PlaytestStats {
     convoys: { run: 0, landed: 0, hijacked: 0, seized: 0 },
     passagesPaid: 0,
     elections: { held: 0, won: 0 },
+    legalized: 0,
+    legalClean: 0,
+    hearings: { held: 0, won: 0 },
+    endings: {},
     campaignPaid: { dirty: 0, influence: 0 },
     frontsFrozen: 0,
     inbox: { filed: 0, resolved: 0, auto: 0 },

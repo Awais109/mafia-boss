@@ -348,6 +348,36 @@ The sim now runs 50 days so Act V can clear; the pacing guard runs 45.
 2026-09-29  tests/sim.test.ts: 34 → 45 days; Act V 10–14 added.
 ```
 
+## 2026-09-29 — M12: Act VI, Nagornaya (ADR 0045)
+
+The sim now runs 60 days so an ending can be reached; so does the pacing guard.
+
+```
+2026-09-29  New config (ADR 0045): legalize {fromAct 6, opinion 60, 48 h of tier yield in Clean, legal Clean at 60% of gross};
+            reckoning {fromAct 6, hearing chance 0.1 + 0.5 × the illegal share at each day start; case file 5 a raid, 3 an
+            arrest, 2 a frozen front, 2 a missed payment, max 40; the Empire at 5 hearings won}; the Holding {●150,000,
+            upkeep 300/h ×1.2, +10% a tier on legal businesses, one per city, Nagornaya only}; Nagornaya {yours when Act VI
+            opens, no spots, one lot for the Holding}; the hearing incident {let it run: the busiest front frozen 24 h; settle:
+            6 h of gross yield in Clean; fight: Brains vs 60 + 0.5 × the case file, win ★20 and a hearing}; finalAct 5→6.
+            Sim (5 seeds, 60 d): Act VI 2–4 d, every run on the Holding: the bot legalized everything at once. Heat mean over
+            the run fell to 22, since legal businesses draw none.
+2026-09-29  legalize.hoursOfYield 48→150→250→170
+            150: the Holding in 11.5–15 d (mean 13.3). 250: 21–23 d, and three seeds never finished. Kept 150, then 170 below.
+2026-09-29  Rule fixes (ADR 0045), not numbers: a hearing waits 23 h (`incidents.types.hearing.hours`, new) instead of the
+            8-h incident default: it's filed at midnight and Act VI's player visits once a day, so every hearing had been
+            defaulting before anyone could answer it. The sim report scores heat over the acts before Act VI only.
+2026-09-29  reckoning.empireWins 5→6; the hearing's fight diff 60→70
+            Once the bot could answer, it won every hearing and four seeds in ten reached the Empire in 4.5–9 d (Act VI mean
+            9.6). At 6 wins and difficulty 70 it wins a little over half, and the Empire comes first in one seed of ten. Kept.
+2026-09-29  legalize.hoursOfYield 150→170
+            With the harder court, the Holding landed at 10.0–12.5 d, at the bottom of the range. 170 centres it. Kept.
+            Final (10 seeds, 60 d): Act I 4.64 d, Act II 3.28 d (10/10), Act III 6.44 d (8/10), Act IV 9.78 d (10/10), Act V
+            12.86 d (10/10), Act VI 13.08 d (10/10), heat over Acts I–V 29.4 (10/10), raids 0, partial 0.46, missed wages 0,
+            front util 0.52, Dirty idle 0.90, wage share 0.09.
+            goldRush: Act V 13.65 d, Act VI 13.74 d (10/10), heat 29.6, missed wages 0.
+2026-09-29  tests/sim.test.ts: 45 → 60 days; an ending 10–18 d after Act V added.
+```
+
 ## Open
 
 - **Front utilization ~58% (target 70–90%) and Dirty idle ~87% (target 20–50%)** over 34 days. The importer (Act IV) is capped by premium sales, so a premium shortage leaves it idle; `coverPerPremiumPack` is the knob to watch. The bot keeps a large Dirty reserve and the fronts can wash more than it deposits early on; by late Act III yield (~1,800/h) outruns laundering (~1,100 Clean/h with the Bank at full capacity), so Dirty piles up. The loan desk (M9) takes one loan at a time, so it doesn't move the metric, which is measured at session end.

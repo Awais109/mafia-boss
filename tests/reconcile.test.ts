@@ -163,6 +163,22 @@ function kombinat(): PlayerState {
   return s
 }
 
+// Act VI (ADR 0045): legal businesses earning Clean beside illegal ones, the Holding, a hearing that may be filed
+// at the next day start against a case file, and a frozen front thawing.
+function nagornaya(): PlayerState {
+  let s = kombinat()
+  s.politics.opinion = 100
+  s.politics.points = config.elections.maxPoints
+  s.politics.nextElectionAt = T0 + 1
+  s.reputation = config.progression.acts[6].rep!
+  s = act(s, [{ type: 'DEBUG_HOLD_ELECTION' }, { type: 'BUY_RACKET', racketType: 'holding', districtId: 'nagornaya' }], T0)
+  const stall = s.rackets.find((r) => r.type === 'marketStall')!
+  const trust = s.rackets.find((r) => r.type === 'constructionTrust')!
+  s = act(s, [{ type: 'LEGALIZE', racketId: stall.id }, { type: 'LEGALIZE', racketId: trust.id }], T0)
+  s.stats.raids = 3
+  return s
+}
+
 describe('reconcile', () => {
   it('does nothing when now <= updatedAt', () => {
     const s = fresh()
@@ -171,7 +187,7 @@ describe('reconcile', () => {
   })
 
   it('reconcile(s, t2) equals reconcile(reconcile(s, t1), t2) on 1,000 random splits', () => {
-    const bases = [fresh(), busy(), centre(), zastava(), kombinat()]
+    const bases = [fresh(), busy(), centre(), zastava(), kombinat(), nagornaya()]
     const rand = makeRng('split-test').derive('splits')
     for (let i = 0; i < 1000; i++) {
       const base = bases[i % bases.length]

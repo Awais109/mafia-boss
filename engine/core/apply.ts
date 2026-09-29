@@ -6,6 +6,7 @@ import { changeLoyalty, crewSlots, regeneratePool, unassignEnforcer } from '../s
 import { checkActs } from '../systems/acts'
 import { canPressure, getDistrict, racketBlocked, takeDistrict } from '../systems/districts'
 import { buyPassage } from '../systems/convoys'
+import { legalize } from '../systems/legal'
 import { campaign, electionDue, electionScheduled } from '../systems/politics'
 import { lend, repayLoan, takeLoan } from '../systems/credit'
 import { frontBlocked } from '../systems/fronts'
@@ -473,6 +474,9 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
 
     case 'CAMPAIGN':
       return campaign(state, ctx, t, a.points, a.pay)
+
+    case 'LEGALIZE':
+      return legalize(state, ctx, t, a.racketId)
 
     case 'SELL_SURPLUS': {
       const z = state.rival.zhanna

@@ -36,7 +36,7 @@ export function opinionTarget(state: PlayerState, c: Config, t: number): number 
 export function ministryTarget(state: PlayerState, c: Config, d: Derived = derive(state, c)): number {
   const m = c.ministry
   const relief = state.officials.reduce((sum, id) => sum + (c.officials.list[id].ministryRelief ?? 0), 0)
-  return clamp100(m.perYield * (d.yieldPerHr + d.tributePerHr) - relief - (m.opinionRelief * state.politics.opinion) / 100)
+  return clamp100(m.perYield * (d.yieldPerHr + d.tributePerHr + d.legalGrossPerHr) - relief - (m.opinionRelief * state.politics.opinion) / 100)
 }
 
 // Control × this: a benefactor's neighbours don't call the police.
@@ -54,17 +54,23 @@ export function politicsHourBoundary(state: PlayerState, ctx: Ctx, t: number): v
   const d = derive(state, c)
   pol.attention += (ministryTarget(state, c, d) - pol.attention) * c.ministry.stepPerHr
   if (pol.attention < c.ministry.freezeAt || state.fronts.some((f) => f.frozenUntil !== undefined)) return
-  // Moscow looks at the front moving the most money; ties go to the older one.
+  if (freezeBusiestFront(state, ctx, t, c.ministry.freezeHours, d)) pol.attention = c.ministry.afterFreeze
+}
+
+// Freezes the front moving the most money (ties to the older one), or extends a freeze already on it. Used by
+// the Ministry at its peak and by a hearing left to run (ADR 0045). Returns whether a front was frozen.
+export function freezeBusiestFront(state: PlayerState, ctx: Ctx, t: number, hours: number, d: Derived = derive(state, ctx.c)): boolean {
   let pick = -1
   d.perFront.forEach((f, i) => {
-    if (pick < 0 || f.throughput > d.perFront[pick].throughput) pick = i
+    const busy = (x: number) => Math.max(d.perFront[x].throughput, d.perFront[x].frozen ? d.perFront[x].baseThroughput : 0)
+    if (pick < 0 || busy(i) > busy(pick)) pick = i
   })
-  if (pick < 0) return
+  if (pick < 0) return false
   const front = state.fronts[pick]
-  front.frozenUntil = t + hoursToMs(c, c.ministry.freezeHours)
-  pol.attention = c.ministry.afterFreeze
+  front.frozenUntil = Math.max(front.frozenUntil ?? 0, t + hoursToMs(ctx.c, hours))
   state.stats.frontsFrozen++
   emit(ctx, t, { type: 'FRONT_FROZEN', frontId: front.id, until: front.frozenUntil })
+  return true
 }
 
 // A frozen front thaws at its boundary.

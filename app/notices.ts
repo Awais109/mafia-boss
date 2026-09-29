@@ -31,6 +31,9 @@ const INFO_EVENTS = new Set<GameEvent['type']>([
   'CREW_INJURED',
   'LOAN_MISSED',
   'LENDING_DEFAULTED',
+  'FRONT_FROZEN',
+  'ELECTION_HELD',
+  'ENDING_REACHED',
 ])
 
 function isNoticeworthy(e: GameEvent): boolean {

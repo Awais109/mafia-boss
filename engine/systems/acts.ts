@@ -2,6 +2,7 @@ import type { ActGate, Config, LaterAct } from '../config/schema'
 import { emit, type Ctx } from '../core/ctx'
 import type { PlayerState } from '../model/state'
 import { grantGold } from './gold'
+import { checkEndings } from './legal'
 import { initPolitics } from './politics'
 import { initProsperity } from './prosperity'
 
@@ -33,6 +34,8 @@ export function gameCleared(state: PlayerState, c: Config): boolean {
 // Opens every act whose gate holds, in order. Called whenever Reputation, goals, districts or fronts change.
 export function checkActs(state: PlayerState, ctx: Ctx, t: number): void {
   const { c } = ctx
+  // Act VI has no gate after it: an ending clears it (ADR 0045).
+  checkEndings(state, ctx, t)
   for (let guard = 0; guard < 6; guard++) {
     const next = nextGate(state, c)
     if (!next || !gateMet(state, c, next.gate)) return
@@ -56,6 +59,10 @@ function openAct(state: PlayerState, ctx: Ctx, t: number, act: LaterAct): void {
   grantGold(state, ctx, t, c.gold.perActUnlocked[act], 'act')
   if (act === c.prosperity.fromAct) initProsperity(state, c, t)
   if (act === c.opinion.fromAct) initPolitics(state, c, t)
+  // A district with nobody to buy it from is yours when its act opens (Nagornaya, ADR 0045).
+  for (const d of state.districts) {
+    if (c.districts.list[d.id].grantedOnOpen && c.districts.list[d.id].act === act) d.controller = 'player'
+  }
   // Zhanna's trade opens with the Port (ADR 0036).
   if (act === 2) emit(ctx, t, { type: 'NOTE', text: 'Zhanna runs the Port Quarter. Her people watch every crate that moves.' })
 }

@@ -12,7 +12,7 @@ export const ACT_OPENS: Record<Act, string> = {
   3: 'the Centre across the bridge: prosperity, the Card Club and Print Shop, hotels, the Cooperative Bank, City Hall and tier 6',
   4: 'Zastava and the road to the border: premium cigarettes by convoy, the Colonel, the Import–Export Company and the Customs Chief',
   5: 'the Kombinat upriver: the Combine at auction, public opinion, the Ministry’s attention, and the election against Golovin',
-  6: 'the hills above the city',
+  6: 'Nagornaya, the hills: Legalize, the Holding, the reckoning, and the two endings',
 }
 
 export type ActProgress = {
@@ -46,7 +46,20 @@ export function actProgress(s: PlayerState, c: Config): ActProgress {
   if (cleared && clearedAt !== undefined) {
     return { act: s.act, cleared, nextAct: null, label: `${fmt(s.reputation)} · Act ${ACT_NAME[s.act]} cleared`, value: 1, max: 1, requirements: [] }
   }
-  if (!next) return { act: s.act, cleared, nextAct: null, label: fmt(s.reputation), value: 1, max: 1, requirements }
+  if (!next) {
+    // Act VI has no gate after it: either ending clears it (ADR 0045).
+    const earners = s.rackets.filter((r) => c.rackets.types[r.type].kind !== 'premises')
+    const legal = earners.filter((r) => r.legal).length
+    const held = s.districts.filter((d) => d.controller === 'player').length
+    const won = Math.min(s.stats.hearings.won, c.reckoning.empireWins)
+    requirements.push({ text: `the Holding: every business legal (${legal}/${earners.length})`, done: s.stats.endings.holding !== undefined })
+    requirements.push({
+      text: `the Empire: every district held (${held}/${s.districts.length}) and ${c.reckoning.empireWins} hearings won (${won})`,
+      done: s.stats.endings.empire !== undefined,
+    })
+    const toward = Math.max(earners.length ? legal / earners.length : 0, (held / s.districts.length + won / c.reckoning.empireWins) / 2)
+    return { act: s.act, cleared, nextAct: null, label: `${fmt(s.reputation)} · ${legal}/${earners.length} legal · ${won}/${c.reckoning.empireWins} hearings won`, value: toward, max: 1, requirements }
+  }
   const beyond = next.act > c.progression.finalAct
   const target = beyond ? `to clear Act ${ACT_NAME[s.act]}` : `to Act ${ACT_NAME[next.act]}`
   if (next.gate.goals) {

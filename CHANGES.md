@@ -3,6 +3,38 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-29 — Act VI, Nagornaya (M12)
+
+Branch: `feature/acts-iii-vi`. Reasoning: [ADR 0045](docs/decisions/0045-act-vi-nagornaya.md).
+
+### What changed, for a player
+
+- **Act VI opens the hills**, Nagornaya. Nobody sells them to you: you drive up, and they're yours. There's one lot, for the Holding.
+- **Legalize** any joint or racket, once the city thinks well enough of you. It costs days of its takings in Clean. From then on it earns Clean directly (after tax), draws no heat, pays no tribute and needs no front.
+- **The Holding** makes every legal business earn more for each tier.
+- **The reckoning.** Raids, arrests, frozen fronts and missed payments build a case file. While any of your business is illegal, a hearing can come at the start of a day. Settle it in Clean, fight it in court (Brains, harder the fatter the file), or let it run and lose your busiest front for a day.
+- **Two endings**, both recorded, neither final. The Holding: every business legal. The Empire: every district yours and six hearings beaten in court. Either one clears Act VI, and the game carries on.
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| Legalize, the case file, hearings, endings | `engine/systems/legal.ts` (new), `engine/core/derive.ts`, `engine/core/reconcile.ts` |
+| Hearing effects, per-incident expiry | `engine/systems/inbox.ts`, `engine/config/schema.ts` (`IncidentConfig.hours`, `freezeHours`, `cleanHoursOfYield`, `hearingWon`, `perCase`) |
+| Freezing a front, shared by the Ministry and hearings | `engine/systems/politics.ts` (`freezeBusiestFront`) |
+| Nagornaya, the endings clearing the last act | `engine/systems/acts.ts` (`grantedOnOpen`, `checkEndings`), `engine/config/defaults.ts` (`finalAct` 6) |
+| Save schema v13 | `engine/model/migrate.ts` (`v12to13`) |
+| The app | `app/components/ReckoningCard.tsx` (new); Legalize on Business; the header's ending progress; legal Clean in the money flow; Stats, How It Works, pop-ups and log filters |
+| The bot and report | `sim/persona.ts` (legalizing, the Holding, hearings, every district), `sim/report.ts` (heat over Acts I–V) |
+| Tests | `tests/nagornaya.test.ts` (new); the split test adds an Act VI game; migration covers v13; the pacing guard runs 60 days and adds Act VI |
+| Docs | [endgame.md](docs/systems/endgame.md) (new); economy, districts and rivals, progression, inbox, fronts, heat, politics, architecture, app, sim, testing |
+
+### Verified
+
+- `npm run check`: typecheck, lint, 199 tests.
+- `npm run sim -- --days 60 --runs 10`: every act from II to VI in range on 10/10 seeds (Act VI 13.08 d), heat over Acts I–V 29.4, no raids, no missed wages; tuning in [TUNING.md](TUNING.md).
+- Not yet tried on a device.
+
 ## 2026-09-29 — Act V, the Kombinat (M11)
 
 Branch: `feature/acts-iii-vi`. Reasoning: [ADR 0044](docs/decisions/0044-act-v-kombinat.md).

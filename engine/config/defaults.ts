@@ -212,6 +212,12 @@ export const defaults: Config = {
         act: 5, kind: 'premises', baseYield: 0, baseHeat: 3, unlockRep: 38000, maxInCity: 1, onlyIn: 'kombinat',
         purchase: 25000, upkeepPerHr: 120, upkeepTierMult: 1.2, opinionPerTier: 8,
       },
+      // Act VI, Nagornaya (ADR 0045): a villa on the hill, and the last upgrade track in the game.
+      holding: {
+        name: 'The Holding', description: 'A holding company in a villa above the city. Every legal business you own earns more for each tier.',
+        act: 6, kind: 'premises', baseYield: 0, baseHeat: 0, unlockRep: 96000, maxInCity: 1, onlyIn: 'nagornaya',
+        purchase: 150000, upkeepPerHr: 300, upkeepTierMult: 1.2, legalBonusPerTier: 0.1,
+      },
     },
   },
 
@@ -225,6 +231,20 @@ export const defaults: Config = {
   // Act IV (ADR 0043): premium imported cigarettes, a stock of their own. Nothing makes them yet: they come by convoy.
   premium: { fromAct: 4, baseCap: 60, startingStock: 0 }, // one convoy fits with no warehouse
   convoys: { customsBase: 0.08, customsPerHeat: 0.004, hijackChance: 0.4, hijackHostileMult: 1.5 },
+
+  // Act VI (ADR 0045): money with a story needs no front; the past keeps its books.
+  legalize: { fromAct: 6, minOpinion: 60, hoursOfYield: 170, cleanShare: 0.6 },
+  reckoning: {
+    fromAct: 6,
+    base: 0.1,
+    perIllegalShare: 0.5,
+    perRaid: 5,
+    perArrest: 3,
+    perFreeze: 2,
+    perMissedPayment: 2,
+    maxCase: 40,
+    empireWins: 6,
+  },
 
   // Act V (ADR 0044): what the city thinks of you, what Moscow thinks, and the elections in between.
   opinion: { fromAct: 5, base: 40, stepPerHr: 0.05, inspectedPenalty: 5, raidPenalty: 10, controlBonus: 0.5 },
@@ -549,6 +569,19 @@ export const defaults: Config = {
           { id: 'fight', name: 'Show them out', contest: { stat: 'muscle', diff: 55, win: {}, lose: { condition: -30, injureHours: 12 } } },
         ],
       },
+      // Act VI (ADR 0045): filed at a day start, likelier the more of the business is still illegal.
+      hearing: {
+        name: 'A hearing',
+        text: 'The prosecutor’s office has opened a file on you: raids, arrests, the Ministry’s notes. A judge wants to hear it.',
+        act: 6,
+        filed: true,
+        hours: 23, // filed at a day start: a once-a-day visit can answer it, and it's gone before the next roll
+        options: [
+          { id: 'letRun', name: 'Let it run', default: true, freezeHours: 24 },
+          { id: 'settle', name: 'Settle it, in Clean', cleanHoursOfYield: -6 },
+          { id: 'fight', name: 'Fight it in court', contest: { stat: 'brains', diff: 70, perCase: 0.5, win: { rep: 20, hearingWon: true }, lose: { freezeHours: 24 } } },
+        ],
+      },
       lendingDefault: {
         name: 'A borrower skips town',
         text: 'Someone the loan desk lent to has left the city, and your money went with him.',
@@ -617,6 +650,11 @@ export const defaults: Config = {
         lotsFor: ['combine', 'newspaper', 'tvStation'],
         mod: { yieldMult: { constructionTrust: 1.1 } },
       },
+      // Act VI (ADR 0045): the dachas above the Centre. Nobody to buy it from: you drive up.
+      nagornaya: {
+        name: 'Nagornaya', description: 'The hills above the city, where the dachas are. Nothing earns here; it’s where the Holding goes.',
+        act: 6, startsAs: 'none', grantedOnOpen: true, allows: [], premisesLots: 1, lotsFor: ['holding'], buyout: 0, tribute: 0, mod: {},
+      },
     },
   },
 
@@ -673,7 +711,7 @@ export const defaults: Config = {
   // Six acts (ADR 0040). Act II opens on the Act I goals; later acts on Reputation and what you hold.
   // finalAct is the last act this build has content for: its gate marks the game cleared instead.
   progression: {
-    finalAct: 5,
+    finalAct: 6,
     acts: {
       2: { goals: true },
       3: { rep: 1200 }, // 610 (Act II's old clear) → 1200: Act II ran 1.9 d against the manual's 3–5 (TUNING.md, M8)

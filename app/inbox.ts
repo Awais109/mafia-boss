@@ -41,6 +41,8 @@ export function effectsText(e: InboxEffects, c?: Config, game?: Snapshot): strin
     e.cigarettes ? `${sign(e.cigarettes)}${fmt(Math.abs(e.cigarettes))} packs` : '',
     e.closeHours ? `shut for ${fmt(e.closeHours)}h` : '',
     e.injureHours ? `hurt for ${fmt(e.injureHours)}h` : '',
+    e.freezeHours ? `your busiest front frozen for ${fmt(e.freezeHours)}h` : '',
+    e.hearingWon ? 'one hearing toward the Empire' : '',
   ].filter(Boolean)
   // A contest: who'd go, the odds, and what each branch does (ADR 0042).
   if (e.contest) {

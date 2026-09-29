@@ -229,15 +229,15 @@ describe('elections', () => {
     expect(r.state.politics.points).toBe(steady.ops.list.deliverVote.votes)
   })
 
-  it('clears Act V on the mayor’s office and its Rep, and Debug can hold the count now', () => {
+  it('opens Act VI on the mayor’s office and its Rep, and Debug can hold the count now', () => {
     const s = owned()
     s.reputation = steady.progression.acts[6].rep!
     s.politics.opinion = 100
     s.politics.points = steady.elections.maxPoints
-    expect(gameCleared(s, steady)).toBe(false)
     const r = act(s, [{ type: 'DEBUG_HOLD_ELECTION' }], T0, steady)
     expect(r.politics.mayor).toBe(true)
     expect(r.stats.actClearedAt[5]).toBe(T0)
-    expect(gameCleared(r, steady)).toBe(true)
+    expect(r.act).toBe(6)
+    expect(gameCleared(r, steady)).toBe(false)
   })
 })

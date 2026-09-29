@@ -25,6 +25,7 @@ export type Action =
   | { type: 'BUY_SHIPMENT'; product?: 'premium' }
   | { type: 'BUY_PASSAGE' }
   | { type: 'CAMPAIGN'; points: number; pay: 'dirty' | 'influence' }
+  | { type: 'LEGALIZE'; racketId: string }
   | { type: 'SELL_SURPLUS'; packs: number }
   | { type: 'TAKE_LOAN'; amount: number }
   | { type: 'REPAY_LOAN'; amount: number }

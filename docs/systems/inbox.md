@@ -28,9 +28,11 @@ Effects are **materialized when the item is filed**: a report's "−25% of the j
 - `dirtyPerAct` is a flat amount × act.
 - `dirtyHoursOfYield` is that many hours of the city's Dirty yield at filing time (the investigator's price).
 - `dirtyPerDue` and `cleanPerDue` are that many times the amount the item is about (a defaulted loan, a missed payment; [credit.md](credit.md)).
+- `cleanHoursOfYield` is that many hours of gross yield (Dirty, tribute and legal together) in Clean: a hearing's settlement ([endgame.md](endgame.md)).
+- A contest's `perCase` adds that much difficulty per point of the case file the item was filed with (hearings).
 - `condition` × `stashConditionMult` when a Stash House shares the named business's street.
 - A `contest`'s branches are materialized the same way, and its `enforcerBonus` comes off its difficulty when the named business has an enforcer.
-- The other fields are copied as they are, including `closeHours` (shut the business named on the item for that long) and `injureHours` (hurt the crew member who fought).
+- The other fields are copied as they are, including `closeHours` (shut the business named on the item for that long), `injureHours` (hurt the crew member who fought), `freezeHours` (freeze the front moving the most money for that long, `freezeBusiestFront`) and `hearingWon` (count a hearing won toward the Empire).
 
 Reports always file, even during the tutorial. They expire after `inbox.reportHours`.
 
@@ -44,11 +46,11 @@ Reports always file, even during the tutorial. They expire after `inbox.reportHo
 
 The Act III investigator (`investigation`, [ADR 0041](../decisions/0041-act-iii-the-centre.md)): close the Print Shop for a day (default) or pay three hours of the city's income.
 
-Incidents expire after `inbox.incidentHours`.
+Incidents expire after `inbox.incidentHours`, or their own `hours` when the type sets it (a hearing waits 23 hours).
 
 ## Filed incidents
 
-Some incidents come from a system rather than the hourly roll (`filed: true` keeps them out of it): `attack` (Tolya's boys, at his visits from Act III; [districts-and-rivals.md](districts-and-rivals.md#tolya)), `collectors` (a missed loan payment) and `lendingDefault` (a borrower who skipped town; [credit.md](credit.md)). `raiseIncident` takes what they're about: the business (`racketId`) and the amount (`due`).
+Some incidents come from a system rather than the hourly roll (`filed: true` keeps them out of it): `attack` (Tolya's boys, at his visits from Act III; [districts-and-rivals.md](districts-and-rivals.md#tolya)), `collectors` (a missed loan payment) `lendingDefault` (a borrower who skipped town; [credit.md](credit.md)) and `hearing` (the reckoning, at day starts from Act VI; [endgame.md](endgame.md)). `raiseIncident` takes what they're about: the business (`racketId`), the amount (`due`) and the case file (`caseFile`).
 
 ## Contests
 

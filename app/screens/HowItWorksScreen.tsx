@@ -161,6 +161,16 @@ export function HowItWorksScreen({ game }: ScreenProps) {
         </Section>
       )}
 
+      {c.progression.finalAct >= c.legalize.fromAct && (
+        <Section title="The endgame">
+          <Card>
+            <T small muted>
+              {`From Act ${ACT_NAME[c.legalize.fromAct]}, once the city's opinion of you is at least ${c.legalize.minOpinion}, any joint or racket can be made legal for ${c.legalize.hoursOfYield} hours of its takings in Clean. A legal business earns Clean directly, ${pct(c.legalize.cleanShare)} of what it takes (the rest is tax), draws no heat and pays no tribute: it needs no front and no vault. The Holding, in the hills, adds ${pct(c.rackets.types.holding.legalBonusPerTier ?? 0)} to every legal business a tier. The past keeps its books: raids, arrests, frozen fronts and missed payments build a case file, and while any of your business is illegal a hearing can come at the start of a day. Settle it in Clean, fight it in court, or let it run and lose your busiest front for a day. The game has two endings, both recorded, neither final: the Holding, with every business legal, and the Empire, with every district yours and ${c.reckoning.empireWins} hearings won in court.`}
+            </T>
+          </Card>
+        </Section>
+      )}
+
       <Section title="Officials">
         <Card>
           {OFFICIAL_IDS.map((id) => {

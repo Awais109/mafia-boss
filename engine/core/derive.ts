@@ -30,6 +30,8 @@ export type RacketDerived = {
   districtMult: number
   prosperityMult: number // joints: × the district's prosperity (ADR 0041); 1 otherwise
   opinionMult: number // the Construction Trust: × public opinion (ADR 0044); 1 otherwise
+  legal: boolean // legalized (ADR 0045): yield 0, exposure 0, no tribute
+  legalClean: number // Clean per hour it earns while legal
   closed: boolean // shut by an investigation: earns, sells and heats nothing
   synergyMult: number // side-by-side yield bonus (plan (m))
   upkeep: number // premises: Dirty/hr
@@ -77,6 +79,9 @@ export type SupplyDerived = {
 export type Derived = {
   yieldPerHr: number
   tributePerHr: number
+  legalCleanPerHr: number // Clean legal businesses earn directly (ADR 0045)
+  legalGrossPerHr: number // their gross yield, before tax
+  holdingMult: number // the Holding's bonus on legal businesses
   vaultCap: number // with the best Stash House's extra hours
   vaultCapBase: number // without them: Tolya's demand and the report read this
   stashHours: number
@@ -214,6 +219,9 @@ export function derive(state: PlayerState, c: Config): Derived {
     })
   }
 
+  // The Holding (ADR 0045): every legal business earns × this.
+  const holdingMult = 1 + Math.max(0, ...base.map((b) => (c.rackets.types[b.r.type].legalBonusPerTier ?? 0) * b.r.tier * b.cond))
+
   const perRacket: RacketDerived[] = base.map(({ r, kind, cond, fx, demand, made, capacity, leash, premiumDemand: pDemand }, i) => {
     const rt = c.rackets.types[r.type]
     const district = c.districts.list[r.districtId]
@@ -244,15 +252,19 @@ export function derive(state: PlayerState, c: Config): Derived {
           opinionMult *
           fx.yieldMult
     const grossYield = fullYield * (1 - share - pShare + share * served[i] + pShare * pServed)
-    const tributeRate = ours || mayor || controller === 'none' ? 0 : district.tribute
+    // A legal business (ADR 0045) earns Clean directly, pays no tribute and draws no heat.
+    const legal = r.legal === true
+    const tributeRate = legal || ours || mayor || controller === 'none' ? 0 : district.tribute
     const tribute = grossYield * tributeRate
     return {
       id: r.id,
       kind,
-      yield: grossYield - tribute,
+      yield: legal ? 0 : grossYield - tribute,
       grossYield,
+      legal,
+      legalClean: legal ? grossYield * c.legalize.cleanShare * holdingMult : 0,
       tribute,
-      exposure: closed
+      exposure: closed || legal
         ? 0
         : F.tierHeat(c, r.type, r.tier) * (enforced ? c.rackets.enforcer.heatMult : 1) * (spec?.exposureMult ?? 1) * (spec6?.exposureMult ?? 1),
       conditionMult: cond,
@@ -335,6 +347,9 @@ export function derive(state: PlayerState, c: Config): Derived {
   return {
     yieldPerHr,
     tributePerHr: sum(perRacket.map((r) => r.tribute)),
+    legalCleanPerHr: sum(perRacket.map((r) => r.legalClean)),
+    legalGrossPerHr: sum(perRacket.map((r) => (r.legal ? r.grossYield : 0))),
+    holdingMult,
     vaultCap: F.vaultCap(c, yieldPerHr, state.act, stashHours),
     vaultCapBase: F.vaultCap(c, yieldPerHr, state.act),
     stashHours,

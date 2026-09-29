@@ -37,10 +37,10 @@ function asV1(): Record<string, unknown> {
   delete s.premiumEmpty
   delete s.rival.colonel
   delete s.politics
-  for (const k of ['elections', 'campaignPaid', 'frontsFrozen']) delete s.stats[k]
+  for (const k of ['elections', 'campaignPaid', 'frontsFrozen', 'legalized', 'legalClean', 'hearings', 'endings']) delete s.stats[k]
   for (const k of ['premiumMade', 'premiumSold', 'premiumLostToCap', 'premiumShortageHours', 'convoys', 'passagesPaid']) delete s.stats[k]
   s.districts = s.districts
-    .filter((d: { id: string }) => !['stationSquare', 'centre', 'zastava', 'kombinat'].includes(d.id))
+    .filter((d: { id: string }) => !['stationSquare', 'centre', 'zastava', 'kombinat', 'nagornaya'].includes(d.id))
     .map(({ prosperity: _, ...d }: { prosperity: number }) => d)
   s.rackets = s.rackets.filter((r: { type: string }) => r.type === 'kiosk' || r.type === 'marketStall')
   s.stats.sessions = 3
@@ -90,6 +90,14 @@ describe('migrate', () => {
     expect(m.lending).toBeNull()
     expect(m.stats.loans).toEqual({ borrowed: 0, interest: 0, repaid: 0, missed: 0, seized: 0 })
     expect(m.stats.contests).toEqual({ won: 0, lost: 0 })
+  })
+
+  it('puts Nagornaya on the map, nobody’s until Act VI, with nothing legal and no ending', () => {
+    const m = migrate(asV1())
+    expect(m.districts.find((d) => d.id === 'nagornaya')).toEqual({ id: 'nagornaya', controller: 'none', pressureCount: 0, prosperity: config.prosperity.base })
+    expect(m.rackets.some((r) => r.legal)).toBe(false)
+    expect(m.stats.hearings).toEqual({ held: 0, won: 0 })
+    expect(m.stats.endings).toEqual({})
   })
 
   it('puts the Kombinat on the map, still the state’s, with opinion at its base and no election yet', () => {

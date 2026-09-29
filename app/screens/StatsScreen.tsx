@@ -89,7 +89,11 @@ export function StatsScreen({ game }: ScreenProps) {
               color={t.elections.won > 0 ? colors.good : colors.warn}
             />
           )}
-          {t.frontsFrozen > 0 && <Row label="Fronts frozen by the Ministry" value={fmt(t.frontsFrozen)} color={colors.heat} />}
+          {t.frontsFrozen > 0 && <Row label="Fronts frozen" hint="by the Ministry or a hearing" value={fmt(t.frontsFrozen)} color={colors.heat} />}
+          {t.legalized > 0 && <Row label="Businesses made legal" hint={`${glyph.clean}${fmt(t.legalClean)} earned legally`} value={fmt(t.legalized)} color={colors.clean} />}
+          {t.hearings.held > 0 && <Row label="Hearings" value={`${t.hearings.won} won of ${t.hearings.held}`} />}
+          {t.endings.holding !== undefined && <Row label="The Holding" value={fmtClock(t.endings.holding, s.createdAt, c)} color={colors.good} />}
+          {t.endings.empire !== undefined && <Row label="The Empire" value={fmtClock(t.endings.empire, s.createdAt, c)} color={colors.good} />}
         </Card>
       </Section>
 

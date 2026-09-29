@@ -2,6 +2,7 @@ import type {
   Act,
   Controller,
   DistrictId,
+  Ending,
   FrontMode,
   FrontType,
   GoalId,
@@ -73,6 +74,8 @@ export type EventBody =
   | { type: 'FRONT_THAWED'; frontId: string }
   | { type: 'CAMPAIGNED'; points: number; cost: number; pay: 'dirty' | 'influence'; total: number }
   | { type: 'ELECTION_HELD'; index: number; share: number; won: boolean }
+  | { type: 'LEGALIZED'; racketId: string; cost: number } // ADR 0045
+  | { type: 'ENDING_REACHED'; ending: Ending }
   | { type: 'SURPLUS_SOLD'; packs: number; dirty: number }
   | { type: 'REPORT_FILED'; itemId: string; opId: string; opType: OpType; outcome: OpOutcome; expiresAt: number }
   | { type: 'INCIDENT_RAISED'; itemId: string; incidentType: IncidentType; crewId?: string; racketId?: string; expiresAt: number }

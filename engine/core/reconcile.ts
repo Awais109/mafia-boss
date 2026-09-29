@@ -12,6 +12,7 @@ import { autoResolveInbox, rollIncident } from '../systems/inbox'
 import { ledgerDayBoundary } from '../systems/ledger'
 import { refreshOffersIfDue } from '../systems/offers'
 import { resolveOp } from '../systems/ops'
+import { reckoningDayBoundary } from '../systems/legal'
 import { electionDue, electionScheduled, politicsHourBoundary, thawFronts } from '../systems/politics'
 import { prosperityHourBoundary } from '../systems/prosperity'
 import { accrueVault, decayCondition, reopenBusinesses, settleUpkeep } from '../systems/rackets'
@@ -97,6 +98,10 @@ function accrue(state: PlayerState, ctx: Ctx, t: number, hours: number): void {
   state.wagesOwed += d.wagesPerHr * hours
   state.upkeepOwed += d.upkeepPerHr * hours
   state.influence += d.influencePerHr * hours
+  // Legal businesses earn Clean straight away (ADR 0045).
+  state.clean += d.legalCleanPerHr * hours
+  state.stats.cleanEarned += d.legalCleanPerHr * hours
+  state.stats.legalClean += d.legalCleanPerHr * hours
   accrueEnforcerXp(state, c, hours)
   // The vault and the stock each emit mid-segment instants: keep them in time order, so a split agrees.
   if (ctx.events.length - from > 1) ctx.events.push(...ctx.events.splice(from).sort((a, b) => a.t - b.t))
@@ -115,6 +120,7 @@ function hourBoundary(state: PlayerState, ctx: Ctx, t: number): void {
     crewDayBoundary(state, ctx, t)
     settleUpkeep(state, ctx, t) // after wages: the crew get paid first
     creditDayBoundary(state, ctx, t) // then the loan, from Clean
+    reckoningDayBoundary(state, ctx, t) // a hearing may be filed (Act VI)
     ledgerDayBoundary(state, t) // last: the snapshot sees the day's settled costs
   }
 }

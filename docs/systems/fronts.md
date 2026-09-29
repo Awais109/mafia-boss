@@ -36,7 +36,7 @@ clean    += converted × rate            (also stats.cleanEarned)
 
 ### Frozen fronts (Act V)
 
-The Ministry freezes the front moving the most money when its attention peaks ([politics.md](politics.md#the-ministry)): while `Front.frozenUntil` is set, `perFront[i].throughput` is 0 (`frozen`), the buffer waits, utilization falls, and `DEPOSIT` is refused ("The Ministry has frozen it"). It thaws at its boundary (`FRONT_THAWED`).
+The Ministry freezes the front moving the most money when its attention peaks ([politics.md](politics.md#the-ministry)), and so does a hearing left to run or lost in Act VI ([endgame.md](endgame.md)); a second freeze extends the first: while `Front.frozenUntil` is set, `perFront[i].throughput` is 0 (`frozen`), the buffer waits, utilization falls, and `DEPOSIT` is refused ("The Ministry has frozen it"). It thaws at its boundary (`FRONT_THAWED`).
 
 ## Modes
 

@@ -27,7 +27,7 @@ The cap is the session leash: once the vault is full, income stops until you col
 |---|---|---|---|---|
 | Joint | Dirty | for `cigaretteShare` of its yield, and premium for `premiumShare` | a spot its district allows | Kiosk, Market Stall, Beer Tent, Slot Hall; Café, Bathhouse; Nightclub, Card Club; Truck Stop, Motel, Foreign Goods Shop; Palace of Culture |
 | Racket | Dirty, with more heat per Dirty | no | a spot its district allows | Video Salon, Taxi Rank; Auto Shop, Petrol Station, Cargo Bay; Print Shop; Freight Yard, Fuel Depot; Construction Trust |
-| Premises | nothing; costs upkeep | no | a lot in any open district (some only in one: `onlyIn`) | Tobacco Factory, Warehouse; Stash House, Union Office; Hotel, Clinic, Loan Desk; Bonded Warehouse, Convoy Depot; the Combine, Newspaper, TV Station |
+| Premises | nothing; costs upkeep | no | a lot in any open district (some only in one: `onlyIn`) | Tobacco Factory, Warehouse; Stash House, Union Office; Hotel, Clinic, Loan Desk; Bonded Warehouse, Convoy Depot; the Combine, Newspaper, TV Station; the Holding |
 | Front | Clean | no | one of each, city-wide ([fronts.md](fronts.md)) | Currency Kiosk, Restaurant; Cooperative Bank; Import–Export Company; Development Fund |
 
 Every business except fronts lives in `state.rackets` and uses `BUY_RACKET`, `UPGRADE_RACKET` and `REPAIR_RACKET`; `rackets.types[type].kind` says which kind it is. The rule for any new type: joints and rackets answer "does it make money"; premises answer "does it supply, improve or protect something". Every type also carries a `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)).
@@ -53,8 +53,8 @@ gross    = baseYield × tierYieldMult^(tier−1)
            × synergy yieldMult      (see Synergies)
            × (1 − cigaretteShare − premiumShare
               + cigaretteShare × served + premiumShare × premiumServed)    (joints; each served is 1 unless that stock is out)
-tribute  = gross × district.tribute (while a rival controls the district, and you're not mayor)
-yield    = gross − tribute
+tribute  = gross × district.tribute (while a rival controls the district, and you're not mayor; never on a legal business)
+yield    = gross − tribute                                        (0 for a legal business: it earns Clean instead, endgame.md)
 exposure = baseHeat × tierHeatMult^(tier−1) × enforcer.heatMult (if enforced) × specialization.exposureMult
 ```
 
@@ -73,6 +73,7 @@ exposure = baseHeat × tierHeatMult^(tier−1) × enforcer.heatMult (if enforced
   - A **Convoy Depot**, one per city, adds `convoyBonusPerTier × tier × condition/100` to every convoy's load and scales the chance the Colonel's men take a convoy by `hijackMult`.
 - **Act V premises** ([ADR 0044](../decisions/0044-act-v-kombinat.md)), only on the Kombinat's lots:
   - **The Combine**, one per city, makes both products: `makesPerHr` cigarettes and `premiumMakesPerHr` premium, each × `tierMakeMult^(tier−1)` ([supply-chain.md](supply-chain.md)). Its upkeep is a payroll.
+  - (Act VI) **The Holding**, one per city on Nagornaya's lot: every legal business earns × `1 + legalBonusPerTier × tier` ([endgame.md](endgame.md)).
   - The **Newspaper** and the **TV Station**, one each per city, add `opinionPerTier × tier × condition/100` to public opinion's target ([politics.md](politics.md)). The Palace of Culture, a joint, does too.
 
 **Upkeep.** `upkeep = upkeepPerHr × upkeepTierMult^(tier−1) × synergy upkeep multipliers`. `Derived.upkeepPerHr` accrues into `upkeepOwed` continuously. At every day start, right after wages, `settleUpkeep` pays it from Dirty, then the vault:

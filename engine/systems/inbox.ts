@@ -18,6 +18,7 @@ import { changeLoyalty, effectiveStat } from './crew'
 import { injure } from './injuries'
 import { gainRep } from './reputation'
 import { changeDisposition } from './rivals'
+import { freezeBusiestFront } from './politics'
 import { addStock } from './supply'
 
 // Pending decisions (ADR 0024): crew reports when a job comes back, and incidents that roll
@@ -28,7 +29,16 @@ const EPS = 1e-6
 
 // What an item is filed against: the act, a job's Dirty (reports), the city's income (an investigator's
 // price), the amount it's about (a missed payment, a defaulted loan), and the business it names.
-export type MaterializeContext = { act: number; jobDirty?: number; yieldPerHr?: number; due?: number; stash?: boolean; enforced?: boolean }
+export type MaterializeContext = {
+  act: number
+  jobDirty?: number
+  yieldPerHr?: number
+  grossPerHr?: number // Dirty yield, tribute and legal gross together (a hearing's settlement, ADR 0045)
+  due?: number
+  stash?: boolean
+  enforced?: boolean
+  caseFile?: number // the prosecutor's file (ADR 0045)
+}
 
 function materializeEffects(fx: ChoiceEffectsConfig, m: MaterializeContext): InboxEffects {
   const effects: InboxEffects = {}
@@ -38,18 +48,19 @@ function materializeEffects(fx: ChoiceEffectsConfig, m: MaterializeContext): Inb
     Math.round((fx.dirtyHoursOfYield ?? 0) * (m.yieldPerHr ?? 0)) +
     Math.round((fx.dirtyPerDue ?? 0) * (m.due ?? 0))
   if (dirty) effects.dirty = dirty
-  const clean = Math.round((fx.cleanPerDue ?? 0) * (m.due ?? 0))
+  const clean = Math.round((fx.cleanPerDue ?? 0) * (m.due ?? 0)) + Math.round((fx.cleanHoursOfYield ?? 0) * (m.grossPerHr ?? 0))
   if (clean) effects.clean = clean
-  for (const k of ['influence', 'rep', 'heat', 'loyalty', 'disposition', 'cigarettes', 'closeHours', 'injureHours'] as const) {
+  for (const k of ['influence', 'rep', 'heat', 'loyalty', 'disposition', 'cigarettes', 'closeHours', 'injureHours', 'freezeHours'] as const) {
     if (fx[k]) effects[k] = fx[k]
   }
+  if (fx.hearingWon) effects.hearingWon = true
   // A Stash House on the street takes some of the damage (ADR 0042).
   if (fx.condition) effects.condition = Math.round(fx.condition * (m.stash && fx.stashConditionMult !== undefined ? fx.stashConditionMult : 1))
   if (fx.contest) {
     const k = fx.contest
     effects.contest = {
       stat: k.stat,
-      diff: k.diff - (m.enforced ? (k.enforcerBonus ?? 0) : 0),
+      diff: k.diff - (m.enforced ? (k.enforcerBonus ?? 0) : 0) + Math.round((k.perCase ?? 0) * (m.caseFile ?? 0)),
       win: materializeEffects(k.win, m),
       lose: materializeEffects(k.lose, m),
     }
@@ -123,7 +134,7 @@ export function raiseIncident(
   t: number,
   type: IncidentType,
   pick: () => number,
-  about: { racketId?: string; due?: number } = {},
+  about: { racketId?: string; due?: number; caseFile?: number } = {},
 ): void {
   const { c } = ctx
   const cfg = c.incidents.types[type]
@@ -132,7 +143,16 @@ export function raiseIncident(
   const racketId = about.racketId ?? incidentRacket(state, cfg.needs)
   const racket = racketId ? state.rackets.find((r) => r.id === racketId) : undefined
   const stash = racket !== undefined && state.rackets.some((r) => r.districtId === racket.districtId && c.rackets.types[r.type].shieldPerTier !== undefined)
-  const context: MaterializeContext = { act: state.act, yieldPerHr: derive(state, c).yieldPerHr, due: about.due, stash, enforced: !!racket?.enforcerId }
+  const d = derive(state, c)
+  const context: MaterializeContext = {
+    act: state.act,
+    yieldPerHr: d.yieldPerHr,
+    grossPerHr: d.yieldPerHr + d.tributePerHr + d.legalGrossPerHr,
+    due: about.due,
+    stash,
+    enforced: !!racket?.enforcerId,
+    caseFile: about.caseFile,
+  }
   const item: InboxItem = {
     id: newId(state, 'in'),
     kind: 'incident',
@@ -140,7 +160,7 @@ export function raiseIncident(
     ...(crewId ? { crewIds: [crewId] } : {}),
     ...(racketId ? { racketId } : {}),
     createdAt: t,
-    expiresAt: t + hoursToMs(c, c.inbox.incidentHours),
+    expiresAt: t + hoursToMs(c, cfg.hours ?? c.inbox.incidentHours),
     options: cfg.options.map((ch) => materializeChoice(ch, context)),
     defaultOptionId: defaultOf(cfg.options),
   }
@@ -233,6 +253,9 @@ function applyEffects(state: PlayerState, ctx: Ctx, t: number, item: InboxItem, 
     }
   }
   if (e.disposition) changeDisposition(state, e.disposition)
+  // Act VI (ADR 0045): a hearing left to run, or lost, costs a front for a while; one beaten counts toward the Empire.
+  if (e.freezeHours) freezeBusiestFront(state, ctx, t, e.freezeHours)
+  if (e.hearingWon) state.stats.hearings.won++
   if (e.rep && e.rep > 0) gainRep(state, ctx, t, e.rep)
   if (e.perk) {
     const perk = e.perk as PerkId

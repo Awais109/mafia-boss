@@ -7,6 +7,9 @@ import {
   prosperityOn,
   prosperityTarget,
   RACKET_TYPES,
+  legalizeBlocked,
+  legalizeCost,
+  legalOn,
   racketBlocked,
   type Config,
   type DistrictId,
@@ -47,6 +50,7 @@ function premisesEffect(c: Config, type: RacketType, tier: number): string {
     rt.hijackMult !== undefined ? `road losses ×${rt.hijackMult}` : '',
     rt.premiumMakesPerHr ? `makes ${glyph.premium}${fmtRate(formulas.premiumOutput(c, type, tier))}` : '',
     rt.opinionPerTier ? `public opinion +${fmt(rt.opinionPerTier * tier)}` : '',
+    rt.legalBonusPerTier ? `legal businesses +${pct(rt.legalBonusPerTier * tier)}` : '',
   ]
     .filter(Boolean)
     .join(', ')
@@ -238,7 +242,7 @@ function Condition({ r, rd }: { r: Racket; rd: RacketDerived }) {
 }
 
 function BusinessCard({ game, r, rd }: { game: Snapshot; r: Racket; rd: RacketDerived }) {
-  const { state: s, config: c } = game
+  const { state: s, derived: d, config: c } = game
   const rt = c.rackets.types[r.type]
   // The upgrades to tier 3 and tier 6 are each a choice (ADRs 0027, 0041); both past choices multiply.
   const sp = r.tier + 1 === c.rackets.specialization6.atTier ? c.rackets.specialization6 : c.rackets.specialization
@@ -257,7 +261,11 @@ function BusinessCard({ game, r, rd }: { game: Snapshot; r: Racket; rd: RacketDe
     ...(r.specialization6 ? [specTag(r.specialization6, c.rackets.specialization6.atTier)] : []),
     ...(rd.closed ? [{ text: 'shut', color: colors.heat }] : []),
     ...(enforcer ? [{ text: `enforcer: ${enforcer.name}`, color: colors.accent }] : []),
+    ...(r.legal ? [{ text: 'legal', color: colors.clean }] : []),
   ]
+  // Act VI (ADR 0045): what going legal would cost and earn.
+  const legalBlock = legalizeBlocked(s, c, r.id)
+  const legalCost = legalizeCost(s, c, r.id)
   return (
     <Card>
       <CardHeader title={`${rt.name} · tier ${r.tier}`} tags={tags} />
@@ -328,6 +336,20 @@ function BusinessCard({ game, r, rd }: { game: Snapshot; r: Racket; rd: RacketDe
           <Btn small title={`Repair ◆${fmt(rd.repairCost)}`} disabled={s.dirty < rd.repairCost} onPress={() => store.dispatch({ type: 'REPAIR_RACKET', racketId: r.id })} />
         )}
       </BtnRow>
+      {r.legal ? (
+        <T small color={colors.clean}>{`Legal: earns ${glyph.clean}${fmtRate(rd.legalClean)} Clean an hour after tax, with no heat, no tribute and no front.`}</T>
+      ) : legalOn(s, c) ? (
+        legalBlock ? (
+          <T small color={colors.faint}>{legalBlock}</T>
+        ) : (
+          <Btn
+            small
+            title={`Legalize: ●${fmt(legalCost)} (then ${glyph.clean}${fmtRate(rd.grossYield * c.legalize.cleanShare * d.holdingMult)}/h Clean, ▲0)`}
+            disabled={s.clean < legalCost}
+            onPress={() => store.dispatch({ type: 'LEGALIZE', racketId: r.id })}
+          />
+        )
+      ) : null}
     </Card>
   )
 }

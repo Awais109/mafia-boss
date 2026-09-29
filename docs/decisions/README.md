@@ -57,6 +57,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0042](0042-act-iii-credit-and-consequences.md) | Act III's consequences: contests in the inbox, injuries and the Clinic, Tolya's attacks, loans and the loan desk | Accepted |
 | [0043](0043-act-iv-zastava.md) | Act IV, Zastava: premium cigarettes as a second stock, convoys past the Colonel and customs, passage, the importer that washes only what its trade explains | Accepted |
 | [0044](0044-act-v-kombinat.md) | Act V, the Kombinat: an auctioned district, public opinion, the Ministry that freezes a front, elections and the mayor | Accepted |
+| [0045](0045-act-vi-nagornaya.md) | Act VI, Nagornaya: Legalize, the Holding, the reckoning's hearings, and two recorded endings | Accepted |
 
 ## Template
 

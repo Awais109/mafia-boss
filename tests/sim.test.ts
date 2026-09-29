@@ -20,8 +20,8 @@ function meanOf(summaries: Summary[], pick: (s: Summary) => number | null): numb
 }
 
 describe('casual bot pacing on default config', () => {
-  // Long enough for every built act to clear (Acts I–V take about 37 days on the bot).
-  const summaries = SEEDS.map((seed) => summarize(simulate({ config, preset: 'default', days: 45, seed })))
+  // Long enough for every act to clear (all six take about 50 days on the bot).
+  const summaries = SEEDS.map((seed) => summarize(simulate({ config, preset: 'default', days: 60, seed })))
 
   it('clears Act I in about 4–5.5 days (goal-gated now, ADR 0039)', () => {
     // Was ≤2.1 d under the old Rep-threshold gate. Completing every Act I goal — especially fully
@@ -55,6 +55,12 @@ describe('casual bot pacing on default config', () => {
     const actV = meanOf(summaries, (s) => s.actClears[4])
     expect(actV).toBeGreaterThanOrEqual(10)
     expect(actV).toBeLessThanOrEqual(14)
+  })
+
+  it('reaches an ending 10–18 days after Act V', () => {
+    const actVI = meanOf(summaries, (s) => s.actClears[5])
+    expect(actVI).toBeGreaterThanOrEqual(10)
+    expect(actVI).toBeLessThanOrEqual(18)
   })
 
   it('keeps heat on schedule with no more than one raid and no missed wages', () => {

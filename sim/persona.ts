@@ -18,6 +18,8 @@ import {
   derive,
   DISTRICT_IDS,
   electionScheduled,
+  legalizeBlocked,
+  legalizeCost,
   ministryTarget,
   opinionTarget,
   pointCost,
@@ -95,6 +97,7 @@ export type PersonaOptions = {
   opinionValuePct: number // a point of public opinion is worth this share of yield an hour (half once mayor)
   campaignTarget: number // campaign until the chance of winning the coming election is at least this
   campaignWithinHours: number // campaign when the election is at most this far off
+  hearingWinHours: number // a hearing beaten in court is worth this many hours of yield while the Empire needs it
 }
 
 export const CASUAL: PersonaOptions = {
@@ -122,6 +125,7 @@ export const CASUAL: PersonaOptions = {
   opinionValuePct: 0.01,
   campaignTarget: 0.9,
   campaignWithinHours: 48,
+  hearingWinHours: 6,
 }
 
 // Spends every bar it can finishing jobs (plan (t)): how much sooner do acts clear with gold?
@@ -459,6 +463,14 @@ export function playSession(
     if (front && short <= loanCap(state, c) && tryAct({ type: 'TAKE_LOAN', amount: Math.ceil(short) })) tryAct({ type: 'BUY_FRONT', frontType: front })
   }
 
+  // Act VI (ADR 0045): every district held is half the Empire; by now they cost little.
+  if (state.act >= c.legalize.fromAct) {
+    for (const id of DISTRICT_IDS) {
+      if (!d().unlocked.district[id] || controllerOf(state, id) === 'player' || state.clean < c.districts.list[id].buyout) continue
+      tryAct({ type: 'BUY_DISTRICT', districtId: id })
+    }
+  }
+
   // The auction (ADR 0044): a state district is the act's whole catalogue, so it's bought as soon as it can
   // be, with a loan when Clean falls short.
   for (const id of DISTRICT_IDS) {
@@ -671,6 +683,12 @@ function premiumPremisesValue(state: PlayerState, c: Config, d: Derived, rt: Con
   return (packsPerConvoy * perPremium) / 6 + made
 }
 
+// What a Holding tier is worth an hour (ADR 0045): its bonus on the legal Clean, counting what's about to go legal.
+function holdingValue(state: PlayerState, c: Config, d: Derived, bonus: number): number {
+  const legalGross = d.perRacket.reduce((sum, rd) => sum + rd.grossYield * (rd.legal ? 1 : 0.5), 0)
+  return bonus * legalGross * c.legalize.cleanShare * 2
+}
+
 // What a point of public opinion is worth an hour (ADR 0044): it wins elections, eases heat and the
 // Ministry, and pays the Construction Trust. Nothing once the target is already at the top.
 function opinionPointValue(state: PlayerState, c: Config, d: Derived, p: PersonaOptions): number {
@@ -762,6 +780,7 @@ export function spendOptions(state: PlayerState, c: Config, d: Derived, p: Perso
         if (rt.injuryMult) gain += state.crew.length * 2
         if (rt.lendHoursPerTier) gain += lendingValue(state, c, d, rt.lendHoursPerTier, id)
         if (rt.opinionPerTier) gain += rt.opinionPerTier * opinionPoint
+        if (rt.legalBonusPerTier) gain += holdingValue(state, c, d, rt.legalBonusPerTier)
         gain += premiumPremisesValue(state, c, d, rt, 1, id)
         if (!best || gain > best.gain) best = { id, gain }
       }
@@ -796,6 +815,14 @@ export function spendOptions(state: PlayerState, c: Config, d: Derived, p: Perso
     })
   }
 
+  // Act VI (ADR 0045): a legal business earns Clean with no front and no heat. Its Dirty mostly sat idle anyway.
+  state.rackets.forEach((r, i) => {
+    const rd = d.perRacket[i]
+    if (legalizeBlocked(state, c, r.id)) return
+    const legalClean = rd.grossYield * c.legalize.cleanShare * d.holdingMult
+    out.push({ action: { type: 'LEGALIZE', racketId: r.id }, cost: legalizeCost(state, c, r.id), gain: legalClean * 2, heatGain: -rd.exposure })
+  })
+
   state.rackets.forEach((r, i) => {
     const rd = d.perRacket[i]
     if (rd.upgradeCost === null) return
@@ -815,6 +842,7 @@ export function spendOptions(state: PlayerState, c: Config, d: Derived, p: Perso
       if (rt.prosperityPerTier) gain += prosperity.gainOf(r.districtId, rt.prosperityPerTier * cond, rt.prosperityPerTier * cond * (c.rackets.premises.maxTier - r.tier))
       if (rt.lendHoursPerTier) gain += lendingValue(state, c, d, rt.lendHoursPerTier * cond, r.districtId)
       if (rt.opinionPerTier) gain += rt.opinionPerTier * cond * opinionPoint
+      if (rt.legalBonusPerTier) gain += holdingValue(state, c, d, rt.legalBonusPerTier * cond)
       if (rt.premiumMakesPerHr) {
         const extra = (formulas.premiumOutput(c, r.type, r.tier + 1) - formulas.premiumOutput(c, r.type, r.tier)) * cond
         const room = Math.max(0, d.premium.demandPerHr - formulas.premiumOutput(c, r.type, r.tier) * cond)
@@ -853,7 +881,15 @@ export function spendOptions(state: PlayerState, c: Config, d: Derived, p: Perso
   return out
 }
 
-type Valuation = { influenceValue: number; heatCost: number; packValue: number; racketYield: Record<string, number>; injuryHourCost: number }
+type Valuation = {
+  influenceValue: number
+  heatCost: number
+  packValue: number
+  racketYield: Record<string, number>
+  injuryHourCost: number
+  busiestFrontClean: number // Clean an hour the busiest front washes
+  hourOfYield: number
+}
 
 // What the bot thinks Influence and heat are worth right now, shared by dispatch and decisions.
 function valuation(state: PlayerState, c: Config, p: PersonaOptions): Valuation {
@@ -870,6 +906,8 @@ function valuation(state: PlayerState, c: Config, p: PersonaOptions): Valuation 
     racketYield: Object.fromEntries(state.rackets.map((r, i) => [r.id, d.perRacket[i].yield])),
     // A crew member out hurt: roughly their share of a day's jobs.
     injuryHourCost: 5 + d.yieldPerHr * 0.02,
+    busiestFrontClean: Math.max(0, ...d.perFront.map((f) => f.throughput * f.rate * Math.min(1, f.util + 0.1))),
+    hourOfYield,
   }
 }
 
@@ -892,6 +930,9 @@ function valueOf(state: PlayerState, c: Config, p: PersonaOptions, v: Valuation,
   }
   // Shutting a business costs what it would have earned while it's shut.
   const closed = (e.closeHours ?? 0) * racketYield
+  // A frozen front costs the Clean it would have washed (ADR 0045); a hearing won is a step toward the Empire.
+  const frozen = (e.freezeHours ?? 0) * v.busiestFrontClean * 2
+  const hearing = e.hearingWon && state.stats.hearings.won < c.reckoning.empireWins ? p.hearingWinHours * v.hourOfYield : 0
   return (
     (e.dirty ?? 0) +
     (e.clean ?? 0) * 2 +
@@ -900,7 +941,9 @@ function valueOf(state: PlayerState, c: Config, p: PersonaOptions, v: Valuation,
     (e.influence ?? 0) * v.influenceValue -
     (e.heat ?? 0) * v.heatCost +
     loyalty -
-    closed +
+    closed -
+    frozen +
+    hearing +
     damage -
     hurt +
     contest

@@ -225,6 +225,12 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
         text: `Campaign: +${e.points} point${e.points === 1 ? '' : 's'} for ${e.pay === 'dirty' ? d : glyph.influence}${fmt(e.cost)} (${e.total} so far)`,
         quiet: true,
       }
+    case 'LEGALIZED':
+      return { text: `The ${racketName(e.racketId)} is legal now: ${glyph.clean}${fmt(e.cost)} in fees, and it earns Clean from here on`, color: colors.clean }
+    case 'ENDING_REACHED':
+      return e.ending === 'holding'
+        ? { text: 'Every business has a story now. The Holding. Vitya waits by the car: “Where to?”', color: colors.good }
+        : { text: 'Every district is yours and the courts have given up. The Empire. Vitya waits by the car: “Where to?”', color: colors.good }
     case 'ELECTION_HELD':
       return e.won
         ? { text: `You won the election with ${Math.round(e.share * 100)}% of the vote. The mayor's office is yours.`, color: colors.good }

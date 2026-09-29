@@ -25,7 +25,7 @@ export type Summary = {
   arrests: number
   missedWages: number
   walkouts: number
-  heatMean: number
+  heatMean: number // over the acts before legalize.fromAct
   heatMin: number
   heatMax: number
   hoursAbove40: number
@@ -92,6 +92,7 @@ const ABBREV: Record<RacketType, string> = {
   combine: 'CB',
   newspaper: 'NP',
   tvStation: 'TV',
+  holding: 'HD',
 }
 
 const mean = (xs: number[]): number => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : NaN)
@@ -104,7 +105,8 @@ export function summarize(trace: Trace): Summary {
   const clear2 = st.actClearedAt[2]
   const inRun = (t: number | undefined): boolean => t !== undefined && t >= start
 
-  const heats = hours.map((h) => h.heat)
+  // Heat is scored over the acts that run on Dirty: from Act VI legal businesses draw none by design (ADR 0045).
+  const heats = hours.filter((h) => h.act < c.legalize.fromAct).map((h) => h.heat)
   const outcomes = st.opOutcomes
   const opCount = outcomes.full + outcomes.partial + outcomes.fail
   const pct = (n: number) => (opCount ? n / opCount : 0)

@@ -32,7 +32,7 @@ Stepping only at whole hours keeps it constant inside a reconcile segment, like 
 The capital's attention, 0–100. It steps toward its target at whole hours (`ministry.stepPerHr`), after opinion:
 
 ```
-target = ministry.perYield × (yield + tribute per hour)
+target = ministry.perYield × (yield + tribute + legal gross per hour)      (legal businesses still count, endgame.md)
        − Σ officials ministryRelief            (the Governor)
        − ministry.opinionRelief × opinion/100
 ```

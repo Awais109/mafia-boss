@@ -15,13 +15,13 @@ export type RacketType =
   | 'autoShop' | 'cafe' | 'bathhouse' | 'petrol' | 'cargoBay' | 'stashHouse' | 'unionOffice'
   | 'cardClub' | 'nightclub' | 'printShop' | 'hotel' | 'clinic' | 'loanDesk'
   | 'truckStop' | 'motel' | 'foreignShop' | 'freightYard' | 'fuelDepot' | 'bondedWarehouse' | 'convoyDepot'
-  | 'palaceOfCulture' | 'constructionTrust' | 'combine' | 'newspaper' | 'tvStation'
+  | 'palaceOfCulture' | 'constructionTrust' | 'combine' | 'newspaper' | 'tvStation' | 'holding'
 export const RACKET_TYPES: readonly RacketType[] = [
   'kiosk', 'marketStall', 'beerTent', 'videoSalon', 'taxiRank', 'slotHall', 'tobaccoFactory', 'warehouse',
   'autoShop', 'cafe', 'bathhouse', 'petrol', 'cargoBay', 'stashHouse', 'unionOffice',
   'cardClub', 'nightclub', 'printShop', 'hotel', 'clinic', 'loanDesk',
   'truckStop', 'motel', 'foreignShop', 'freightYard', 'fuelDepot', 'bondedWarehouse', 'convoyDepot',
-  'palaceOfCulture', 'constructionTrust', 'combine', 'newspaper', 'tvStation',
+  'palaceOfCulture', 'constructionTrust', 'combine', 'newspaper', 'tvStation', 'holding',
 ]
 
 export type FrontType = 'currencyKiosk' | 'restaurant' | 'cooperativeBank' | 'importExport' | 'developmentFund'
@@ -57,9 +57,9 @@ export type PerkConfig = {
   noDrift?: boolean // steady: no daily loyalty drift
 }
 
-export type DistrictId = 'zarechye' | 'kioskRow' | 'stationSquare' | 'portQuarter' | 'sovietsky' | 'centre' | 'zastava' | 'kombinat'
+export type DistrictId = 'zarechye' | 'kioskRow' | 'stationSquare' | 'portQuarter' | 'sovietsky' | 'centre' | 'zastava' | 'kombinat' | 'nagornaya'
 export const DISTRICT_IDS: readonly DistrictId[] = [
-  'zarechye', 'kioskRow', 'stationSquare', 'portQuarter', 'sovietsky', 'centre', 'zastava', 'kombinat',
+  'zarechye', 'kioskRow', 'stationSquare', 'portQuarter', 'sovietsky', 'centre', 'zastava', 'kombinat', 'nagornaya',
 ]
 
 export type Stat = 'muscle' | 'brains' | 'nerve'
@@ -76,9 +76,15 @@ export const OP_OUTCOMES: readonly OpOutcome[] = ['full', 'partial', 'fail']
 
 export type IncidentType =
   | 'inspector' | 'drunkCrew' | 'shopkeeperLead' | 'copFavour' | 'badBatch' | 'investigation' | 'attack' | 'collectors' | 'lendingDefault'
+  | 'hearing'
 export const INCIDENT_TYPES: readonly IncidentType[] = [
   'inspector', 'drunkCrew', 'shopkeeperLead', 'copFavour', 'badBatch', 'investigation', 'attack', 'collectors', 'lendingDefault',
+  'hearing',
 ]
+
+// The two ways the game can end (ADR 0045): recorded, never final.
+export type Ending = 'holding' | 'empire'
+export const ENDINGS: readonly Ending[] = ['holding', 'empire']
 export type IncidentNeed = 'idleCrew' | 'joint' | 'factory' | 'inspected' | 'printShop'
 
 // Act I goals (ADR 0035, gate ADR 0039), each paying gold once. All of them must be done to open Act II.
@@ -102,8 +108,12 @@ export type ChoiceEffectsConfig = {
   cleanPerDue?: number // × the amount the item is about (a missed payment), fixed at filing
   stashConditionMult?: number // condition × this when a Stash House stands in the business's district
   injureHours?: number // the crew member who fought is hurt for this long (ADR 0042)
+  cleanHoursOfYield?: number // Clean = this × gross yield per hour, legal included, fixed when filed (ADR 0045)
+  freezeHours?: number // the front moving the most money is frozen for this long (ADR 0045)
+  hearingWon?: boolean // counts toward the Empire (ADR 0045)
   // A contest (ADR 0042): the best available crew member's stat + luck against diff; each branch is an effect.
-  contest?: { stat: Stat; diff: number; enforcerBonus?: number; win: ChoiceEffectsConfig; lose: ChoiceEffectsConfig }
+  // `perCase` adds this much difficulty per point of the case file (ADR 0045).
+  contest?: { stat: Stat; diff: number; enforcerBonus?: number; perCase?: number; win: ChoiceEffectsConfig; lose: ChoiceEffectsConfig }
 }
 
 // One option on a pending decision (a crew report or an incident). Effects are materialized
@@ -120,6 +130,7 @@ export type IncidentConfig = {
   act?: Act
   needs?: IncidentNeed
   filed?: boolean // filed by a system (an attack, a missed payment), never rolled at random
+  hours?: number // how long it waits for an answer, instead of inbox.incidentHours
   options: ChoiceConfig[]
 }
 
@@ -176,6 +187,7 @@ export type RacketTypeConfig = {
   opinionPerTier?: number // added to public opinion's target per tier (the Newspaper, the TV Station, the Palace of Culture)
   opinionYield?: [number, number] // rackets: yield × lerp(lo, hi, opinion ÷ 100) (the Construction Trust)
   onlyIn?: DistrictId // premises: only on this district's lots (the Combine)
+  legalBonusPerTier?: number // the Holding: every legal business earns × (1 + this × tier) (ADR 0045)
 }
 
 // Businesses that work better side by side in one district (plan (m)). Active in a district that has
@@ -251,6 +263,7 @@ export type DistrictConfig = {
   tribute: number // fraction of racket yield paid to the controller while not yours
   auction?: boolean // a state asset (ADR 0044): bought outright, never pressured, and nothing is built until it's yours
   lotsFor?: RacketType[] // its lots take only these premises (the Kombinat's: the Combine and the media)
+  grantedOnOpen?: boolean // yours when its act opens: there's no one to buy it from (Nagornaya, ADR 0045)
   mod: {
     yieldMult?: Partial<Record<RacketType, number>> // rackets in this district, once you control it
     wageMult?: number // all crew wages, once you control it
@@ -350,6 +363,24 @@ export type Config = {
     influencePerPoint: number // or this much Influence
     maxPoints: number
     mayor: { perkMult: number; control: number } // the office: district perks amplified, control added, no tribute
+  }
+  // Act VI (ADR 0045): money with a story, and the past that keeps its books.
+  legalize: {
+    fromAct: Act
+    minOpinion: number // the city has to think well enough of you
+    hoursOfYield: number // a business costs this many hours of its tier yield, in Clean
+    cleanShare: number // a legal business earns this share of its gross yield as Clean: the rest is tax
+  }
+  reckoning: {
+    fromAct: Act
+    base: number // chance of a hearing at a day start, before the illegal share
+    perIllegalShare: number // + this × the share of gross yield still illegal
+    perRaid: number // the case file: points per raid, arrest, frozen front and missed loan payment on record
+    perArrest: number
+    perFreeze: number
+    perMissedPayment: number
+    maxCase: number
+    empireWins: number // hearings won, with every district held, for the Empire
   }
   convoys: {
     customsBase: number // chance customs takes a load, before heat
@@ -611,7 +642,11 @@ function choices(e: string[], p: string, list: unknown) {
   if (defaults.length !== 1) e.push(`${p}: exactly one option must be the default`)
   const d = defaults[0]
   // Stock only ever falls to zero, so a default may lose packs; it may never cost Dirty or Clean (ADR 0032).
-  if (d && ((d.dirtyPct ?? 0) < 0 || (d.dirtyPerAct ?? 0) < 0 || (d.dirtyHoursOfYield ?? 0) < 0 || (d.dirtyPerDue ?? 0) < 0 || (d.cleanPerDue ?? 0) < 0)) {
+  if (
+    d &&
+    ((d.dirtyPct ?? 0) < 0 || (d.dirtyPerAct ?? 0) < 0 || (d.dirtyHoursOfYield ?? 0) < 0 || (d.dirtyPerDue ?? 0) < 0 || (d.cleanPerDue ?? 0) < 0 ||
+      (d.cleanHoursOfYield ?? 0) < 0)
+  ) {
     e.push(`${p}.${d.id}: the default option can't cost Dirty or Clean`)
   }
   if (d?.contest) e.push(`${p}.${d.id}: the default option can't be a contest`)
@@ -623,11 +658,13 @@ function effectsCheck(e: string[], p: string, fx: ChoiceEffectsConfig) {
   if (fx.injureHours !== undefined) nonNeg(e, `${p}.injureHours`, fx.injureHours)
   if (fx.closeHours !== undefined) nonNeg(e, `${p}.closeHours`, fx.closeHours)
   if (fx.stashConditionMult !== undefined) unit(e, `${p}.stashConditionMult`, fx.stashConditionMult)
+  if (fx.freezeHours !== undefined) nonNeg(e, `${p}.freezeHours`, fx.freezeHours)
   const k = fx.contest
   if (!k) return
   if (!STATS.includes(k.stat)) e.push(`${p}.contest.stat: unknown stat ${k.stat}`)
   nonNeg(e, `${p}.contest.diff`, k.diff)
   if (k.enforcerBonus !== undefined) nonNeg(e, `${p}.contest.enforcerBonus`, k.enforcerBonus)
+  if (k.perCase !== undefined) nonNeg(e, `${p}.contest.perCase`, k.perCase)
   for (const [branch, sub] of [['win', k.win], ['lose', k.lose]] as const) {
     if (!sub) { e.push(`${p}.contest.${branch}: missing`); continue }
     if (sub.contest) e.push(`${p}.contest.${branch}: a contest can't nest another`)
@@ -710,6 +747,7 @@ export function validateConfig(c: Config): string[] {
           if (rt.convoyBonusPerTier !== undefined) nonNeg(e, `${p}.convoyBonusPerTier`, rt.convoyBonusPerTier)
           if (rt.hijackMult !== undefined) unit(e, `${p}.hijackMult`, rt.hijackMult)
           if (rt.onlyIn !== undefined && !DISTRICT_IDS.includes(rt.onlyIn)) e.push(`${p}.onlyIn: unknown district ${rt.onlyIn}`)
+          if (rt.legalBonusPerTier !== undefined) nonNeg(e, `${p}.legalBonusPerTier`, rt.legalBonusPerTier)
         } else {
           positive(e, `${p}.baseYield`, rt.baseYield)
         }
@@ -902,6 +940,7 @@ export function validateConfig(c: Config): string[] {
         const inc = c.incidents.types[t]
         if (!inc) { e.push(`incidents.types.${t}: missing`); continue }
         choices(e, `incidents.types.${t}.options`, inc.options)
+        if (inc.hours !== undefined) positive(e, `incidents.types.${t}.hours`, inc.hours)
       }
     },
     (e) => {
@@ -923,7 +962,8 @@ export function validateConfig(c: Config): string[] {
       int(e, 'districts.pressureOpsToFlip', c.districts.pressureOpsToFlip, 1)
       for (const id of DISTRICT_IDS) {
         const d = c.districts.list[id]
-        if (!Array.isArray(d.allows) || d.allows.length === 0) e.push(`districts.list.${id}.allows: list at least one racket type`)
+        // A district hosts at least one business: a spot, or failing that a lot (Nagornaya has only the Holding's).
+        if (!Array.isArray(d.allows) || (d.allows.length === 0 && !(d.premisesLots > 0))) e.push(`districts.list.${id}.allows: list at least one racket type`)
         else {
           for (const t of d.allows) {
             if (!RACKET_TYPES.includes(t)) e.push(`districts.list.${id}.allows: unknown racket type ${t}`)
@@ -1039,6 +1079,17 @@ export function validateConfig(c: Config): string[] {
       int(e, 'elections.maxPoints', el.maxPoints, 1)
       num(e, 'elections.mayor.perkMult', el.mayor.perkMult, (n) => n >= 1, '>= 1')
       nonNeg(e, 'elections.mayor.control', el.mayor.control)
+      const lg = c.legalize
+      if (!ACTS.includes(lg.fromAct)) e.push('legalize.fromAct: expected an act')
+      num(e, 'legalize.minOpinion', lg.minOpinion, (n) => n >= 0 && n <= 100, 'in [0, 100]')
+      positive(e, 'legalize.hoursOfYield', lg.hoursOfYield)
+      rate(e, 'legalize.cleanShare', lg.cleanShare)
+      const rk = c.reckoning
+      if (!ACTS.includes(rk.fromAct)) e.push('reckoning.fromAct: expected an act')
+      unit(e, 'reckoning.base', rk.base)
+      nonNeg(e, 'reckoning.perIllegalShare', rk.perIllegalShare)
+      for (const k of ['perRaid', 'perArrest', 'perFreeze', 'perMissedPayment', 'maxCase'] as const) nonNeg(e, `reckoning.${k}`, rk[k])
+      int(e, 'reckoning.empireWins', rk.empireWins, 1)
     },
     (e) => {
       const g = c.gold

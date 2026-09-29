@@ -44,6 +44,7 @@ export {
   voteShare,
   winChance,
 } from './systems/politics'
+export { caseFile, endingMet, hearingChance, illegalShare, legalizeBlocked, legalizeCost, legalOn } from './systems/legal'
 export { clinicLoyaltyPerDay, injuryMult } from './systems/injuries'
 export { ledgerDays, type LedgerDay } from './systems/ledger'
 export { tolyaHostile, tolyaIntervalHours } from './systems/rivals'

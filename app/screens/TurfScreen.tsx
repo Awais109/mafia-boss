@@ -3,6 +3,7 @@ import { DISTRICT_IDS, prosperityOn, prosperityTarget, tolyaHostile, tolyaInterv
 import { ACT_NAME } from '../acts'
 import { ColonelCard } from '../components/ColonelCard'
 import { PoliticsCard } from '../components/PoliticsCard'
+import { ReckoningCard } from '../components/ReckoningCard'
 import { TributeCard } from '../components/TributeCard'
 import { ZhannaCard } from '../components/ZhannaCard'
 import { Btn, BtnRow, Card, colors, Row, Screen, Section, T, Tag } from '../components/ui'
@@ -51,7 +52,11 @@ export function TurfScreen({ game, go }: ScreenProps) {
                       color={colors.good}
                     />
                   )}
-                  <T small muted>{`Hosts ${dc.allows.map((t) => c.rackets.types[t].name).join(', ')} · ${count}/${dc.allows.length} running · premises lots ${lotsUsed}/${dc.premisesLots}`}</T>
+                  <T small muted>
+                    {dc.allows.length
+                      ? `Hosts ${dc.allows.map((t) => c.rackets.types[t].name).join(', ')} · ${count}/${dc.allows.length} running · premises lots ${lotsUsed}/${dc.premisesLots}`
+                      : `Nothing earns here · ${dc.lotsFor?.map((t) => c.rackets.types[t].name).join(', ') ?? 'premises'} lots ${lotsUsed}/${dc.premisesLots}`}
+                  </T>
                   {dc.auction && !ours && <T small color={colors.warn}>A state asset: it sells at auction, can’t be pressured, and nothing goes in until it’s yours.</T>}
                   {!ours && dc.tribute > 0 && (
                     <Row label="Tribute" hint={`${pct(dc.tribute)} of yield here`} value={`◆${fmtRate(tributeHere)}`} color={colors.warn} />
@@ -98,6 +103,12 @@ export function TurfScreen({ game, go }: ScreenProps) {
       {s.act >= 2 && (
         <Section title="Zhanna">
           <ZhannaCard game={game} />
+        </Section>
+      )}
+
+      {s.act >= c.reckoning.fromAct && (
+        <Section title="The reckoning">
+          <ReckoningCard game={game} />
         </Section>
       )}
 

@@ -26,6 +26,9 @@ export function MoneyFlow({ game }: { game: Snapshot }) {
         value={washing.length ? `+${cl}${fmtRate(washOut)}` : '—'}
         color={washing.length ? colors.clean : colors.faint}
       />
+      {d.legalCleanPerHr > 0 && (
+        <Row label="Legal businesses" hint="Clean straight in, after tax" value={`+${cl}${fmtRate(d.legalCleanPerHr)}`} color={colors.clean} />
+      )}
       <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 2 }} />
       <Row label="Dirty on hand" value={`${d$}${fmt(s.dirty)}`} color={colors.dirty} />
       <Row label="Clean on hand" hint="buys businesses, earns Rep" value={`${cl}${fmt(s.clean)}`} color={colors.clean} />
