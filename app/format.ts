@@ -13,6 +13,18 @@ export function fmt(v: number): string {
 
 export const fmtRate = (v: number): string => `${fmt(v)}/h`
 
+// The header's rule (design: Foundations · Numbers): whole figures under 10,000, then three significant
+// figures in thousands or millions, so every cell holds five characters. Cards print whole figures.
+export function fmtShort(v: number): string {
+  if (!Number.isFinite(v)) return '—'
+  const abs = Math.abs(v)
+  const sign = v < 0 ? '-' : ''
+  if (abs < 10_000) return fmt(v)
+  const three = (n: number) => (n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2))
+  if (abs < 999_500) return `${sign}${three(abs / 1000)}K`
+  return `${sign}${three(abs / 1_000_000)}M`
+}
+
 export const pct = (v: number): string => `${Math.round(v * 100)}%`
 
 export function fmtDuration(ms: number, c: Config): string {

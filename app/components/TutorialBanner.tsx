@@ -1,9 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native'
-import { currentTutorialStep, formulas, type Config, type TutorialStepId } from '../../engine'
+import { currentTutorialStep, formulas, TUTORIAL_STEPS, type Config, type TutorialStepId } from '../../engine'
 import { fmt } from '../format'
 import type { TabId } from '../screens/types'
 import { store, type Snapshot } from '../store'
-import { Btn, colors, glyph } from './ui'
+import { fonts } from '../theme'
+import { Btn, colors, glyph, rich } from './ui'
 
 type Copy = { title: string; body: string; tab?: TabId; cta?: string }
 
@@ -88,19 +89,31 @@ function copy(c: Config): Record<TutorialStepId, Copy> {
   }
 }
 
+// The opening banner (design: Components · Opening banner): the step and a row of dashes, the step's
+// title and one or two sentences with live numbers, a wide button to the right place, and Skip.
 export function TutorialBanner({ game, go }: { game: Snapshot; go: (tab: TabId) => void }) {
   const step = currentTutorialStep(game.state)
   if (!step) return null
   const text = copy(game.config)[step]
+  const index = TUTORIAL_STEPS.findIndex((st) => st.id === step)
+  const title = text.title.replace(/^\d+ · /, '')
   return (
     <View style={styles.wrap}>
-      <Text style={styles.title}>{text.title}</Text>
-      <Text style={styles.body}>{text.body}</Text>
+      <View style={styles.head}>
+        <Text style={styles.step}>{`Step ${index + 1} of ${TUTORIAL_STEPS.length}`}</Text>
+        <View style={styles.dashes}>
+          {TUTORIAL_STEPS.map((st, i) => (
+            <View key={st.id} style={[styles.dash, { backgroundColor: i < index ? colors.accent : i === index ? colors.dot : colors.control }]} />
+          ))}
+        </View>
+      </View>
+      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.body}>{rich(text.body, 13)}</Text>
       <View style={styles.actions}>
         {text.tab && text.cta ? (
-          <Btn small kind="primary" title={text.cta} onPress={() => go(text.tab!)} />
+          <Btn kind="primary" title={text.cta} onPress={() => go(text.tab!)} style={styles.primary} />
         ) : (
-          <Btn small kind="primary" title="Got it" onPress={() => store.dispatch({ type: 'TUTORIAL_ADVANCE' })} />
+          <Btn kind="primary" title="Got it" onPress={() => store.dispatch({ type: 'TUTORIAL_ADVANCE' })} style={styles.primary} />
         )}
         <Btn small kind="ghost" title="Skip: set me up" onPress={() => store.dispatch({ type: 'TUTORIAL_SKIP' })} />
       </View>
@@ -109,8 +122,13 @@ export function TutorialBanner({ game, go }: { game: Snapshot; go: (tab: TabId) 
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginHorizontal: 12, marginTop: 8, padding: 10, borderRadius: 8, backgroundColor: '#2a2519', borderWidth: 1, borderColor: '#5c4d2c', gap: 6 },
-  title: { color: colors.accent, fontWeight: '700', fontSize: 13 },
-  body: { color: colors.text, fontSize: 13, lineHeight: 18 },
-  actions: { flexDirection: 'row', gap: 8 },
+  wrap: { paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#221c12', borderBottomWidth: 1, borderBottomColor: '#5c4b25', gap: 10 },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  step: { fontFamily: fonts.text600, fontSize: 11, letterSpacing: 1.8, textTransform: 'uppercase', color: colors.accent },
+  dashes: { flexDirection: 'row', gap: 3 },
+  dash: { width: 7, height: 3, borderRadius: 1 },
+  title: { fontFamily: fonts.text600, fontSize: 17, color: colors.text },
+  body: { fontFamily: fonts.text400, fontSize: 13, lineHeight: 19, color: colors.muted },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  primary: { flexGrow: 1 },
 })

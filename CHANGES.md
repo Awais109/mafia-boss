@@ -3,6 +3,43 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-29 — The warm-ledger design, part 1: the foundation (D1)
+
+Branch: `feature/design-v2`. Reasoning: [ADR 0047](docs/decisions/0047-warm-ledger-design.md). The design itself: `design/Sevgorod Screens.html`, from the brief in `design/sevgorod-design-brief.md`.
+
+### What changed, for a player
+
+- **A new look.** Warm dark cards, brass accents, condensed type, and drawn glyphs for every resource.
+- **The header.**
+  - Figures are shortened to three significant figures (22.7K, 1.00M); tap a cell for the full figure.
+  - The Heat cell opens Heat and names the line you're over.
+  - The Rep line says what it's heading for: the opening's step, Act I's goals, the next act's Rep, or in Act VI the two endings.
+- **Navigation.**
+  - A bottom bar with Home, Business, Fronts, Ops and Map.
+  - Crew, Heat, Stats, How it works and Log are under More, each with a one-line status.
+- **The opening's banner** is full width, with the step count, a dash per step, and one wide button.
+- **Notices** are toasts with an icon.
+
+The screens themselves keep their old layout inside the new styles. Redesigning each one is the next step.
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| Palette, fonts, glyphs | `app/theme.ts`, `app/fonts.ts`, `app/components/Glyph.tsx` (new) |
+| Primitives, same API | `app/components/ui.tsx` (adds `rich`, `Title`, `Totals`, `Divider`, card tones, button second lines) |
+| The shell | `App.tsx` (font loading, bottom bar, More sheet, `?tab=` on web), `app/components/Header.tsx`, `TutorialBanner.tsx`, `NoticeBar.tsx` |
+| Helpers | `app/format.ts` (`fmtShort`), `app/acts.ts` (`note`, `segments`, `split`) |
+| Dependencies | `expo-font`, `react-native-svg`, five `@expo-google-fonts/*`; `react-native-web`, `react-dom`, `@expo/metro-runtime` for the web screenshot build; `app.json` adds the `expo-font` plugin |
+| Docs | [ADR 0047](docs/decisions/0047-warm-ledger-design.md) (supersedes part of 0008), [app.md](docs/app.md) (shell, look and feel, checking screens against the design), [native-builds.md](docs/native-builds.md), the doc map, the root README |
+
+No engine, config or save change.
+
+### Verified
+
+- `npm run check`.
+- The web build at 390 px wide: a new game, and Acts III and VI from sim saves.
+
 ## 2026-09-29 — The map and the story (M13)
 
 Branch: `feature/acts-iii-vi`. Reasoning: [ADR 0046](docs/decisions/0046-map-and-story.md); canon: [docs/story.md](docs/story.md).

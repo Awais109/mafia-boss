@@ -24,13 +24,14 @@ What is built, how it works, and why. Written so a person or an LLM new to the r
 | [systems/credit.md](systems/credit.md) | Act III: borrowing Clean and paying it back, the collectors, lending Dirty through a loan desk |
 | [systems/politics.md](systems/politics.md) | Act V: public opinion, the Ministry's attention and frozen fronts, elections, campaigning, the mayor |
 | [systems/endgame.md](systems/endgame.md) | Act VI: Legalize, the Holding, the case file and hearings, the two endings |
-| [app.md](app.md) | The React Native app: store, storage, screens, the map, Debug tab, export |
+| [app.md](app.md) | The React Native app: shell, look and feel, store, storage, screens, the map, Debug tab, export, checking screens against the design |
 | [story.md](story.md) | The story's canon: the world, the cast, the acts and their turns, the notebook map, how the game talks |
 | [sim.md](sim.md) | The headless bot, report metrics, CLI, log replay, baseline |
 | [testing.md](testing.md) | What each test file guards |
-| [native-builds.md](native-builds.md) | Running on devices: requirements, the doctor, Expo Go vs standalone installs, signing |
+| [native-builds.md](native-builds.md) | Running on devices: requirements, native modules, the doctor, Expo Go vs standalone installs, signing |
 | [decisions/](decisions/README.md) | One record per design decision, including deviations from the plan |
 | [../TUNING.md](../TUNING.md) | Every number change, kept or rejected, with sim results |
+| [../design/](../design/) | The design brief given to Claude Design and the screens it returned (input; don't edit; [ADR 0047](decisions/0047-warm-ledger-design.md)) |
 | [sevgorod-implementation-plan.md](sevgorod-implementation-plan.md) | Original plan (input; don't edit) |
 | [sevgorod-dev-manual.md](sevgorod-dev-manual.md) | Original tuning manual (input; don't edit) |
 
@@ -66,11 +67,13 @@ When you change a path on the left, update the doc on the right in the same comm
 | `engine/systems/convoys.ts` | [systems/convoys.md](systems/convoys.md) (the Colonel's disposition and passage also in [systems/districts-and-rivals.md](systems/districts-and-rivals.md)) |
 | `engine/systems/injuries.ts` | [systems/crew.md](systems/crew.md) |
 | `App.tsx`, `app/` | [app.md](app.md) |
+| `app/theme.ts`, `app/fonts.ts`, `app/components/Glyph.tsx`, `app/components/ui.tsx` | [app.md](app.md#look-and-feel), and [ADR 0047](decisions/0047-warm-ledger-design.md) for a change to the design system itself |
 | `app/story.ts` | [story.md](story.md) and [app.md](app.md) |
 | `sim/` | [sim.md](sim.md) |
 | `tests/`, `vitest.config.mts` | [testing.md](testing.md) |
 | `eslint.config.js`, `package.json` scripts | [architecture.md](architecture.md) and the root [README](../README.md) |
 | `scripts/`, `app.json`, `.claude/skills/` | [native-builds.md](native-builds.md), [architecture.md](architecture.md) and the root [README](../README.md) |
+| `package.json` dependencies (native modules, fonts) | [native-builds.md](native-builds.md#three-ways-to-run) |
 
 ## Writing docs here
 

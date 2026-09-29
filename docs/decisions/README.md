@@ -20,7 +20,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0005](0005-seeded-rng-streams.md) | Seeded RNG streams derived from player id, tag and index | Accepted |
 | [0006](0006-config-layering.md) | Config: defaults ← preset ← flat user overrides; unknown keys are errors | Accepted |
 | [0007](0007-local-file-persistence.md) | Save, settings and a JSON-lines log on the local file system | Accepted |
-| [0008](0008-app-shell-and-ui.md) | Custom tab shell, no navigation library, one colour per resource | Accepted |
+| [0008](0008-app-shell-and-ui.md) | Custom tab shell, no navigation library, one colour per resource | Superseded in part by [0047](0047-warm-ledger-design.md) |
 | [0009](0009-districts-one-of-each-business.md) | Districts host one of each business they allow | Accepted |
 | [0010](0010-starting-position.md) | Start with a Kiosk and a Market Stall, 60 Clean, Vitya and nephew Dima | Superseded by 0035 |
 | [0011](0011-heat-target-formula.md) | Heat target = 100 × exposure ÷ (exposure + control) | Accepted |
@@ -59,6 +59,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0044](0044-act-v-kombinat.md) | Act V, the Kombinat: an auctioned district, public opinion, the Ministry that freezes a front, elections and the mayor | Accepted |
 | [0045](0045-act-vi-nagornaya.md) | Act VI, Nagornaya: Legalize, the Holding, the reckoning's hearings, and two recorded endings | Accepted |
 | [0046](0046-map-and-story.md) | The map is Lyosha's notebook: districts revealed by the story, the act transition as a page, the story's text in one place | Accepted |
+| [0047](0047-warm-ledger-design.md) | The warm-ledger design: bundled fonts, SVG glyphs, a bottom bar with More | Accepted |
 
 ## Template
 

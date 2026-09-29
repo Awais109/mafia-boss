@@ -1,6 +1,6 @@
 # Sevgorod
 
-Fun-test prototype of Sevgorod, all six acts: a post-Soviet crime idle game about laundering Dirty money into Clean faster than the heat catches up. No art or sound, just lists and numbers. It runs fully offline on a phone.
+Fun-test prototype of Sevgorod, all six acts: a post-Soviet crime idle game about laundering Dirty money into Clean faster than the heat catches up. Its screens are dressed as a warm, printed ledger ([ADR 0047](docs/decisions/0047-warm-ledger-design.md)); there is no sound. It runs fully offline on a phone.
 
 Design and plan live in [docs/](docs/): the [implementation plan](docs/sevgorod-implementation-plan.md) and the [dev manual](docs/sevgorod-dev-manual.md) for tuning. Why the numbers are what they are is in [TUNING.md](TUNING.md).
 

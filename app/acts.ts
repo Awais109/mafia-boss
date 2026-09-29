@@ -1,4 +1,4 @@
-import { ACTS, gameCleared, nextGate, type Act, type Config, type PlayerState } from '../engine'
+import { ACTS, gameCleared, nextGate, TUTORIAL_STEPS, type Act, type Config, type PlayerState } from '../engine'
 import { fmt } from './format'
 
 // The six acts as the app shows them (ADR 0040): numerals, what the next act asks for, and what it opens.
@@ -20,8 +20,11 @@ export type ActProgress = {
   cleared: boolean // the final built act's gate has been met
   nextAct: Act | null
   label: string // the header's Rep line after the number
+  note: string // the same line without the Rep figure: "4/7 goals to Act II", "/ 1,200 to Act III"
   value: number // bar progress
   max: number
+  segments?: number // draw the bar in this many steps (the opening, Act I's goals)
+  split?: [number, number] // Act VI: progress toward the Holding and the Empire, each 0–1
   requirements: { text: string; done: boolean }[] // everything the next gate asks for
 }
 
@@ -44,7 +47,13 @@ export function actProgress(s: PlayerState, c: Config): ActProgress {
   }
   const clearedAt = s.stats.actClearedAt[s.act]
   if (cleared && clearedAt !== undefined) {
-    return { act: s.act, cleared, nextAct: null, label: `${fmt(s.reputation)} · Act ${ACT_NAME[s.act]} cleared`, value: 1, max: 1, requirements: [] }
+    return { act: s.act, cleared, nextAct: null, label: `${fmt(s.reputation)} · Act ${ACT_NAME[s.act]} cleared`, note: `Act ${ACT_NAME[s.act]} cleared`, value: 1, max: 1, requirements: [] }
+  }
+  // The guided opening comes first: its steps are the progress.
+  if (!s.tutorial.done && s.act === 1) {
+    const step = Math.min(TUTORIAL_STEPS.length, s.tutorial.step + 1)
+    const note = `the opening, step ${step} of ${TUTORIAL_STEPS.length}`
+    return { act: s.act, cleared, nextAct: 2, label: `${fmt(s.reputation)} · ${note}`, note, value: s.tutorial.step, max: TUTORIAL_STEPS.length, segments: TUTORIAL_STEPS.length, requirements }
   }
   if (!next) {
     // Act VI has no gate after it: either ending clears it (ADR 0045).
@@ -57,14 +66,17 @@ export function actProgress(s: PlayerState, c: Config): ActProgress {
       text: `the Empire: every district held (${held}/${s.districts.length}) and ${c.reckoning.empireWins} hearings won (${won})`,
       done: s.stats.endings.empire !== undefined,
     })
-    const toward = Math.max(earners.length ? legal / earners.length : 0, (held / s.districts.length + won / c.reckoning.empireWins) / 2)
-    return { act: s.act, cleared, nextAct: null, label: `${fmt(s.reputation)} · ${legal}/${earners.length} legal · ${won}/${c.reckoning.empireWins} hearings won`, value: toward, max: 1, requirements }
+    const holding = earners.length ? legal / earners.length : 0
+    const empire = (held / s.districts.length + won / c.reckoning.empireWins) / 2
+    const note = `${legal}/${earners.length} legal · ${won}/${c.reckoning.empireWins} hearings won`
+    return { act: s.act, cleared, nextAct: null, label: `${fmt(s.reputation)} · ${note}`, note, value: Math.max(holding, empire), max: 1, split: [holding, empire], requirements }
   }
   const beyond = next.act > c.progression.finalAct
   const target = beyond ? `to clear Act ${ACT_NAME[s.act]}` : `to Act ${ACT_NAME[next.act]}`
   if (next.gate.goals) {
     const done = s.goals.done.length
-    return { act: s.act, cleared, nextAct: next.act, label: `${fmt(s.reputation)} · ${done}/${c.goals.list.length} goals ${target}`, value: done, max: c.goals.list.length, requirements }
+    const note = `${done}/${c.goals.list.length} goals ${target}`
+    return { act: s.act, cleared, nextAct: next.act, label: `${fmt(s.reputation)} · ${note}`, note, value: done, max: c.goals.list.length, segments: c.goals.list.length, requirements }
   }
   const rep = next.gate.rep ?? 0
   const extra = requirements.filter((r) => !r.text.includes('Reputation') && !r.done).length
@@ -73,6 +85,7 @@ export function actProgress(s: PlayerState, c: Config): ActProgress {
     cleared,
     nextAct: beyond ? null : next.act,
     label: `${fmt(s.reputation)}/${fmt(rep)} ${target}${extra ? ` (+${extra} more)` : ''}`,
+    note: `/ ${fmt(rep)} ${target}${extra ? ` (+${extra} more)` : ''}`,
     value: Math.min(s.reputation, rep),
     max: Math.max(1, rep),
     requirements,

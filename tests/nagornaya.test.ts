@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { apply, caseFile, derive, formulas, gameCleared, hearingChance, reconcile, tryBuildConfig, type Config, type PlayerState } from '../engine'
-import { act, config, fresh, H, T0 } from './helpers'
+import { act, fresh, H, T0 } from './helpers'
 
 // Act VI, Nagornaya (ADR 0045): Legalize, the Holding, the reckoning's hearings, and the two endings.
 

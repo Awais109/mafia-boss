@@ -12,6 +12,16 @@ How to run Sevgorod on phones, emulators and simulators, what each way needs, an
 
 Expo Go runs the game's JavaScript inside Expo's own app, so nothing is compiled and Metro must keep running. A standalone install compiles the app as a release build with the JavaScript bundled in, so it runs without the laptop.
 
+**Native modules.** The app uses these Expo and community modules:
+- `expo-file-system` and `expo-sharing`;
+- `expo-font` (a config plugin in `app.json`), which loads the ten bundled `@expo-google-fonts/*` files;
+- `react-native-svg`, for glyphs, icons and art;
+- `react-native-safe-area-context`.
+
+All of them ship inside Expo Go, so Expo Go needs nothing extra. A standalone install built before a module was added has to be built again.
+
+**Web.** `react-native-web`, `react-dom` and `@expo/metro-runtime` are installed only so `npx expo export --platform web` can build screenshots for design checks ([app.md](app.md#checking-screens-against-the-design)). The web build isn't a way to play.
+
 ## Requirements
 
 For Expo SDK 57 and React Native 0.86. Checked on 2026-09-12; `npm run doctor` reads the first and third rows from installed packages, so they follow upgrades.

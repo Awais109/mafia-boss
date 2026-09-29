@@ -1,6 +1,6 @@
 # 0008. Custom tab shell, no navigation library, one colour per resource
 
-- **Status:** Accepted
+- **Status:** Superseded in part by [0047](0047-warm-ledger-design.md): fonts, art and the tab bar. The shell, the resource colours and the rest stand.
 - **Date:** 2026-09-12
 
 ## Context
