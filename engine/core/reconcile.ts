@@ -12,6 +12,7 @@ import { autoResolveInbox, rollIncident } from '../systems/inbox'
 import { ledgerDayBoundary } from '../systems/ledger'
 import { refreshOffersIfDue } from '../systems/offers'
 import { resolveOp } from '../systems/ops'
+import { electionDue, electionScheduled, politicsHourBoundary, thawFronts } from '../systems/politics'
 import { prosperityHourBoundary } from '../systems/prosperity'
 import { accrueVault, decayCondition, reopenBusinesses, settleUpkeep } from '../systems/rackets'
 import { tolyaTick } from '../systems/rivals'
@@ -76,6 +77,8 @@ function nextBoundary(state: PlayerState, c: Config, t: number, now: number): nu
   consider(state.lending?.dueAt)
   for (const item of state.inbox) consider(item.expiresAt)
   for (const r of state.rackets) consider(r.closedUntil)
+  for (const f of state.fronts) consider(f.frozenUntil)
+  if (electionScheduled(state)) consider(state.politics.nextElectionAt)
   return b
 }
 
@@ -106,6 +109,7 @@ function hourBoundary(state: PlayerState, ctx: Ctx, t: number): void {
   heatHourBoundary(state, ctx, t)
   supplyHourBoundary(state, ctx, t)
   prosperityHourBoundary(state, ctx, t) // after the inspection and shortage flags it reads
+  politicsHourBoundary(state, ctx, t) // after the fronts' utilization and the inspection flag
   rollIncident(state, ctx, t)
   if (isDayStart(ctx.c, t)) {
     crewDayBoundary(state, ctx, t)
@@ -133,6 +137,8 @@ export function processDue(state: PlayerState, ctx: Ctx, t: number): void {
   releaseInjured(state, ctx, t)
   reopenBusinesses(state, ctx, t)
   lendingDue(state, ctx, t)
+  thawFronts(state, ctx, t)
+  electionDue(state, ctx, t)
   refreshPoolIfDue(state, ctx, t)
   refreshOffersIfDue(state, ctx, t)
   if (state.rival.tolya.nextTickAt <= t) tolyaTick(state, ctx, t)

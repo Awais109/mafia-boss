@@ -17,7 +17,7 @@ import type {
 } from '../config/schema'
 import type { GameEvent } from './events'
 
-export const SCHEMA_VERSION = 11
+export const SCHEMA_VERSION = 12
 export const LOG_CAP = 200
 export const LEDGER_ROWS = 8 // 7 closed days plus today's opening snapshot
 
@@ -42,6 +42,7 @@ export type Front = {
   buffer: number // dirty deposited, not yet converted
   convertedThisHour: number // dirty converted since the last whole hour
   util: number // smoothed utilization, updated at each whole hour; drives suspicion
+  frozenUntil?: number // the Ministry has frozen it until then: it launders nothing (ADR 0044)
 }
 
 export type CrewStatus = 'idle' | 'on_op' | 'enforcer' | 'jailed' | 'injured'
@@ -104,6 +105,16 @@ export type ZhannaState = {
 
 // The Colonel (ADR 0043): he runs the road to the border; passage keeps his men off your convoys.
 export type ColonelState = { disposition: number; passageUntil: number; passagesBought: number }
+
+// Act V (ADR 0044): the city's opinion of you, the Ministry's attention, and the elections.
+export type PoliticsState = {
+  opinion: number // 0–100, stepped toward its target at whole hours from opinion.fromAct
+  attention: number // the Ministry's, 0–100, stepped the same way; a front freezes at ministry.freezeAt
+  nextElectionAt: number // 0 when none is scheduled (before Act V, or once you're mayor)
+  elections: number // held so far; seeds each count
+  points: number // campaign points for the coming election
+  mayor: boolean // won an election: permanent
+}
 
 // Borrowed Clean (ADR 0042): one loan at a time, paid down from Clean at each day start.
 export type Loan = { principal: number; owed: number; missed: number }
@@ -211,6 +222,9 @@ export type PlaytestStats = {
   premiumShortageHours: number
   convoys: { run: number; landed: number; hijacked: number; seized: number }
   passagesPaid: number // Dirty
+  elections: { held: number; won: number }
+  campaignPaid: { dirty: number; influence: number }
+  frontsFrozen: number
   inbox: { filed: number; resolved: number; auto: number }
   specializations: { greed: number; stealth: number }
   frontModeChanges: number
@@ -270,6 +284,7 @@ export type PlayerState = {
   lending: Lending | null
   influenceToday: { day: number; amount: number } // ops Influence, for the daily cap
   rival: { tolya: TolyaState; zhanna: ZhannaState; colonel: ColonelState }
+  politics: PoliticsState
   tutorial: { step: number; done: boolean }
   goals: { done: GoalId[] } // Act I goals completed (ADR 0035)
   firstConversionDone: boolean
@@ -322,6 +337,9 @@ export function emptyStats(): PlaytestStats {
     premiumShortageHours: 0,
     convoys: { run: 0, landed: 0, hijacked: 0, seized: 0 },
     passagesPaid: 0,
+    elections: { held: 0, won: 0 },
+    campaignPaid: { dirty: 0, influence: 0 },
+    frontsFrozen: 0,
     inbox: { filed: 0, resolved: 0, auto: 0 },
     specializations: { greed: 0, stealth: 0 },
     frontModeChanges: 0,

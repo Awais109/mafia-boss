@@ -17,6 +17,13 @@ import {
   loanDue,
   derive,
   DISTRICT_IDS,
+  electionScheduled,
+  ministryTarget,
+  opinionTarget,
+  pointCost,
+  pointsRoom,
+  voteShare,
+  winChance,
   formulas,
   FRONT_TYPES,
   haggleOdds,
@@ -85,6 +92,9 @@ export type PersonaOptions = {
   maxWageShare: number // past two crew, hire only while wages stay under this share of yield
   supplyHorizonHours: number // more factory output is worth buying only when stock would run out within this many hours
   rushJobs: boolean // spend gold bars finishing running jobs at the start of a session
+  opinionValuePct: number // a point of public opinion is worth this share of yield an hour (half once mayor)
+  campaignTarget: number // campaign until the chance of winning the coming election is at least this
+  campaignWithinHours: number // campaign when the election is at most this far off
 }
 
 export const CASUAL: PersonaOptions = {
@@ -109,6 +119,9 @@ export const CASUAL: PersonaOptions = {
   maxWageShare: 0.25,
   supplyHorizonHours: 24,
   rushJobs: false, // the casual bot never spends gold: pacing is tuned without it (ADR 0034)
+  opinionValuePct: 0.01,
+  campaignTarget: 0.9,
+  campaignWithinHours: 48,
 }
 
 // Spends every bar it can finishing jobs (plan (t)): how much sooner do acts clear with gold?
@@ -272,6 +285,27 @@ export function playSession(
     }
   }
 
+  // Campaign in the days before the count, before any Dirty goes into a front or out on loan, until the odds look
+  // good: Influence the officials still to come won't need, then Dirty above the reserve (ADR 0044).
+  if (electionScheduled(state) && state.politics.nextElectionAt - t <= p.campaignWithinHours * c.time.hourMs) {
+    const e = c.elections
+    const neededShare = 0.5 - e.noise + 2 * e.noise * p.campaignTarget
+    // Influence the officials still to come will need (the Governor, once mayor) stays back.
+    const officialsDue = OFFICIAL_IDS.filter((id) => !state.officials.includes(id) && c.officials.list[id].act <= state.act).reduce(
+      (sum, id) => sum + c.officials.list[id].cost,
+      0,
+    )
+    for (const pay of ['influence', 'dirty'] as const) {
+      if (winChance(state, c) >= p.campaignTarget) break
+      const now = d()
+      const reserve = pay === 'dirty' ? (now.wagesPerHr + now.upkeepPerHr) * p.reserveWageHours + now.costs.bribe : officialsDue
+      const each = pointCost(state, c, pay)
+      const afford = Math.floor(((pay === 'dirty' ? state.dirty : state.influence) - reserve) / each)
+      const needed = Math.ceil((neededShare - voteShare(state, c)) / e.perPoint)
+      const points = Math.min(afford, needed, pointsRoom(state, c))
+      if (points >= 1) tryAct({ type: 'CAMPAIGN', points, pay })
+    }
+  }
   // Front dial: lie low when hot; push through a backlog when the heat budget allows it.
   {
     const now = d()
@@ -293,6 +327,7 @@ export function playSession(
     const now = d()
     const reserve = (now.wagesPerHr + now.upkeepPerHr) * p.reserveWageHours + now.costs.bribe
     for (const f of [...now.perFront].sort((a, b) => b.rate - a.rate)) {
+      if (f.frozen) continue // the Ministry's (ADR 0044)
       const buffer = state.fronts.find((x) => x.id === f.id)!.buffer
       const amount = Math.floor(Math.min(state.dirty - reserve, f.bufferCap - buffer))
       if (amount >= 1) tryAct({ type: 'DEPOSIT', frontId: f.id, amount })
@@ -317,7 +352,11 @@ export function playSession(
     const now = d()
     if (!now.unlocked.official[id] || state.officials.includes(id) || t < state.officialCooldownUntil) continue
     if (state.influence < c.officials.list[id].cost) continue
-    if (state.heat > p.officialAboveHeat || now.heatTarget > p.officialAboveHeat) {
+    // The Governor also answers the Ministry, which bribes and heat don't show (ADR 0044).
+    const ministry =
+      (c.officials.list[id].ministryRelief ?? 0) > 0 &&
+      (state.politics.attention >= c.ministry.freezeAt / 2 || ministryTarget(state, c, now) >= c.ministry.freezeAt)
+    if (state.heat > p.officialAboveHeat || now.heatTarget > p.officialAboveHeat || ministry) {
       tryAct({ type: 'BUY_OFFICIAL', officialId: id })
     }
   }
@@ -419,6 +458,21 @@ export function playSession(
     const short = front ? now.costs.front[front] - state.clean + loanDue(state, c) : 0
     if (front && short <= loanCap(state, c) && tryAct({ type: 'TAKE_LOAN', amount: Math.ceil(short) })) tryAct({ type: 'BUY_FRONT', frontType: front })
   }
+
+  // The auction (ADR 0044): a state district is the act's whole catalogue, so it's bought as soon as it can
+  // be, with a loan when Clean falls short.
+  for (const id of DISTRICT_IDS) {
+    const dc = c.districts.list[id]
+    if (!dc.auction || !d().unlocked.district[id] || controllerOf(state, id) === 'player') continue
+    if (state.clean >= dc.buyout) {
+      tryAct({ type: 'BUY_DISTRICT', districtId: id })
+    } else if (creditOpen(state, c) && !state.loan) {
+      const short = dc.buyout - state.clean + loanDue(state, c)
+      if (short <= loanCap(state, c) && tryAct({ type: 'TAKE_LOAN', amount: Math.ceil(short) })) tryAct({ type: 'BUY_DISTRICT', districtId: id })
+    }
+  }
+
+
 
   // 6. Spend Clean on the best yield gain ÷ cost, within the heat budget. Clean for the next loan payment
   // stays back (ADR 0042).
@@ -612,7 +666,20 @@ function premiumPremisesValue(state: PlayerState, c: Config, d: Derived, rt: Con
   if (rt.seizureMult !== undefined && id === 'zastava') packsPerConvoy += customsChance(state, c) * (1 - rt.seizureMult) * load
   if (rt.convoyBonusPerTier) packsPerConvoy += rt.convoyBonusPerTier * cond * (c.ops.list.runConvoy.premium ?? 0)
   if (rt.hijackMult !== undefined) packsPerConvoy += hijackChance(state, c, 0) * (1 - rt.hijackMult) * load
-  return (packsPerConvoy * perPremium) / 6
+  // The Combine makes premium on its own line (ADR 0044): worth the shortage it saves, since convoys also come.
+  const made = Math.min((rt.premiumMakesPerHr ?? 0) * cond, d.premium.demandPerHr) * premiumRisk(d) * perPremium
+  return (packsPerConvoy * perPremium) / 6 + made
+}
+
+// What a point of public opinion is worth an hour (ADR 0044): it wins elections, eases heat and the
+// Ministry, and pays the Construction Trust. Nothing once the target is already at the top.
+function opinionPointValue(state: PlayerState, c: Config, d: Derived, p: PersonaOptions): number {
+  if (state.act < c.opinion.fromAct || opinionTarget(state, c, state.updatedAt) >= 100) return 0
+  const trust = d.perRacket.reduce((sum, rd, i) => {
+    const oy = c.rackets.types[state.rackets[i].type].opinionYield
+    return oy ? sum + ((rd.grossYield / rd.opinionMult) * (oy[1] - oy[0])) / 100 : sum
+  }, 0)
+  return d.yieldPerHr * p.opinionValuePct * (state.politics.mayor ? 0.5 : 1) + trust
 }
 
 type SpendOption = { action: Action; cost: number; gain: number; heatGain: number }
@@ -627,7 +694,7 @@ function plannedPurchaseCost(state: PlayerState, c: Config, d: Derived, p: Perso
   return options[0]?.cost ?? 0
 }
 
-function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptions): SpendOption[] {
+export function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptions): SpendOption[] {
   const out: SpendOption[] = []
 
   for (const type of FRONT_TYPES) {
@@ -656,6 +723,7 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
   const sup = d.supply
   const atStake = d.perRacket.reduce((sum, r) => sum + r.atStake, 0)
   const v = valuation(state, c, p)
+  const opinionPoint = opinionPointValue(state, c, d, p)
   // Vault hours past the act's target are worth the overnight loss they save, up to a ten-hour leash (plan (k)).
   const leashRoom = Math.max(0, 10 - c.vault.targetHoursByAct[state.act] - d.stashHours)
   const stashValue = (extraHours: number) => (Math.min(Math.max(0, extraHours), leashRoom) * d.yieldPerHr) / 24
@@ -677,7 +745,8 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
       // The lot where it helps most: a factory beside joints, a warehouse beside a factory.
       let best: { id: DistrictId; gain: number } | null = null
       for (const id of DISTRICT_IDS) {
-        if (!d.unlocked.district[id] || premisesBlocked(state, c, id, type)) continue
+        // racketBlocked covers lots, the auction and `onlyIn` (ADR 0044), so the bot never picks a lot it can't use.
+        if (!d.unlocked.district[id] || racketBlocked(state, c, type, id)) continue
         let gain = -formulas.premisesUpkeep(c, type, 1) * upkeepMultIf(state, c, id, type)
         if (rt.makesPerHr) {
           const made = formulas.factoryOutput(c, type, 1)
@@ -692,6 +761,7 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
         // A Clinic keeps the crew working and loyal; a loan desk earns on idle Dirty (ADR 0042).
         if (rt.injuryMult) gain += state.crew.length * 2
         if (rt.lendHoursPerTier) gain += lendingValue(state, c, d, rt.lendHoursPerTier, id)
+        if (rt.opinionPerTier) gain += rt.opinionPerTier * opinionPoint
         gain += premiumPremisesValue(state, c, d, rt, 1, id)
         if (!best || gain > best.gain) best = { id, gain }
       }
@@ -716,10 +786,12 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
     }
     if (!bestDistrict) continue
     const risk = rt.kind === 'joint' ? jointRisk(d, rt.cigaretteShare ?? 0, formulas.jointSales(c, type, 1)) * (1 - (rt.premiumShare ?? 0) * premiumRisk(d)) : 1
+    const oy = state.act >= c.opinion.fromAct ? rt.opinionYield : undefined
+    const opinionMult = oy ? oy[0] + ((oy[1] - oy[0]) * state.politics.opinion) / 100 : 1
     out.push({
       action: { type: 'BUY_RACKET', racketType: type, districtId: bestDistrict },
       cost: d.costs.racket[type],
-      gain: rt.baseYield * bestMult * d.inspectionMult * risk,
+      gain: rt.baseYield * bestMult * d.inspectionMult * risk * opinionMult + (rt.opinionPerTier ?? 0) * opinionPoint,
       heatGain: rt.baseHeat,
     })
   }
@@ -742,7 +814,13 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
       if (rt.influencePerHrPerTier) gain += rt.influencePerHrPerTier * cond * influenceMultIf(c, r.districtId, r.type) * v.influenceValue
       if (rt.prosperityPerTier) gain += prosperity.gainOf(r.districtId, rt.prosperityPerTier * cond, rt.prosperityPerTier * cond * (c.rackets.premises.maxTier - r.tier))
       if (rt.lendHoursPerTier) gain += lendingValue(state, c, d, rt.lendHoursPerTier * cond, r.districtId)
-      gain += premiumPremisesValue(state, c, d, rt, cond, r.districtId)
+      if (rt.opinionPerTier) gain += rt.opinionPerTier * cond * opinionPoint
+      if (rt.premiumMakesPerHr) {
+        const extra = (formulas.premiumOutput(c, r.type, r.tier + 1) - formulas.premiumOutput(c, r.type, r.tier)) * cond
+        const room = Math.max(0, d.premium.demandPerHr - formulas.premiumOutput(c, r.type, r.tier) * cond)
+        gain += Math.min(extra, room) * premiumRisk(d) * (premiumPackValue(d) || 30)
+      }
+      gain += premiumPremisesValue(state, c, d, { ...rt, premiumMakesPerHr: 0 }, cond, r.districtId)
       if (gain > 0) {
         out.push({ action: { type: 'UPGRADE_RACKET', racketId: r.id }, cost: rd.upgradeCost, gain, heatGain: rd.exposure * (c.rackets.tierHeatMult - 1) })
       }
@@ -768,7 +846,7 @@ function spendOptions(state: PlayerState, c: Config, d: Derived, p: PersonaOptio
     out.push({
       action: { type: 'UPGRADE_RACKET', racketId: r.id },
       cost: rd.upgradeCost,
-      gain: rd.yield * (c.rackets.tierYieldMult - 1) * risk,
+      gain: rd.yield * (c.rackets.tierYieldMult - 1) * risk + (rt.opinionPerTier ?? 0) * opinionPoint,
       heatGain: rd.exposure * (c.rackets.tierHeatMult - 1),
     })
   })
@@ -848,6 +926,8 @@ function bestDispatch(state: PlayerState, c: Config, p: PersonaOptions, t: numbe
   const perPack = packValue(d)
   const prem = d.premium
   const perPremium = premiumPackValue(d) + premiumCoverValue(state, c, d)
+  const votesWanted = electionScheduled(state) && winChance(state, c) < p.campaignTarget
+  const votePrice = votesWanted ? pointCost(state, c, 'dirty') : 0
   let plannedCost: number | null = null
 
   for (const { type, op: listed, offerId } of jobs) {
@@ -904,9 +984,12 @@ function bestDispatch(state: PlayerState, c: Config, p: PersonaOptions, t: numbe
       const landed = op.premium
         ? (odds.full + odds.partial * c.ops.partialRewardPct) * convoyLoad(state, c, op) * (1 - hijackChance(state, c, t)) * (1 - customsChance(state, c))
         : 0
+      // Votes are worth what the same points would cost in Dirty, while the election still needs them (ADR 0044).
+      const votes = op.votes && votesWanted ? Math.min(pointsRoom(state, c), (odds.full + odds.partial * c.ops.partialRewardPct) * op.votes) : 0
       const goods =
         Math.min(packs, Math.max(0, sup.cap - sup.stock)) * perPack +
-        Math.min(landed, Math.max(0, prem.cap - prem.stock)) * perPremium -
+        Math.min(landed, Math.max(0, prem.cap - prem.stock)) * perPremium +
+        votes * votePrice -
         (op.costClean ?? 0) * 2
       const sessionsBlocked = Math.max(1, Math.ceil(op.minutes / gapMinutes))
       const value =

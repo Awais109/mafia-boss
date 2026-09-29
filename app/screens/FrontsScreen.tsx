@@ -17,6 +17,7 @@ export function FrontsScreen({ game }: ScreenProps) {
   {
     let available = Math.floor(s.dirty - keep)
     for (const f of [...d.perFront].sort((a, b) => b.rate - a.rate)) {
+      if (f.frozen) continue // the Ministry's (ADR 0044)
       const room = f.bufferCap - (s.fronts.find((x) => x.id === f.id)?.buffer ?? 0)
       const amount = Math.floor(Math.min(available, room))
       if (amount >= 1) {
@@ -57,6 +58,9 @@ export function FrontsScreen({ game }: ScreenProps) {
           <Card key={f.id}>
             <Row label="" value={<T bold>{`${name} · rate level ${front.level} · capacity ${front.capacityLevel}`}</T>} />
             {f.suspicion > 0 && <Tag text={`suspicious: +${fmt(f.suspicion)} exposure`} color={colors.warn} />}
+            {f.frozen && front.frozenUntil !== undefined && (
+              <T small color={colors.heat}>{`Frozen by the Ministry: it launders nothing and takes no deposits for ${fmtDuration(front.frozenUntil - game.now, c)}.`}</T>
+            )}
             <BtnRow>
               {FRONT_MODES.map((mode) => (
                 <Btn
@@ -88,8 +92,8 @@ export function FrontsScreen({ game }: ScreenProps) {
             />
             <Row label="Running" hint="recent average" value={pct(f.util)} color={f.util > c.fronts.suspicionStartUtil ? colors.warn : undefined} />
             <BtnRow>
-              {half >= 1 && half < max && <Btn small title={`+◆${fmt(half)}`} onPress={() => deposit(f.id, half)} />}
-              <Btn small kind="primary" title={max >= 1 ? `Deposit ◆${fmt(max)}` : 'Deposit'} disabled={max < 1} onPress={() => deposit(f.id, max)} />
+              {half >= 1 && half < max && !f.frozen && <Btn small title={`+◆${fmt(half)}`} onPress={() => deposit(f.id, half)} />}
+              <Btn small kind="primary" title={max >= 1 ? `Deposit ◆${fmt(max)}` : 'Deposit'} disabled={max < 1 || f.frozen} onPress={() => deposit(f.id, max)} />
               {f.upgradeCost !== null && (
                 <Btn
                   small
@@ -119,6 +123,7 @@ export function FrontsScreen({ game }: ScreenProps) {
             <T small muted>
               Rate {pct(ft.rate)} · launders ◆{fmtRate(ft.throughput)}
               {ft.coverPerPremiumPack !== undefined ? `, up to ◆${fmt(ft.coverPerPremiumPack)} per premium pack sold` : ''}
+              {ft.opinionAtFullUtil !== undefined ? `, and up to +${fmt(ft.opinionAtFullUtil)} public opinion while it runs full` : ''}
             </T>
             {ft.minProsperity !== undefined && (
               <T small muted>{`Needs a city prosperity of ${ft.minProsperity} (now ${Math.round(d.cityProsperity)})`}</T>

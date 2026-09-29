@@ -178,6 +178,7 @@ function JobCard({
     cfg.influence ? `✦${cfg.influence}` : '',
     cfg.cigarettes ? `▮${cfg.cigarettes}` : '',
     cfg.premium ? `${glyph.premium}${fmt(convoyLoad(s, c, cfg))}` : '',
+    cfg.votes ? `${cfg.votes} campaign points` : '',
     `★${fmt(c.reputation.perOpSuccess)}`,
   ].filter(Boolean)
   const minutes = opMinutesFor(c, cfg, ready ? team : [])

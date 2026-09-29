@@ -9,7 +9,9 @@ The city opens district by district as the acts go on. Rivals take a cut of what
 
 Each entry in `districts.list` has:
 - `name`, `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)), and `act`;
-- `startsAs`: the starting controller (`player`, `tolya`, `zhanna`, `colonel` or `none`);
+- `startsAs`: the starting controller (`player`, `tolya`, `zhanna`, `colonel`, `state` or `none`);
+- `auction`: a state asset ([ADR 0044](../decisions/0044-act-v-kombinat.md)): bought outright at its `buyout`, never pressured ("The state isn’t pressured: it sells at auction"), and nothing is built there until it's yours ("Buy it at auction first");
+- `lotsFor`: when set, its lots take only these premises ("Its lots are for …");
 - `home`: your starting turf;
 - `allows`: the joints and rackets it can host, one of each ([ADR 0009](../decisions/0009-districts-one-of-each-business.md));
 - `premisesLots`: lots for premises of any type, one of each type ([economy.md](economy.md#kinds-of-business));
@@ -25,10 +27,11 @@ Each entry in `districts.list` has:
 | Port Quarter | II | Zhanna | Petrol Station, Cargo Bay | 2 | none |
 | The Centre | III | nobody | Nightclub, Card Club, Print Shop | 2 | Card Club yield bonus |
 | Zastava | IV | the Colonel | Truck Stop, Motel, Foreign Goods Shop, Freight Yard, Fuel Depot | 3 | Freight Yard and Fuel Depot yield bonus; the road is yours ([below](#the-colonel)) |
+| Kombinat | V | the state (auction) | Palace of Culture, Construction Trust | 3, for the Combine, the Newspaper and the TV Station | Construction Trust yield bonus |
 
 Station Square ([ADR 0033](../decisions/0033-bigger-act-i.md)) is Act I's unclaimed district: nobody takes tribute there, and like Sovietsky it can be bought out or taken with pressure jobs.
 
-**Tribute.** Rackets in a district Tolya, Zhanna or the Colonel controls lose `district.tribute` of their gross yield, tracked in `stats.tributeLost`. Unclaimed and home districts take no tribute.
+**Tribute.** Rackets in a district Tolya, Zhanna or the Colonel controls lose `district.tribute` of their gross yield (none once you're mayor, [politics.md](politics.md)), tracked in `stats.tributeLost`. Unclaimed and home districts take no tribute.
 
 ## Taking a district
 

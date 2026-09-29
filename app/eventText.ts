@@ -69,6 +69,7 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
         e.premium ? `+${glyph.premium}${fmt(e.premium)}` : '',
         e.hijacked ? 'the Colonel’s men took the load' : '',
         e.seized ? 'customs took the load' : '',
+        e.votes ? `+${e.votes} campaign point${e.votes === 1 ? '' : 's'}` : '',
         e.rep ? `+${glyph.rep}${fmt(e.rep)}` : '',
         `+${glyph.heat}${fmt(e.spike)}`,
       ].filter(Boolean)
@@ -215,6 +216,19 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
       return { text: `The loan desk got ${d}${fmt(e.returned)} back on ${d}${fmt(e.amount)}`, color: colors.dirty }
     case 'PASSAGE_BOUGHT':
       return { text: `Paid the Colonel ${d}${fmt(e.cost)} for a day on the road`, color: colors.dirty }
+    case 'FRONT_FROZEN':
+      return { text: `Moscow has frozen the ${frontName(e.frontId)}'s accounts for ${fmtDuration(e.until - e.t, c)}. It launders nothing until then.`, color: colors.heat }
+    case 'FRONT_THAWED':
+      return { text: `The ${frontName(e.frontId)} is open for business again`, color: colors.good }
+    case 'CAMPAIGNED':
+      return {
+        text: `Campaign: +${e.points} point${e.points === 1 ? '' : 's'} for ${e.pay === 'dirty' ? d : glyph.influence}${fmt(e.cost)} (${e.total} so far)`,
+        quiet: true,
+      }
+    case 'ELECTION_HELD':
+      return e.won
+        ? { text: `You won the election with ${Math.round(e.share * 100)}% of the vote. The mayor's office is yours.`, color: colors.good }
+        : { text: `Golovin won the election: you took ${Math.round(e.share * 100)}%. The next one is in a week.`, color: colors.heat }
     case 'LENDING_DEFAULTED':
       return { text: `A borrower skipped town with ${d}${fmt(e.amount)}`, color: colors.heat }
     case 'NOTE':

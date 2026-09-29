@@ -35,6 +35,8 @@ export function openLots(state: PlayerState, c: Config, id: DistrictId): number 
 // Why a premises of this type can't go in this district right now, or null if it can.
 export function premisesBlocked(state: PlayerState, c: Config, id: DistrictId, type: RacketType): string | null {
   const max = c.rackets.types[type].maxInCity
+  const only = c.districts.list[id].lotsFor
+  if (only && !only.includes(type)) return `Its lots are for the ${only.map((t) => c.rackets.types[t].name).join(', ')}`
   if (state.rackets.some((r) => r.districtId === id && r.type === type)) return 'You already have one there'
   if (max !== undefined && state.rackets.filter((r) => r.type === type).length >= max) {
     return max === 1 ? 'Only one in the city' : `Only ${max} in the city`
@@ -50,6 +52,9 @@ export function racketBlocked(state: PlayerState, c: Config, type: RacketType, i
   if (!rt) return 'Unknown racket'
   if (rt.act > state.act || state.reputation < rt.unlockRep) return 'Not unlocked yet'
   if (!c.districts.list[id] || !districtUnlocked(state, c, id)) return 'That district is not open yet'
+  // A state asset (ADR 0044): nothing goes in until it's yours.
+  if (c.districts.list[id].auction && getDistrict(state, id).controller !== 'player') return 'Buy it at auction first'
+  if (rt.onlyIn !== undefined && rt.onlyIn !== id) return `Only in ${c.districts.list[rt.onlyIn].name}`
   if (rt.kind === 'premises') {
     // Premises go on a free lot in any open district (ADR 0031).
     const blocked = premisesBlocked(state, c, id, type)
@@ -67,6 +72,7 @@ export function racketBlocked(state: PlayerState, c: Config, type: RacketType, i
 export function canPressure(state: PlayerState, c: Config, id: DistrictId): string | null {
   if (!districtUnlocked(state, c, id)) return 'That district is not open yet'
   if (getDistrict(state, id).controller === 'player') return 'Already yours'
+  if (c.districts.list[id].auction) return 'The state isn’t pressured: it sells at auction'
   return null
 }
 

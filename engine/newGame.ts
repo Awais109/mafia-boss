@@ -60,6 +60,7 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
       zhanna: { disposition: 0, nextShipmentAt: now, shipmentsBought: 0, surplusToday: { day: dayIndex(c, now), packs: 0 } },
       colonel: { disposition: 0, passageUntil: 0, passagesBought: 0 },
     },
+    politics: { opinion: c.opinion.base, attention: 0, nextElectionAt: 0, elections: 0, points: 0, mayor: false },
     tutorial: { step: 0, done: false },
     goals: { done: [] },
     firstConversionDone: false,

@@ -49,7 +49,11 @@ export function HeatScreen({ game }: ScreenProps) {
           <Row label="Base" value={fmt(d.controlParts.base)} />
           <Row label="Officials" value={fmt(d.controlParts.officials)} />
           <Row label="Bribe" hint={bribeActive ? `${fmtDuration(s.bribeUntil - now, c)} left` : undefined} value={fmt(d.controlParts.bribe)} />
+          {d.controlParts.mayor > 0 && <Row label="The mayor’s office" value={fmt(d.controlParts.mayor)} />}
           <Row label="Districts taken" hint={`+${pct(h.districtControlPct)} each`} value={`×${d.controlParts.districtMult.toFixed(2)}`} />
+          {d.controlParts.opinionMult > 1 && (
+            <Row label="Public opinion" hint={`${Math.round(s.politics.opinion)} of 100`} value={`×${d.controlParts.opinionMult.toFixed(2)}`} />
+          )}
           <Row label="Total" value={fmt(d.control)} color={colors.influence} />
         </Card>
       </Section>
@@ -84,9 +88,22 @@ export function HeatScreen({ game }: ScreenProps) {
             <Card key={id}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <T bold>{o.name}</T>
-                {owned ? <Tag text="on the payroll" color={colors.good} /> : !d.unlocked.official[id] ? <Tag text={`Act ${ACT_NAME[o.act]}`} /> : null}
+                {owned ? (
+                  <Tag text="on the payroll" color={colors.good} />
+                ) : !d.unlocked.official[id] ? (
+                  <Tag text={o.act > s.act ? `Act ${ACT_NAME[o.act]}` : 'mayor only'} />
+                ) : null}
               </View>
-              <T small muted>{`+${fmt(o.control)} control · +✦${fmt(c.officials.influencePerHrEach * 24)} a day`}</T>
+              <T small muted>
+                {[
+                  `+${fmt(o.control)} control`,
+                  `+✦${fmt(c.officials.influencePerHrEach * 24)} a day`,
+                  o.seizureMult !== undefined ? `customs ×${o.seizureMult}` : '',
+                  o.ministryRelief ? `the Ministry’s attention −${o.ministryRelief}` : '',
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </T>
               {!owned && d.unlocked.official[id] && (
                 <Btn
                   small

@@ -3,6 +3,40 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-29 — Act V, the Kombinat (M11)
+
+Branch: `feature/acts-iii-vi`. Reasoning: [ADR 0044](docs/decisions/0044-act-v-kombinat.md).
+
+### What changed, for a player
+
+- **Act V opens the Kombinat**, the tobacco Combine upriver and its town. The state is selling it: buy it at auction (a loan helps), and only then can you build there. Its lots are for the Combine line, the Newspaper and the TV Station.
+- **The Combine** makes both kinds of cigarettes, by the thousand.
+- **Public opinion** (0–100): the media, the Palace of Culture and the Development Fund raise it; inspections and raids knock it back. It multiplies your control and pays the Construction Trust.
+- **The Ministry** in the capital watches how big you've grown. Bribes don't work on it. When its attention peaks it freezes your busiest front for a day. Opinion brings it down, and so does the Governor, who only takes the mayor's calls.
+- **Elections** every week against Golovin. Campaign with Dirty or Influence, or have your crew deliver the vote. Win once and you're mayor for good: no tribute anywhere, bigger district perks, more control, and the Governor.
+- To clear Act V: the mayor's office and the Reputation to hold it. The Politics card on Turf shows it all.
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| Opinion, the Ministry, elections, campaigns | `engine/systems/politics.ts` (new), `engine/core/derive.ts`, `engine/core/reconcile.ts` |
+| The auction, reserved lots, `onlyIn` | `engine/systems/districts.ts` (`racketBlocked`, `premisesBlocked`, `canPressure`) |
+| Frozen fronts, CAMPAIGN, the Governor, DEBUG_HOLD_ELECTION | `engine/core/apply.ts` |
+| Deliver the Vote | `engine/systems/ops.ts` (`addVotes`) |
+| Act V content and the mayor's gate | `engine/config/defaults.ts`, `engine/config/schema.ts`, `engine/systems/acts.ts` (`finalAct` 5) |
+| Save schema v12 | `engine/model/migrate.ts` (`v11to12`), `engine/core/time.ts` |
+| The app | `app/components/PoliticsCard.tsx` (new); Turf, Fronts, Heat, Business, Ops, Stats, How It Works, Debug; Home alerts |
+| The bot | `sim/persona.ts` (the auction, campaigning, media and Combine value, the Governor, Deliver the Vote) |
+| Tests | `tests/kombinat.test.ts` (new); the split test adds an Act V game; migration covers v12; the pacing guard runs 45 days and adds Act V |
+| Docs | [politics.md](docs/systems/politics.md) (new); districts and rivals, economy, fronts, heat, ops, supply chain, progression, architecture, app, sim, testing |
+
+### Verified
+
+- `npm run check`: typecheck, lint, 188 tests.
+- `npm run sim -- --days 50 --runs 10`: Act V 12.86 d (10/10 in 10–14), heat 28.2, no raids, no missed wages; tuning in [TUNING.md](TUNING.md).
+- Not yet tried on a device.
+
 ## 2026-09-29 — Act IV, Zastava (M10)
 
 Branch: `feature/acts-iii-vi`. Reasoning: [ADR 0043](docs/decisions/0043-act-iv-zastava.md).

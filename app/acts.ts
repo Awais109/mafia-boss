@@ -11,7 +11,7 @@ export const ACT_OPENS: Record<Act, string> = {
   2: 'the Restaurant front, more crew slots, the Port Quarter and Sovietsky Blocks',
   3: 'the Centre across the bridge: prosperity, the Card Club and Print Shop, hotels, the Cooperative Bank, City Hall and tier 6',
   4: 'Zastava and the road to the border: premium cigarettes by convoy, the Colonel, the Import–Export Company and the Customs Chief',
-  5: 'the Combine upriver',
+  5: 'the Kombinat upriver: the Combine at auction, public opinion, the Ministry’s attention, and the election against Golovin',
   6: 'the hills above the city',
 }
 
@@ -40,6 +40,7 @@ export function actProgress(s: PlayerState, c: Config): ActProgress {
       requirements.push({ text: `hold ${c.districts.list[id].name}`, done: s.districts.find((d) => d.id === id)?.controller === 'player' })
     }
     for (const f of g.fronts ?? []) requirements.push({ text: `own the ${c.fronts.types[f].name}`, done: s.fronts.some((x) => x.type === f) })
+    if (g.mayor) requirements.push({ text: 'win an election', done: s.politics.mayor })
   }
   const clearedAt = s.stats.actClearedAt[s.act]
   if (cleared && clearedAt !== undefined) {

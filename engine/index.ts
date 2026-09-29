@@ -33,6 +33,17 @@ export { bestHaggler, canHaggle, haggleOdds, surplusRoomToday, zhannaDeals, zhan
 export { canAffordEffects, contestFighter, contestOdds, incidentNeedHolds } from './systems/inbox'
 export { creditOpen, defaultChance, lendCap, loanCap, loanDue } from './systems/credit'
 export { colonelHolds, colonelHostile, convoyLoad, customsChance, hijackChance, passageActive, passageCost } from './systems/convoys'
+export {
+  electionScheduled,
+  ministryTarget,
+  opinionControlMult,
+  opinionTarget,
+  pointCost,
+  pointsRoom,
+  politicsOn,
+  voteShare,
+  winChance,
+} from './systems/politics'
 export { clinicLoyaltyPerDay, injuryMult } from './systems/injuries'
 export { ledgerDays, type LedgerDay } from './systems/ledger'
 export { tolyaHostile, tolyaIntervalHours } from './systems/rivals'

@@ -6,6 +6,7 @@ import { changeLoyalty, crewSlots, regeneratePool, unassignEnforcer } from '../s
 import { checkActs } from '../systems/acts'
 import { canPressure, getDistrict, racketBlocked, takeDistrict } from '../systems/districts'
 import { buyPassage } from '../systems/convoys'
+import { campaign, electionDue, electionScheduled } from '../systems/politics'
 import { lend, repayLoan, takeLoan } from '../systems/credit'
 import { frontBlocked } from '../systems/fronts'
 import { arrest, raid } from '../systems/heat'
@@ -83,6 +84,7 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       const f = state.fronts.find((x) => x.id === a.frontId)
       if (!f) return 'No such front'
       if (!(a.amount > 0)) return 'Nothing to deposit'
+      if (f.frozenUntil !== undefined) return 'The Ministry has frozen it'
       if (a.amount > state.dirty + EPS) return 'Not enough Dirty'
       const cap = F.frontBufferCap(c, f)
       if (f.buffer + a.amount > cap + EPS) return `The buffer only holds ${Math.floor(cap)}`
@@ -303,6 +305,7 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       const o = c.officials.list[a.officialId]
       if (!o) return 'No such official'
       if (o.act > state.act) return 'Not available yet'
+      if (o.needsMayor && !state.politics.mayor) return 'He only takes calls from the mayor'
       if (state.officials.includes(a.officialId)) return 'Already on the payroll'
       if (t < state.officialCooldownUntil) return 'Too soon after the last official'
       if (state.influence < o.cost - EPS) return 'Not enough Influence'
@@ -468,6 +471,9 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
     case 'BUY_PASSAGE':
       return buyPassage(state, ctx, t)
 
+    case 'CAMPAIGN':
+      return campaign(state, ctx, t, a.points, a.pay)
+
     case 'SELL_SURPLUS': {
       const z = state.rival.zhanna
       const zc = c.rivals.zhanna
@@ -574,6 +580,15 @@ function handleDebug(state: PlayerState, ctx: Ctx, a: Action, t: number): string
       note(String(state.reputation))
       checkActs(state, ctx, t)
       return null
+    case 'DEBUG_HOLD_ELECTION':
+      // The coming election, counted now (ADR 0044): Debug's way to the mayor's office without waiting a week.
+      if (!electionScheduled(state)) return 'No election is coming'
+      note()
+      state.politics.nextElectionAt = t
+      electionDue(state, ctx, t)
+      checkActs(state, ctx, t)
+      return null
+
     case 'DEBUG_COMPLETE_GOALS':
       // Act II is gated by goals now, not Rep (ADR 0039) — this is Debug's fast path to it.
       // Checks the acts directly: checkGoals itself waits for the tutorial to end, which a

@@ -2,6 +2,7 @@ import type { ActGate, Config, LaterAct } from '../config/schema'
 import { emit, type Ctx } from '../core/ctx'
 import type { PlayerState } from '../model/state'
 import { grantGold } from './gold'
+import { initPolitics } from './politics'
 import { initProsperity } from './prosperity'
 
 // Six acts (ADR 0040). Each act after the first opens when its gate in `progression.acts` holds: the Act I
@@ -13,6 +14,7 @@ export function gateMet(state: PlayerState, c: Config, gate: ActGate): boolean {
   if (gate.rep !== undefined && state.reputation < gate.rep) return false
   if (gate.holds?.some((id) => state.districts.find((d) => d.id === id)?.controller !== 'player')) return false
   if (gate.fronts?.some((f) => !state.fronts.some((x) => x.type === f))) return false
+  if (gate.mayor && !state.politics.mayor) return false
   return true
 }
 
@@ -53,6 +55,7 @@ function openAct(state: PlayerState, ctx: Ctx, t: number, act: LaterAct): void {
   emit(ctx, t, { type: 'ACT_UNLOCKED', act })
   grantGold(state, ctx, t, c.gold.perActUnlocked[act], 'act')
   if (act === c.prosperity.fromAct) initProsperity(state, c, t)
+  if (act === c.opinion.fromAct) initPolitics(state, c, t)
   // Zhanna's trade opens with the Port (ADR 0036).
   if (act === 2) emit(ctx, t, { type: 'NOTE', text: 'Zhanna runs the Port Quarter. Her people watch every crate that moves.' })
 }

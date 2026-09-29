@@ -134,6 +134,35 @@ function zastava(): PlayerState {
   return s
 }
 
+// Act V (ADR 0044): opinion stepping toward the media's target, the Ministry's attention about to peak and
+// freeze the Development Fund, a front frozen and thawing mid-window, and an election counted mid-window.
+function kombinat(): PlayerState {
+  let s = act(fresh('kombinat-player'), [{ type: 'DEBUG_COMPLETE_GOALS' }, { type: 'DEBUG_SET_REP', reputation: config.rackets.types.tvStation.unlockRep }], T0)
+  s.tutorial.done = true
+  s = act(
+    s,
+    [
+      { type: 'DEBUG_GRANT', dirty: 2_000_000, clean: 2_000_000, influence: 500 },
+      { type: 'BUY_DISTRICT', districtId: 'zastava' },
+      { type: 'BUY_FRONT', frontType: 'importExport' },
+      { type: 'BUY_DISTRICT', districtId: 'kombinat' },
+      { type: 'BUY_FRONT', frontType: 'developmentFund' },
+      { type: 'BUY_RACKET', racketType: 'newspaper', districtId: 'kombinat' },
+      { type: 'BUY_RACKET', racketType: 'combine', districtId: 'kombinat' },
+      { type: 'BUY_RACKET', racketType: 'constructionTrust', districtId: 'kombinat' },
+      { type: 'CAMPAIGN', points: 12, pay: 'dirty' },
+    ],
+    T0,
+  )
+  const fund = s.fronts.find((f) => f.type === 'developmentFund')!
+  s = act(s, [{ type: 'DEPOSIT', frontId: fund.id, amount: 20_000 }], T0)
+  s.politics.attention = config.ministry.freezeAt - 0.5
+  s.politics.opinion = 30
+  s.politics.nextElectionAt = T0 + Math.round(13.6 * H)
+  s.fronts.find((f) => f.type === 'importExport')!.frozenUntil = T0 + Math.round(6.2 * H)
+  return s
+}
+
 describe('reconcile', () => {
   it('does nothing when now <= updatedAt', () => {
     const s = fresh()
@@ -142,7 +171,7 @@ describe('reconcile', () => {
   })
 
   it('reconcile(s, t2) equals reconcile(reconcile(s, t1), t2) on 1,000 random splits', () => {
-    const bases = [fresh(), busy(), centre(), zastava()]
+    const bases = [fresh(), busy(), centre(), zastava(), kombinat()]
     const rand = makeRng('split-test').derive('splits')
     for (let i = 0; i < 1000; i++) {
       const base = bases[i % bases.length]

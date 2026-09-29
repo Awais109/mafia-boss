@@ -36,6 +36,8 @@ export function shiftTimes(state: PlayerState, delta: number): PlayerState {
   s.rival.tolya.nextTickAt = shift(s.rival.tolya.nextTickAt)
   s.rival.zhanna.nextShipmentAt = shift(s.rival.zhanna.nextShipmentAt)
   s.rival.colonel.passageUntil = shift(s.rival.colonel.passageUntil)
+  if (s.politics.nextElectionAt > 0) s.politics.nextElectionAt = shift(s.politics.nextElectionAt)
+  for (const f of s.fronts) if (f.frozenUntil !== undefined) f.frozenUntil = shift(f.frozenUntil)
   for (const op of s.ops) {
     op.startedAt = shift(op.startedAt)
     op.completesAt = shift(op.completesAt)

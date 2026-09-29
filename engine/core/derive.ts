@@ -29,6 +29,7 @@ export type RacketDerived = {
   conditionMult: number
   districtMult: number
   prosperityMult: number // joints: × the district's prosperity (ADR 0041); 1 otherwise
+  opinionMult: number // the Construction Trust: × public opinion (ADR 0044); 1 otherwise
   closed: boolean // shut by an investigation: earns, sells and heats nothing
   synergyMult: number // side-by-side yield bonus (plan (m))
   upkeep: number // premises: Dirty/hr
@@ -51,7 +52,8 @@ export type FrontDerived = {
   type: FrontType
   mode: FrontMode
   rate: number
-  throughput: number // after capacity and mode
+  throughput: number // after capacity and mode; 0 while frozen
+  frozen: boolean // the Ministry has frozen it (ADR 0044)
   baseThroughput: number // after capacity, before mode; sizes the buffer
   bufferCap: number
   util: number
@@ -84,7 +86,7 @@ export type Derived = {
   racketExposure: number
   frontSuspicion: number
   control: number
-  controlParts: { base: number; officials: number; bribe: number; districtMult: number }
+  controlParts: { base: number; officials: number; bribe: number; districtMult: number; mayor: number; opinionMult: number }
   heatTarget: number
   inspectionMult: number
   wagesPerHr: number
@@ -132,6 +134,12 @@ export function derive(state: PlayerState, c: Config): Derived {
   const premiumOn = state.act >= c.premium.fromAct
   const prospering = prosperityOn(state, c)
   const prosperityOf = (id: DistrictId) => state.districts.find((d) => d.id === id)?.prosperity ?? c.prosperity.base
+  // Act V (ADR 0044): opinion pays the Construction Trust and multiplies control; the mayor pays no tribute
+  // and gets more from every district's perks.
+  const politics = state.act >= c.opinion.fromAct
+  const opinion = state.politics.opinion
+  const mayor = state.politics.mayor
+  const perkMult = mayor ? c.elections.mayor.perkMult : 1
 
   // Synergies are active in a district that has an `a`, and a `b` when one is named.
   const synergies: { districtId: DistrictId; id: string }[] = []
@@ -211,7 +219,7 @@ export function derive(state: PlayerState, c: Config): Derived {
     const district = c.districts.list[r.districtId]
     const controller = controllerOf(r.districtId)
     const ours = controller === 'player'
-    const districtMult = ours ? (district.mod.yieldMult?.[r.type] ?? 1) : 1
+    const districtMult = ours ? 1 + ((district.mod.yieldMult?.[r.type] ?? 1) - 1) * perkMult : 1
     const enforced = r.enforcerId !== null
     const spec = r.specialization ? c.rackets.specialization[r.specialization] : null
     const spec6 = r.specialization6 ? c.rackets.specialization6[r.specialization6] : null
@@ -219,6 +227,8 @@ export function derive(state: PlayerState, c: Config): Derived {
     const pShare = kind === 'joint' && premiumOn ? (rt.premiumShare ?? 0) : 0
     const pServed = pDemand > 0 ? premiumServedAll : 1
     const prosperityMult = kind === 'joint' && prospering ? prosperityYieldMult(c, prosperityOf(r.districtId)) : 1
+    const oy = politics ? rt.opinionYield : undefined
+    const opinionMult = oy ? oy[0] + ((oy[1] - oy[0]) * opinion) / 100 : 1
     const closed = r.closedUntil !== undefined
     const fullYield =
       kind === 'premises'
@@ -231,9 +241,10 @@ export function derive(state: PlayerState, c: Config): Derived {
           (spec?.yieldMult ?? 1) *
           (spec6?.yieldMult ?? 1) *
           prosperityMult *
+          opinionMult *
           fx.yieldMult
     const grossYield = fullYield * (1 - share - pShare + share * served[i] + pShare * pServed)
-    const tributeRate = ours || controller === 'none' ? 0 : district.tribute
+    const tributeRate = ours || mayor || controller === 'none' ? 0 : district.tribute
     const tribute = grossYield * tributeRate
     return {
       id: r.id,
@@ -247,6 +258,7 @@ export function derive(state: PlayerState, c: Config): Derived {
       conditionMult: cond,
       districtMult,
       prosperityMult,
+      opinionMult,
       closed,
       synergyMult: fx.yieldMult,
       upkeep: kind === 'premises' ? F.premisesUpkeep(c, r.type, r.tier) * fx.upkeepMult : 0,
@@ -269,13 +281,16 @@ export function derive(state: PlayerState, c: Config): Derived {
   const perFront: FrontDerived[] = state.fronts.map((f) => {
     // An importer only washes what its premium trade would explain (ADR 0043).
     const cover = c.fronts.types[f.type].coverPerPremiumPack
-    const throughput = cover === undefined ? F.frontThroughput(c, f) : Math.min(F.frontThroughput(c, f), premiumSold * cover)
+    // A front the Ministry has frozen launders nothing until it thaws (ADR 0044).
+    const frozen = f.frozenUntil !== undefined
+    const throughput = frozen ? 0 : cover === undefined ? F.frontThroughput(c, f) : Math.min(F.frontThroughput(c, f), premiumSold * cover)
     return {
       id: f.id,
       type: f.type,
       mode: f.mode,
       rate: F.frontRate(c, f.type, f.level),
       throughput,
+      frozen,
       baseThroughput: F.frontBaseThroughput(c, f),
       bufferCap: F.frontBufferCap(c, f),
       util: f.util,
@@ -307,8 +322,11 @@ export function derive(state: PlayerState, c: Config): Derived {
     officials: sum(state.officials.map((id) => c.officials.list[id].control)),
     bribe: state.bribeControl,
     districtMult: 1 + c.heat.districtControlPct * taken,
+    mayor: mayor ? c.elections.mayor.control : 0,
+    opinionMult: politics ? 1 + (c.opinion.controlBonus * opinion) / 100 : 1,
   }
-  const control = (controlParts.base + controlParts.officials + controlParts.bribe) * controlParts.districtMult
+  const control =
+    (controlParts.base + controlParts.officials + controlParts.bribe + controlParts.mayor) * controlParts.districtMult * controlParts.opinionMult
 
   const wageMult = state.districts
     .filter((d) => d.controller === 'player')
@@ -375,7 +393,7 @@ export function derive(state: PlayerState, c: Config): Derived {
       }),
       front: mapKeys(FRONT_TYPES, (t) => c.fronts.types[t].act <= state.act && state.reputation >= c.fronts.types[t].unlockRep),
       district: mapKeys(DISTRICT_IDS, (id) => c.districts.list[id].act <= state.act),
-      official: mapKeys(OFFICIAL_IDS, (id) => c.officials.list[id].act <= state.act),
+      official: mapKeys(OFFICIAL_IDS, (id) => c.officials.list[id].act <= state.act && (!c.officials.list[id].needsMayor || state.politics.mayor)),
     },
   }
 }

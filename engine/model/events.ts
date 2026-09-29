@@ -55,6 +55,7 @@ export type EventBody =
       premium?: number // premium packs a convoy put in stock (ADR 0043)
       hijacked?: true // the Colonel's men took the load
       seized?: true // customs took the load
+      votes?: number // campaign points delivered (ADR 0044)
     }
   | { type: 'UPKEEP_PAID'; amount: number }
   | { type: 'UPKEEP_MISSED'; owed: number; paid: number }
@@ -68,6 +69,10 @@ export type EventBody =
   | { type: 'GOAL_DONE'; goalId: GoalId; gold: number }
   | { type: 'SHIPMENT_BOUGHT'; packs: number; cost: number; product?: 'premium' }
   | { type: 'PASSAGE_BOUGHT'; cost: number; until: number }
+  | { type: 'FRONT_FROZEN'; frontId: string; until: number } // the Ministry (ADR 0044)
+  | { type: 'FRONT_THAWED'; frontId: string }
+  | { type: 'CAMPAIGNED'; points: number; cost: number; pay: 'dirty' | 'influence'; total: number }
+  | { type: 'ELECTION_HELD'; index: number; share: number; won: boolean }
   | { type: 'SURPLUS_SOLD'; packs: number; dirty: number }
   | { type: 'REPORT_FILED'; itemId: string; opId: string; opType: OpType; outcome: OpOutcome; expiresAt: number }
   | { type: 'INCIDENT_RAISED'; itemId: string; incidentType: IncidentType; crewId?: string; racketId?: string; expiresAt: number }

@@ -15,25 +15,27 @@ export type RacketType =
   | 'autoShop' | 'cafe' | 'bathhouse' | 'petrol' | 'cargoBay' | 'stashHouse' | 'unionOffice'
   | 'cardClub' | 'nightclub' | 'printShop' | 'hotel' | 'clinic' | 'loanDesk'
   | 'truckStop' | 'motel' | 'foreignShop' | 'freightYard' | 'fuelDepot' | 'bondedWarehouse' | 'convoyDepot'
+  | 'palaceOfCulture' | 'constructionTrust' | 'combine' | 'newspaper' | 'tvStation'
 export const RACKET_TYPES: readonly RacketType[] = [
   'kiosk', 'marketStall', 'beerTent', 'videoSalon', 'taxiRank', 'slotHall', 'tobaccoFactory', 'warehouse',
   'autoShop', 'cafe', 'bathhouse', 'petrol', 'cargoBay', 'stashHouse', 'unionOffice',
   'cardClub', 'nightclub', 'printShop', 'hotel', 'clinic', 'loanDesk',
   'truckStop', 'motel', 'foreignShop', 'freightYard', 'fuelDepot', 'bondedWarehouse', 'convoyDepot',
+  'palaceOfCulture', 'constructionTrust', 'combine', 'newspaper', 'tvStation',
 ]
 
-export type FrontType = 'currencyKiosk' | 'restaurant' | 'cooperativeBank' | 'importExport'
-export const FRONT_TYPES: readonly FrontType[] = ['currencyKiosk', 'restaurant', 'cooperativeBank', 'importExport']
+export type FrontType = 'currencyKiosk' | 'restaurant' | 'cooperativeBank' | 'importExport' | 'developmentFund'
+export const FRONT_TYPES: readonly FrontType[] = ['currencyKiosk', 'restaurant', 'cooperativeBank', 'importExport', 'developmentFund']
 
-export type OfficialId = 'wardCop' | 'precinctCaptain' | 'cityHall' | 'customsChief'
-export const OFFICIAL_IDS: readonly OfficialId[] = ['wardCop', 'precinctCaptain', 'cityHall', 'customsChief']
+export type OfficialId = 'wardCop' | 'precinctCaptain' | 'cityHall' | 'customsChief' | 'governor'
+export const OFFICIAL_IDS: readonly OfficialId[] = ['wardCop', 'precinctCaptain', 'cityHall', 'customsChief', 'governor']
 
 export type OpType =
   | 'shakeDown' | 'collectDebt' | 'leanOnWard' | 'pressure' | 'smuggleCigarettes' | 'moveShipment' | 'dinner'
-  | 'trainMuscle' | 'trainBrains' | 'trainNerve' | 'bigScore' | 'runConvoy' | 'greasePost'
+  | 'trainMuscle' | 'trainBrains' | 'trainNerve' | 'bigScore' | 'runConvoy' | 'greasePost' | 'fixTender' | 'deliverVote'
 export const OP_TYPES: readonly OpType[] = [
   'shakeDown', 'collectDebt', 'leanOnWard', 'pressure', 'smuggleCigarettes', 'moveShipment', 'dinner',
-  'trainMuscle', 'trainBrains', 'trainNerve', 'bigScore', 'runConvoy', 'greasePost',
+  'trainMuscle', 'trainBrains', 'trainNerve', 'bigScore', 'runConvoy', 'greasePost', 'fixTender', 'deliverVote',
 ]
 
 export type FrontMode = 'push' | 'normal' | 'layLow'
@@ -55,8 +57,10 @@ export type PerkConfig = {
   noDrift?: boolean // steady: no daily loyalty drift
 }
 
-export type DistrictId = 'zarechye' | 'kioskRow' | 'stationSquare' | 'portQuarter' | 'sovietsky' | 'centre' | 'zastava'
-export const DISTRICT_IDS: readonly DistrictId[] = ['zarechye', 'kioskRow', 'stationSquare', 'portQuarter', 'sovietsky', 'centre', 'zastava']
+export type DistrictId = 'zarechye' | 'kioskRow' | 'stationSquare' | 'portQuarter' | 'sovietsky' | 'centre' | 'zastava' | 'kombinat'
+export const DISTRICT_IDS: readonly DistrictId[] = [
+  'zarechye', 'kioskRow', 'stationSquare', 'portQuarter', 'sovietsky', 'centre', 'zastava', 'kombinat',
+]
 
 export type Stat = 'muscle' | 'brains' | 'nerve'
 export const STATS: readonly Stat[] = ['muscle', 'brains', 'nerve']
@@ -64,7 +68,7 @@ export const STATS: readonly Stat[] = ['muscle', 'brains', 'nerve']
 export type TraitId = 'exArmy' | 'gambler' | 'alcoholic'
 export const TRAIT_IDS: readonly TraitId[] = ['exArmy', 'gambler', 'alcoholic']
 
-export type Controller = 'player' | 'tolya' | 'zhanna' | 'colonel' | 'none'
+export type Controller = 'player' | 'tolya' | 'zhanna' | 'colonel' | 'state' | 'none'
 export type OpBand = 'quick' | 'standard' | 'long'
 export const OP_BANDS: readonly OpBand[] = ['quick', 'standard', 'long']
 export type OpOutcome = 'full' | 'partial' | 'fail'
@@ -168,6 +172,10 @@ export type RacketTypeConfig = {
   seizureMult?: number // bonded warehouses: customs seizure × this while one stands in the crossing's district
   convoyBonusPerTier?: number // convoy depots: a convoy lands × (1 + this × tier) packs
   hijackMult?: number // convoy depots: the Colonel's hijack chance × this
+  // Act V, politics (ADR 0044).
+  opinionPerTier?: number // added to public opinion's target per tier (the Newspaper, the TV Station, the Palace of Culture)
+  opinionYield?: [number, number] // rackets: yield × lerp(lo, hi, opinion ÷ 100) (the Construction Trust)
+  onlyIn?: DistrictId // premises: only on this district's lots (the Combine)
 }
 
 // Businesses that work better side by side in one district (plan (m)). Active in a district that has
@@ -191,13 +199,23 @@ export type FrontTypeConfig = {
   act: Act // opens in this act (and at unlockRep)
   minProsperity?: number // city prosperity needed to open it (ADR 0041)
   coverPerPremiumPack?: number // launders at most this × premium packs sold per hour: the trade has to plausibly cover it (ADR 0043)
+  opinionAtFullUtil?: number // adds up to this to public opinion's target, × its utilization (the Development Fund, ADR 0044)
   rate: number // clean out per dirty in
   throughput: number // dirty/hr
   unlockRep: number
   cost: number // clean
 }
 
-export type OfficialConfig = { name: string; description: string; control: number; cost: number; act: Act; seizureMult?: number }
+export type OfficialConfig = {
+  name: string
+  description: string
+  control: number
+  cost: number
+  act: Act
+  seizureMult?: number // customs seizes convoys × this (ADR 0043)
+  ministryRelief?: number // the Ministry's attention target − this (ADR 0044)
+  needsMayor?: boolean // only takes calls from the mayor (the Governor)
+}
 
 export type OpConfig = {
   name: string
@@ -218,6 +236,7 @@ export type OpConfig = {
   districtPressure?: boolean
   act?: Act
   premium?: number // premium packs a convoy lands on success (× the reward share); hijack and customs apply (ADR 0043)
+  votes?: number // campaign points on success (× the reward share) while an election is coming (ADR 0044)
 }
 
 export type DistrictConfig = {
@@ -230,6 +249,8 @@ export type DistrictConfig = {
   premisesLots: number // lots for premises of any type, one of each type
   buyout: number
   tribute: number // fraction of racket yield paid to the controller while not yours
+  auction?: boolean // a state asset (ADR 0044): bought outright, never pressured, and nothing is built until it's yours
+  lotsFor?: RacketType[] // its lots take only these premises (the Kombinat's: the Combine and the media)
   mod: {
     yieldMult?: Partial<Record<RacketType, number>> // rackets in this district, once you control it
     wageMult?: number // all crew wages, once you control it
@@ -242,6 +263,7 @@ export type ActGate = {
   rep?: number
   holds?: DistrictId[] // districts you control
   fronts?: FrontType[] // fronts you own
+  mayor?: boolean // you've won an election (ADR 0044)
 }
 
 export type CrewSeed = {
@@ -298,6 +320,36 @@ export type Config = {
     fromAct: Act
     baseCap: number
     startingStock: number
+  }
+  // Act V (ADR 0044): the city's opinion of you, Moscow's attention, and the elections.
+  opinion: {
+    fromAct: Act
+    base: number // the target before media, the Palace and the Fund
+    stepPerHr: number // share of the gap to target closed at each whole hour
+    inspectedPenalty: number
+    raidPenalty: number // while the raid penalty from prosperity runs
+    controlBonus: number // control × (1 + this × opinion ÷ 100)
+  }
+  ministry: {
+    fromAct: Act
+    perYield: number // attention target per Dirty an hour of yield
+    opinionRelief: number // − this × opinion ÷ 100
+    stepPerHr: number
+    freezeAt: number // attention at a whole hour at or above this freezes a front
+    afterFreeze: number // attention falls to this once it has
+    freezeHours: number
+  }
+  elections: {
+    fromAct: Act
+    everyDays: number
+    baseShare: number // your share of the vote at opinion 50 with no campaign
+    perOpinion: number // + this per point of opinion above 50
+    perPoint: number // + this per campaign point
+    noise: number // the count: ± this, uniform
+    pointHoursOfYield: number // a campaign point costs this many hours of Dirty yield
+    influencePerPoint: number // or this much Influence
+    maxPoints: number
+    mayor: { perkMult: number; control: number } // the office: district perks amplified, control added, no tribute
   }
   convoys: {
     customsBase: number // chance customs takes a load, before heat
@@ -634,6 +686,8 @@ export function validateConfig(c: Config): string[] {
         if (rt.prosperity !== undefined) num(e, `${p}.prosperity`, rt.prosperity, (n) => Math.abs(n) <= 100, 'in [-100, 100]')
         if (rt.prosperityPerTier !== undefined) nonNeg(e, `${p}.prosperityPerTier`, rt.prosperityPerTier)
         if (rt.minProsperity !== undefined) num(e, `${p}.minProsperity`, rt.minProsperity, (n) => n >= 0 && n <= 100, 'in [0, 100]')
+        if (rt.opinionPerTier !== undefined) nonNeg(e, `${p}.opinionPerTier`, rt.opinionPerTier)
+        if (rt.opinionYield !== undefined) range(e, `${p}.opinionYield`, rt.opinionYield, (n) => n > 0)
         if (rt.kind === 'premises') {
           // Premises earn nothing directly: they make, keep or improve (ADR 0031).
           num(e, `${p}.baseYield`, rt.baseYield, (n) => n === 0, '0 for premises')
@@ -655,6 +709,7 @@ export function validateConfig(c: Config): string[] {
           if (rt.seizureMult !== undefined) unit(e, `${p}.seizureMult`, rt.seizureMult)
           if (rt.convoyBonusPerTier !== undefined) nonNeg(e, `${p}.convoyBonusPerTier`, rt.convoyBonusPerTier)
           if (rt.hijackMult !== undefined) unit(e, `${p}.hijackMult`, rt.hijackMult)
+          if (rt.onlyIn !== undefined && !DISTRICT_IDS.includes(rt.onlyIn)) e.push(`${p}.onlyIn: unknown district ${rt.onlyIn}`)
         } else {
           positive(e, `${p}.baseYield`, rt.baseYield)
         }
@@ -721,6 +776,7 @@ export function validateConfig(c: Config): string[] {
         if (!ACTS.includes(ft.act)) e.push(`fronts.types.${t}.act: expected an act`)
         if (ft.minProsperity !== undefined) num(e, `fronts.types.${t}.minProsperity`, ft.minProsperity, (n) => n >= 0 && n <= 100, 'in [0, 100]')
         if (ft.coverPerPremiumPack !== undefined) positive(e, `fronts.types.${t}.coverPerPremiumPack`, ft.coverPerPremiumPack)
+        if (ft.opinionAtFullUtil !== undefined) nonNeg(e, `fronts.types.${t}.opinionAtFullUtil`, ft.opinionAtFullUtil)
         nonNeg(e, `fronts.types.${t}.unlockRep`, ft.unlockRep)
         nonNeg(e, `fronts.types.${t}.cost`, ft.cost)
       }
@@ -751,6 +807,7 @@ export function validateConfig(c: Config): string[] {
         nonNeg(e, `officials.list.${id}.cost`, c.officials.list[id].cost)
         if (!ACTS.includes(c.officials.list[id].act)) e.push(`officials.list.${id}.act: expected an act`)
         if (c.officials.list[id].seizureMult !== undefined) unit(e, `officials.list.${id}.seizureMult`, c.officials.list[id].seizureMult)
+        if (c.officials.list[id].ministryRelief !== undefined) nonNeg(e, `officials.list.${id}.ministryRelief`, c.officials.list[id].ministryRelief)
       }
     },
     (e) => {
@@ -874,6 +931,9 @@ export function validateConfig(c: Config): string[] {
           }
         }
         int(e, `districts.list.${id}.premisesLots`, d.premisesLots, 0)
+        for (const t of d.lotsFor ?? []) {
+          if (!RACKET_TYPES.includes(t) || c.rackets.types[t].kind !== 'premises') e.push(`districts.list.${id}.lotsFor: ${t} is not premises`)
+        }
         nonNeg(e, `districts.list.${id}.buyout`, d.buyout)
         num(e, `districts.list.${id}.tribute`, d.tribute, (n) => n >= 0 && n < 1, 'in [0, 1)')
       }
@@ -922,7 +982,9 @@ export function validateConfig(c: Config): string[] {
         if (g.rep !== undefined) nonNeg(e, `${p}.rep`, g.rep)
         for (const id of g.holds ?? []) if (!DISTRICT_IDS.includes(id)) e.push(`${p}.holds: unknown district ${id}`)
         for (const f of g.fronts ?? []) if (!FRONT_TYPES.includes(f)) e.push(`${p}.fronts: unknown front ${f}`)
-        if (!g.goals && g.rep === undefined && !(g.holds ?? []).length && !(g.fronts ?? []).length) e.push(`${p}: a gate needs at least one condition`)
+        if (!g.goals && !g.mayor && g.rep === undefined && !(g.holds ?? []).length && !(g.fronts ?? []).length) {
+          e.push(`${p}: a gate needs at least one condition`)
+        }
       }
       const inj = c.injuries
       if (!ACTS.includes(inj.fromAct)) e.push('injuries.fromAct: expected an act')
@@ -950,6 +1012,33 @@ export function validateConfig(c: Config): string[] {
       nonNeg(e, 'prosperity.raidPenalty', ps.raidPenalty)
       positive(e, 'prosperity.raidPenaltyHours', ps.raidPenaltyHours)
       nonNeg(e, 'prosperity.shortagePenalty', ps.shortagePenalty)
+      const op = c.opinion
+      if (!ACTS.includes(op.fromAct)) e.push('opinion.fromAct: expected an act')
+      num(e, 'opinion.base', op.base, (n) => n >= 0 && n <= 100, 'in [0, 100]')
+      num(e, 'opinion.stepPerHr', op.stepPerHr, (n) => n > 0 && n <= 1, 'in (0, 1]')
+      nonNeg(e, 'opinion.inspectedPenalty', op.inspectedPenalty)
+      nonNeg(e, 'opinion.raidPenalty', op.raidPenalty)
+      nonNeg(e, 'opinion.controlBonus', op.controlBonus)
+      const mi = c.ministry
+      if (!ACTS.includes(mi.fromAct)) e.push('ministry.fromAct: expected an act')
+      nonNeg(e, 'ministry.perYield', mi.perYield)
+      nonNeg(e, 'ministry.opinionRelief', mi.opinionRelief)
+      num(e, 'ministry.stepPerHr', mi.stepPerHr, (n) => n > 0 && n <= 1, 'in (0, 1]')
+      num(e, 'ministry.freezeAt', mi.freezeAt, (n) => n > 0 && n <= 100, 'in (0, 100]')
+      num(e, 'ministry.afterFreeze', mi.afterFreeze, (n) => n >= 0 && n < mi.freezeAt, 'in [0, freezeAt)')
+      positive(e, 'ministry.freezeHours', mi.freezeHours)
+      const el = c.elections
+      if (!ACTS.includes(el.fromAct)) e.push('elections.fromAct: expected an act')
+      positive(e, 'elections.everyDays', el.everyDays)
+      unit(e, 'elections.baseShare', el.baseShare)
+      nonNeg(e, 'elections.perOpinion', el.perOpinion)
+      nonNeg(e, 'elections.perPoint', el.perPoint)
+      num(e, 'elections.noise', el.noise, (n) => n > 0 && n < 0.5, 'in (0, 0.5)')
+      positive(e, 'elections.pointHoursOfYield', el.pointHoursOfYield)
+      positive(e, 'elections.influencePerPoint', el.influencePerPoint)
+      int(e, 'elections.maxPoints', el.maxPoints, 1)
+      num(e, 'elections.mayor.perkMult', el.mayor.perkMult, (n) => n >= 1, '>= 1')
+      nonNeg(e, 'elections.mayor.control', el.mayor.control)
     },
     (e) => {
       const g = c.gold

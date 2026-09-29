@@ -143,7 +143,22 @@ function v10to11(doc: Doc): Doc {
   }
 }
 
-const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7, 7: v7to8, 8: v8to9, 9: v9to10, 10: v10to11 }
+// Act V (ADR 0044): public opinion, the Ministry and the elections; the Kombinat on the map, still the state's.
+function v11to12(doc: Doc): Doc {
+  const districts = doc.districts as { id: string }[]
+  const kombinat = { id: 'kombinat', controller: defaults.districts.list.kombinat.startsAs, pressureCount: 0, prosperity: defaults.prosperity.base }
+  return {
+    ...doc,
+    schemaVersion: 12,
+    stats: { ...emptyStats(), ...(doc.stats as object) },
+    politics: doc.politics ?? { opinion: defaults.opinion.base, attention: 0, nextElectionAt: 0, elections: 0, points: 0, mayor: false },
+    districts: districts.some((d) => d.id === 'kombinat') ? districts : [...districts, kombinat],
+  }
+}
+
+const STEPS: Record<number, (doc: Doc) => Doc> = {
+  1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7, 7: v7to8, 8: v8to9, 9: v9to10, 10: v10to11, 11: v11to12,
+}
 
 export function migrate(doc: unknown): PlayerState {
   if (typeof doc !== 'object' || doc === null) throw new Error('Save is not an object')

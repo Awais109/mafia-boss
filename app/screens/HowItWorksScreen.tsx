@@ -151,6 +151,16 @@ export function HowItWorksScreen({ game }: ScreenProps) {
         </Section>
       )}
 
+      {c.progression.finalAct >= c.opinion.fromAct && (
+        <Section title="Politics">
+          <Card>
+            <T small muted>
+              {`From Act ${ACT_NAME[c.opinion.fromAct]}, the city has an opinion of you, 0 to 100. The Newspaper, the TV Station and the Palace of Culture raise it, and so does laundering through the Development Fund; inspections and raids knock it back. Opinion multiplies your control (up to ×${1 + c.opinion.controlBonus}) and wins elections. The Ministry in the capital watches too: its attention grows with what you earn, ignores bribes, and at ${c.ministry.freezeAt} freezes your busiest front for ${c.ministry.freezeHours} hours. Every ${c.elections.everyDays} days there's an election against Golovin: your share is ${pct(c.elections.baseShare)}, plus opinion, plus campaign points bought with Dirty or Influence or delivered on the street. Win once and you're mayor for good: no tribute anywhere, district perks ×${c.elections.mayor.perkMult}, more control, and the Governor, who can quiet the Ministry, takes your calls. The Kombinat itself is a state asset: bought at auction, never pressured.`}
+            </T>
+          </Card>
+        </Section>
+      )}
+
       <Section title="Officials">
         <Card>
           {OFFICIAL_IDS.map((id) => {
@@ -172,6 +182,7 @@ function gateText(c: Config, g: ActGate): string {
     g.rep !== undefined ? `★${fmt(g.rep)}` : '',
     ...(g.holds ?? []).map((id) => `hold ${c.districts.list[id].name}`),
     ...(g.fronts ?? []).map((f) => `own the ${c.fronts.types[f].name}`),
+    g.mayor ? 'win an election' : '',
   ]
     .filter(Boolean)
     .join(' and ')

@@ -21,6 +21,8 @@ Crew go out on timed jobs for Dirty, Influence and Rep, at the cost of a heat sp
 | `bigScore` | 3 | Brains, Muscle, Nerve | Dirty | long; Act III ([ADR 0041](../decisions/0041-act-iii-the-centre.md)) |
 | `runConvoy` | 3 | Nerve, Muscle, Brains | Premium packs | long; Act IV; costs Clean up front; the road and customs can take the load ([convoys.md](convoys.md)) |
 | `greasePost` | 2 | Brains, Nerve | Influence | standard; Act IV ([ADR 0043](../decisions/0043-act-iv-zastava.md)) |
+| `fixTender` | 2 | Brains, Nerve | Dirty | long; Act V ([ADR 0044](../decisions/0044-act-v-kombinat.md)) |
+| `deliverVote` | 3 | Muscle, Nerve | Campaign points | standard; Act V; `votes × reward share` points toward the coming election, heavy heat ([politics.md](politics.md#elections)) |
 | `trainMuscle`, `trainBrains`, `trainNerve` | 1 | the stat trained | XP only | long; training, costs Dirty (below) |
 
 ## Starting a job

@@ -187,6 +187,31 @@ export const defaults: Config = {
         act: 4, kind: 'premises', baseYield: 0, baseHeat: 4, unlockRep: 10000, maxInCity: 1, prosperity: -2,
         purchase: 6000, upkeepPerHr: 25, upkeepTierMult: 1.2, convoyBonusPerTier: 0.15, hijackMult: 0.5,
       },
+      // Act V, the Kombinat (ADR 0044): the Combine's own town, and the media that make opinion.
+      palaceOfCulture: {
+        name: 'Palace of Culture', description: 'The Combine’s club: a cinema, a dance hall and a buffet that sells both kinds of cigarettes. People like whoever keeps it open.',
+        act: 5, kind: 'joint', baseYield: 400, baseHeat: 30, unlockRep: 31000, sellsPerHr: 6, cigaretteShare: 0.2, premiumSellsPerHr: 2, premiumShare: 0.2,
+        prosperity: 8, opinionPerTier: 2,
+      },
+      constructionTrust: {
+        name: 'Construction Trust', description: 'Public contracts: roads, roofs, the new housing. It earns with what the city thinks of you.',
+        act: 5, kind: 'racket', baseYield: 600, baseHeat: 80, unlockRep: 36000, prosperity: -4, opinionYield: [0.6, 1.4],
+      },
+      combine: {
+        name: 'The Combine', description: 'The tobacco line itself: plain Sever and the premium brands, by the thousand. A payroll, not an upkeep.',
+        act: 5, kind: 'premises', baseYield: 0, baseHeat: 20, unlockRep: 31000, maxInCity: 1, onlyIn: 'kombinat', prosperity: 4,
+        purchase: 30000, upkeepPerHr: 100, upkeepTierMult: 1.2, makesPerHr: 30, premiumMakesPerHr: 6, tierMakeMult: 1.3,
+      },
+      newspaper: {
+        name: 'Newspaper', description: 'The works paper, Sevgorodsky Rabochy, and whatever it prints about you. Raises public opinion.',
+        act: 5, kind: 'premises', baseYield: 0, baseHeat: 2, unlockRep: 32000, maxInCity: 1, onlyIn: 'kombinat',
+        purchase: 12000, upkeepPerHr: 60, upkeepTierMult: 1.2, opinionPerTier: 5,
+      },
+      tvStation: {
+        name: 'TV Station', description: 'The mast on the hill and the evening news. Raises public opinion more than the paper can.',
+        act: 5, kind: 'premises', baseYield: 0, baseHeat: 3, unlockRep: 38000, maxInCity: 1, onlyIn: 'kombinat',
+        purchase: 25000, upkeepPerHr: 120, upkeepTierMult: 1.2, opinionPerTier: 8,
+      },
     },
   },
 
@@ -200,6 +225,22 @@ export const defaults: Config = {
   // Act IV (ADR 0043): premium imported cigarettes, a stock of their own. Nothing makes them yet: they come by convoy.
   premium: { fromAct: 4, baseCap: 60, startingStock: 0 }, // one convoy fits with no warehouse
   convoys: { customsBase: 0.08, customsPerHeat: 0.004, hijackChance: 0.4, hijackHostileMult: 1.5 },
+
+  // Act V (ADR 0044): what the city thinks of you, what Moscow thinks, and the elections in between.
+  opinion: { fromAct: 5, base: 40, stepPerHr: 0.05, inspectedPenalty: 5, raidPenalty: 10, controlBonus: 0.5 },
+  ministry: { fromAct: 5, perYield: 0.012, opinionRelief: 30, stepPerHr: 0.05, freezeAt: 80, afterFreeze: 40, freezeHours: 24 },
+  elections: {
+    fromAct: 5,
+    everyDays: 7,
+    baseShare: 0.25,
+    perOpinion: 0.004,
+    perPoint: 0.005,
+    noise: 0.05,
+    pointHoursOfYield: 3,
+    influencePerPoint: 5,
+    maxPoints: 30,
+    mayor: { perkMult: 2, control: 3000 },
+  },
 
   costs: {
     // spec §6.2: purchase = baseYield × payback hours for the racket's act
@@ -249,6 +290,11 @@ export const defaults: Config = {
         name: 'Import–Export Company', description: 'A trading company at the crossing. A great rate, but it can only wash as much as your premium trade would explain.',
         act: 4, coverPerPremiumPack: 100, rate: 0.8, throughput: 1500, unlockRep: 9800, cost: 20000,
       },
+      // Act V (ADR 0044): a charity with a Combine-sized budget. What it washes, the city sees it give.
+      developmentFund: {
+        name: 'Development Fund', description: 'A regional development fund: the best rate there is and the most room, and every rouble through it makes the city think better of you.',
+        act: 5, opinionAtFullUtil: 15, rate: 0.9, throughput: 3000, unlockRep: 33000, cost: 60000,
+      },
     },
   },
 
@@ -285,6 +331,10 @@ export const defaults: Config = {
       customsChief: {
         name: 'Customs Chief', description: 'The man who signs off the crossing. More control, and customs take half as many of your convoys.',
         control: 2000, cost: 40, act: 4, seizureMult: 0.5,
+      },
+      governor: {
+        name: 'Governor', description: 'The oblast governor, who takes calls from the capital and only from the mayor. Control, and the Ministry’s attention falls.',
+        control: 5000, cost: 300, act: 5, ministryRelief: 40, needsMayor: true,
       },
     },
   },
@@ -374,6 +424,9 @@ export const defaults: Config = {
       // Act IV (ADR 0043): cartons over the border, paid for in Clean; the Colonel and customs both want a share.
       runConvoy: { name: 'Run a Convoy', band: 'long', minutes: 360, crew: 3, w: { nerve: 0.4, muscle: 0.4, brains: 0.2 }, diff: 60, spike: 5, costClean: 800, premium: 60, act: 4 },
       greasePost: { name: 'Grease the Post', band: 'standard', minutes: 240, crew: 2, w: { brains: 0.6, nerve: 0.4 }, diff: 60, spike: 2, influence: 3, act: 4 },
+      // Act V (ADR 0044): a public contract steered your way, and the vote delivered by hand.
+      fixTender: { name: 'Fix a Tender', band: 'long', minutes: 360, crew: 2, w: { brains: 0.7, nerve: 0.3 }, diff: 70, spike: 4, dirty: 300, act: 5 },
+      deliverVote: { name: 'Deliver the Vote', band: 'standard', minutes: 240, crew: 3, w: { muscle: 0.5, nerve: 0.5 }, diff: 70, spike: 10, votes: 3, act: 5 },
       // Training (ADR 0030): one crew member, costs Dirty × act, no roll, no heat, no report.
       trainMuscle: { name: 'Boxing Gym', band: 'long', minutes: 240, crew: 1, w: { muscle: 1 }, diff: 0, spike: 0, training: 'muscle', costDirty: 15, xp: 8 },
       trainBrains: { name: 'Night School', band: 'long', minutes: 240, crew: 1, w: { brains: 1 }, diff: 0, spike: 0, training: 'brains', costDirty: 15, xp: 8 },
@@ -557,6 +610,13 @@ export const defaults: Config = {
         act: 4, startsAs: 'colonel', allows: ['truckStop', 'motel', 'foreignShop', 'freightYard', 'fuelDepot'], premisesLots: 3, buyout: 15000, tribute: 0.2,
         mod: { yieldMult: { freightYard: 1.1, fuelDepot: 1.1 } },
       },
+      // Act V (ADR 0044): the Combine upriver and its town. A state asset: bought at auction, never pressured.
+      kombinat: {
+        name: 'Kombinat', description: 'The tobacco Combine upriver, its Palace of Culture and its town. The state is selling; nothing can be built until it’s yours.',
+        act: 5, startsAs: 'state', auction: true, allows: ['palaceOfCulture', 'constructionTrust'], premisesLots: 3, buyout: 80000, tribute: 0,
+        lotsFor: ['combine', 'newspaper', 'tvStation'],
+        mod: { yieldMult: { constructionTrust: 1.1 } },
+      },
     },
   },
 
@@ -613,13 +673,13 @@ export const defaults: Config = {
   // Six acts (ADR 0040). Act II opens on the Act I goals; later acts on Reputation and what you hold.
   // finalAct is the last act this build has content for: its gate marks the game cleared instead.
   progression: {
-    finalAct: 4,
+    finalAct: 5,
     acts: {
       2: { goals: true },
       3: { rep: 1200 }, // 610 (Act II's old clear) → 1200: Act II ran 1.9 d against the manual's 3–5 (TUNING.md, M8)
       4: { rep: 9000 }, // just under what the Centre's catalogue can earn (~10,200 on the bot)
       5: { rep: 30000, holds: ['zastava'], fronts: ['importExport'] }, // the border held, the importer running (ADR 0043)
-      6: { rep: 20000 },
+      6: { rep: 96000, mayor: true }, // the mayor's office and the Rep to hold it (ADR 0044)
     },
   },
 

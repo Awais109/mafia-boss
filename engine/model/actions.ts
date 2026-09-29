@@ -24,6 +24,7 @@ export type Action =
   | { type: 'RUSH_OP'; opId: string }
   | { type: 'BUY_SHIPMENT'; product?: 'premium' }
   | { type: 'BUY_PASSAGE' }
+  | { type: 'CAMPAIGN'; points: number; pay: 'dirty' | 'influence' }
   | { type: 'SELL_SURPLUS'; packs: number }
   | { type: 'TAKE_LOAN'; amount: number }
   | { type: 'REPAY_LOAN'; amount: number }
@@ -41,6 +42,7 @@ export type DebugAction =
   | { type: 'DEBUG_SET_HEAT'; heat: number }
   | { type: 'DEBUG_SET_REP'; reputation: number }
   | { type: 'DEBUG_COMPLETE_GOALS' }
+  | { type: 'DEBUG_HOLD_ELECTION' }
   | { type: 'DEBUG_FORCE_RAID' }
   | { type: 'DEBUG_FORCE_ARREST' }
   | { type: 'DEBUG_FORCE_TOLYA' }

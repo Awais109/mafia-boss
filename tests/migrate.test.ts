@@ -36,9 +36,11 @@ function asV1(): Record<string, unknown> {
   for (const k of ['loans', 'lending', 'injuries', 'attacks', 'contests']) delete s.stats[k]
   delete s.premiumEmpty
   delete s.rival.colonel
+  delete s.politics
+  for (const k of ['elections', 'campaignPaid', 'frontsFrozen']) delete s.stats[k]
   for (const k of ['premiumMade', 'premiumSold', 'premiumLostToCap', 'premiumShortageHours', 'convoys', 'passagesPaid']) delete s.stats[k]
   s.districts = s.districts
-    .filter((d: { id: string }) => d.id !== 'stationSquare' && d.id !== 'centre' && d.id !== 'zastava')
+    .filter((d: { id: string }) => !['stationSquare', 'centre', 'zastava', 'kombinat'].includes(d.id))
     .map(({ prosperity: _, ...d }: { prosperity: number }) => d)
   s.rackets = s.rackets.filter((r: { type: string }) => r.type === 'kiosk' || r.type === 'marketStall')
   s.stats.sessions = 3
@@ -88,6 +90,14 @@ describe('migrate', () => {
     expect(m.lending).toBeNull()
     expect(m.stats.loans).toEqual({ borrowed: 0, interest: 0, repaid: 0, missed: 0, seized: 0 })
     expect(m.stats.contests).toEqual({ won: 0, lost: 0 })
+  })
+
+  it('puts the Kombinat on the map, still the state’s, with opinion at its base and no election yet', () => {
+    const m = migrate(asV1())
+    expect(m.districts.find((d) => d.id === 'kombinat')).toEqual({ id: 'kombinat', controller: 'state', pressureCount: 0, prosperity: config.prosperity.base })
+    expect(m.politics).toEqual({ opinion: config.opinion.base, attention: 0, nextElectionAt: 0, elections: 0, points: 0, mayor: false })
+    expect(m.stats.elections).toEqual({ held: 0, won: 0 })
+    expect(m.stats.frontsFrozen).toBe(0)
   })
 
   it('puts Zastava on the map under the Colonel, with no premium stock and no passage', () => {

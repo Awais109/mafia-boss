@@ -81,6 +81,15 @@ export function StatsScreen({ game }: ScreenProps) {
             />
           )}
           {t.passagesPaid > 0 && <Row label="Paid for passage" value={`${glyph.dirty}${fmt(t.passagesPaid)}`} />}
+          {t.elections.held > 0 && (
+            <Row
+              label="Elections"
+              hint={`campaigns ${glyph.dirty}${fmt(t.campaignPaid.dirty)} ${glyph.influence}${fmt(t.campaignPaid.influence)}`}
+              value={`${t.elections.won} won of ${t.elections.held}`}
+              color={t.elections.won > 0 ? colors.good : colors.warn}
+            />
+          )}
+          {t.frontsFrozen > 0 && <Row label="Fronts frozen by the Ministry" value={fmt(t.frontsFrozen)} color={colors.heat} />}
         </Card>
       </Section>
 

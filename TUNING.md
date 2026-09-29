@@ -305,6 +305,49 @@ The sim now runs 34 days so Act IV can clear.
 2026-09-29  tests/sim.test.ts: 22 → 34 days; Act IV 8–10 added.
 ```
 
+## 2026-09-29 — M11: Act V, the Kombinat (ADR 0044)
+
+The sim now runs 50 days so Act V can clear; the pacing guard runs 45.
+
+```
+2026-09-29  New config (ADR 0044): opinion {fromAct 5, base 40, step 0.05/h, inspected −5, raid −10, control ×(1 + 0.5 × opinion/100)};
+            ministry {fromAct 5, 0.012 per Dirty/h of yield, −30 × opinion/100, step 0.05/h, freezes at 80 for 24 h, falls to 40};
+            elections {fromAct 5, every 7 days, base share 0.35, +0.004 per opinion point over 50, +0.005 per campaign point,
+            ±0.05, a point costs 3 h of yield or ✦5, max 30; mayor: perks ×2, +3,000 control}; Palace of Culture {400/h, heat 30,
+            ★31,000, sells 6 (.2) and premium 2 (.2), prosperity 8, opinion 2 a tier}; Construction Trust {600/h, heat 80, ★36,000,
+            opinion ×0.6–1.4}; the Combine {●30,000, upkeep 200/h ×1.2, heat 20, ★31,000, 20 packs and 4 premium an hour, ×1.3 a
+            tier, one per city, Kombinat only}; Newspaper {●12,000, upkeep 60/h, ★32,000, opinion 5 a tier}; TV Station {●25,000,
+            upkeep 120/h, ★38,000, opinion 8 a tier}; Development Fund {90%, 3,000/h, ●60,000, ★33,000, opinion +15 at full
+            use}; Governor {+5,000 control, ✦300, the Ministry −40}; Fix a Tender {6 h, 2 crew, diff 70, spike 4, ◆300}; Deliver
+            the Vote {4 h, 3 crew, diff 70, spike 10, 3 points}; the Kombinat {the state's, auction ●80,000, 3 lots}; progression
+            finalAct 4→5, acts.6 {★20,000 placeholder} → {★80,000, mayor}.
+            Sim (5 seeds, 50 d): Act V 12.3 d (3/5), but the bot never campaigned, never built the media or the Combine (it
+            picked Kombinat lots it couldn't use), and the Ministry froze a front 3–12 times a run.
+2026-09-29  Rule changes (ADR 0044), not numbers: the Kombinat's lots take only the Combine, the Newspaper and the TV Station
+            (`lotsFor`), and the media go only there (`onlyIn`); by Act V every other lot is full. The Governor only takes calls
+            from the mayor (`needsMayor`), as the story bible has it.
+            Bot fixes: premises are placed where racketBlocked allows; it campaigns in the 48 h before a count, before
+            depositing or lending, since the loan desk otherwise holds all its Dirty.
+2026-09-29  rackets.types.combine upkeepPerHr 200→100, makesPerHr 20→30, premiumMakesPerHr 4→6
+            At 200 upkeep the bot valued the Combine at 330 h of payback and never built it. Kept.
+2026-09-29  ministry.perYield 0.012→0.01→0.012
+            0.01 with the Governor on sale from the start: no front ever froze. Back to 0.012 once the Governor needs the
+            mayor: 3–12 freezes a run, mostly after the election. Kept 0.012.
+2026-09-29  elections.baseShare 0.35→0.25
+            With the media taking opinion to 100 in about a week, every election was won without a point of campaign.
+            At 0.25 a full opinion still needs 13 points. Kept.
+2026-09-29  progression.acts.6.rep 80000→96000
+            A first-election win cleared Act V at 8.5 d, on the Rep gate. 96,000 puts it at 10–10.5 d. Kept.
+2026-09-29  elections.everyDays 7→6 (reverted)
+            Every seed lost the first count (its media weren't up by day 6) and cleared at 12.0, one at 18. The first election
+            should be winnable by a player who buys the Kombinat early. Reverted to 7.
+            Final (10 seeds, 50 d): Act I 4.64 d, Act II 3.28 d (10/10), Act III 6.44 d (8/10), Act IV 9.78 d (10/10), Act V
+            12.86 d (10/10; 10–10.5 d on a first-election win, 14.0 on the second), heat 28.2 (10/10), raids 0, partial 0.46,
+            missed wages 0, front util 0.59, Dirty idle 0.90, wage share 0.04.
+            goldRush: Act IV 9.82 d, Act V 13.65 d (10/10), heat 28.5, missed wages 0.
+2026-09-29  tests/sim.test.ts: 34 → 45 days; Act V 10–14 added.
+```
+
 ## Open
 
 - **Front utilization ~58% (target 70–90%) and Dirty idle ~87% (target 20–50%)** over 34 days. The importer (Act IV) is capped by premium sales, so a premium shortage leaves it idle; `coverPerPremiumPack` is the knob to watch. The bot keeps a large Dirty reserve and the fronts can wash more than it deposits early on; by late Act III yield (~1,800/h) outruns laundering (~1,100 Clean/h with the Bank at full capacity), so Dirty piles up. The loan desk (M9) takes one loan at a time, so it doesn't move the metric, which is measured at session end.

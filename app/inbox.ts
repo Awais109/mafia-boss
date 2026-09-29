@@ -1,4 +1,4 @@
-import { contestOdds, dayMs, RANK_NAMES, type Config, type IncidentType, type InboxEffects, type InboxItem, type OpType, type PerkId, type PlayerState } from '../engine'
+import { contestOdds, dayMs, electionScheduled, RANK_NAMES, winChance, type Config, type IncidentType, type InboxEffects, type InboxItem, type OpType, type PerkId, type PlayerState } from '../engine'
 import { colors, glyph } from './components/ui'
 import { fmt, fmtDuration, pct } from './format'
 import type { TabId } from './screens/types'
@@ -77,6 +77,13 @@ export function homeAlerts(game: Snapshot): HomeAlert[] {
   } else if (d.premium.hoursToEmpty < 6) {
     const left = fmtDuration(d.premium.hoursToEmpty * c.time.hourMs, c)
     out.push({ key: 'premium', text: `Premium runs out in ${left}.`, color: colors.warn, tab: 'ops', cta: 'Ops →' })
+  }
+  // Act V (ADR 0044): Moscow closing in, and a count you'd lose.
+  if (s.act >= c.opinion.fromAct && s.politics.attention >= c.ministry.freezeAt - 10 && !s.fronts.some((f) => f.frozenUntil !== undefined)) {
+    out.push({ key: 'ministry', text: `The Ministry’s attention is at ${Math.round(s.politics.attention)}: at ${c.ministry.freezeAt} it freezes a front.`, color: colors.heat, tab: 'turf', cta: 'Politics →' })
+  }
+  if (electionScheduled(s) && s.politics.nextElectionAt - now <= 24 * c.time.hourMs && winChance(s, c) < 0.5) {
+    out.push({ key: 'election', text: `The election is in ${fmtDuration(s.politics.nextElectionAt - now, c)} and you’d lose it (${Math.round(winChance(s, c) * 100)}%).`, color: colors.warn, tab: 'turf', cta: 'Campaign →' })
   }
   const soon = s.offers.items.filter((o) => o.expiresAt > now && o.expiresAt - now <= c.time.hourMs)
   if (soon.length && s.crew.some((m) => m.status === 'idle')) {

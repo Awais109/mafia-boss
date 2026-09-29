@@ -4,7 +4,6 @@ import {
   formulas,
   openLots,
   openSpots,
-  premisesBlocked,
   prosperityOn,
   prosperityTarget,
   RACKET_TYPES,
@@ -46,6 +45,8 @@ function premisesEffect(c: Config, type: RacketType, tier: number): string {
     rt.seizureMult !== undefined ? `customs takes ×${rt.seizureMult} as often, in Zastava` : '',
     rt.convoyBonusPerTier ? `convoys land +${pct(rt.convoyBonusPerTier * tier)}` : '',
     rt.hijackMult !== undefined ? `road losses ×${rt.hijackMult}` : '',
+    rt.premiumMakesPerHr ? `makes ${glyph.premium}${fmtRate(formulas.premiumOutput(c, type, tier))}` : '',
+    rt.opinionPerTier ? `public opinion +${fmt(rt.opinionPerTier * tier)}` : '',
   ]
     .filter(Boolean)
     .join(', ')
@@ -176,6 +177,9 @@ function DistrictSection({ game, id, label }: { game: Snapshot; id: DistrictId; 
           {premisesTypes(c).map((type) => {
             const rt = c.rackets.types[type]
             if (s.rackets.some((x) => x.districtId === id && x.type === type)) return null
+            // The Kombinat's lots take only its own premises, which go nowhere else (ADR 0044).
+            if (rt.onlyIn !== undefined && rt.onlyIn !== id) return null
+            if (c.districts.list[id].lotsFor && !c.districts.list[id].lotsFor!.includes(type)) return null
             if (!d.unlocked.racket[type]) {
               return (
                 <T key={type} small color={colors.faint}>
@@ -183,7 +187,7 @@ function DistrictSection({ game, id, label }: { game: Snapshot; id: DistrictId; 
                 </T>
               )
             }
-            const blocked = premisesBlocked(s, c, id, type)
+            const blocked = racketBlocked(s, c, type, id)
             if (blocked) {
               return (
                 <T key={type} small color={colors.faint}>
@@ -259,7 +263,15 @@ function BusinessCard({ game, r, rd }: { game: Snapshot; r: Racket; rd: RacketDe
       <CardHeader title={`${rt.name} · tier ${r.tier}`} tags={tags} />
       <Row
         label="Yield"
-        hint={[rd.tribute > 0 ? `−◆${fmt(rd.tribute)} tribute` : '', rd.prosperityMult !== 1 ? `×${rd.prosperityMult.toFixed(2)} prosperity` : ''].filter(Boolean).join(' · ') || undefined}
+        hint={
+          [
+            rd.tribute > 0 ? `−◆${fmt(rd.tribute)} tribute` : '',
+            rd.prosperityMult !== 1 ? `×${rd.prosperityMult.toFixed(2)} prosperity` : '',
+            rd.opinionMult !== 1 ? `×${rd.opinionMult.toFixed(2)} opinion` : '',
+          ]
+            .filter(Boolean)
+            .join(' · ') || undefined
+        }
         value={<Money kind="dirty" value={fmtRate(rd.yield)} />}
       />
       {rd.closed && r.closedUntil !== undefined && <T small color={colors.heat}>{`Shut after an investigation. Opens again in ${fmtDuration(r.closedUntil - game.now, c)}.`}</T>}

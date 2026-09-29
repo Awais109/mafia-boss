@@ -27,11 +27,13 @@ Reputation is the progress currency: it unlocks bigger businesses, fronts and of
 | `rep` | `reputation ≥ rep` |
 | `holds` | you control every district listed |
 | `fronts` | you own every front type listed |
+| `mayor` | you've won an election ([politics.md](politics.md)) |
 
 `progression.finalAct` is the last act this build has content for. `checkActs` (`engine/systems/acts.ts`) runs after every Rep gain (`gainRep`), at the end of every `checkGoals` (so after every action and every reconcile boundary), and from Debug; it opens every act whose gate holds, in order. Opening act *n*:
 - `state.act = n`, `stats.actClearedAt[n − 1] = t`, `ACT_UNLOCKED { act: n }`;
 - `gold.perActUnlocked[n]` bars ([gold.md](gold.md));
 - when *n* is `prosperity.fromAct`, every open district's prosperity starts at its target ([prosperity.md](prosperity.md));
+- when *n* is `opinion.fromAct`, opinion starts at its target and the first election is scheduled ([politics.md](politics.md));
 - Act II also emits the note about Zhanna.
 
 When the gate after `finalAct` holds, the final act is **cleared** instead: `stats.actClearedAt[finalAct] = t` and `ACT_CLEARED`, once. The game carries on (`gameCleared`), and the app says so in words ([ADR 0022](../decisions/0022-end-of-prototype-state.md)).
@@ -47,7 +49,8 @@ What each act changes, beyond its own businesses, fronts, officials, districts a
 | II | the Port Quarter and Sovietsky Blocks | every Act I goal ([ADR 0039](../decisions/0039-goals-gate-act-two.md)) | yes |
 | III | the Centre ([ADR 0041](../decisions/0041-act-iii-the-centre.md)) | `progression.acts[3].rep` | yes |
 | IV | Zastava and the road to the border ([ADR 0043](../decisions/0043-act-iv-zastava.md)) | `progression.acts[4].rep` | yes |
-| V–VI | the Combine, the hills | `progression.acts[5–6]` | not yet: V's gate (Rep, hold Zastava, own the Import–Export Company) clears Act IV |
+| V | the Kombinat: the auction, opinion, the Ministry, elections ([ADR 0044](../decisions/0044-act-v-kombinat.md)) | `progression.acts[5]`: Rep, hold Zastava, own the Import–Export Company | yes |
+| VI | the hills | `progression.acts[6]`: Rep and the mayor's office | not yet: VI's gate clears Act V |
 
 The unlock ladder (`unlockRep`) sits inside each act: every Act II business opens below Act III's gate, and each later act's businesses spread from just above its own gate. Every non-zero threshold includes the 38 Rep the opening's setup earns ([ADR 0035](../decisions/0035-guided-opening.md)).
 
