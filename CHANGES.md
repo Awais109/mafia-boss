@@ -3,6 +3,45 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-30 — The warm-ledger design, part 4: Ops, Crew, Heat, Stats, Log, How it works (D2)
+
+Branch: `feature/design-v2`. The design: the Ops, Crew, Heat, Stats, Log and How it works frames.
+
+### What changed, for a player
+
+- **Ops:**
+  - Who's out, with a gold Finish now.
+  - Crew picked as chips.
+  - The board as a compact list with odds.
+  - Training as rows.
+  - Each job with what it pays, the XP, and the odds as a bar.
+- **Crew:** a card per member. The opening's three have portraits and who they are to you. Each card shows stats against their ceilings with XP under them, loyalty with the walkout line, and Raise, enforcer and Fire. The recruits are cards too, with a warning when there's no slot.
+- **Heat:**
+  - The scale, with its three lines and where heat is heading.
+  - Exposure and control as ledgers.
+  - The bribe.
+  - The officials as people with faces: Sergeant Pasha, Major Kravets, Ignatov, the stamp, the telephone to the capital.
+- **Stats:** ledgers with a line of context under each figure, a costs total, and a bar for job outcomes.
+- **Log:** grouped by day, with filters, a bookkeeping switch, and an icon for each kind of event.
+- **How it works:** Lyosha's notebook, with contents, fourteen foldable sections, and a diagram of the loop. Your own numbers are filled in. What's still ahead is in pencil, and what you run is marked in red pencil.
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| Screens | `app/screens/OpsScreen.tsx`, `CrewScreen.tsx`, `HeatScreen.tsx`, `StatsScreen.tsx`, `LogScreen.tsx`, `HowItWorksScreen.tsx` |
+| The notebook | `app/components/Notebook.tsx` (new): `Paper`, `PaperTitle`, `Ink`, `PaperCaps`, `PaperSection`, `PaperRows` |
+| Art and story | `app/art/heads.ts` (the opening crew's portraits), `app/components/Portrait.tsx` (`CrewHead`), `app/story.ts` (`OPENING_CREW`, `openingCrew`, `OFFICIAL_PERSON`) |
+| Kit | `app/components/ui.tsx` (`PageHead`, `SubHead`, `rich`'s `ink`; `BigFigure` keeps its glyph's colour), `app/components/Glyph.tsx` (clock, flag, fork and cash icons), `app/theme.ts` (`paperInk`) |
+| Docs | [app.md](docs/app.md), [story.md](docs/story.md) |
+
+No engine, config or save change.
+
+### Verified
+
+- `npm run check`.
+- Every screen in the web build against its frame: Ops and Crew (Act II), Heat (Act IV), Stats, Log and How it works (Act III), and an empty log.
+
 ## 2026-09-30 — The warm-ledger design, part 3: Business and Fronts (D2)
 
 Branch: `feature/design-v2`. The design: the Business (Act III) and Fronts (Act V) frames.

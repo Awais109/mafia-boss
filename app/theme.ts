@@ -47,6 +47,18 @@ export const paper = {
   brassInk: '#8a6a2e',
 } as const
 
+// The resource glyphs as they're inked on paper: the same hues, dark enough to read on the page.
+export const paperInk = {
+  dirty: '#9a6a1c',
+  clean: '#2f7a4a',
+  influence: '#2f5f8f',
+  rep: '#6b4aa0',
+  heat: '#b23a29',
+  packs: '#7a5a3a',
+  premium: '#a24a4a',
+  gold: '#8a6a2e',
+} as const
+
 // Five faces, never more than three on one screen. Each weight is its own family on native platforms.
 export const fonts = {
   display700: 'FiraSansExtraCondensed_700Bold',

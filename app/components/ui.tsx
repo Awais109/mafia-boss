@@ -1,6 +1,6 @@
 import { Children, Fragment, isValidElement, type ReactNode } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native'
-import { colors as theme, fonts, textFont } from '../theme'
+import { colors as theme, fonts, paperInk, textFont } from '../theme'
 import { CHAR_RESOURCE, Glyph, Icon, type IconName, type Resource } from './Glyph'
 
 // The ledger kit (design/Sevgorod Screens.html, "Components"): section titles with a hairline rule, cards,
@@ -29,10 +29,10 @@ function InlineGlyph({ kind, size, color }: { kind: Resource; size: number; colo
 }
 
 // Splits a string on resource amounts and draws each one. `mono` draws every glyph in one colour (a brass
-// button's dark label); `plain` keeps the glyphs' colours but leaves the figures in the text's own (a cost).
-// Either way the figures keep the text's colour.
-export function rich(text: string, size = 14, opts: { mono?: string; plain?: boolean } = {}): ReactNode {
-  const { mono, plain } = opts
+// button's dark label); `plain` keeps the glyphs' colours but leaves the figures in the text's own (a cost);
+// `ink` draws the glyphs in their paper inks and the figures in bold ink (the notebook).
+export function rich(text: string, size = 14, opts: { mono?: string; plain?: boolean; ink?: boolean } = {}): ReactNode {
+  const { mono, plain, ink } = opts
   if (!/[◆●✦★▲▮▣▰]/.test(text)) return text
   const out: ReactNode[] = []
   let last = 0
@@ -43,9 +43,9 @@ export function rich(text: string, size = 14, opts: { mono?: string; plain?: boo
     const kind = CHAR_RESOURCE[m[2]]
     const figure = `${m[1]}`
     out.push(
-      <Text key={k++} style={m[4] && !mono && !plain ? { color: textColorOf(kind), fontFamily: fonts.text600 } : undefined}>
+      <Text key={k++} style={ink ? { fontFamily: fonts.text600 } : m[4] && !mono && !plain ? { color: textColorOf(kind), fontFamily: fonts.text600 } : undefined}>
         {figure}
-        <InlineGlyph kind={kind} size={size} color={mono} />
+        <InlineGlyph kind={kind} size={size} color={ink ? paperInk[kind] : mono} />
         {m[4] ?? ''}
       </Text>,
     )
@@ -332,7 +332,7 @@ export function Meter({ value, max, color }: { value: number; max: number; color
 export function BigFigure({ kind, value, of, size = 30, color }: { kind: Resource; value: string; of?: string; size?: number; color?: string }) {
   return (
     <View style={styles.bigFigure}>
-      <Glyph kind={kind} size={Math.round(size * 0.62)} color={color} />
+      <Glyph kind={kind} size={Math.round(size * 0.62)} />
       <Text style={[styles.bigValue, { fontSize: size, color: color ?? textColorOf(kind) }]}>{value}</Text>
       {of ? <Text style={[styles.bigOf, { fontSize: size >= 28 ? 15 : 14 }]}>{`/ ${of}`}</Text> : null}
     </View>
@@ -466,6 +466,23 @@ export function Segmented<K extends string>({ options, value, onChange, label }:
   )
 }
 
+// A screen's own title in the display face, with a note on the right (Stats, Log: the screens under More).
+export function PageHead({ title, note }: { title: string; note?: string }) {
+  return (
+    <View style={styles.pageHead}>
+      <Title size={28} weight={800}>
+        {title}
+      </Title>
+      {note ? <Text style={styles.note}>{note}</Text> : null}
+    </View>
+  )
+}
+
+// A small caps heading inside a card, above a group of rows ("Costs and losses").
+export function SubHead({ children }: { children: string }) {
+  return <Text style={styles.subHead}>{children}</Text>
+}
+
 // A dashed box where something will be: "Nothing yet", "Nothing to collect yet".
 export function Empty({ title, sub, center }: { title: string; sub?: string; center?: boolean }) {
   return (
@@ -579,6 +596,8 @@ export const styles = StyleSheet.create({
   buyDoes: { fontFamily: fonts.text400, fontSize: 12.5, lineHeight: 17, color: theme.muted },
   buyOff: { gap: 2, minHeight: 44, justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 14, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.control, borderRadius: 4 },
   buyWhy: { fontFamily: fonts.text400, fontSize: 12.5, color: theme.faint },
+  pageHead: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10, marginBottom: -14 },
+  subHead: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 2, fontFamily: fonts.text600, fontSize: 11, letterSpacing: 1.3, textTransform: 'uppercase', color: theme.muted },
   segmented: { flexDirection: 'row', gap: 3, padding: 3, borderWidth: 1, borderColor: theme.border, borderRadius: 6, backgroundColor: theme.bg },
   segment: { flex: 1, minHeight: 44, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
   segmentOn: { backgroundColor: '#3a3124' },

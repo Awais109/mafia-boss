@@ -46,7 +46,7 @@ export function Glyph({ kind, size = 10, color }: { kind: Resource; size?: numbe
 export type IconName =
   | 'home' | 'business' | 'fronts' | 'ops' | 'map' | 'more' | 'crew' | 'heat' | 'stats' | 'help' | 'log' | 'debug'
   | 'close' | 'chevronRight' | 'chevronDown' | 'chevronUp' | 'done' | 'lock' | 'warning' | 'ministry' | 'election'
-  | 'walkout' | 'frozen' | 'ending' | 'blocked' | 'check'
+  | 'walkout' | 'frozen' | 'ending' | 'blocked' | 'check' | 'clock' | 'flag' | 'fork' | 'cash'
 
 export function Icon({ name, size = 24, color = colors.muted, strokeWidth = 1.6 }: { name: IconName; size?: number; color?: string; strokeWidth?: number }) {
   const common = { fill: 'none', stroke: color, strokeWidth, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
@@ -91,6 +91,20 @@ export function Icon({ name, size = 24, color = colors.muted, strokeWidth = 1.6 
         <>
           <Rect x={5} y={10.4} width={14} height={10.6} rx={2} {...common} />
           <Path d="M8 10.4V8a4 4 0 0 1 8 0v2.4" {...common} />
+        </>
+      )}
+      {name === 'flag' && <Path d="M6 21V4M6 4h11l-2.5 4L17 12H6" {...common} />}
+      {name === 'fork' && <Path d="M7 4v4a5 5 0 0 0 10 0V4M12 13v8" {...common} />}
+      {name === 'cash' && (
+        <>
+          <Rect x={3} y={7} width={18} height={10} rx={1.5} {...common} />
+          <Circle cx={12} cy={12} r={2.4} {...common} />
+        </>
+      )}
+      {name === 'clock' && (
+        <>
+          <Circle cx={12} cy={12} r={8.5} {...common} />
+          <Path d="M12 7.5V12l3 2" {...common} />
         </>
       )}
       {name === 'warning' && (

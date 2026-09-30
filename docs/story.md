@@ -56,6 +56,7 @@ The map is Lyosha's notebook. A district is revealed when someone shows it to yo
 - Nobody is glamorous: no "mafia", no guns on screen. Violence happens off the page and shows up as a repair bill.
 - People talk in their own register: Vitya in two words, Dima in too many, Tolya in grievances, Zhanna in prices, officials in the passive voice. The narration sounds like the notebook: flat, exact, occasionally wry.
 - Tolya's demand is in his words, by mood (`tolyaMood` and `TOLYA_ASKS` in `app/story.ts`): watchful ("and we'll say no more about the window"), cold, friendly (from disposition 20, a word on the card, not a rule), hostile.
+- The opening's three have epithets on their Crew cards: Vitya the driver, Dima the nephew, Sasha the card player (`OPENING_CREW`). The officials are people on Heat: Sergeant Pasha (Ward Cop), Major Kravets (Precinct Captain), Ignatov (City Hall), "the stamp" (the Customs Chief) and "the telephone to the capital" (the Governor) (`OFFICIAL_PERSON`).
 - Loanwords only where English is worse (kiosk, tram, banya, dacha, kombinat).
 - Business, front, district and official descriptions stay mechanical: they're for the unlock notices. The voice is for events and the map.
 

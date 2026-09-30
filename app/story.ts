@@ -1,4 +1,5 @@
-import { tolyaHostile, TUTORIAL_STEPS, type Act, type Config, type DistrictId, type LaterAct, type PlayerState } from '../engine'
+import { tolyaHostile, TUTORIAL_STEPS, type Act, type Config, type DistrictId, type LaterAct, type OfficialId, type PlayerState } from '../engine'
+import type { HeadId } from './art/heads'
 
 // The story's canon in the game's own words (docs/story.md, ADR 0046): each act's title, the line that
 // turns one act into the next, and for each district the fragment Lyosha left in his notebook, the line
@@ -85,4 +86,26 @@ export const TOLYA_ASKS: Record<TolyaMood, string> = {
   cold: '{amount}. Your uncle never made me ask twice.',
   friendly: '{amount}. Lyosha and I carried packs together. I keep it fair.',
   hostile: '{amount}. Ten years I carried your uncle’s packs, and this is what I get.',
+}
+
+// The opening's three, in `crew.openingPool` order: who they are to you, and their portrait. Anyone hired
+// later has neither.
+export const OPENING_CREW = [
+  { head: 'vitya', epithet: 'The driver' },
+  { head: 'dima', epithet: 'The nephew' },
+  { head: 'sasha', epithet: 'The card player' },
+] as const
+
+export function openingCrew(c: Config, name: string): (typeof OPENING_CREW)[number] | null {
+  const i = c.crew.openingPool.findIndex((p) => p.name === name)
+  return i >= 0 && i < OPENING_CREW.length ? OPENING_CREW[i] : null
+}
+
+// The officials as people (docs/story.md, the cast): who you actually pay, and their headshot.
+export const OFFICIAL_PERSON: Record<OfficialId, { who: string; head: HeadId }> = {
+  wardCop: { who: 'Sergeant Pasha', head: 'pasha' },
+  precinctCaptain: { who: 'Major Kravets', head: 'kravets' },
+  cityHall: { who: 'Ignatov', head: 'ignatov' },
+  customsChief: { who: 'The stamp', head: 'customs' },
+  governor: { who: 'The telephone to the capital', head: 'governor' },
 }
