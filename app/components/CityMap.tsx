@@ -15,6 +15,7 @@ import { Paper } from './Notebook'
 
 const VIEW_W = 390
 const VIEW_H = 440
+export const MAP_ASPECT = VIEW_W / VIEW_H // for anything that frames the drawing (the Empire's scene)
 const INK = paper.fountain
 const PENCIL = paper.pencilLine
 const RED = paper.redPencil

@@ -68,6 +68,21 @@ describe('scenes', () => {
     expect(dueScene(s)?.id).toBe('terms')
   })
 
+  it('plays each ending once it’s reached, after the last chapter, and each only once (ADR 0053)', () => {
+    const s = blank()
+    s.tutorial.done = true
+    s.act = 6
+    s.story.seen.push(...(Object.keys(SCENES) as SceneId[]).filter((id) => id !== 'holding' && id !== 'empire'))
+    expect(dueScene(s)).toBeNull()
+    s.stats.endings.holding = T0
+    expect(dueScene(s)?.id).toBe('holding')
+    s.story.seen.push('holding')
+    expect(dueScene(s)).toBeNull()
+    s.stats.endings.empire = T0 + 1
+    expect(dueScene(s)?.id).toBe('empire')
+    expect(SCENES.holding.beats.slice(-2).map((b) => b.kind)).toEqual(['ending', 'credits'])
+  })
+
   it('records a scene once, and refuses an id that isn’t one', () => {
     let s = blank()
     s = act(s, [{ type: 'SEE_SCENE', sceneId: 'crew' }, { type: 'SEE_SCENE', sceneId: 'crew' }], T0)

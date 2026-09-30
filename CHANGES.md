@@ -3,6 +3,33 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-30 — The endings, the credits, the cover after the story (D9)
+
+Branch: `feature/design-v2`. Reasoning: [ADR 0053](docs/decisions/0053-endings-and-credits.md); the scenes: [story.md](docs/story.md#scenes).
+
+### What changed, for a player
+
+- **Reaching an ending plays it.**
+  - **Scene 17, the Holding:** dawn over the city from the hills, the receipts squared off, then the ending page ("Every rouble with a story. The rule, followed to its end.", Vitya's "Where to?", THE HOLDING, Back to the city).
+  - **Scene 18, the Empire:** the same by night, with the notebook map fully inked.
+- **The credits follow:** the cast with their epithets, and your numbers (days, Rep, businesses legal, districts held, the empire value), then Keep going.
+- **After the story the cover changes:** the city from the hills, the ending and the day it came, the empire value, and Continue as "After the story".
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| App | `app/components/EndingPage.tsx` (new: `EndingPage`, `CreditsPage`, `CityArt`); `app/scenes.ts` (`holding`, `empire`; `map`, `ending` and `credits` beats); `app/components/Scene.tsx`; `app/components/Cover.tsx`; `app/components/CityMap.tsx` (`MAP_ASPECT`); `app/components/Glyph.tsx` (`arrowRight`); `app/story.ts` (`ENDING_LINE`, `LYOSHA_DATES`) |
+| Tests | `tests/scenes.test.ts` (each ending's scene once it's reached) |
+| Docs | [ADR 0053](docs/decisions/0053-endings-and-credits.md), [story.md](docs/story.md), [app.md](docs/app.md), [testing.md](docs/testing.md), the doc map |
+
+No engine or save change.
+
+### Verified
+
+- `npm run check`: 237 tests.
+- The web build on a day-58 save after the Holding: the cover, the Holding's ending page and credits, and the Empire's map and ending page by night (`?preview=holding&beat=2`, `beat=3`; `?preview=empire&beat=1`, `beat=2`).
+
 ## 2026-09-30 — After the story: past the book, the empire value, contracts (D8)
 
 Branch: `feature/design-v2`. Reasoning: [ADR 0052](docs/decisions/0052-after-the-story.md); the rules: [systems/after.md](docs/systems/after.md).

@@ -15,6 +15,8 @@ import { store, type Snapshot } from '../store'
 import { fonts, paper } from '../theme'
 import { webParam } from '../webParams'
 import { ChapterPage } from './ChapterPage'
+import { MAP_ASPECT, MapDrawing } from './CityMap'
+import { CreditsPage, EndingPage } from './EndingPage'
 import { Icon } from './Glyph'
 import { Stamp } from './MissionCard'
 import { colors, glyph, rich } from './ui'
@@ -34,6 +36,8 @@ export function SceneViewer({ game, scene }: { game: Snapshot; scene: Scene }) {
   const waiting = beatWaits(game, beat)
 
   if (beat.kind === 'chapter') return <ChapterPage game={game} act={beat.act} onTurn={done} />
+  if (beat.kind === 'ending') return <EndingPage ending={beat.ending} onBack={next} />
+  if (beat.kind === 'credits') return <CreditsPage game={game} ending={beat.ending} onDone={next} />
 
   return (
     <Modal visible animationType="fade" onRequestClose={done}>
@@ -102,7 +106,11 @@ function BeatView({ game, beat }: { game: Snapshot; beat: Beat }) {
       return <TributePanel game={game} art={beat.art} caption={beat.caption} />
     case 'title':
       return <TitlePanel act={beat.act} />
+    case 'map':
+      return <MapPanel game={game} caption={beat.caption} />
     case 'chapter':
+    case 'ending':
+    case 'credits':
       return null
   }
 }
@@ -188,6 +196,20 @@ function SlugPanel({ caption }: { caption: string }) {
   return (
     <View style={[styles.panel, styles.slug]}>
       <Tone dark />
+      <View style={styles.captionInline}>
+        <Text style={styles.captionText}>{caption}</Text>
+      </View>
+    </View>
+  )
+}
+
+// The notebook map as it stands, on its squared paper, with a caption under it (the Empire's insert).
+function MapPanel({ game, caption }: { game: Snapshot; caption: string }) {
+  return (
+    <View style={[styles.panel, styles.mapPanel]}>
+      <View style={styles.mapDrawing}>
+        <MapDrawing game={game} />
+      </View>
       <View style={styles.captionInline}>
         <Text style={styles.captionText}>{caption}</Text>
       </View>
@@ -438,6 +460,8 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   panel: { borderWidth: 1.5, borderColor: paper.paper, backgroundColor: INK, overflow: 'hidden' },
   paperPanel: { backgroundColor: paper.paper, alignItems: 'center', paddingVertical: 28, gap: 22 },
+  mapPanel: { backgroundColor: paper.squared, paddingBottom: 16, gap: 12 },
+  mapDrawing: { width: '100%', aspectRatio: MAP_ASPECT },
   photo: { width: '62%', aspectRatio: 1, borderWidth: 6, borderColor: INK, backgroundColor: paper.paper },
   bubble: { position: 'absolute', left: 12, top: 12, maxWidth: '70%', paddingVertical: 12, paddingHorizontal: 18, borderRadius: 100, backgroundColor: paper.paperLight, borderWidth: 1.5, borderColor: INK },
   bubbleText: { fontFamily: fonts.speech, fontSize: 18, lineHeight: 22, color: INK, textAlign: 'center', textTransform: 'uppercase' },

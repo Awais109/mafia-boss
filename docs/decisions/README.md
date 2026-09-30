@@ -65,6 +65,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0050](0050-boss-missions.md) | Boss missions: an overreach that opens each act, a rematch that pays it off | Accepted |
 | [0051](0051-rock-bottom.md) | Rock bottom, no game over: the family's envelope once per act, the lender takes a business, Vitya stays | Accepted |
 | [0052](0052-after-the-story.md) | After the story: tiers past the book, the empire value, a weekly contracts board | Accepted |
+| [0053](0053-endings-and-credits.md) | The endings as scenes (the ending page, the credits), and the cover after the story | Accepted |
 
 ## Template
 

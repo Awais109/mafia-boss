@@ -147,6 +147,14 @@ export const ENVELOPE_NOTES: Record<Act, string> = {
 // After the story (ADR 0052): the endings by name, and what each contract on the board is for.
 export const ENDING_NAME: Record<Ending, string> = { holding: 'the Holding', empire: 'the Empire' }
 
+// The endings' last caption, over the city from the hills (ADR 0053; Scenes 17 and 18), and the credits' line
+// under Lyosha's name.
+export const ENDING_LINE: Record<Ending, string> = {
+  holding: 'Every rouble with a story. The rule, followed to its end.',
+  empire: 'Every district held. Nothing legal. Nothing needed.',
+}
+export const LYOSHA_DATES = 'Alexei Voronin · 1938–1993'
+
 export const CONTRACT_TEXT: Record<ContractId, string> = {
   tramDepot: 'The number 4’s sheds, roof first. The council pays when the trams sleep indoors again.',
   boilerHouse: 'Thirty-one buildings on one boiler, built in 1961. The council promised heat before the first frost.',

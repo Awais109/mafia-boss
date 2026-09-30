@@ -1,4 +1,4 @@
-import { currentTutorialStep, TUTORIAL_STEPS, type Act, type LaterAct, type MissionId, type PlayerState, type TutorialStepId } from '../engine'
+import { currentTutorialStep, TUTORIAL_STEPS, type Act, type Ending, type LaterAct, type MissionId, type PlayerState, type TutorialStepId } from '../engine'
 import type { ArtId } from './art/scenes'
 import type { PersonId } from './art/people'
 import { ACT_NAME } from './acts'
@@ -13,6 +13,7 @@ export type SceneId =
   | 'prologue' | 'crew' | 'tolya'
   | 'row' | 'crate' | 'terms' | 'bridge' | 'lunch' | 'truck' | 'road' | 'auction' | 'count' | 'governor'
   | 'envelope'
+  | 'holding' | 'empire'
   | `chapter-${LaterAct}`
 
 // Part of a panel of art, as fractions of its height: the prologue shows the cover's window, then its table.
@@ -30,6 +31,9 @@ export type Beat =
   | { kind: 'tribute'; art: ArtId; caption: string } // the stare-down with Tolya's demand under it; it waits for an answer
   | { kind: 'title'; act: Act } // VOLUME and the act's title
   | { kind: 'chapter'; act: LaterAct } // the whole chapter page
+  | { kind: 'map'; caption: string } // the notebook map as it stands, with a caption
+  | { kind: 'ending'; ending: Ending } // the whole ending page: the city from the hills, Where to?, its name
+  | { kind: 'credits'; ending: Ending } // the cast and your numbers, then Keep going
 
 export type Scene = { id: SceneId; number?: number; title: string; beats: Beat[] }
 
@@ -203,6 +207,29 @@ export const SCENES: Record<SceneId, Scene> = {
       { kind: 'envelope' },
     ],
   },
+  // The endings (ADR 0053; Scenes 17 and 18): each plays when it's first reached, then the credits.
+  holding: {
+    id: 'holding',
+    number: 17,
+    title: 'The Holding',
+    beats: [
+      { kind: 'slug', caption: 'Nagornaya at dawn. A villa, and the whole city below it.' },
+      { kind: 'slug', caption: 'On the table, a stack of tax receipts, squared off neatly.' },
+      { kind: 'ending', ending: 'holding' },
+      { kind: 'credits', ending: 'holding' },
+    ],
+  },
+  empire: {
+    id: 'empire',
+    number: 18,
+    title: 'The Empire',
+    beats: [
+      { kind: 'slug', caption: 'Nagornaya at night. The whole city lit.' },
+      { kind: 'map', caption: 'The notebook, open at the map. Every district inked, every one marked yours.' },
+      { kind: 'ending', ending: 'empire' },
+      { kind: 'credits', ending: 'empire' },
+    ],
+  },
   'chapter-2': { id: 'chapter-2', title: ACT_TITLE[2], beats: [{ kind: 'chapter', act: 2 }] },
   'chapter-3': { id: 'chapter-3', title: ACT_TITLE[3], beats: [{ kind: 'chapter', act: 3 }] },
   'chapter-4': { id: 'chapter-4', title: ACT_TITLE[4], beats: [{ kind: 'chapter', act: 4 }] },
@@ -214,7 +241,7 @@ export const SCENES: Record<SceneId, Scene> = {
 // A mission's scene plays before the chapter it opens.
 const ORDER: SceneId[] = [
   'prologue', 'crew', 'tolya', 'row', 'crate', 'chapter-2', 'terms', 'bridge', 'chapter-3', 'lunch', 'truck', 'chapter-4',
-  'road', 'auction', 'chapter-5', 'count', 'governor', 'chapter-6',
+  'road', 'auction', 'chapter-5', 'count', 'governor', 'chapter-6', 'holding', 'empire',
 ]
 
 // The arcs' scenes: the act each belongs to, and the moment it plays.
@@ -229,6 +256,8 @@ const ARC: Partial<Record<SceneId, { act: Act; happened: (s: PlayerState) => boo
   auction: { act: 4, happened: (s) => s.missions.firstAuction?.result === 'failed' },
   count: { act: 5, happened: (s) => s.politics.mayor },
   governor: { act: 5, happened: (s) => s.missions.overGovernor?.result === 'failed' },
+  holding: { act: 6, happened: (s) => s.stats.endings.holding !== undefined },
+  empire: { act: 6, happened: (s) => s.stats.endings.empire !== undefined },
 }
 
 // Whether the scene's moment passed before the save kept a seen-list (an old save), so it counts as seen.
