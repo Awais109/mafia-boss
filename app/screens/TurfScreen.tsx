@@ -11,7 +11,7 @@ import { ZhannaCard } from '../components/ZhannaCard'
 import { Btn, BtnRow, Card, colors, Row, Screen, Section, T, Tag } from '../components/ui'
 import { fmt, fmtDuration, fmtRate, pct } from '../format'
 import { store } from '../store'
-import { DISTRICT_STORY, revealed } from '../story'
+import { DISTRICT_STORY, revealed, tolyaMood } from '../story'
 import type { ScreenProps } from './types'
 
 const CONTROLLER = { player: 'yours', tolya: 'Tolya’s', zhanna: 'Zhanna’s', colonel: 'the Colonel’s', state: 'the state’s', none: 'nobody’s' } as const
@@ -20,7 +20,7 @@ export function TurfScreen({ game, go }: ScreenProps) {
   const { state: s, config: c, now } = game
   const tol = s.rival.tolya
   const hostile = tolyaHostile(s, c)
-  const mood = hostile ? 'hostile' : tol.disposition < 0 ? 'annoyed' : tol.disposition >= 20 ? 'friendly' : 'watchful'
+  const mood = tolyaMood(s, c)
   const [selected, setSelected] = useState<DistrictId | null>(null)
   const home = DISTRICT_IDS.find((id) => c.districts.list[id].home)!
   const picked = selected ?? home

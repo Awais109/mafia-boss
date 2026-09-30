@@ -3,6 +3,46 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-30 — The warm-ledger design, part 2: Home (D2)
+
+Branch: `feature/design-v2`. The design: Home and its opening and Act V frames in `design/Sevgorod Screens.html`.
+
+### What changed, for a player
+
+- **Tolya's demand** shows his face and his mood, and he asks in his own words: watchful, cold, friendly or hostile.
+- **Decisions** list each option as a row: its effects on the right, and DEFAULT on the one that happens if you don't answer.
+- **Alerts** say what's wrong, why, and where to fix it. There are two new ones: crew who might walk out, and inspections cutting income.
+- **Act I goals** are a checklist that says how far along each goal is: "1 of 2 · Zarechye has 1 free spot", "needs ✦4 · you have ✦3".
+- **The vault** is a big figure over a meter. Collect, when empty, says when you last collected. The vault goes once every business is legal. The old "Full in Infinityd" is fixed.
+- **Money flow** reads as a ledger, with totals under a brass rule. From Act VI it shows legal income and the tax.
+- **Cigarettes and premium** show the stock, the net rate, and what makes and sells them.
+- **This week** is a grid by day in the first week, then a row per day.
+- **Next:**
+  - names the act (Act II · The tram east), what it opens, and each condition with its figure;
+  - during the opening, lists the thirteen steps;
+  - once the story is done, holds a placeholder for After the story.
+- **Lately** shows each line's time.
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| Home | `app/screens/HomeScreen.tsx`; new `app/components/WeekCard.tsx`, `NextCard.tsx` |
+| Cards | `TributeCard.tsx`, `InboxCard.tsx` (exports `Choice`), `MoneyFlow.tsx`, `SupplyCard.tsx` (and `supplyNote`) |
+| Kit | `app/components/ui.tsx`: `List`, `Item`, `Check`, `Meter`, `BigFigure`, `Tile`, `Pill`, `AlertRow`, `Strip`, `Empty`, `SectionLink`, `Note`; `Btn` gains `outline` and `chevron`; `rich` gains `mono` and `plain` |
+| Portraits | `app/art/heads.ts` (new: eleven headshots from the design), `app/components/Portrait.tsx` (new) |
+| Helpers | `app/inbox.ts` (`HomeAlert` with title, reason and icon), `app/goals.ts` (hints), `app/acts.ts` (`Requirement` with label, value and hint), `app/ledger.ts` (`day`), `app/format.ts` (`fmtStamp`), `app/story.ts` (`tolyaMood`, `TOLYA_ASKS`), `app/components/TutorialBanner.tsx` (exports `openingCopy`) |
+| Engine | `engine/systems/goals.ts`: `goalProgress` reports the counted goals' progress, and their checks read it. Behaviour is unchanged |
+| Tests | `tests/goals.test.ts`: the counted goals' progress agrees with their check |
+| Docs | [app.md](docs/app.md) (Home, the components), [progression.md](docs/systems/progression.md), [story.md](docs/story.md), [testing.md](docs/testing.md), the doc map |
+
+No config or save change.
+
+### Verified
+
+- `npm run check`.
+- Home in the web build: a new game, Act I, Act V and after the story, each against the frames.
+
 ## 2026-09-29 — The warm-ledger design, part 1: the foundation (D1)
 
 Branch: `feature/design-v2`. Reasoning: [ADR 0047](docs/decisions/0047-warm-ledger-design.md). The design itself: `design/Sevgorod Screens.html`, from the brief in `design/sevgorod-design-brief.md`.

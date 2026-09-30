@@ -15,6 +15,10 @@ export const ACT_OPENS: Record<Act, string> = {
   6: 'Nagornaya, the hills: Legalize, the Holding, the reckoning, and the two endings',
 }
 
+// One condition of the next gate: its line, whether it's met, and for Home's checklist the figure on the
+// right and a line under it.
+export type Requirement = { text: string; label: string; done: boolean; value?: string; hint?: string }
+
 export type ActProgress = {
   act: Act
   cleared: boolean // the final built act's gate has been met
@@ -25,7 +29,7 @@ export type ActProgress = {
   max: number
   segments?: number // draw the bar in this many steps (the opening, Act I's goals)
   split?: [number, number] // Act VI: progress toward the Holding and the Empire, each 0–1
-  requirements: { text: string; done: boolean }[] // everything the next gate asks for
+  requirements: Requirement[] // everything the next gate asks for
 }
 
 export function actProgress(s: PlayerState, c: Config): ActProgress {
@@ -36,14 +40,26 @@ export function actProgress(s: PlayerState, c: Config): ActProgress {
     const g = next.gate
     if (g.goals) {
       const done = s.goals.done.length
-      requirements.push({ text: `every Act I goal (${done}/${c.goals.list.length})`, done: c.goals.list.every((id) => s.goals.done.includes(id)) })
+      requirements.push({
+        text: `every Act I goal (${done}/${c.goals.list.length})`,
+        label: 'Act I goals',
+        done: c.goals.list.every((id) => s.goals.done.includes(id)),
+        value: `${done} / ${c.goals.list.length}`,
+      })
     }
-    if (g.rep !== undefined) requirements.push({ text: `★${fmt(g.rep)} Reputation`, done: s.reputation >= g.rep })
+    if (g.rep !== undefined) {
+      const done = s.reputation >= g.rep
+      requirements.push({ text: `★${fmt(g.rep)} Reputation`, label: 'Reputation', done, value: `★${fmt(s.reputation)} / ${fmt(g.rep)}`, hint: done ? undefined : `${fmt(g.rep - s.reputation)} to go` })
+    }
     for (const id of g.holds ?? []) {
-      requirements.push({ text: `hold ${c.districts.list[id].name}`, done: s.districts.find((d) => d.id === id)?.controller === 'player' })
+      const held = s.districts.find((d) => d.id === id)?.controller === 'player'
+      requirements.push({ text: `hold ${c.districts.list[id].name}`, label: `Hold ${c.districts.list[id].name}`, done: held, value: held ? 'held' : undefined })
     }
-    for (const f of g.fronts ?? []) requirements.push({ text: `own the ${c.fronts.types[f].name}`, done: s.fronts.some((x) => x.type === f) })
-    if (g.mayor) requirements.push({ text: 'win an election', done: s.politics.mayor })
+    for (const f of g.fronts ?? []) {
+      const owned = s.fronts.some((x) => x.type === f)
+      requirements.push({ text: `own the ${c.fronts.types[f].name}`, label: `Own the ${c.fronts.types[f].name}`, done: owned, value: owned ? 'owned' : undefined })
+    }
+    if (g.mayor) requirements.push({ text: 'win an election', label: 'Win an election', done: s.politics.mayor, value: s.politics.mayor ? 'mayor' : undefined })
   }
   const clearedAt = s.stats.actClearedAt[s.act]
   if (cleared && clearedAt !== undefined) {
@@ -61,10 +77,13 @@ export function actProgress(s: PlayerState, c: Config): ActProgress {
     const legal = earners.filter((r) => r.legal).length
     const held = s.districts.filter((d) => d.controller === 'player').length
     const won = Math.min(s.stats.hearings.won, c.reckoning.empireWins)
-    requirements.push({ text: `the Holding: every business legal (${legal}/${earners.length})`, done: s.stats.endings.holding !== undefined })
+    requirements.push({ text: 'the Holding: every business legal', label: 'The Holding', hint: 'every business legal', done: s.stats.endings.holding !== undefined, value: `${legal} / ${earners.length}` })
     requirements.push({
-      text: `the Empire: every district held (${held}/${s.districts.length}) and ${c.reckoning.empireWins} hearings won (${won})`,
+      text: `the Empire: every district held and ${c.reckoning.empireWins} hearings won`,
+      label: 'The Empire',
+      hint: `every district held, ${c.reckoning.empireWins} hearings won`,
       done: s.stats.endings.empire !== undefined,
+      value: `${held} / ${s.districts.length} · ${won} / ${c.reckoning.empireWins}`,
     })
     const holding = earners.length ? legal / earners.length : 0
     const empire = (held / s.districts.length + won / c.reckoning.empireWins) / 2

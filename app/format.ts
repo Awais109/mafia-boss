@@ -51,3 +51,10 @@ export function fmtClock(t: number, createdAt: number, c: Config): string {
   const minutesIntoDay = Math.floor(((t % dayMs) / c.time.hourMs) * 60)
   return `Day ${day} · ${two(Math.floor(minutesIntoDay / 60))}:${two(minutesIntoDay % 60)}`
 }
+
+// A log line's time (design: Lately, Log): "14:05" today, "D3 14:05" on an earlier day.
+export function fmtStamp(t: number, now: number, createdAt: number, c: Config): string {
+  const [day, time] = fmtClock(t, createdAt, c).replace('Day ', '').split(' · ')
+  const today = fmtClock(now, createdAt, c).replace('Day ', '').split(' · ')[0]
+  return day === today ? time : `D${day} ${time}`
+}

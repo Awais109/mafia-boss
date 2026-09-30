@@ -1,4 +1,4 @@
-import { TUTORIAL_STEPS, type Act, type Config, type DistrictId, type LaterAct, type PlayerState } from '../engine'
+import { tolyaHostile, TUTORIAL_STEPS, type Act, type Config, type DistrictId, type LaterAct, type PlayerState } from '../engine'
 
 // The story's canon in the game's own words (docs/story.md, ADR 0046): each act's title, the line that
 // turns one act into the next, and for each district the fragment Lyosha left in his notebook, the line
@@ -65,3 +65,24 @@ export function revealedBy(c: Config, act: Act, ids: readonly DistrictId[]): Dis
 
 // The last word, either way (ADR 0045).
 export const LAST_LINE = '“Where to?”'
+
+// Tolya's mood, from his disposition, and what he says when he wants his cut. He talks in grievances.
+export type TolyaMood = 'watchful' | 'cold' | 'friendly' | 'hostile'
+
+// Where "watchful" turns "friendly": a word on the card, not a rule. Nothing in the engine reads it.
+const FRIENDLY_FROM = 20
+
+export function tolyaMood(s: PlayerState, c: Config): TolyaMood {
+  const disposition = s.rival.tolya.disposition
+  if (tolyaHostile(s, c)) return 'hostile'
+  if (disposition < 0) return 'cold'
+  return disposition >= FRIENDLY_FROM ? 'friendly' : 'watchful'
+}
+
+// `{amount}` is the demand, written with its glyph.
+export const TOLYA_ASKS: Record<TolyaMood, string> = {
+  watchful: '{amount}, and we’ll say no more about the window.',
+  cold: '{amount}. Your uncle never made me ask twice.',
+  friendly: '{amount}. Lyosha and I carried packs together. I keep it fair.',
+  hostile: '{amount}. Ten years I carried your uncle’s packs, and this is what I get.',
+}

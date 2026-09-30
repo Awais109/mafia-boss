@@ -16,14 +16,38 @@ function districtFull(s: PlayerState, c: Config, id: (typeof DISTRICT_IDS)[numbe
   return d !== undefined && d.controller === 'player' && openSpots(s, c, id).length === 0 && openLots(s, c, id) === 0
 }
 
+// The goals that count something: how many you have against how many it takes. The check is have >= need,
+// and Home shows the count.
+export function goalProgress(s: PlayerState, c: Config, id: GoalId): { have: number; need: number } | null {
+  switch (id) {
+    case 'secondDistrict':
+      return { have: DISTRICT_IDS.filter((d) => districtFull(s, c, d)).length, need: 2 }
+    case 'thirdCrew':
+      return { have: s.crew.length, need: 3 }
+    case 'workFront': {
+      // Act I's fronts (ADR 0040): later acts add fronts this goal never asked for.
+      const first = FRONT_TYPES.filter((t) => c.fronts.types[t].act === 1)
+      return { have: first.filter((t) => s.fronts.some((f) => f.type === t && f.level >= 2)).length, need: first.length }
+    }
+    case 'smuggleRun':
+      return { have: s.stats.opsByType.smuggleCigarettes ?? 0, need: 3 }
+    default:
+      return null
+  }
+}
+
+const counted = (id: GoalId) => (s: PlayerState, c: Config) => {
+  const p = goalProgress(s, c, id)
+  return p !== null && p.have >= p.need
+}
+
 export const GOAL_CHECKS: Record<GoalId, (s: PlayerState, c: Config) => boolean> = {
-  secondDistrict: (s, c) => DISTRICT_IDS.filter((id) => districtFull(s, c, id)).length >= 2,
+  secondDistrict: counted('secondDistrict'),
   factoryTier2: (s) => s.rackets.some((r) => r.type === 'tobaccoFactory' && r.tier >= 2),
-  thirdCrew: (s) => s.crew.length >= 3,
+  thirdCrew: counted('thirdCrew'),
   wardCop: (s) => s.officials.includes('wardCop'),
-  // Act I's fronts (ADR 0040): later acts add fronts this goal never asked for.
-  workFront: (s, c) => FRONT_TYPES.filter((t) => c.fronts.types[t].act === 1).every((t) => s.fronts.some((f) => f.type === t && f.level >= 2)),
-  smuggleRun: (s) => (s.stats.opsByType.smuggleCigarettes ?? 0) >= 3,
+  workFront: counted('workFront'),
+  smuggleRun: counted('smuggleRun'),
   soldier: (s) => s.crew.some((m) => m.rank >= 1),
 }
 

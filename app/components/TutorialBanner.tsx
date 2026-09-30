@@ -6,11 +6,11 @@ import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
 import { Btn, colors, glyph, rich } from './ui'
 
-type Copy = { title: string; body: string; tab?: TabId; cta?: string }
+export type Copy = { title: string; body: string; tab?: TabId; cta?: string }
 
 // The opening's copy (ADR 0035). The engine only knows which step you're on and what advances it;
-// numbers come from config so the words stay true when tuning moves them.
-function copy(c: Config): Record<TutorialStepId, Copy> {
+// numbers come from config so the words stay true when tuning moves them. Home's Next card lists the titles.
+export function openingCopy(c: Config): Record<TutorialStepId, Copy> {
   const t = c.rackets.types
   const d = glyph.dirty
   const cl = glyph.clean
@@ -94,7 +94,7 @@ function copy(c: Config): Record<TutorialStepId, Copy> {
 export function TutorialBanner({ game, go }: { game: Snapshot; go: (tab: TabId) => void }) {
   const step = currentTutorialStep(game.state)
   if (!step) return null
-  const text = copy(game.config)[step]
+  const text = openingCopy(game.config)[step]
   const index = TUTORIAL_STEPS.findIndex((st) => st.id === step)
   const title = text.title.replace(/^\d+ · /, '')
   return (

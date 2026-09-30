@@ -1,5 +1,6 @@
 import { contestOdds, dayMs, electionScheduled, RANK_NAMES, winChance, type Config, type IncidentType, type InboxEffects, type InboxItem, type OpType, type PerkId, type PlayerState } from '../engine'
-import { colors, glyph } from './components/ui'
+import type { IconName, Resource } from './components/Glyph'
+import { glyph } from './components/ui'
 import { fmt, fmtDuration, pct } from './format'
 import type { TabId } from './screens/types'
 import type { Snapshot } from './store'
@@ -57,44 +58,94 @@ export function effectsText(e: InboxEffects, c?: Config, game?: Snapshot): strin
 
 const STAT_WORD = { muscle: 'Muscle', brains: 'Brains', nerve: 'Nerve' } as const
 
-export type HomeAlert = { key: string; text: string; color: string; tab?: TabId; cta?: string }
+// Home's alerts (design: Home · Alerts): what's wrong, why in a line, and the tab that fixes it.
+export type HomeAlert = { key: string; title: string; sub?: string; icon: Resource | IconName; tone: 'warn' | 'bad'; tab?: TabId; cta?: string }
+
+const names = (xs: string[]) => (xs.length <= 2 ? xs.join(' and ') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`)
+const first = (name: string) => name.split(' ')[0]
 
 export function homeAlerts(game: Snapshot): HomeAlert[] {
   const { state: s, derived: d, config: c, now } = game
   const out: HomeAlert[] = []
-  if (s.vault >= d.vaultCap - 1e-6) out.push({ key: 'vault', text: 'The vault is full: income has stopped.', color: colors.heat, tab: 'home' })
+  const d$ = glyph.dirty
+  if (s.vault >= d.vaultCap - 1e-6) {
+    out.push({ key: 'vault', title: 'The vault is full', sub: 'Income has stopped until you collect', icon: 'dirty', tone: 'bad', tab: 'home' })
+  }
   const nextPayday = (Math.floor(now / dayMs(c)) + 1) * dayMs(c)
   const costsDue = s.wagesOwed + s.upkeepOwed + (d.wagesPerHr + d.upkeepPerHr) * ((nextPayday - now) / c.time.hourMs)
   if (costsDue > 0 && s.dirty + s.vault < costsDue) {
-    out.push({ key: 'costs', text: `Dirty on hand won’t cover the ◆${fmt(costsDue)} due at payday.`, color: colors.heat, tab: 'fronts', cta: 'Fronts →' })
+    out.push({
+      key: 'costs',
+      title: 'Dirty won’t cover payday',
+      sub: `${d$}${fmt(costsDue)} due in ${fmtDuration(nextPayday - now, c)}, ${d$}${fmt(s.dirty + s.vault)} on hand and in the vault`,
+      icon: 'dirty',
+      tone: 'bad',
+      tab: 'fronts',
+      cta: 'Fronts',
+    })
+  }
+  const low = s.crew.filter((m) => !m.nephew && m.loyalty < c.crew.loyalty.lowThreshold)
+  if (low.length) {
+    out.push({
+      key: 'walkout',
+      title: `${names(low.map((m) => first(m.name)))} might walk out`,
+      sub: `Loyalty under ${c.crew.loyalty.lowThreshold}: a ${pct(c.crew.loyalty.lowEventChancePerDay)} chance each morning`,
+      icon: 'walkout',
+      tone: 'bad',
+      tab: 'crew',
+      cta: 'Crew',
+    })
   }
   if (s.stockEmpty) {
-    out.push({ key: 'stock', text: 'Out of cigarettes: joints are losing trade.', color: colors.heat, tab: 'rackets', cta: 'Business →' })
+    out.push({ key: 'stock', title: 'Cigarettes are out', sub: `Made ${fmt(d.supply.madePerHr)} an hour, the joints want ${fmt(d.supply.demandPerHr)}`, icon: 'packs', tone: 'bad', tab: 'rackets', cta: 'Business' })
   } else if (d.supply.hoursToEmpty < 6) {
     const left = fmtDuration(d.supply.hoursToEmpty * c.time.hourMs, c)
-    out.push({ key: 'stock', text: `Cigarettes run out in ${left}.`, color: colors.warn, tab: 'rackets', cta: 'Business →' })
+    out.push({ key: 'stock', title: `Cigarettes run out in ${left}`, sub: `Made ${fmt(d.supply.madePerHr)} an hour, sold ${fmt(d.supply.soldPerHr)}`, icon: 'packs', tone: 'warn', tab: 'rackets', cta: 'Business' })
   }
   if (s.premiumEmpty) {
-    out.push({ key: 'premium', text: 'Out of premium: the road joints are losing trade.', color: colors.heat, tab: 'ops', cta: 'Ops →' })
+    out.push({ key: 'premium', title: 'Premium is out', sub: `The road joints want ${fmt(d.premium.demandPerHr)} an hour; convoys and Zhanna refill it`, icon: 'premium', tone: 'bad', tab: 'ops', cta: 'Ops' })
   } else if (d.premium.hoursToEmpty < 6) {
     const left = fmtDuration(d.premium.hoursToEmpty * c.time.hourMs, c)
-    out.push({ key: 'premium', text: `Premium runs out in ${left}.`, color: colors.warn, tab: 'ops', cta: 'Ops →' })
+    const made = d.premium.madePerHr > 0 ? `Made ${fmt(d.premium.madePerHr)} an hour, sold ${fmt(d.premium.soldPerHr)}` : `Sold ${fmt(d.premium.soldPerHr)} an hour; convoys and Zhanna refill it`
+    out.push({ key: 'premium', title: `Premium runs out in ${left}`, sub: made, icon: 'premium', tone: 'warn', tab: 'ops', cta: 'Ops' })
+  }
+  if (s.inspected) {
+    out.push({
+      key: 'inspected',
+      title: 'Inspections are cutting income',
+      sub: `Heat ${Math.round(s.heat)} · −${pct(1 - c.heat.inspectYieldMult)} until it’s under ${c.heat.inspectThreshold}`,
+      icon: 'heat',
+      tone: 'warn',
+      tab: 'heat',
+      cta: 'Heat',
+    })
   }
   // Act V (ADR 0044): Moscow closing in, and a count you'd lose.
   if (s.act >= c.opinion.fromAct && s.politics.attention >= c.ministry.freezeAt - 10 && !s.fronts.some((f) => f.frozenUntil !== undefined)) {
-    out.push({ key: 'ministry', text: `The Ministry’s attention is at ${Math.round(s.politics.attention)}: at ${c.ministry.freezeAt} it freezes a front.`, color: colors.heat, tab: 'turf', cta: 'Politics →' })
+    out.push({ key: 'ministry', title: 'The Ministry is close to a freeze', sub: `Attention ${Math.round(s.politics.attention)} of ${c.ministry.freezeAt}: then it freezes a front`, icon: 'ministry', tone: 'bad', tab: 'turf', cta: 'Map' })
   }
   if (electionScheduled(s) && s.politics.nextElectionAt - now <= 24 * c.time.hourMs && winChance(s, c) < 0.5) {
-    out.push({ key: 'election', text: `The election is in ${fmtDuration(s.politics.nextElectionAt - now, c)} and you’d lose it (${Math.round(winChance(s, c) * 100)}%).`, color: colors.warn, tab: 'turf', cta: 'Campaign →' })
+    out.push({
+      key: 'election',
+      title: 'You’d lose the coming election',
+      sub: `${pct(winChance(s, c))} to win · the count in ${fmtDuration(s.politics.nextElectionAt - now, c)}`,
+      icon: 'election',
+      tone: 'warn',
+      tab: 'turf',
+      cta: 'Map',
+    })
   }
   const soon = s.offers.items.filter((o) => o.expiresAt > now && o.expiresAt - now <= c.time.hourMs)
-  if (soon.length && s.crew.some((m) => m.status === 'idle')) {
+  const idle = s.crew.filter((m) => m.status === 'idle')
+  if (soon.length && idle.length) {
     out.push({
       key: 'offers',
-      text: `${soon.length} offer${soon.length === 1 ? '' : 's'} on the board expire${soon.length === 1 ? 's' : ''} in ${fmtDuration(soon[0].expiresAt - now, c)}.`,
-      color: colors.warn,
+      title: `${soon.length} offer${soon.length === 1 ? '' : 's'} on the board go${soon.length === 1 ? 'es' : ''} in ${fmtDuration(soon[0].expiresAt - now, c)}`,
+      sub: `${names(idle.map((m) => first(m.name)))} ${idle.length === 1 ? 'is' : 'are'} free`,
+      icon: 'ops',
+      tone: 'warn',
       tab: 'ops',
-      cta: 'Ops →',
+      cta: 'Ops',
     })
   }
   return out
