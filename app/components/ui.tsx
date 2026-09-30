@@ -234,11 +234,12 @@ export function Bar({ value, max, color, marks, thick }: { value: number; max: n
   )
 }
 
-// Small caps in a hairline box; the colour says what kind of tag it is.
-export function Tag({ text, color = theme.muted, dashed }: { text: string; color?: string; dashed?: boolean }) {
+// Small caps in a hairline box (design: business tags): plain when it only names a kind, tinted in its colour
+// when it says something (greed, stealth, shut, legal).
+export function Tag({ text, color, dashed }: { text: string; color?: string; dashed?: boolean }) {
   return (
-    <View style={[styles.tag, { borderColor: color, backgroundColor: color + '14' }, dashed && { borderStyle: 'dashed' }]}>
-      <Text style={[styles.tagText, { color }]}>{text}</Text>
+    <View style={[styles.tag, color ? { borderColor: color + '70', backgroundColor: color + '18' } : null, dashed && { borderStyle: 'dashed' }]}>
+      <Text style={[styles.tagText, { color: color ?? theme.muted }]}>{text}</Text>
     </View>
   )
 }
@@ -402,6 +403,69 @@ export function Strip({ children, tone = 'bad' }: { children: string; tone?: 'ba
   )
 }
 
+// Something you can buy, as a row: its name (and kind), its price, and what it does under them. With `why`
+// it can't be bought yet: a dashed row saying why (design: Business · open spots).
+export function BuyRow({ name, kind, cost, does, why, disabled, onPress }: {
+  name: string
+  kind?: string
+  cost?: string
+  does?: string
+  why?: string | null
+  disabled?: boolean
+  onPress?: () => void
+}) {
+  const title = (
+    <Text style={[styles.buyName, why ? styles.buyNameOff : null]} numberOfLines={2}>
+      {name}
+      {kind ? <Text style={styles.buyKind}>{` (${kind})`}</Text> : null}
+    </Text>
+  )
+  if (why) {
+    return (
+      <View style={styles.buyOff}>
+        {title}
+        <Text style={styles.buyWhy}>{rich(why, 12.5)}</Text>
+      </View>
+    )
+  }
+  return (
+    <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" style={({ pressed }) => [styles.buy, disabled && styles.btnDisabled, pressed && !disabled && styles.btnPressed]}>
+      <View style={styles.buyTop}>
+        {title}
+        {cost ? <Text style={styles.buyCost}>{rich(cost, 14)}</Text> : null}
+      </View>
+      {does ? <Text style={styles.buyDoes}>{rich(does, 12.5, { plain: true })}</Text> : null}
+    </Pressable>
+  )
+}
+
+// A row of mutually exclusive choices in a sunken track: the front dial, the Map's City and People.
+export function Segmented<K extends string>({ options, value, onChange, label }: {
+  options: readonly { key: K; title: string }[]
+  value: K
+  onChange: (key: K) => void
+  label: string
+}) {
+  return (
+    <View style={styles.segmented} accessibilityRole="radiogroup" accessibilityLabel={label}>
+      {options.map((o) => {
+        const on = o.key === value
+        return (
+          <Pressable
+            key={o.key}
+            onPress={() => !on && onChange(o.key)}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: on }}
+            style={[styles.segment, on && styles.segmentOn]}
+          >
+            <Text style={[styles.segmentText, on && styles.segmentTextOn]}>{o.title}</Text>
+          </Pressable>
+        )
+      })}
+    </View>
+  )
+}
+
 // A dashed box where something will be: "Nothing yet", "Nothing to collect yet".
 export function Empty({ title, sub, center }: { title: string; sub?: string; center?: boolean }) {
   return (
@@ -479,8 +543,8 @@ export const styles = StyleSheet.create({
   bar: { backgroundColor: theme.border, borderRadius: 1 },
   barFill: { borderRadius: 1 },
   barMark: { position: 'absolute', width: 2, marginLeft: -1, backgroundColor: theme.text },
-  tag: { borderWidth: 1, borderRadius: 3, paddingHorizontal: 6, paddingVertical: 2, alignSelf: 'flex-start' },
-  tagText: { fontSize: 10.5, fontFamily: fonts.text600, letterSpacing: 1, textTransform: 'uppercase' },
+  tag: { minHeight: 24, justifyContent: 'center', borderWidth: 1, borderColor: theme.control, borderRadius: 3, paddingHorizontal: 7, alignSelf: 'flex-start' },
+  tagText: { fontSize: 11, fontFamily: fonts.text600, letterSpacing: 0.66, textTransform: 'uppercase' },
   money: { fontSize: 15, fontFamily: fonts.text600, fontVariant: ['tabular-nums'] },
   divider: { height: 1, backgroundColor: theme.divider, marginVertical: 2 },
   list: { backgroundColor: theme.card, borderRadius: 6, borderWidth: 1, borderColor: theme.divider, paddingVertical: 2 },
@@ -506,6 +570,20 @@ export const styles = StyleSheet.create({
   alertIcon: { width: 34, height: 34, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
   strip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 9, paddingHorizontal: 12, borderRadius: 4 },
   stripText: { flexShrink: 1, fontFamily: fonts.text400, fontSize: 13 },
+  buy: { gap: 3, minHeight: 48, justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 14, borderWidth: 1, borderColor: theme.control, borderRadius: 4, backgroundColor: theme.cardAlt },
+  buyTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  buyName: { flexShrink: 1, fontFamily: fonts.text600, fontSize: 14, color: theme.text },
+  buyNameOff: { fontFamily: fonts.text400, color: theme.muted },
+  buyKind: { fontFamily: fonts.text400, color: theme.muted },
+  buyCost: { fontFamily: fonts.text600, fontSize: 14, color: theme.clean },
+  buyDoes: { fontFamily: fonts.text400, fontSize: 12.5, lineHeight: 17, color: theme.muted },
+  buyOff: { gap: 2, minHeight: 44, justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 14, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.control, borderRadius: 4 },
+  buyWhy: { fontFamily: fonts.text400, fontSize: 12.5, color: theme.faint },
+  segmented: { flexDirection: 'row', gap: 3, padding: 3, borderWidth: 1, borderColor: theme.border, borderRadius: 6, backgroundColor: theme.bg },
+  segment: { flex: 1, minHeight: 44, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
+  segmentOn: { backgroundColor: '#3a3124' },
+  segmentText: { fontFamily: fonts.text400, fontSize: 13, color: theme.muted },
+  segmentTextOn: { fontFamily: fonts.text600, color: theme.text },
   empty: { borderWidth: 1, borderStyle: 'dashed', borderColor: theme.control, borderRadius: 6, paddingVertical: 14, paddingHorizontal: 14, gap: 3 },
   emptyCenter: { minHeight: 52, borderRadius: 4, justifyContent: 'center', paddingVertical: 8 },
   emptyTitle: { fontFamily: fonts.text500, fontSize: 14, color: theme.text },

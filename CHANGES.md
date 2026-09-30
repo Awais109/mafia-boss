@@ -3,6 +3,42 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-30 — The warm-ledger design, part 3: Business and Fronts (D2)
+
+Branch: `feature/design-v2`. The design: the Business (Act III) and Fronts (Act V) frames.
+
+### What changed, for a player
+
+- **Business:**
+  - Opens on everything you own: income, upkeep, and exposure by kind.
+  - Each district folds. A folded district shows how full it is and what it earns, and one that needs you opens by itself.
+  - Inside each district:
+    - what it hosts, and its prosperity with a mark at the next business that waits on it;
+    - its pairings, or one within reach;
+    - a card per business, with the upgrade and what it adds, or the tier-3 and tier-6 choice as two tinted buttons;
+    - the spots and lots still open, as rows with their price.
+  - Districts not open yet are one locked line each.
+- **Fronts:**
+  - What you can launder against what comes in, and what's left unwashed.
+  - Each front has a dial, three tiles (rate, throughput, running), its buffer, and deposit and upgrade buttons.
+  - A frozen front says so in red. The fronts you don't own yet are rows with their price.
+  - Credit is one card, for borrowing and the loan desk.
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| Screens | `app/screens/RacketsScreen.tsx`, `app/screens/FrontsScreen.tsx`, `app/components/CreditCard.tsx` |
+| Kit | `app/components/ui.tsx`: `BuyRow`, `Segmented`; `Tag` restyled (plain, or tinted in its colour) |
+| Docs | [app.md](docs/app.md) (Business, Fronts, CreditCard, the kit) |
+
+No engine, config or save change.
+
+### Verified
+
+- `npm run check`.
+- Business in Acts I, III and VI, and Fronts in Act V, in the web build against the frames.
+
 ## 2026-09-30 — The warm-ledger design, part 2: Home (D2)
 
 Branch: `feature/design-v2`. The design: Home and its opening and Act V frames in `design/Sevgorod Screens.html`.
