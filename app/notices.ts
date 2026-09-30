@@ -1,4 +1,5 @@
 import type { Config, Derived, DistrictId, FrontType, GameEvent, InboxItem, OfficialId, PlayerState, RacketType } from '../engine'
+import { fmt } from './format'
 
 // What pops up as a modal while the player is actively in the app (ADR 0038), instead of only
 // showing up quietly in the Log or stacked on Home. Diffing `inbox` catches all three decision
@@ -75,21 +76,34 @@ export function diffUnlocked(prev: UnlockedMap | null, next: UnlockedMap): Queue
   return [{ kind: 'unlockBatch', items }]
 }
 
-// Name + one-line description for an unlock notice, read from config (the single source for
-// this copy — also reused by the How It Works screen).
-export function unlockInfo(c: Config, ref: UnlockRef): { name: string; description: string; stats: string } {
+// What an unlock notice says about one thing (design: Notice · Just unlocked): its name, its kind, its
+// description from config, and a line of figures with glyphs (price, yield or rate, heat, what it sells).
+// Prices come from `derive`, so they're what the player would pay now.
+export function unlockInfo(c: Config, d: Derived, ref: UnlockRef): { name: string; kind: string; description: string; stats: string } {
   if (ref.category === 'racket') {
     const rt = c.rackets.types[ref.id as RacketType]
-    return { name: rt.name, description: rt.description, stats: `◆${rt.baseYield}/hr · ▲${rt.baseHeat}` }
+    const figures =
+      rt.kind === 'premises'
+        ? [`●${fmt(d.costs.racket[ref.id as RacketType])}`, rt.upkeepPerHr ? `◆${fmt(rt.upkeepPerHr)}/h upkeep` : '']
+        : [`●${fmt(d.costs.racket[ref.id as RacketType])}`, `◆${fmt(rt.baseYield)}/h`, `▲${fmt(rt.baseHeat)}`, rt.kind === 'joint' && rt.sellsPerHr ? `sells ▮${fmt(rt.sellsPerHr)}/h` : '']
+    return { name: rt.name, kind: rt.kind, description: rt.description, stats: figures.filter(Boolean).join(' · ') }
   }
   if (ref.category === 'front') {
     const ft = c.fronts.types[ref.id as FrontType]
-    return { name: ft.name, description: ft.description, stats: `${Math.round(ft.rate * 100)}% rate · ◆${ft.throughput}/hr` }
+    return { name: ft.name, kind: 'front', description: ft.description, stats: `●${fmt(ft.cost)} · rate ${Math.round(ft.rate * 100)}% · washes ◆${fmt(ft.throughput)}/h` }
   }
   if (ref.category === 'district') {
     const dc = c.districts.list[ref.id as DistrictId]
-    return { name: dc.name, description: dc.description, stats: dc.buyout > 0 ? `●${dc.buyout} to buy out` : 'take it by pressure' }
+    const lots = `${dc.premisesLots} lot${dc.premisesLots === 1 ? '' : 's'}`
+    const cut = dc.tribute > 0 ? `${Math.round(dc.tribute * 100)}% tribute` : 'no tribute'
+    const take = dc.auction ? `●${fmt(dc.buyout)} at auction` : dc.buyout > 0 ? `●${fmt(dc.buyout)} to buy out` : 'yours when you arrive'
+    return { name: dc.name, kind: 'district', description: dc.description, stats: `${dc.allows.length} spots · ${lots} · ${cut} · ${take}` }
   }
   const oc = c.officials.list[ref.id as OfficialId]
-  return { name: oc.name, description: oc.description, stats: `+${oc.control} control · ✦${oc.cost}` }
+  return {
+    name: oc.name,
+    kind: 'official',
+    description: oc.description,
+    stats: `payroll ✦${fmt(oc.cost)} · +${fmt(oc.control)} control · +✦${fmt(c.officials.influencePerHrEach * 24)} a day`,
+  }
 }

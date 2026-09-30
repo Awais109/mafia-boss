@@ -1,6 +1,6 @@
 import { useFonts } from 'expo-font'
 import { StatusBar } from 'expo-status-bar'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { gameDay } from './engine'
@@ -13,6 +13,7 @@ import { SkipSheet } from './app/components/SkipSheet'
 import { TutorialBanner } from './app/components/TutorialBanner'
 import { FONT_ASSETS } from './app/fonts'
 import { homeNeedsAttention } from './app/inbox'
+import { previewNotice, PREVIEWS, type PreviewName } from './app/previews'
 import { CrewScreen } from './app/screens/CrewScreen'
 import { DebugScreen } from './app/screens/DebugScreen'
 import { FrontsScreen } from './app/screens/FrontsScreen'
@@ -92,9 +93,19 @@ export default function App() {
   const [fontsLoaded, fontError] = useFonts(FONT_ASSETS)
   const game = useGame()
   const [tab, setTab] = useState<TabId>(initialTab)
-  const [skipping, setSkipping] = useState(false)
-  const [more, setMore] = useState(false)
+  // On web, `?sheet=skip` or `?sheet=more` opens with that sheet up, for the screenshot rig.
+  const [skipping, setSkipping] = useState(() => webParam('sheet') === 'skip')
+  const [more, setMore] = useState(() => webParam('sheet') === 'more')
   const ready = game && (fontsLoaded || fontError)
+  // On web, `?preview=chapter4` opens with a notice showing, for the screenshot rig (app/previews.ts).
+  const previewed = useRef(false)
+  useEffect(() => {
+    if (!game || previewed.current) return
+    previewed.current = true
+    const name = webParam('preview')
+    const notice = name && PREVIEWS.some((p) => p.name === name) ? previewNotice(game, name as PreviewName) : null
+    if (notice) store.previewNotice(notice)
+  }, [game])
   const go = (t: TabId) => {
     setMore(false)
     setTab(t)
@@ -118,7 +129,7 @@ export default function App() {
             {more && <MoreSheet game={game} tab={tab} onChange={go} onClose={() => setMore(false)} />}
             {skipping && <SkipSheet game={game} onClose={() => setSkipping(false)} />}
             {game.away ? (
-              <AwayModal summary={game.away} game={game} />
+              <AwayModal summary={game.away} game={game} onGo={go} />
             ) : (
               game.notices.length > 0 && <EventNoticeModal notice={game.notices[0]} game={game} />
             )}

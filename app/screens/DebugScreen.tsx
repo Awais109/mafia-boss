@@ -5,12 +5,13 @@ import { ACT_NAME } from '../acts'
 import { formatSummary, summarize } from '../../sim/report'
 import { Btn, BtnRow, Card, colors, Row, Screen, T } from '../components/ui'
 import { fmt, fmtClock, fmtDuration } from '../format'
+import { previewNotice, PREVIEWS } from '../previews'
 import { store, type Snapshot } from '../store'
 import type { ScreenProps } from './types'
 
 // Everything behind config.debug.enabled (plan §10): time, state, config, inspect, data, bot.
 
-type Panel = 'time' | 'state' | 'config' | 'inspect' | 'data' | 'bot'
+type Panel = 'time' | 'state' | 'config' | 'inspect' | 'data' | 'bot' | 'preview'
 const PANELS: { id: Panel; title: string }[] = [
   { id: 'time', title: 'Time' },
   { id: 'state', title: 'State' },
@@ -18,6 +19,7 @@ const PANELS: { id: Panel; title: string }[] = [
   { id: 'inspect', title: 'Inspect' },
   { id: 'data', title: 'Save & log' },
   { id: 'bot', title: 'Bot' },
+  { id: 'preview', title: 'Preview' },
 ]
 
 export function DebugScreen({ game }: ScreenProps) {
@@ -35,6 +37,7 @@ export function DebugScreen({ game }: ScreenProps) {
       {panel === 'inspect' && <InspectPanel game={game} />}
       {panel === 'data' && <DataPanel game={game} />}
       {panel === 'bot' && <BotPanel />}
+      {panel === 'preview' && <PreviewPanel game={game} />}
     </Screen>
   )
 }
@@ -365,6 +368,21 @@ function DataPanel({ game }: { game: Snapshot }) {
         )}
       </Card>
     </>
+  )
+}
+
+// Shows a notice now, to look at it (app/previews.ts). A previewed decision is the first real one pending.
+function PreviewPanel({ game }: { game: Snapshot }) {
+  return (
+    <Card>
+      <T small muted>Shows a pop-up without waiting for the game to raise it. Nothing changes until you choose something in a real decision.</T>
+      <BtnRow>
+        {PREVIEWS.map((p) => {
+          const notice = previewNotice(game, p.name)
+          return <Btn key={p.name} small title={p.title} disabled={!notice} onPress={() => notice && store.previewNotice(notice)} />
+        })}
+      </BtnRow>
+    </Card>
   )
 }
 

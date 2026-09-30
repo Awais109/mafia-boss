@@ -145,6 +145,13 @@ class GameStore {
     this.refresh()
   }
 
+  // Puts a notice at the head of the queue without anything having happened: Debug's previews, and the web
+  // rig's `?preview=` (app/previews.ts). Nothing is written.
+  previewNotice = (notice: QueuedNotice): void => {
+    this.notices = [notice, ...this.notices]
+    this.refresh()
+  }
+
   // ---- config (debug editor)
 
   setPreset(preset: PresetName): void {

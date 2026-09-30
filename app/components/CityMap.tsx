@@ -174,54 +174,14 @@ function wrap(text: string, width: number): string[] {
 
 export function CityMap({ game, selected, onSelect }: { game: Snapshot; selected: DistrictId | null; onSelect: (id: DistrictId) => void }) {
   const { state: s, config: c } = game
-  const known = (id: DistrictId) => revealed(s, c, id)
-  const cityKnown = DISTRICT_IDS.some((id) => !c.districts.list[id].home && known(id))
-  const newest = [...REVEAL_ORDER].reverse().find((id) => known(id) && DISTRICT_IDS.includes(id))
-  const shared = cityKnown ? { stroke: INK, width: 1 } : { stroke: PENCIL, width: 0.75 }
-  const inked = DISTRICT_IDS.filter(known)
-  const label = `Hand-drawn map of Sevgorod. Inked: ${inked.map((id) => c.districts.list[id].name).join(', ')}.${inked.length < DISTRICT_IDS.length ? ` Still in pencil: ${DISTRICT_IDS.filter((id) => !known(id)).map((id) => c.districts.list[id].name).join(', ')}.` : ''}${selected ? ` ${c.districts.list[selected].name} is circled.` : ''}`
-
   return (
     <Paper tight>
       <View style={styles.head}>
         <Text style={styles.title}>{mapTitle(s, c, DISTRICT_IDS)}</Text>
         <Text style={styles.years}>1974 – 93</Text>
       </View>
-      <View style={styles.drawing} accessible accessibilityRole="image" accessibilityLabel={label}>
-        <Svg width="100%" height="100%" viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}>
-          {/* The city itself: river, bridge, railway, tram. */}
-          <G fill="none" stroke={shared.stroke} strokeLinecap="round" strokeLinejoin="round">
-            <Path d="M-10 186C40 180 90 194 140 198S230 202 270 186S350 176 400 180" strokeWidth={1.6 * shared.width} />
-            <Path d="M-10 222C40 216 90 230 140 234S230 238 270 222S350 212 400 216" strokeWidth={1.6 * shared.width} />
-            <Path d="M193 190V244M205 190V244" strokeWidth={1.6 * shared.width} />
-            <Path d="M193 197H205M193 203H205M193 209H205M193 215H205M193 221H205M193 227H205M193 233H205M193 239H205" strokeWidth={shared.width} />
-            <Path d="M0 426H390" strokeWidth={1.3 * shared.width} />
-            <Path d={RAIL_TICKS} strokeWidth={shared.width} />
-            <Path d="M31 282C60 286 90 290 130 292C170 294 200 296 236 300C270 304 300 296 326 290" strokeWidth={1.2 * shared.width} strokeDasharray="6 4" />
-          </G>
-          <Path
-            d="M26 204q5-3 10 0t10 0M70 212q5-3 10 0t10 0M112 216q5-3 10 0t10 0M232 214q5-3 10 0t10 0M280 200q5-3 10 0t10 0M340 198q5-3 10 0t10 0M150 222q5-3 10 0t10 0"
-            fill="none"
-            stroke={PENCIL}
-            strokeWidth={0.9}
-            strokeLinecap="round"
-          />
-          <Circle cx={170} cy={294} r={7} fill={paper.squared} stroke={shared.stroke} strokeWidth={1.1} />
-          <SvgText x={170} y={298} fontSize={12} fontFamily={fonts.hand700} fill={cityKnown ? INK : paper.pencil} textAnchor="middle">
-            4
-          </SvgText>
-          <SvgText x={300} y={206} fontSize={17} fontFamily={fonts.hand500} fill={cityKnown ? '#5b6a86' : paper.pencil}>
-            Seva
-          </SvgText>
-
-          {DISTRICT_IDS.map((id) => (
-            <District key={id} game={game} id={id} known={known(id)} onPress={() => onSelect(id)} />
-          ))}
-
-          {newest && <Note id={newest} />}
-
-          {selected && <Path d={SKETCH[selected].ring} fill="none" stroke={RED} strokeWidth={1.8} strokeLinecap="round" />}
-        </Svg>
+      <View style={styles.drawing}>
+        <MapDrawing game={game} selected={selected} onSelect={onSelect} />
       </View>
       <View style={styles.legend}>
         {(
@@ -244,6 +204,65 @@ export function CityMap({ game, selected, onSelect }: { game: Snapshot; selected
   )
 }
 
+// The drawing itself, filling its box. `crop` frames one district and its surroundings (the chapter page's
+// "new on the map"); `onSelect` makes districts tappable.
+export function MapDrawing({ game, selected, onSelect, crop }: { game: Snapshot; selected?: DistrictId | null; onSelect?: (id: DistrictId) => void; crop?: DistrictId }) {
+  const { state: s, config: c } = game
+  const known = (id: DistrictId) => revealed(s, c, id)
+  const cityKnown = DISTRICT_IDS.some((id) => !c.districts.list[id].home && known(id))
+  const newest = [...REVEAL_ORDER].reverse().find((id) => known(id) && DISTRICT_IDS.includes(id))
+  const shared = cityKnown ? { stroke: INK, width: 1 } : { stroke: PENCIL, width: 0.75 }
+  const inked = DISTRICT_IDS.filter(known)
+  const label = `Hand-drawn map of Sevgorod. Inked: ${inked.map((id) => c.districts.list[id].name).join(', ')}.${inked.length < DISTRICT_IDS.length ? ` Still in pencil: ${DISTRICT_IDS.filter((id) => !known(id)).map((id) => c.districts.list[id].name).join(', ')}.` : ''}${selected ? ` ${c.districts.list[selected].name} is circled.` : ''}`
+  const box = crop ? cropBox(crop) : { x: 0, y: 0, w: VIEW_W, h: VIEW_H }
+  return (
+    <Svg width="100%" height="100%" viewBox={`${box.x} ${box.y} ${box.w} ${box.h}`} accessibilityLabel={label} accessibilityRole="image">
+      {/* The city itself: river, bridge, railway, tram. */}
+      <G fill="none" stroke={shared.stroke} strokeLinecap="round" strokeLinejoin="round">
+        <Path d="M-10 186C40 180 90 194 140 198S230 202 270 186S350 176 400 180" strokeWidth={1.6 * shared.width} />
+        <Path d="M-10 222C40 216 90 230 140 234S230 238 270 222S350 212 400 216" strokeWidth={1.6 * shared.width} />
+        <Path d="M193 190V244M205 190V244" strokeWidth={1.6 * shared.width} />
+        <Path d="M193 197H205M193 203H205M193 209H205M193 215H205M193 221H205M193 227H205M193 233H205M193 239H205" strokeWidth={shared.width} />
+        <Path d="M0 426H390" strokeWidth={1.3 * shared.width} />
+        <Path d={RAIL_TICKS} strokeWidth={shared.width} />
+        <Path d="M31 282C60 286 90 290 130 292C170 294 200 296 236 300C270 304 300 296 326 290" strokeWidth={1.2 * shared.width} strokeDasharray="6 4" />
+      </G>
+      <Path
+        d="M26 204q5-3 10 0t10 0M70 212q5-3 10 0t10 0M112 216q5-3 10 0t10 0M232 214q5-3 10 0t10 0M280 200q5-3 10 0t10 0M340 198q5-3 10 0t10 0M150 222q5-3 10 0t10 0"
+        fill="none"
+        stroke={PENCIL}
+        strokeWidth={0.9}
+        strokeLinecap="round"
+      />
+      <Circle cx={170} cy={294} r={7} fill={paper.squared} stroke={shared.stroke} strokeWidth={1.1} />
+      <SvgText x={170} y={298} fontSize={12} fontFamily={fonts.hand700} fill={cityKnown ? INK : paper.pencil} textAnchor="middle">
+        4
+      </SvgText>
+      <SvgText x={300} y={206} fontSize={17} fontFamily={fonts.hand500} fill={cityKnown ? '#5b6a86' : paper.pencil}>
+        Seva
+      </SvgText>
+
+      {DISTRICT_IDS.map((id) => (
+        <District key={id} game={game} id={id} known={known(id)} onPress={onSelect ? () => onSelect(id) : undefined} />
+      ))}
+
+      {newest && !crop && <Note id={newest} />}
+
+      {selected && <Path d={SKETCH[selected].ring} fill="none" stroke={RED} strokeWidth={1.8} strokeLinecap="round" />}
+    </Svg>
+  )
+}
+
+// A district's box with room around it, kept to the drawing's proportions.
+function cropBox(id: DistrictId): { x: number; y: number; w: number; h: number } {
+  const hit = SKETCH[id].hit
+  const w = Math.max(hit.w, hit.h * (VIEW_W / VIEW_H)) + 60
+  const h = w * (VIEW_H / VIEW_W) * 0.9
+  const x = Math.max(-10, Math.min(VIEW_W - w + 10, hit.x + hit.w / 2 - w / 2))
+  const y = Math.max(-10, Math.min(VIEW_H - h + 10, hit.y + hit.h / 2 - h / 2))
+  return { x, y, w, h }
+}
+
 type MarkKind = 'joint' | 'racket' | 'premises' | 'legal'
 
 // A red-pencil mark: ● joint, × racket, ■ premises, ○ legal.
@@ -254,7 +273,7 @@ function Mark({ kind, x, y }: { kind: MarkKind; x: number; y: number }) {
   return <Path d={`M${x - 2.5} ${y - 2.5}l5 5M${x + 2.5} ${y - 2.5}l-5 5`} stroke={RED} strokeWidth={1.6} strokeLinecap="round" fill="none" />
 }
 
-function District({ game, id, known, onPress }: { game: Snapshot; id: DistrictId; known: boolean; onPress: () => void }) {
+function District({ game, id, known, onPress }: { game: Snapshot; id: DistrictId; known: boolean; onPress?: () => void }) {
   const { state: s, config: c } = game
   const k = SKETCH[id]
   const dc = c.districts.list[id]

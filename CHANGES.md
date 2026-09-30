@@ -3,6 +3,43 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-30 — The warm-ledger design, part 6: the pop-ups (D4)
+
+Branch: `feature/design-v2`. The design: While you were away, the three notices, Skip ahead, and the Act IV chapter page.
+
+### What changed, for a player
+
+- **While you were away** reads as a ledger:
+  - how long, and from when to when;
+  - a link to the decisions waiting;
+  - each job back with its outcome;
+  - the money with a net total, and tiles for Influence, heat, gold and packs;
+  - everything else that happened, with its time.
+- **Notices** each have a head with their kind and their place in the queue:
+  - a decision shows its options as rows with their effects;
+  - just unlocked lists each new thing with its figures;
+  - an event has an icon and, where it helps, what happens next.
+- **An act opens as a chapter page:** the volume's title over its panel (drawn for Act IV; the boss's panel or portrait for the others), the line that brought you there, the boss and what they hold, each new district as a corner of the map with its line, and what the act opens.
+- **Skip ahead** rises from the bottom, with the lengths as tiles and warnings in strips.
+- **Debug → Preview** shows any pop-up now.
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| Pop-ups | `app/components/Modal.tsx` (`ModalPanel`, `Sheet`, `NoticeHead`), `AwayModal.tsx`, `EventNoticeModal.tsx`, `SkipSheet.tsx`; `ChapterPage.tsx` (new) |
+| Art and the map | `app/art/chapters.ts` (new: Act IV's panel), `app/components/CityMap.tsx` (`MapDrawing`, with `crop`) |
+| Notices | `app/notices.ts` (`unlockInfo` takes `derive` for today's prices, and returns a kind and a line of figures), `app/store.ts` (`previewNotice`), `app/previews.ts` (new), `app/screens/DebugScreen.tsx` (Preview) |
+| The rig | `App.tsx` (`?sheet=`, `?preview=`) |
+| Docs | [app.md](docs/app.md), the doc map |
+
+No engine, config or save change.
+
+### Verified
+
+- `npm run check`.
+- The web build against the frames: the away summary (Act III, 8 hours), a decision (Act V), just unlocked (Act II), a raid, the chapter pages for Acts II, III and IV, Skip ahead, and More.
+
 ## 2026-09-30 — The warm-ledger design, part 5: the Map and People (D3)
 
 Branch: `feature/design-v2`. Reasoning: [ADR 0048](docs/decisions/0048-notebook-map-and-people.md). The design: the Map frames (start, Act III, complete), People and the dossier.
