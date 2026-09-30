@@ -1,15 +1,17 @@
 import { useMemo, useState } from 'react'
 import { Platform, StyleSheet, TextInput, View } from 'react-native'
-import { configLeaves, getPath, PRESET_NAMES } from '../../engine'
+import { configLeaves, electionScheduled, getPath, nextGate, PRESET_NAMES } from '../../engine'
+import { ACT_NAME } from '../acts'
 import { formatSummary, summarize } from '../../sim/report'
 import { Btn, BtnRow, Card, colors, Row, Screen, T } from '../components/ui'
 import { fmt, fmtClock, fmtDuration } from '../format'
+import { canPreview, PREVIEWS, showPreview } from '../previews'
 import { store, type Snapshot } from '../store'
 import type { ScreenProps } from './types'
 
 // Everything behind config.debug.enabled (plan §10): time, state, config, inspect, data, bot.
 
-type Panel = 'time' | 'state' | 'config' | 'inspect' | 'data' | 'bot'
+type Panel = 'time' | 'state' | 'config' | 'inspect' | 'data' | 'bot' | 'preview'
 const PANELS: { id: Panel; title: string }[] = [
   { id: 'time', title: 'Time' },
   { id: 'state', title: 'State' },
@@ -17,6 +19,7 @@ const PANELS: { id: Panel; title: string }[] = [
   { id: 'inspect', title: 'Inspect' },
   { id: 'data', title: 'Save & log' },
   { id: 'bot', title: 'Bot' },
+  { id: 'preview', title: 'Preview' },
 ]
 
 export function DebugScreen({ game }: ScreenProps) {
@@ -34,6 +37,7 @@ export function DebugScreen({ game }: ScreenProps) {
       {panel === 'inspect' && <InspectPanel game={game} />}
       {panel === 'data' && <DataPanel game={game} />}
       {panel === 'bot' && <BotPanel />}
+      {panel === 'preview' && <PreviewPanel game={game} />}
     </Screen>
   )
 }
@@ -75,7 +79,8 @@ function TimePanel({ game }: { game: Snapshot }) {
 }
 
 function StatePanel({ game }: { game: Snapshot }) {
-  const { state: s } = game
+  const { state: s, config: c } = game
+  const next = nextGate(s, c)
   const [heat, setHeat] = useState('')
   const [rep, setRep] = useState('')
   const d = store.dispatch
@@ -90,6 +95,7 @@ function StatePanel({ game }: { game: Snapshot }) {
           <Btn small title="+●1000" onPress={() => d({ type: 'DEBUG_GRANT', clean: 1000 })} />
           <Btn small title="+✦5" onPress={() => d({ type: 'DEBUG_GRANT', influence: 5 })} />
           <Btn small title="+▮40" onPress={() => d({ type: 'DEBUG_GRANT', cigarettes: 40 })} />
+          <Btn small title="+▣20" onPress={() => d({ type: 'DEBUG_GRANT', premium: 20 })} />
           <Btn small title="+▰10" onPress={() => d({ type: 'DEBUG_GRANT', gold: 10 })} />
         </BtnRow>
       </Card>
@@ -106,6 +112,11 @@ function StatePanel({ game }: { game: Snapshot }) {
           <Btn small title="Tolya visits" onPress={() => d({ type: 'DEBUG_FORCE_TOLYA' })} />
           <Btn small title={`Finish ${s.ops.length} jobs`} disabled={!s.ops.length} onPress={() => d({ type: 'DEBUG_COMPLETE_OPS' })} />
           <Btn small title="Complete goals → Act II" disabled={s.act !== 1} onPress={() => d({ type: 'DEBUG_COMPLETE_GOALS' })} />
+          <Btn small title="Complete this act's missions" onPress={() => d({ type: 'DEBUG_COMPLETE_MISSIONS' })} />
+          <Btn small title="Hold the election now" disabled={!electionScheduled(s)} onPress={() => d({ type: 'DEBUG_HOLD_ELECTION' })} />
+          {next?.gate.rep !== undefined && next.act <= c.progression.finalAct && (
+            <Btn small title={`Rep ${fmt(next.gate.rep)} → Act ${ACT_NAME[next.act]}`} onPress={() => d({ type: 'DEBUG_SET_REP', reputation: next.gate.rep! })} />
+          )}
           <Btn small title="New recruits" onPress={() => d({ type: 'DEBUG_REFRESH_POOL' })} />
           <Btn small title="Incident" onPress={() => d({ type: 'DEBUG_FORCE_INCIDENT' })} />
           <Btn small title="New offers" onPress={() => d({ type: 'DEBUG_REFRESH_OFFERS' })} />
@@ -358,6 +369,20 @@ function DataPanel({ game }: { game: Snapshot }) {
         )}
       </Card>
     </>
+  )
+}
+
+// Shows a pop-up or plays a scene now, to look at it (app/previews.ts). A previewed decision is the first real one pending.
+function PreviewPanel({ game }: { game: Snapshot }) {
+  return (
+    <Card>
+      <T small muted>Shows a pop-up or plays a scene without waiting for the game. Nothing changes until you choose something in a real decision or a scene.</T>
+      <BtnRow>
+        {PREVIEWS.map((p) => (
+          <Btn key={p.name} small title={p.title} disabled={!canPreview(game, p.name)} onPress={() => showPreview(game, p.name)} />
+        ))}
+      </BtnRow>
+    </Card>
   )
 }
 

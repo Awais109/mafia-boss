@@ -8,7 +8,12 @@ import type { CrewMember, OpInstance, PlayerState } from '../model/state'
 import { changeLoyalty, effectiveStat } from './crew'
 import { addPressure } from './districts'
 import { grantXp, hasPerk, jobXp } from './experience'
-import { fileReport } from './inbox'
+import { landConvoy } from './convoys'
+import { addVotes } from './politics'
+import { fileReport, resolveErrand } from './inbox'
+import { maybeInjureTeam } from './injuries'
+import { resolveContract } from './after'
+import { resolveMission } from './missions'
 import { gainRep } from './reputation'
 import { zhannaHoldsPort } from './rivals'
 import { addStock } from './supply'
@@ -78,7 +83,13 @@ export function influenceRoom(state: PlayerState, c: Config, t: number): number 
 
 // A job taken from the board resolves with its own snapshotted config.
 export function opConfigOf(c: Config, op: OpInstance): OpConfig {
-  return op.cfg ?? c.ops.list[op.type]
+  // A mission always carries its terms (ADR 0050); a listed job may not.
+  return op.cfg ?? c.ops.list[op.type as OpType]
+}
+
+// What a running job is called: an offer's, a mission's or a contract's own name, else its listed job's.
+export function opName(c: Config, op: OpInstance): string {
+  return op.name ?? c.ops.list[op.type as OpType]?.name ?? 'A job'
 }
 
 // The terms a job starts on right now. Smuggling gets harder with heat (plan (o)); START_OP stores
@@ -118,6 +129,10 @@ function freeCrew(team: CrewMember[], op: OpInstance): void {
 
 export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: number): void {
   const { c } = ctx
+  if (op.missionId) return resolveMission(state, ctx, op, t)
+  if (op.contractId) return resolveContract(state, ctx, op, t)
+  if (op.type === 'errand') return resolveErrand(state, ctx, op, t)
+  const type = op.type as OpType
   const cfg = opConfigOf(c, op)
   state.ops = state.ops.filter((o) => o.id !== op.id)
   const team = op.crewIds
@@ -159,6 +174,10 @@ export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: numbe
 
   // A smuggling run lands its packs: what fits in stock goes in (ADR 0032).
   const cigarettes = cfg.cigarettes && share > 0 ? addStock(state, derive(state, c).supply.cap, Math.round(cfg.cigarettes * share)) : 0
+  // A convoy that got through still has the highway and the crossing ahead of it (ADR 0043).
+  const convoy = cfg.premium && share > 0 ? landConvoy(state, ctx, t, cfg, share, ctx.rng.derive('convoy', op.id)) : null
+  // Votes delivered count toward the coming election (ADR 0044).
+  const votes = cfg.votes && share > 0 ? addVotes(state, c, Math.round(cfg.votes * share)) : 0
 
   // Spikes land on displayed heat immediately and feed the next hour's raid roll (spec §10).
   const ghost = hasPerk(team, 'ghost') ? (c.crew.experience.perks.ghost.jobSpikeMult ?? 1) : 1
@@ -173,13 +192,15 @@ export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: numbe
         : c.ops.failLoyalty
   for (const m of team) changeLoyalty(m, loyalty)
   freeCrew(team, op)
+  // A failed job that leans on Muscle can put someone in the Clinic (ADR 0042), on the job's own stream.
+  if (outcome === 'fail') maybeInjureTeam(state, ctx, t, cfg, team, ctx.rng.derive('injury', op.id))
   state.stats.opOutcomes[outcome]++
 
   const rep = c.reputation.perOpSuccess * share
   emit(ctx, t, {
     type: 'OP_RESOLVED',
     opId: op.id,
-    opType: op.type,
+    opType: type,
     crewIds: op.crewIds,
     outcome,
     score: Math.round(score * 10) / 10,
@@ -193,6 +214,8 @@ export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: numbe
     ...(op.name ? { name: op.name } : {}),
     ...(op.offerId ? { offerId: op.offerId } : {}),
     ...(cigarettes > 0 ? { cigarettes } : {}),
+    ...(convoy ? { premium: convoy.premium, ...(convoy.hijacked ? { hijacked: true as const } : {}), ...(convoy.seized ? { seized: true as const } : {}) } : {}),
+    ...(votes > 0 ? { votes } : {}),
   })
   gainRep(state, ctx, t, rep)
   if (cfg.districtPressure && op.districtId && outcome !== 'fail') addPressure(state, ctx, t, op.districtId)

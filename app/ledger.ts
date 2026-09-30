@@ -4,6 +4,7 @@ import { gameDay, ledgerDays, type Config, type PlayerState } from '../engine'
 
 export type LedgerView = {
   label: string
+  day: number // the game day, 1 on the first
   dirtyIn: number // rackets and jobs, plus money from decisions and surplus sales
   costs: number // wages, upkeep, repairs, bribes, training, tribute, seizures, shipments
   cleanIn: number
@@ -18,8 +19,10 @@ export function ledgerView(state: PlayerState, c: Config, now: number): LedgerVi
     const costs =
       d.wagesPaid + d.upkeepPaid + d.repairsPaid + d.bribesPaid + d.trainingPaid + d.tributeLost + d.seized + d.shipmentsPaid +
       Math.max(0, -d.inboxDirty)
+    const day = gameDay(c, state, d.startsAt)
     return {
-      label: d.today ? 'Today' : `Day ${gameDay(c, state, d.startsAt)}`,
+      label: d.today ? 'Today' : `Day ${day}`,
+      day,
       dirtyIn,
       costs,
       cleanIn: d.cleanEarned,

@@ -1,14 +1,16 @@
-import { RANK_NAMES, type Config, type GameEvent, type PlayerState } from '../engine'
+import { formulas, RANK_NAMES, type Config, type GameEvent, type LaterAct, type PlayerState } from '../engine'
+import { ACT_NAME, ACT_OPENS } from './acts'
 import { colors, glyph } from './components/ui'
 import { GOAL_TEXT } from './goals'
-import { fmt } from './format'
+import { fmt, fmtDuration } from './format'
+import { ACT_TITLE, ACT_TURN, MISSION_LINES } from './story'
 
 export type EventLine = { text: string; color?: string; quiet?: boolean }
 
 const OUTCOME = { full: 'clean job', partial: 'got some of it', fail: 'went wrong' } as const
 const STAT_NAME = { muscle: 'Muscle', brains: 'Brains', nerve: 'Nerve' } as const
 const MODE_TEXT = { push: 'pushing', normal: 'running normally', layLow: 'lying low' } as const
-const GOLD_SOURCE = { start: 'to start', act: 'for opening a new act', goal: 'for a goal', debug: 'from Debug', ad: 'for an ad', purchase: 'bought' } as const
+const GOLD_SOURCE = { start: 'to start', act: 'for opening a new act', goal: 'for a goal', contract: 'for a contract', debug: 'from Debug', ad: 'for an ad', purchase: 'bought' } as const
 
 // Player-facing line for an event. `quiet` lines are bookkeeping, hidden unless the Log asks.
 export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLine {
@@ -38,9 +40,15 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
     case 'RACKET_BOUGHT':
       return { text: `Opened a ${c.rackets.types[e.racketType].name} in ${c.districts.list[e.districtId].name} (${cl}${fmt(e.cost)})` }
     case 'RACKET_UPGRADED':
+      // Past the book (ADR 0052): the tiers after the story.
+      if (e.tier > formulas.bookMaxTier(c)) return { text: `The ${racketName(e.racketId)} went past the book: tier ${e.tier} (${cl}${fmt(e.cost)})`, color: colors.accent }
       return { text: `${racketName(e.racketId)} → tier ${e.tier}${e.specialization ? `, ${e.specialization}` : ''} (${cl}${fmt(e.cost)})` }
     case 'RACKET_REPAIRED':
       return { text: `Repaired the ${racketName(e.racketId)} (${d}${fmt(e.cost)})`, quiet: true }
+    case 'RACKET_CLOSED':
+      return { text: `The ${racketName(e.racketId)} is shut for now`, color: colors.warn }
+    case 'RACKET_REOPENED':
+      return { text: `The ${racketName(e.racketId)} is open again`, quiet: true }
     case 'FRONT_BOUGHT':
       return { text: `Opened a ${c.fronts.types[e.frontType].name} (${cl}${fmt(e.cost)})`, color: colors.clean }
     case 'FRONT_UPGRADED':
@@ -61,6 +69,10 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
         e.influence ? `+${glyph.influence}${e.influence}` : '',
         e.influenceLostToCap ? `(${glyph.influence} daily cap)` : '',
         e.cigarettes ? `+${glyph.packs}${fmt(e.cigarettes)}` : '',
+        e.premium ? `+${glyph.premium}${fmt(e.premium)}` : '',
+        e.hijacked ? 'the Colonel’s men took the load' : '',
+        e.seized ? 'customs took the load' : '',
+        e.votes ? `+${e.votes} campaign point${e.votes === 1 ? '' : 's'}` : '',
         e.rep ? `+${glyph.rep}${fmt(e.rep)}` : '',
         `+${glyph.heat}${fmt(e.spike)}`,
       ].filter(Boolean)
@@ -72,26 +84,56 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
     case 'UPKEEP_MISSED':
       return { text: `Couldn't cover upkeep (${d}${fmt(e.paid)} of ${fmt(e.owed)}). Your premises are falling apart.`, color: colors.heat }
     case 'STOCK_OUT':
-      return { text: 'The last pack of cigarettes is gone', color: colors.warn }
+      return { text: e.product === 'premium' ? 'The last premium pack is gone' : 'The last pack of cigarettes is gone', color: colors.warn }
     case 'STOCK_CAPPED':
-      return { text: `Cigarette stock full at ${glyph.packs}${fmt(e.cap)}: more is wasted`, quiet: true }
+      return e.product === 'premium'
+        ? { text: `Premium stock full at ${glyph.premium}${fmt(e.cap)}: more is wasted`, quiet: true }
+        : { text: `Cigarette stock full at ${glyph.packs}${fmt(e.cap)}: more is wasted`, quiet: true }
     case 'SHORTAGE_STARTED':
       return {
-        text: `Shortage: joints want ${glyph.packs}${e.demand.toFixed(1)}/h and the factories make ${e.made.toFixed(1)}/h`,
+        text:
+          e.product === 'premium'
+            ? `Premium shortage: joints want ${glyph.premium}${e.demand.toFixed(1)}/h and nothing's coming in`
+            : `Shortage: joints want ${glyph.packs}${e.demand.toFixed(1)}/h and the factories make ${e.made.toFixed(1)}/h`,
         color: colors.heat,
       }
     case 'SHORTAGE_ENDED':
-      return { text: 'Cigarettes are back on the shelves', color: colors.good }
+      return { text: e.product === 'premium' ? 'Premium packs are back on the shelves' : 'Cigarettes are back on the shelves', color: colors.good }
     case 'GOLD_GRANTED':
       return { text: `+${glyph.gold}${fmt(e.amount)} ${GOLD_SOURCE[e.source]}`, color: colors.gold }
     case 'TIME_SKIPPED':
       return { text: `Skipped ${e.hours}h for ${glyph.gold}${e.bars}`, color: colors.gold }
+    case 'ROCK_BOTTOM':
+      return { text: 'Payday came up short, and there’s no Clean. The family can help, once this act.', color: colors.heat }
+    case 'ENVELOPE_OPENED':
+      return { text: `Lyosha’s second envelope: ${d}${fmt(e.stake)}. It isn’t much. It’s enough.`, color: colors.good }
+    case 'LOAN_REPOSSESSED':
+      return { text: `Two payments missed. The lender’s men took the ${c.rackets.types[e.racketType].name} in ${c.districts.list[e.districtId].name}. The debt is closed.`, color: colors.heat }
+    case 'MISSION_STARTED':
+      return {
+        text: `${e.crewIds.map(crewName).join(' & ')}: ${c.missions.list[e.missionId].name}${e.stake ? `, staking ${d}${fmt(e.stake)}` : ''}`,
+        color: colors.accent,
+      }
+    case 'MISSION_RESOLVED': {
+      const line = MISSION_LINES[e.missionId][e.result] ?? c.missions.list[e.missionId].name
+      return { text: line, color: e.result === 'won' ? colors.good : e.result === 'lost' ? colors.warn : colors.heat }
+    }
     case 'OP_RUSHED':
-      return { text: `Finished ${e.name ?? c.ops.list[e.opType].name} early for ${glyph.gold}${e.bars}`, color: colors.gold }
+      return { text: `Finished ${e.name ?? (e.opType === 'mission' || e.opType === 'contract' || e.opType === 'errand' ? 'the job' : c.ops.list[e.opType].name)} early for ${glyph.gold}${e.bars}`, color: colors.gold }
+    case 'CONTRACTS_POSTED':
+      return { text: e.count === 1 ? 'A new contract on the board' : `${e.count} new contracts on the board`, color: colors.accent, quiet: e.count === 0 }
+    case 'CONTRACT_STARTED':
+      return { text: `${e.crewIds.map(crewName).join(' & ')}: ${e.name}, ${cl}${fmt(e.cost)} up front`, color: colors.accent }
+    case 'CONTRACT_DONE':
+      return { text: `${e.name}: done. The council pays ${cl}${fmt(e.clean)}.`, color: colors.good }
+    case 'ERRAND_DONE':
+      return { text: `${e.crewIds.map(crewName).join(' & ')} back from “${e.name}”`, quiet: true }
+    case 'EMPIRE_BEST':
+      return { text: `A new best: the empire at ${fmt(e.value)}`, color: colors.accent }
     case 'GOAL_DONE':
       return { text: `Goal done: ${GOAL_TEXT[e.goalId]} (+${glyph.gold}${e.gold})`, color: colors.gold }
     case 'SHIPMENT_BOUGHT':
-      return { text: `Bought a lot from Zhanna: +${glyph.packs}${fmt(e.packs)} for ${d}${fmt(e.cost)}`, color: colors.packs }
+      return { text: `Bought a lot from Zhanna: +${e.product === 'premium' ? glyph.premium : glyph.packs}${fmt(e.packs)} for ${d}${fmt(e.cost)}`, color: e.product === 'premium' ? colors.premium : colors.packs }
     case 'SURPLUS_SOLD':
       return { text: `Sold Zhanna ${glyph.packs}${fmt(e.packs)} for ${d}${fmt(e.dirty)}`, quiet: true }
     case 'REPORT_FILED':
@@ -141,9 +183,9 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
       // Once a day, and the only sign a payday happened: keep it on Home.
       return { text: `Paid wages ${d}${fmt(e.amount)}`, color: colors.dirty }
     case 'WAGES_MISSED':
-      return { text: `Couldn't cover wages (${d}${fmt(e.paid)} of ${fmt(e.owed)}). The crew is unhappy.`, color: colors.heat }
+      return { text: `Wages came due and there was only ${d}${fmt(e.paid)} of ${fmt(e.owed)}. Vitya said nothing, which is how you know.`, color: colors.heat }
     case 'WALKOUT':
-      return { text: `${e.name} walked out${e.stolen ? ` with ${d}${fmt(e.stolen)}` : ''}`, color: colors.heat }
+      return { text: `${e.name} left in the night${e.stolen ? ` with ${d}${fmt(e.stolen)}` : ''}. Nobody’s surprised.`, color: colors.heat }
     case 'DISTRICT_BOUGHT':
       return { text: `Bought out ${c.districts.list[e.districtId].name} (${cl}${fmt(e.cost)})`, color: colors.rep }
     case 'DISTRICT_PRESSURED':
@@ -173,9 +215,62 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
     case 'PERK_CHOSEN':
       return { text: `${e.name} is a ${c.crew.experience.perks[e.perk].name}: ${c.crew.experience.perks[e.perk].text}`, color: colors.rep }
     case 'ACT_UNLOCKED':
-      return { text: 'ACT II — the city opens up: Restaurant, new districts, more crew', color: colors.rep }
+      return { text: `ACT ${ACT_NAME[e.act]} · ${ACT_TITLE[e.act]}. ${ACT_TURN[e.act as LaterAct]} Opens ${ACT_OPENS[e.act]}.`, color: colors.rep }
     case 'ACT_CLEARED':
-      return { text: 'ACT II COMPLETE — the prototype ends here. Keep playing if you like.', color: colors.rep }
+      return {
+        text:
+          e.act === 6
+            ? `ACT ${ACT_NAME[e.act]} COMPLETE: the story is told. The city runs on, and so can you.`
+            : `ACT ${ACT_NAME[e.act]} COMPLETE: the built game ends here. Keep playing if you like.`,
+        color: colors.rep,
+      }
+    case 'CONTEST_RESOLVED':
+      return {
+        text: `${e.name ?? 'Nobody'} ${e.won ? 'won' : 'lost'} (${STAT_NAME[e.stat]} against ${fmt(e.diff)})`,
+        color: e.won ? colors.good : colors.warn,
+      }
+    case 'CREW_INJURED':
+      return { text: `${e.name} is hurt: out for ${fmtDuration(e.until - e.t, c)}`, color: colors.warn }
+    case 'CREW_RECOVERED':
+      return { text: `${e.name} is back on their feet`, quiet: true }
+    case 'LOAN_TAKEN':
+      return { text: `Borrowed ${cl}${fmt(e.amount)}`, color: colors.clean }
+    case 'LOAN_PAYMENT':
+      return { text: `Paid ${cl}${fmt(e.paid)} on the loan (${cl}${fmt(e.owed)} still owed)`, quiet: true }
+    case 'LOAN_MISSED':
+      return {
+        text: `Missed a loan payment of ${cl}${fmt(e.due)}: the collectors are coming${e.seized ? `, and the lender took ${d}${fmt(e.seized)} from the vault` : ''}`,
+        color: colors.heat,
+      }
+    case 'LOAN_REPAID':
+      return { text: 'The loan is paid off', color: colors.good }
+    case 'LENT':
+      return { text: `Lent out ${d}${fmt(e.amount)} through the loan desk`, quiet: true }
+    case 'LENDING_REPAID':
+      return { text: `The loan desk got ${d}${fmt(e.returned)} back on ${d}${fmt(e.amount)}`, color: colors.dirty }
+    case 'PASSAGE_BOUGHT':
+      return { text: `Paid the Colonel ${d}${fmt(e.cost)} for a day on the road`, color: colors.dirty }
+    case 'FRONT_FROZEN':
+      return { text: `Moscow has frozen the ${frontName(e.frontId)}'s accounts for ${fmtDuration(e.until - e.t, c)}. It launders nothing until then.`, color: colors.heat }
+    case 'FRONT_THAWED':
+      return { text: `The ${frontName(e.frontId)} is open for business again`, color: colors.good }
+    case 'CAMPAIGNED':
+      return {
+        text: `Campaign: +${e.points} point${e.points === 1 ? '' : 's'} for ${e.pay === 'dirty' ? d : glyph.influence}${fmt(e.cost)} (${e.total} so far)`,
+        quiet: true,
+      }
+    case 'LEGALIZED':
+      return { text: `The ${racketName(e.racketId)} is legal now: ${glyph.clean}${fmt(e.cost)} in fees, and it earns Clean from here on`, color: colors.clean }
+    case 'ENDING_REACHED':
+      return e.ending === 'holding'
+        ? { text: 'Every business has a story now. The Holding. Vitya waits by the car: “Where to?”', color: colors.good }
+        : { text: 'Every district is yours and the courts have given up. The Empire. Vitya waits by the car: “Where to?”', color: colors.good }
+    case 'ELECTION_HELD':
+      return e.won
+        ? { text: `You won the election with ${Math.round(e.share * 100)}% of the vote. The mayor's office is yours.`, color: colors.good }
+        : { text: `Golovin won the election: you took ${Math.round(e.share * 100)}%. The next one is in a week.`, color: colors.heat }
+    case 'LENDING_DEFAULTED':
+      return { text: `A borrower skipped town with ${d}${fmt(e.amount)}`, color: colors.heat }
     case 'NOTE':
       return { text: e.text, color: colors.muted }
     case 'TUTORIAL_STEP':

@@ -16,9 +16,19 @@ export function racketPurchaseCost(c: Config, type: RacketType): number {
 
 export const isPremises = (c: Config, type: RacketType): boolean => c.rackets.types[type].kind === 'premises'
 
-// Premises tier up to their own cap in any act; joints and rackets follow the act.
-export function racketMaxTier(c: Config, type: RacketType, act: Act): number {
-  return isPremises(c, type) ? c.rackets.premises.maxTier : c.rackets.maxTierByAct[act]
+// The story is over once the final act is cleared by an ending (ADR 0045); play carries on (ADR 0052).
+export function storyOver(state: { act: Act; stats: { actClearedAt: Partial<Record<Act, number>> } }, c: Config): boolean {
+  return state.act === c.progression.finalAct && state.stats.actClearedAt[state.act] !== undefined
+}
+
+// The book's last tier for joints and rackets: the final act's cap.
+export const bookMaxTier = (c: Config): number => c.rackets.maxTierByAct[c.progression.finalAct]
+
+// Premises tier up to their own cap in any act; joints and rackets follow the act, and after the story go
+// `after.extraTiers` past the book (ADR 0052).
+export function racketMaxTier(c: Config, type: RacketType, act: Act, afterStory = false): number {
+  if (isPremises(c, type)) return c.rackets.premises.maxTier
+  return c.rackets.maxTierByAct[act] + (afterStory ? c.after.extraTiers : 0)
 }
 
 // Dirty per hour a premises costs to run at this tier (before synergies).
@@ -38,15 +48,30 @@ export function jointSales(c: Config, type: RacketType, tier: number): number {
   return (c.rackets.types[type].sellsPerHr ?? 0) * Math.pow(c.rackets.tierYieldMult, tier - 1)
 }
 
+// Premium packs per hour a premium joint sells at full condition (ADR 0043).
+export function premiumSales(c: Config, type: RacketType, tier: number): number {
+  return (c.rackets.types[type].premiumSellsPerHr ?? 0) * Math.pow(c.rackets.tierYieldMult, tier - 1)
+}
+
+// Premium packs per hour a premium-making premises (the Combine) makes at full condition.
+export function premiumOutput(c: Config, type: RacketType, tier: number): number {
+  const t = c.rackets.types[type]
+  return (t.premiumMakesPerHr ?? 0) * Math.pow(t.tierMakeMult ?? 1, tier - 1)
+}
+
 // Stock cap a warehouse adds at full condition.
 export function warehouseCapacity(c: Config, type: RacketType, tier: number): number {
   return (c.rackets.types[type].capPerTier ?? 0) * tier
 }
 
-// Cost to go from `tier` to `tier + 1`.
+// Cost to go from `tier` to `tier + 1`. Each tier past the book costs `after.pastBookCostMult` more again.
 export function racketUpgradeCost(c: Config, type: RacketType, tier: number): number {
+  const past = Math.max(0, tier + 1 - bookMaxTier(c))
   return Math.round(
-    racketPurchaseCost(c, type) * c.costs.upgradeBaseFactor * Math.pow(c.costs.upgradeTierMult, tier - 1),
+    racketPurchaseCost(c, type) *
+      c.costs.upgradeBaseFactor *
+      Math.pow(c.costs.upgradeTierMult, tier - 1) *
+      Math.pow(c.after.pastBookCostMult, past),
   )
 }
 

@@ -73,6 +73,112 @@ function busy(): PlayerState {
   return s
 }
 
+// Act III (ADRs 0041, 0042): prosperity stepping at whole hours, a hotel lifting its street, a Print Shop shut by
+// an investigator and opening again mid-window, a raid's penalty running out, heat near the inspection line,
+// a loan paid each morning, money lent out and falling due, a hurt crew member coming back.
+function centre(): PlayerState {
+  let s = act(fresh('centre-player'), [{ type: 'DEBUG_COMPLETE_GOALS' }, { type: 'DEBUG_SET_REP', reputation: config.rackets.types.printShop.unlockRep }], T0)
+  s.tutorial.done = true
+  s = act(
+    s,
+    [
+      { type: 'DEBUG_GRANT', dirty: 5000, clean: 100_000 },
+      { type: 'BUY_RACKET', racketType: 'nightclub', districtId: 'centre' },
+      { type: 'BUY_RACKET', racketType: 'printShop', districtId: 'centre' },
+      { type: 'BUY_RACKET', racketType: 'hotel', districtId: 'centre' },
+      { type: 'BUY_RACKET', racketType: 'hotel', districtId: 'zarechye' },
+      { type: 'BUY_RACKET', racketType: 'loanDesk', districtId: 'stationSquare' },
+      { type: 'TAKE_LOAN', amount: 1500 },
+      { type: 'DEBUG_FORCE_INCIDENT', incidentType: 'investigation' },
+    ],
+    T0,
+  )
+  const item = s.inbox.find((i) => i.ref === 'investigation')!
+  s = act(s, [{ type: 'RESOLVE_INBOX', itemId: item.id, optionId: 'shut' }, { type: 'DEBUG_FORCE_RAID' }, { type: 'DEBUG_SET_HEAT', heat: 41 }], T0)
+  // Shift the closures so they end inside the split windows at different offsets.
+  s.rackets.find((r) => r.type === 'printShop')!.closedUntil = T0 + Math.round(7.4 * H)
+  s.raidPenaltyUntil = T0 + Math.round(11.7 * H)
+  s.districts.find((d) => d.id === 'kioskRow')!.prosperity = 12
+  s = act(s, [{ type: 'LEND', amount: 40 }], T0)
+  s.lending!.dueAt = T0 + Math.round(9.3 * H)
+  const hurt = s.crew[1]
+  hurt.status = 'injured'
+  hurt.injuredUntil = T0 + Math.round(5.2 * H)
+  return s
+}
+
+// Act IV (ADR 0043): premium joints selling down a small stock that runs out mid-window, a convoy on the road
+// landing mid-window, passage running out, a bonded warehouse and the importer washing against premium sales.
+function zastava(): PlayerState {
+  let s = act(fresh('zastava-player'), [{ type: 'DEBUG_COMPLETE_GOALS' }, { type: 'DEBUG_SET_REP', reputation: config.rackets.types.fuelDepot.unlockRep }], T0)
+  s.tutorial.done = true
+  s = act(
+    s,
+    [
+      { type: 'DEBUG_GRANT', dirty: 60_000, clean: 200_000 },
+      { type: 'RECRUIT', candidateId: s.recruitPool.candidates[0].id },
+      { type: 'BUY_RACKET', racketType: 'motel', districtId: 'zastava' },
+      { type: 'BUY_RACKET', racketType: 'foreignShop', districtId: 'zastava' },
+      { type: 'BUY_RACKET', racketType: 'bondedWarehouse', districtId: 'zastava' },
+      { type: 'BUY_RACKET', racketType: 'convoyDepot', districtId: 'zarechye' },
+      { type: 'BUY_FRONT', frontType: 'importExport' },
+      { type: 'BUY_PASSAGE' },
+      { type: 'DEBUG_GRANT', premium: 9 },
+    ],
+    T0,
+  )
+  const importer = s.fronts.find((f) => f.type === 'importExport')!
+  s = act(s, [{ type: 'DEPOSIT', frontId: importer.id, amount: 500 }, { type: 'START_OP', opType: 'runConvoy', crewIds: s.crew.slice(0, 3).map((m) => m.id) }], T0)
+  s.rival.colonel.passageUntil = T0 + Math.round(3.3 * H)
+  s.ops[0].completesAt = T0 + Math.round(4.6 * H)
+  return s
+}
+
+// Act V (ADR 0044): opinion stepping toward the media's target, the Ministry's attention about to peak and
+// freeze the Development Fund, a front frozen and thawing mid-window, and an election counted mid-window.
+function kombinat(): PlayerState {
+  let s = act(fresh('kombinat-player'), [{ type: 'DEBUG_COMPLETE_GOALS' }, { type: 'DEBUG_SET_REP', reputation: config.rackets.types.tvStation.unlockRep }], T0)
+  s.tutorial.done = true
+  s = act(
+    s,
+    [
+      { type: 'DEBUG_GRANT', dirty: 2_000_000, clean: 2_000_000, influence: 500 },
+      { type: 'BUY_DISTRICT', districtId: 'zastava' },
+      { type: 'BUY_FRONT', frontType: 'importExport' },
+      { type: 'BUY_DISTRICT', districtId: 'kombinat' },
+      { type: 'BUY_FRONT', frontType: 'developmentFund' },
+      { type: 'BUY_RACKET', racketType: 'newspaper', districtId: 'kombinat' },
+      { type: 'BUY_RACKET', racketType: 'combine', districtId: 'kombinat' },
+      { type: 'BUY_RACKET', racketType: 'constructionTrust', districtId: 'kombinat' },
+      { type: 'CAMPAIGN', points: 12, pay: 'dirty' },
+    ],
+    T0,
+  )
+  const fund = s.fronts.find((f) => f.type === 'developmentFund')!
+  s = act(s, [{ type: 'DEPOSIT', frontId: fund.id, amount: 20_000 }], T0)
+  s.politics.attention = config.ministry.freezeAt - 0.5
+  s.politics.opinion = 30
+  s.politics.nextElectionAt = T0 + Math.round(13.6 * H)
+  s.fronts.find((f) => f.type === 'importExport')!.frozenUntil = T0 + Math.round(6.2 * H)
+  return s
+}
+
+// Act VI (ADR 0045): legal businesses earning Clean beside illegal ones, the Holding, a hearing that may be filed
+// at the next day start against a case file, and a frozen front thawing.
+function nagornaya(): PlayerState {
+  let s = kombinat()
+  s.politics.opinion = 100
+  s.politics.points = config.elections.maxPoints
+  s.politics.nextElectionAt = T0 + 1
+  s.reputation = config.progression.acts[6].rep!
+  s = act(s, [{ type: 'DEBUG_HOLD_ELECTION' }, { type: 'BUY_RACKET', racketType: 'holding', districtId: 'nagornaya' }], T0)
+  const stall = s.rackets.find((r) => r.type === 'marketStall')!
+  const trust = s.rackets.find((r) => r.type === 'constructionTrust')!
+  s = act(s, [{ type: 'LEGALIZE', racketId: stall.id }, { type: 'LEGALIZE', racketId: trust.id }], T0)
+  s.stats.raids = 3
+  return s
+}
+
 describe('reconcile', () => {
   it('does nothing when now <= updatedAt', () => {
     const s = fresh()
@@ -81,7 +187,7 @@ describe('reconcile', () => {
   })
 
   it('reconcile(s, t2) equals reconcile(reconcile(s, t1), t2) on 1,000 random splits', () => {
-    const bases = [fresh(), busy()]
+    const bases = [fresh(), busy(), centre(), zastava(), kombinat(), nagornaya()]
     const rand = makeRng('split-test').derive('splits')
     for (let i = 0; i < 1000; i++) {
       const base = bases[i % bases.length]

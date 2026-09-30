@@ -1,4 +1,4 @@
-import type { DistrictId, FrontMode, FrontType, IncidentType, OfficialId, OpType, RacketType, Specialization } from '../config/schema'
+import type { DistrictId, FrontMode, FrontType, IncidentType, MissionId, OfficialId, OpType, RacketType, Specialization } from '../config/schema'
 
 export type Action =
   | { type: 'COLLECT' }
@@ -22,10 +22,20 @@ export type Action =
   | { type: 'PAY_TRIBUTE'; choice?: 'pay' | 'haggle' | 'refuse' }
   | { type: 'SKIP_TIME'; hours: number }
   | { type: 'RUSH_OP'; opId: string }
-  | { type: 'BUY_SHIPMENT' }
+  | { type: 'BUY_SHIPMENT'; product?: 'premium' }
+  | { type: 'BUY_PASSAGE' }
+  | { type: 'CAMPAIGN'; points: number; pay: 'dirty' | 'influence' }
+  | { type: 'LEGALIZE'; racketId: string }
   | { type: 'SELL_SURPLUS'; packs: number }
+  | { type: 'TAKE_LOAN'; amount: number }
+  | { type: 'REPAY_LOAN'; amount: number }
+  | { type: 'LEND'; amount: number }
   | { type: 'TUTORIAL_ADVANCE' }
   | { type: 'TUTORIAL_SKIP' }
+  | { type: 'SEE_SCENE'; sceneId: string }
+  | { type: 'START_MISSION'; missionId: MissionId; crewIds: string[] }
+  | { type: 'OPEN_ENVELOPE' }
+  | { type: 'START_CONTRACT'; contractId: string; crewIds: string[] }
   | { type: 'SESSION_START' }
   | { type: 'SESSION_END'; durationMs: number; actions: number }
   | DebugAction
@@ -33,10 +43,12 @@ export type Action =
 export type DebugAction =
   | { type: 'DEBUG_ADD_OFFSET'; ms: number }
   | { type: 'DEBUG_RESET_OFFSET' }
-  | { type: 'DEBUG_GRANT'; dirty?: number; clean?: number; influence?: number; cigarettes?: number; gold?: number }
+  | { type: 'DEBUG_GRANT'; dirty?: number; clean?: number; influence?: number; cigarettes?: number; premium?: number; gold?: number }
   | { type: 'DEBUG_SET_HEAT'; heat: number }
   | { type: 'DEBUG_SET_REP'; reputation: number }
   | { type: 'DEBUG_COMPLETE_GOALS' }
+  | { type: 'DEBUG_COMPLETE_MISSIONS' } // the current act's missions, done
+  | { type: 'DEBUG_HOLD_ELECTION' }
   | { type: 'DEBUG_FORCE_RAID' }
   | { type: 'DEBUG_FORCE_ARREST' }
   | { type: 'DEBUG_FORCE_TOLYA' }
@@ -48,4 +60,4 @@ export type DebugAction =
 export type ActionType = Action['type']
 
 // Bookkeeping actions that shouldn't count toward "actions per session".
-export const PASSIVE_ACTIONS: readonly ActionType[] = ['SESSION_START', 'SESSION_END', 'TUTORIAL_ADVANCE', 'TUTORIAL_SKIP']
+export const PASSIVE_ACTIONS: readonly ActionType[] = ['SESSION_START', 'SESSION_END', 'TUTORIAL_ADVANCE', 'TUTORIAL_SKIP', 'SEE_SCENE']

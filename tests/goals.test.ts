@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { type Action, type GameEvent, type PlayerState } from '../engine'
+import { GOAL_CHECKS, goalProgress, type Action, type GameEvent, type PlayerState } from '../engine'
 import { act, config, crewNamed, fresh, T0 } from './helpers'
 
 // Act I goals (ADR 0035): each pays its gold once, when its condition first holds after the opening.
@@ -76,5 +76,18 @@ describe('Act I goals', () => {
     s = act(s, [{ type: 'TUTORIAL_SKIP' }], T0)
     expect(s.goals.done).toEqual(['wardCop'])
     expect(goalsDone(s)).toEqual(['wardCop'])
+  })
+
+  it('counted goals report how far along they are, and their check agrees', () => {
+    const s = fresh()
+    expect(goalProgress(s, config, 'thirdCrew')).toEqual({ have: s.crew.length, need: 3 })
+    expect(goalProgress(s, config, 'smuggleRun')).toEqual({ have: 0, need: 3 })
+    expect(goalProgress(s, config, 'wardCop')).toBeNull()
+    s.stats.opsByType.smuggleCigarettes = 3
+    expect(goalProgress(s, config, 'smuggleRun')?.have).toBe(3)
+    for (const id of ['secondDistrict', 'thirdCrew', 'workFront', 'smuggleRun'] as const) {
+      const p = goalProgress(s, config, id)!
+      expect(GOAL_CHECKS[id](s, config)).toBe(p.have >= p.need)
+    }
   })
 })

@@ -1,6 +1,6 @@
 # Sevgorod
 
-Fun-test prototype of Sevgorod, Acts I–II: a post-Soviet crime idle game about laundering Dirty money into Clean faster than the heat catches up. No art or sound, just lists and numbers. It runs fully offline on a phone.
+Fun-test prototype of Sevgorod, all six acts: a post-Soviet crime idle game about laundering Dirty money into Clean faster than the heat catches up. Its screens are dressed as a warm, printed ledger ([ADR 0047](docs/decisions/0047-warm-ledger-design.md)); there is no sound. It runs fully offline on a phone.
 
 Design and plan live in [docs/](docs/): the [implementation plan](docs/sevgorod-implementation-plan.md) and the [dev manual](docs/sevgorod-dev-manual.md) for tuning. Why the numbers are what they are is in [TUNING.md](TUNING.md).
 
@@ -33,7 +33,7 @@ The **Debug** tab holds the time skip, a config editor with presets (`fast` runs
 | `npm run sim -- --set heat.baseControl=6` | Try a config change before a human plays it |
 | `npm run sim -- --replay tester-log.json` | Same report over a tester's exported log |
 
-`sim/baseline.csv` is the seed-42, 8-day run on the current defaults. Diff new runs against it.
+`sim/baseline.csv` is the seed-42, 60-day run on the current defaults: every act, through an ending. Diff new runs against it.
 
 ## Layout
 
@@ -56,7 +56,12 @@ The plan and manual leave some mechanics open. These are the choices made here; 
 - **Heat target** = 100 × exposure ÷ (exposure + control). Control ÷ exposure of 1.9 puts heat at ~34.
 - **Ops** score the best stat on the team per weight, +5 per extra member, ±15 noise. Partial success pays 60% of the reward with half the heat spike; a failure pays nothing and spikes 150%.
 - **Front suspicion** uses utilization averaged over ~6 hours.
-- **Act II opens at 143 Rep and ends at 610.** Act III is a stub.
+- **Six acts, each opened by a gate** (ADR 0040): Act II on the seven Act I goals, Act III at ★1,200, Act IV at ★9,000, Act V on Rep, the road and the importer, Act VI on Rep and the mayor's office. All six are built; an ending clears Act VI and play continues.
+- **Act III, the Centre**: each district has a prosperity that its joints earn with (joints lift a street, rackets sour it, hotels lift it most); the Card Club needs a prosperous street and the Cooperative Bank a prosperous city; businesses go to tier 6 with a second greed-or-stealth choice; City Hall; the Big Score; an investigator who can shut the Print Shop; crew who get hurt and a Clinic; Tolya's boys, answered by paying, boarding up or fighting; loans against your laundering and a loan desk that lends your Dirty out.
+- **Act IV, Zastava**: premium imported cigarettes, a second stock no factory makes, brought over the border by convoy; the Colonel's men take convoys unless you pay for passage or take his district, and customs seizes more the hotter you run; a Customs Chief, a Bonded Warehouse and a Convoy Depot; the Import–Export Company, which washes only what your premium sales explain.
+- **Act V, the Kombinat**: the Combine at auction, making both products; public opinion from the Newspaper, the TV Station and the Development Fund; the Ministry, which ignores bribes and freezes your busiest front at its peak; weekly elections against Golovin, won with opinion and a campaign, that make you mayor for good.
+- **The Map** is Lyosha's notebook: each district inks in when someone from the story shows it to you, and each act opens as a page of the story ([docs/story.md](docs/story.md)).
+- **Act VI, Nagornaya**: Legalize a business and it earns Clean directly, with no heat and no front; the Holding; the reckoning, whose hearings come while anything is still illegal; two endings, the Holding (everything legal) and the Empire (every district and six hearings won), both recorded, neither final.
 - **Tolya** harasses all game: condition hits, tribute demands you can pay, haggle once with your best talker, or refuse (unpaid by his next visit counts as refused), and more frequent visits once hostile.
 - **Crew grow with work**: jobs, training and enforcing earn XP that raises stats up to a ceiling; promotions to Soldier and Made each offer a perk.
 - **Cigarettes are the one product**: tobacco factories make them, joints need them for part of their income, warehouses store the surplus, smuggling runs bring in a batch for Clean, and from Act II Zhanna sells lots for Dirty and buys the surplus.
@@ -66,6 +71,6 @@ The plan and manual leave some mechanics open. These are the choices made here; 
 
 ## Status
 
-- Engine, sim, and screens cover the systems in plan milestones M0–M5 (rackets, fronts, heat, crew and ops, districts, Tolya, officials, tutorial, debug tools, logging and export), playable through Act II, plus the expansion's session texture (inbox, opportunities board, ledger), its decisions (specialization, front modes, haggling, crew experience), and the tobacco chain with a bigger Act I (premises, cigarettes, smuggling, Station Square), gold bars, the guided opening with Act I goals, and the Act II additions (Stash House, Union Office, Zhanna's trade). The original spec v1.1 wasn't available, so where the plan left mechanics open, the choices above fill them.
+- Engine, sim, and screens cover the systems in plan milestones M0–M5 (rackets, fronts, heat, crew and ops, districts, Tolya, officials, tutorial, debug tools, logging and export), playable through all six acts (the Centre, prosperity, tier 6; Zastava, premium, convoys; the Kombinat, opinion, the Ministry, elections; Nagornaya, Legalize, the reckoning, the endings), plus the expansion's session texture (inbox, opportunities board, ledger), its decisions (specialization, front modes, haggling, crew experience), and the tobacco chain with a bigger Act I (premises, cigarettes, smuggling, Station Square), gold bars, the guided opening with Act I goals, and the Act II additions (Stash House, Union Office, Zhanna's trade). The original spec v1.1 wasn't available, so where the plan left mechanics open, the choices above fill them.
 - Verified: typecheck, lint, the test suite, and a Metro bundle for Android (`npx expo export --platform android`). The app has **not** been launched on a device or simulator yet.
-- Sim meets 8 of 11 dev manual targets on the mean over 10 seeds. Front utilization (~59%), Dirty left unconverted (~68%) and the wage share (~4%) are open; see [TUNING.md](TUNING.md).
+- Sim (60 days, 10 seeds) meets 11 of 15 targets on the mean, Act II–VI clears included. Act I's length (4.6 days against 1–2, since it's goal-gated), front utilization (~52%), Dirty left unconverted (~90%) and the wage share (~9%) are open; see [TUNING.md](TUNING.md).

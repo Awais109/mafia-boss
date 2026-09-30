@@ -1,6 +1,6 @@
 # 0022. The end of the prototype is a cleared Act II, said in words; reports measure from game start
 
-- **Status:** Accepted
+- **Status:** Accepted; amended by [0040](0040-six-acts.md): the end state is the last built act cleared, not Act II; superseded in part by [0052](0052-after-the-story.md): after the story, Home shows the empire value and contracts, not "the book is closed" with Export log
 - **Date:** 2026-09-12
 
 ## Context

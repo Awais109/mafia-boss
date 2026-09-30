@@ -18,6 +18,11 @@ Crew go out on timed jobs for Dirty, Influence and Rep, at the cost of a heat sp
 | `smuggleCigarettes` | 2 | Nerve, Brains | Cigarettes | standard; costs Clean up front, harder with heat and while Zhanna holds the Port ([supply-chain.md](supply-chain.md#batches)) |
 | `moveShipment` | 2 | Nerve, Brains | Dirty | standard; Act II |
 | `dinner` | 2 | Brains, Nerve | Influence | long |
+| `bigScore` | 3 | Brains, Muscle, Nerve | Dirty | long; Act III ([ADR 0041](../decisions/0041-act-iii-the-centre.md)) |
+| `runConvoy` | 3 | Nerve, Muscle, Brains | Premium packs | long; Act IV; costs Clean up front; the road and customs can take the load ([convoys.md](convoys.md)) |
+| `greasePost` | 2 | Brains, Nerve | Influence | standard; Act IV ([ADR 0043](../decisions/0043-act-iv-zastava.md)) |
+| `fixTender` | 2 | Brains, Nerve | Dirty | long; Act V ([ADR 0044](../decisions/0044-act-v-kombinat.md)) |
+| `deliverVote` | 3 | Muscle, Nerve | Campaign points | standard; Act V; `votes × reward share` points toward the coming election, heavy heat ([politics.md](politics.md#elections)) |
 | `trainMuscle`, `trainBrains`, `trainNerve` | 1 | the stat trained | XP only | long; training, costs Dirty (below) |
 
 ## Starting a job
@@ -28,7 +33,7 @@ Crew go out on timed jobs for Dirty, Influence and Rep, at the cost of a heat sp
 - exactly `crew` distinct crew members are chosen, and all are idle;
 - for Pressure, a `districtId` that's open and not already yours;
 - for a job with `costDirty`, at least `costDirty × act` Dirty, which is charged now (`stats.trainingPaid` for training);
-- for a job with `costClean`, at least that much Clean, charged now. It earns no Rep and isn't counted as Clean spent (`stats.smugglingPaid`).
+- for a job with `costClean`, at least that much Clean, charged now. It earns no Rep and isn't counted as Clean spent (`stats.smugglingPaid`, which counts convoys too).
 
 The chosen crew become `on_op`, `stats.opsByCrew` and `stats.opsByType` count the dispatch, and the job completes `opMinutesFor(team)` of game time later: `minutes`, × the Fixer perk's `jobMinutesMult` when a Fixer is on the team (`OP_STARTED`). A job taken from the board stores `offerId`, its `name`, and a snapshot of its `cfg`, and the offer leaves the board. A job with `heatDiffPerPoint` starts `round(heatDiffPerPoint × heat)` harder: `opConfigAt` works out those terms when it starts and stores them on the job the same way, so the odds shown are the odds rolled.
 
@@ -80,13 +85,37 @@ The roll is seeded by the job's id. `outcomeOdds` computes the exact probabiliti
 
 ([ADR 0030](../decisions/0030-crew-experience.md)) A job with `training: <stat>` is a paid lesson: `costDirty × act` up front, `xp` of that stat when it ends. There's no roll (`outcomeOdds` returns full = 1), no heat, Dirty, Influence, Rep, loyalty change or report, and it doesn't count in `stats.opOutcomes`, so the partial-share target only measures real jobs. `resolveOp` frees the member, grants the XP and emits `TRAINING_DONE { opId, crewId, name, stat, xp }`. Validation requires `crew: 1` and a known stat.
 
+## Boss missions
+
+([ADR 0050](../decisions/0050-boss-missions.md)) Seven missions in `missions.list`, one overreach per act from I to V and a rematch in Acts II and III, each against a boss (`boss`), in its act (`act`). They ride the job machinery (`engine/systems/missions.ts`):
+- `START_MISSION { missionId, crewIds }` pushes a job of type `'mission'` with `missionId`, the mission's terms as `cfg` (`missionOp`), its name, and an overreach's `stake`. The crew are on it like any job, and `RUSH_OP` finishes it for gold.
+- `missionBlocked(state, config, id, t)` says why it can't go:
+  - missions are off, or it's done or already out;
+  - it's not this act;
+  - a lost rematch's wait (`missions.retryHours`) hasn't run out;
+  - for an overreach, the rest of the next act's gate doesn't hold yet.
+- **An overreach** stakes `stakeHours` of Dirty yield (or all the Dirty on hand if less; `missionStake`) when it's sent. `resolveMission` then:
+  - fails it at a fixed cost: the first crew member hurt for `injureHours`, and `heat` added;
+  - records `{ result: 'failed', at, stake }` in `state.missions`;
+  - runs `checkActs`, so the next act opens at once.
+- **A rematch** is rolled like a job on `rng.derive('mission', opId)`, and the crew earn a job's XP.
+  - Clean or partial wins it: `reward` pays Rep, Influence, and a rival's disposition (Zhanna's lowers her lots' price), recorded as `won`.
+  - A fail records `lost` with `retryAt`.
+- `missionDone` (an overreach failed, a rematch won) is what act gates read (`missions` in `progression.acts`; [progression.md](progression.md#acts)). With `missions.enabled` off, gates leave missions out.
+- `stats.missions` counts `sent` (both kinds), `won` and `lost` (rematches).
+- `DEBUG_COMPLETE_MISSIONS` marks the current act's missions done.
+
+**Contracts** ([ADR 0052](../decisions/0052-after-the-story.md)) ride the same machinery after the story: `START_CONTRACT` pushes a job of type `'contract'` with `contractId`, which `resolveOp` hands to `resolveContract`. It's never rolled and can't be rushed ([after.md](after.md#contracts)). An **errand** is a crew member sent by a decision (`busyHours`, [ADR 0054](../decisions/0054-the-city-story.md)): a job of type `'errand'` that `resolveOp` hands to `resolveErrand`, bringing back only them ([inbox.md](inbox.md#the-citys-story)).
+
 ## Events
 
+- `MISSION_STARTED { missionId, opId, crewIds, stake }`
+- `MISSION_RESOLVED { missionId, result, crewIds, outcome?, stake?, heat?, injuredId?, rep?, influence? }`
 - `OP_STARTED { opId, opType, crewIds, districtId?, name?, offerId? }`
 - `OP_RESOLVED { opId, opType, crewIds, outcome, score, diff, dirty, influence, influenceLostToCap, spike, rep, districtId?, name?, offerId?, cigarettes? }`
 - `OFFERS_REFRESHED { count }` (quiet)
 - `TRAINING_DONE { opId, crewId, name, stat, xp }`
 
-`DEBUG_COMPLETE_OPS` resolves every job in progress immediately. `RUSH_OP` finishes one now for gold bars, with the roll it would have had ([gold.md](gold.md)).
+`DEBUG_COMPLETE_OPS` resolves every job in progress immediately. `RUSH_OP` finishes one now for gold bars, with the roll it would have had, except a contract ([gold.md](gold.md)).
 
 **Tests:** `tests/ops.test.ts` (partial success is the most common outcome among rolled jobs, odds match rolls, team scoring, traits), `tests/apply.test.ts` (job lifecycle, pressure flips a district), `tests/offers.test.ts` (the board's schedule, taking an offer, stale offers), `tests/crew.test.ts` (training cost and XP, perks on jobs), `tests/supply.test.ts` (smuggling's Clean, its difficulty with heat, and its packs), `tests/sim.test.ts` (the bot's partial share stays 40–60%).

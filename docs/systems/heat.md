@@ -8,11 +8,12 @@ Everything you run draws police attention. Heat drifts toward a target set by yo
 ## Exposure, control, target
 
 ```
-exposure = Σ business exposure (economy.md: joints, rackets and premises, with tier-3 specialization)
+exposure = Σ business exposure (economy.md: joints, rackets and premises, with tier-3 specialization; 0 for a legal business)
            + Σ front suspicion (fronts.md, which depends on each front's mode)
 
-control  = (heat.baseControl + Σ owned officials' control + bribeControl)
+control  = (heat.baseControl + Σ owned officials' control + bribeControl + elections.mayor.control once mayor)
            × (1 + heat.districtControlPct × districts taken)      (home turf doesn't count)
+           × (1 + opinion.controlBonus × opinion/100)             (from Act V, politics.md)
 
 target   = 100 × exposure / (exposure + control)                  (0 if both are 0)
 ```
@@ -37,7 +38,7 @@ Checked at every whole game hour (`heatHourBoundary`). The rolls are seeded by h
 | ≥ `raidThreshold` | `raidChancePerHr` chance: police seize `floor(vault × raidSeizePct × (1 − raidShield))` from the vault (not Dirty); stash houses keep back the rest ([economy.md](economy.md#premises)) | `RAID { heat, seized, shielded }` |
 | ≥ `arrestThreshold` | `arrestChancePerHr` chance: a random idle crew member or enforcer is jailed for `arrestHours` | `ARREST`, later `RELEASED` |
 
-Raids update `stats.raids`, `stats.seized` and `stats.firstRaidAt`; `RAID.shielded` is what stash houses kept back (`Derived.raidShield`, at most `rackets.premises.maxShield`). Arrests update `stats.arrests`.
+Raids update `stats.raids`, `stats.seized` and `stats.firstRaidAt`, and set `raidPenaltyUntil` `prosperity.raidPenaltyHours` ahead, which lowers every district's prosperity target until then ([prosperity.md](prosperity.md)); inspections lower it too; `RAID.shielded` is what stash houses kept back (`Derived.raidShield`, at most `rackets.premises.maxShield`). Arrests update `stats.arrests`.
 
 ## Bribes
 
@@ -52,7 +53,7 @@ The bribe lasts `heat.bribe.hours` and then expires. Its cost is added to `stats
 
 ## Officials
 
-Permanent control, bought with Influence. `officials.list` has a Ward Cop (Act I) and a Precinct Captain (Act II), each with a `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)).
+Permanent control, bought with Influence. `officials.list` has a Ward Cop (Act I), a Precinct Captain (Act II), City Hall (Act III, [ADR 0041](../decisions/0041-act-iii-the-centre.md)) the Customs Chief (Act IV, [ADR 0043](../decisions/0043-act-iv-zastava.md): besides control, his `seizureMult` scales the chance customs take a convoy, [convoys.md](convoys.md)) and the Governor (Act V, [ADR 0044](../decisions/0044-act-v-kombinat.md): `ministryRelief` off the Ministry's attention, and `needsMayor`: "He only takes calls from the mayor"), each available from its `act`, each with a `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)).
 
 `BUY_OFFICIAL { officialId }` requires:
 - the official's act has been reached, and they aren't already on the payroll;

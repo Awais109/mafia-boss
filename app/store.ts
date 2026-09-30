@@ -20,8 +20,10 @@ import {
 } from '../engine'
 import { botPlay, type Trace } from '../sim/driver'
 import type { LogExport, LogLine } from '../sim/replay'
+import { actMilestones } from './acts'
 import { buildAway, mergeAway, type AwaySummary } from './away'
 import { buildNotices, diffUnlocked, type QueuedNotice, type UnlockedMap } from './notices'
+import { dueScene, type SceneId } from './scenes'
 import { FILES, storage } from './storage'
 
 // A gap of this many game minutes since the save was last caught up counts as being away, and
@@ -48,6 +50,7 @@ export type Snapshot = {
   notice: Notice | null
   away: AwaySummary | null // pending "while you were away" popup
   notices: QueuedNotice[] // live events/decisions queued while actively playing, shown one at a time
+  scene: SceneId | null // the scene playing (ADR 0049): latched when one falls due, or asked for by hand, until it ends
 }
 
 const DEFAULT_SETTINGS: Settings = { preset: 'default', overrides: {} }
@@ -68,6 +71,7 @@ class GameStore {
   private notice: Notice | null = null
   private away: AwaySummary | null = null
   private notices: QueuedNotice[] = []
+  private scene: SceneId | null = null
   private lastUnlocked: UnlockedMap | null = null
   private session = { open: false, startedAt: 0, actions: 0 }
   private started = false
@@ -144,6 +148,26 @@ class GameStore {
     this.refresh()
   }
 
+  // Plays a scene now, whether or not it's due (ADR 0049): a dossier's Replay, or Debug's Preview.
+  playScene = (id: SceneId): void => {
+    this.scene = id
+    this.refresh()
+  }
+
+  // A scene has been watched or skipped: it's recorded as seen, and the next one due (if any) takes its place.
+  endScene = (id: SceneId): void => {
+    this.scene = null
+    if (!this.snapshot?.state.story.seen.includes(id)) this.dispatch({ type: 'SEE_SCENE', sceneId: id })
+    else this.refresh()
+  }
+
+  // Puts a notice at the head of the queue without anything having happened: Debug's previews, and the web
+  // rig's `?preview=` (app/previews.ts). Nothing is written.
+  previewNotice = (notice: QueuedNotice): void => {
+    this.notices = [notice, ...this.notices]
+    this.refresh()
+  }
+
   // ---- config (debug editor)
 
   setPreset(preset: PresetName): void {
@@ -200,11 +224,9 @@ class GameStore {
     const final = { ...trace.final, debugOffsetMs: trace.final.debugOffsetMs + days * dayMs(this.config) }
     this.commit(final, [])
     // Name the act milestones the run passed: the events themselves scroll out of the log.
-    const at = final.stats.actClearedAt
-    const milestones = [
-      at[1] !== undefined && at[1] >= from ? `reached Act II on Day ${gameDay(this.config, final, at[1])}` : null,
-      at[2] !== undefined && at[2] >= from ? `cleared Act II on Day ${gameDay(this.config, final, at[2])}` : null,
-    ].filter((m): m is string => m !== null)
+    const milestones = actMilestones(final, this.config)
+      .filter((m) => m.t >= from)
+      .map((m) => `${m.label.charAt(0).toLowerCase()}${m.label.slice(1)} on Day ${gameDay(this.config, final, m.t)}`)
     this.flash(
       `Bot played ${days} day${days === 1 ? '' : 's'}: ${trace.sessions.length} sessions, ${trace.actions.length} actions${milestones.map((m) => ` · ${m}`).join('')}`,
     )
@@ -334,6 +356,8 @@ class GameStore {
     // itself — so this reads `derive`'s own `unlocked` map against last time's, every refresh.
     this.notices = [...this.notices, ...diffUnlocked(this.lastUnlocked, derived.unlocked)]
     this.lastUnlocked = derived.unlocked
+    // A scene that falls due plays until it ends, even if what triggered it moves on (paying Tolya inside his).
+    if (!this.scene) this.scene = dueScene(state)?.id ?? null
     this.snapshot = {
       state,
       derived,
@@ -345,6 +369,7 @@ class GameStore {
       notice: this.notice,
       away: this.away,
       notices: this.notices,
+      scene: this.scene,
     }
     for (const listener of this.listeners) listener()
   }

@@ -13,6 +13,18 @@ export function fmt(v: number): string {
 
 export const fmtRate = (v: number): string => `${fmt(v)}/h`
 
+// The header's rule (design: Foundations · Numbers): whole figures under 10,000, then three significant
+// figures in thousands or millions, so every cell holds five characters. Cards print whole figures.
+export function fmtShort(v: number): string {
+  if (!Number.isFinite(v)) return '—'
+  const abs = Math.abs(v)
+  const sign = v < 0 ? '-' : ''
+  if (abs < 10_000) return fmt(v)
+  const three = (n: number) => (n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2))
+  if (abs < 999_500) return `${sign}${three(abs / 1000)}K`
+  return `${sign}${three(abs / 1_000_000)}M`
+}
+
 export const pct = (v: number): string => `${Math.round(v * 100)}%`
 
 export function fmtDuration(ms: number, c: Config): string {
@@ -38,4 +50,11 @@ export function fmtClock(t: number, createdAt: number, c: Config): string {
   }
   const minutesIntoDay = Math.floor(((t % dayMs) / c.time.hourMs) * 60)
   return `Day ${day} · ${two(Math.floor(minutesIntoDay / 60))}:${two(minutesIntoDay % 60)}`
+}
+
+// A log line's time (design: Lately, Log): "14:05" today, "D3 14:05" on an earlier day.
+export function fmtStamp(t: number, now: number, createdAt: number, c: Config): string {
+  const [day, time] = fmtClock(t, createdAt, c).replace('Day ', '').split(' · ')
+  const today = fmtClock(now, createdAt, c).replace('Day ', '').split(' · ')[0]
+  return day === today ? time : `D${day} ${time}`
 }

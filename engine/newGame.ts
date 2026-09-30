@@ -28,9 +28,11 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
 
     heat: c.heat.startHeat,
     inspected: c.heat.startHeat >= c.heat.inspectThreshold,
+    raidPenaltyUntil: 0,
 
-    inventory: { cigarettes: c.supply.startingStock },
+    inventory: { cigarettes: c.supply.startingStock, premium: c.premium.startingStock },
     stockEmpty: false,
+    premiumEmpty: false,
 
     rackets: [],
     fronts: [],
@@ -42,7 +44,7 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
       refreshCount: 0,
     },
     ops: [],
-    districts: DISTRICT_IDS.map((id) => ({ id, controller: c.districts.list[id].startsAs, pressureCount: 0 })),
+    districts: DISTRICT_IDS.map((id) => ({ id, controller: c.districts.list[id].startsAs, pressureCount: 0, prosperity: c.prosperity.base })),
     officials: [],
     officialCooldownUntil: 0,
     bribeUntil: 0,
@@ -50,12 +52,20 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
 
     wagesOwed: 0,
     upkeepOwed: 0,
+    loan: null,
+    lending: null,
     influenceToday: { day: dayIndex(c, now), amount: 0 },
     rival: {
       tolya: { disposition: 0, nextTickAt: now + hoursToMs(c, c.rivals.tolya.tickHours), tickCount: 0, demand: null, haggledTick: null },
       zhanna: { disposition: 0, nextShipmentAt: now, shipmentsBought: 0, surplusToday: { day: dayIndex(c, now), packs: 0 } },
+      colonel: { disposition: 0, passageUntil: 0, passagesBought: 0 },
     },
+    politics: { opinion: c.opinion.base, attention: 0, nextElectionAt: 0, elections: 0, points: 0, mayor: false },
     tutorial: { step: 0, done: false },
+    story: { seen: [], since: { act: 1, step: 0, done: false } },
+    missions: {},
+    rockBottom: { pending: false, usedActs: [] },
+    after: { contracts: { items: [], refreshAt: 0, refreshCount: 0 }, best: 0, history: [] },
     goals: { done: [] },
     firstConversionDone: false,
 
