@@ -75,9 +75,10 @@ export type CrewMember = {
 
 export type OpInstance = {
   id: string
-  // A boss mission (ADR 0050) and a contract (ADR 0052) ride the job machinery: `missionId` says which
-  // mission, with `cfg` its terms; `contractId` which contract on the board.
-  type: OpType | 'mission' | 'contract'
+  // A boss mission (ADR 0050), a contract (ADR 0052) and an errand (ADR 0054: a crew member kept busy by a
+  // decision) ride the job machinery: `missionId` says which mission, with `cfg` its terms; `contractId` which
+  // contract on the board.
+  type: OpType | 'mission' | 'contract' | 'errand'
   crewIds: string[]
   startedAt: number
   completesAt: number
@@ -173,6 +174,9 @@ export type InboxEffects = {
   injureHours?: number // the crew member who fought is hurt for this long
   freezeHours?: number // the front moving the most money freezes for this long (ADR 0045)
   hearingWon?: true // a hearing beaten in court: counts toward the Empire (ADR 0045)
+  opinion?: number // public opinion, now (ADR 0054)
+  attention?: number // the Ministry's attention, now (ADR 0054)
+  busyHours?: number // the crew member the item names is kept busy this long (ADR 0054)
   // Resolved when the option is chosen (ADR 0042): the best available crew member's stat + luck against diff.
   contest?: { stat: Stat; diff: number; win: InboxEffects; lose: InboxEffects }
 }

@@ -102,6 +102,7 @@ export type PersonaOptions = {
   campaignTarget: number // campaign until the chance of winning the coming election is at least this
   campaignWithinHours: number // campaign when the election is at most this far off
   hearingWinHours: number // a hearing beaten in court is worth this many hours of yield while the Empire needs it
+  opinionHours: number // a point of opinion, or of the Ministry's attention saved, is worth this many hours of yield (ADR 0054)
 }
 
 export const CASUAL: PersonaOptions = {
@@ -130,6 +131,7 @@ export const CASUAL: PersonaOptions = {
   campaignTarget: 0.9,
   campaignWithinHours: 48,
   hearingWinHours: 6,
+  opinionHours: 0.5,
 }
 
 // Spends every bar it can finishing jobs (plan (t)): how much sooner do acts clear with gold?
@@ -974,6 +976,9 @@ function valueOf(state: PlayerState, c: Config, p: PersonaOptions, v: Valuation,
   // A frozen front costs the Clean it would have washed (ADR 0045); a hearing won is a step toward the Empire.
   const frozen = (e.freezeHours ?? 0) * v.busiestFrontClean * 2
   const hearing = e.hearingWon && state.stats.hearings.won < c.reckoning.empireWins ? p.hearingWinHours * v.hourOfYield : 0
+  // The city's story (ADR 0054): opinion helps, the Ministry's attention hurts, and someone sent is out of work.
+  const city = ((e.opinion ?? 0) - (e.attention ?? 0)) * p.opinionHours * v.hourOfYield
+  const busy = (e.busyHours ?? 0) * v.injuryHourCost
   return (
     (e.dirty ?? 0) +
     (e.clean ?? 0) * 2 +
@@ -985,6 +990,8 @@ function valueOf(state: PlayerState, c: Config, p: PersonaOptions, v: Valuation,
     closed -
     frozen +
     hearing +
+    city -
+    busy +
     damage -
     hurt +
     contest

@@ -119,13 +119,15 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
       return { text: line, color: e.result === 'won' ? colors.good : e.result === 'lost' ? colors.warn : colors.heat }
     }
     case 'OP_RUSHED':
-      return { text: `Finished ${e.name ?? (e.opType === 'mission' || e.opType === 'contract' ? 'the job' : c.ops.list[e.opType].name)} early for ${glyph.gold}${e.bars}`, color: colors.gold }
+      return { text: `Finished ${e.name ?? (e.opType === 'mission' || e.opType === 'contract' || e.opType === 'errand' ? 'the job' : c.ops.list[e.opType].name)} early for ${glyph.gold}${e.bars}`, color: colors.gold }
     case 'CONTRACTS_POSTED':
       return { text: e.count === 1 ? 'A new contract on the board' : `${e.count} new contracts on the board`, color: colors.accent, quiet: e.count === 0 }
     case 'CONTRACT_STARTED':
       return { text: `${e.crewIds.map(crewName).join(' & ')}: ${e.name}, ${cl}${fmt(e.cost)} up front`, color: colors.accent }
     case 'CONTRACT_DONE':
       return { text: `${e.name}: done. The council pays ${cl}${fmt(e.clean)}.`, color: colors.good }
+    case 'ERRAND_DONE':
+      return { text: `${e.crewIds.map(crewName).join(' & ')} back from “${e.name}”`, quiet: true }
     case 'EMPIRE_BEST':
       return { text: `A new best: the empire at ${fmt(e.value)}`, color: colors.accent }
     case 'GOAL_DONE':

@@ -77,15 +77,17 @@ export const OP_OUTCOMES: readonly OpOutcome[] = ['full', 'partial', 'fail']
 export type IncidentType =
   | 'inspector' | 'drunkCrew' | 'shopkeeperLead' | 'copFavour' | 'badBatch' | 'investigation' | 'attack' | 'collectors' | 'lendingDefault'
   | 'hearing'
+  | 'frontPage' | 'workersAtGate' | 'schoolRoof'
 export const INCIDENT_TYPES: readonly IncidentType[] = [
   'inspector', 'drunkCrew', 'shopkeeperLead', 'copFavour', 'badBatch', 'investigation', 'attack', 'collectors', 'lendingDefault',
   'hearing',
+  'frontPage', 'workersAtGate', 'schoolRoof',
 ]
 
 // The two ways the game can end (ADR 0045): recorded, never final.
 export type Ending = 'holding' | 'empire'
 export const ENDINGS: readonly Ending[] = ['holding', 'empire']
-export type IncidentNeed = 'idleCrew' | 'joint' | 'factory' | 'inspected' | 'printShop'
+export type IncidentNeed = 'idleCrew' | 'joint' | 'factory' | 'inspected' | 'printShop' | 'afterStory'
 
 // Act I goals (ADR 0035, gate ADR 0039), each paying gold once. All of them must be done to open Act II.
 export type GoalId = 'secondDistrict' | 'factoryTier2' | 'thirdCrew' | 'wardCop' | 'workFront' | 'smuggleRun' | 'soldier'
@@ -111,6 +113,11 @@ export type ChoiceEffectsConfig = {
   cleanHoursOfYield?: number // Clean = this × gross yield per hour, legal included, fixed when filed (ADR 0045)
   freezeHours?: number // the front moving the most money is frozen for this long (ADR 0045)
   hearingWon?: boolean // counts toward the Empire (ADR 0045)
+  // The city's story (ADR 0054): public opinion and the Ministry's attention moved now (they drift back to their
+  // targets), and the crew member the item names kept busy this long.
+  opinion?: number
+  attention?: number
+  busyHours?: number
   // A contest (ADR 0042): the best available crew member's stat + luck against diff; each branch is an effect.
   // `perCase` adds this much difficulty per point of the case file (ADR 0045).
   contest?: { stat: Stat; diff: number; enforcerBonus?: number; perCase?: number; win: ChoiceEffectsConfig; lose: ChoiceEffectsConfig }
@@ -128,6 +135,7 @@ export type IncidentConfig = {
   name: string
   text: string
   act?: Act
+  lastAct?: Act // rolled only up to this act (a story tied to one act)
   needs?: IncidentNeed
   filed?: boolean // filed by a system (an attack, a missed payment), never rolled at random
   hours?: number // how long it waits for an answer, instead of inbox.incidentHours
@@ -724,6 +732,7 @@ function effectsCheck(e: string[], p: string, fx: ChoiceEffectsConfig) {
   if (fx.closeHours !== undefined) nonNeg(e, `${p}.closeHours`, fx.closeHours)
   if (fx.stashConditionMult !== undefined) unit(e, `${p}.stashConditionMult`, fx.stashConditionMult)
   if (fx.freezeHours !== undefined) nonNeg(e, `${p}.freezeHours`, fx.freezeHours)
+  if (fx.busyHours !== undefined) positive(e, `${p}.busyHours`, fx.busyHours)
   const k = fx.contest
   if (!k) return
   if (!STATS.includes(k.stat)) e.push(`${p}.contest.stat: unknown stat ${k.stat}`)
@@ -1039,6 +1048,7 @@ export function validateConfig(c: Config): string[] {
         if (!inc) { e.push(`incidents.types.${t}: missing`); continue }
         choices(e, `incidents.types.${t}.options`, inc.options)
         if (inc.hours !== undefined) positive(e, `incidents.types.${t}.hours`, inc.hours)
+        if (inc.lastAct !== undefined && inc.lastAct < (inc.act ?? 1)) e.push(`incidents.types.${t}.lastAct: before its act`)
       }
     },
     (e) => {

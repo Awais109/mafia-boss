@@ -10,7 +10,7 @@ import { addPressure } from './districts'
 import { grantXp, hasPerk, jobXp } from './experience'
 import { landConvoy } from './convoys'
 import { addVotes } from './politics'
-import { fileReport } from './inbox'
+import { fileReport, resolveErrand } from './inbox'
 import { maybeInjureTeam } from './injuries'
 import { resolveContract } from './after'
 import { resolveMission } from './missions'
@@ -131,6 +131,7 @@ export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: numbe
   const { c } = ctx
   if (op.missionId) return resolveMission(state, ctx, op, t)
   if (op.contractId) return resolveContract(state, ctx, op, t)
+  if (op.type === 'errand') return resolveErrand(state, ctx, op, t)
   const type = op.type as OpType
   const cfg = opConfigOf(c, op)
   state.ops = state.ops.filter((o) => o.id !== op.id)

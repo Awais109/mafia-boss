@@ -72,7 +72,7 @@ export function EventNoticeModal({ notice, game }: { notice: QueuedNotice; game:
             <Choice
               key={o.id}
               name={o.name}
-              effects={effectsText(o.effects, c, game)}
+              effects={effectsText(o.effects, c, game, item)}
               isDefault={o.id === item.defaultOptionId}
               disabled={!canAffordEffects(s, o.effects)}
               onPress={() => {

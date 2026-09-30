@@ -66,6 +66,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0051](0051-rock-bottom.md) | Rock bottom, no game over: the family's envelope once per act, the lender takes a business, Vitya stays | Accepted |
 | [0052](0052-after-the-story.md) | After the story: tiers past the book, the empire value, a weekly contracts board | Accepted |
 | [0053](0053-endings-and-credits.md) | The endings as scenes (the ending page, the credits), and the cover after the story | Accepted |
+| [0054](0054-the-city-story.md) | The city's story: decisions that move opinion and the Ministry and send someone on an errand | Accepted |
 
 ## Template
 

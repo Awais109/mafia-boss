@@ -105,7 +105,7 @@ The roll is seeded by the job's id. `outcomeOdds` computes the exact probabiliti
 - `stats.missions` counts `sent` (both kinds), `won` and `lost` (rematches).
 - `DEBUG_COMPLETE_MISSIONS` marks the current act's missions done.
 
-**Contracts** ([ADR 0052](../decisions/0052-after-the-story.md)) ride the same machinery after the story: `START_CONTRACT` pushes a job of type `'contract'` with `contractId`, which `resolveOp` hands to `resolveContract`. It's never rolled and can't be rushed ([after.md](after.md#contracts)).
+**Contracts** ([ADR 0052](../decisions/0052-after-the-story.md)) ride the same machinery after the story: `START_CONTRACT` pushes a job of type `'contract'` with `contractId`, which `resolveOp` hands to `resolveContract`. It's never rolled and can't be rushed ([after.md](after.md#contracts)). An **errand** is a crew member sent by a decision (`busyHours`, [ADR 0054](../decisions/0054-the-city-story.md)): a job of type `'errand'` that `resolveOp` hands to `resolveErrand`, bringing back only them ([inbox.md](inbox.md#the-citys-story)).
 
 ## Events
 

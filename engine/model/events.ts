@@ -84,7 +84,8 @@ export type EventBody =
       rep?: number
       influence?: number
     }
-  | { type: 'OP_RUSHED'; opId: string; opType: OpType | 'mission' | 'contract'; bars: number; name?: string }
+  | { type: 'OP_RUSHED'; opId: string; opType: OpType | 'mission' | 'contract' | 'errand'; bars: number; name?: string }
+  | { type: 'ERRAND_DONE'; opId: string; crewIds: string[]; name: string } // ADR 0054
   | { type: 'CONTRACTS_POSTED'; count: number } // after the story (ADR 0052)
   | { type: 'CONTRACT_STARTED'; contractId: string; kind: ContractId; name: string; opId: string; crewIds: string[]; cost: number }
   | { type: 'CONTRACT_DONE'; contractId: string; kind: ContractId; name: string; crewIds: string[]; clean: number; gold: number }

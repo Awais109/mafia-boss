@@ -403,6 +403,11 @@ The sim now runs 60 days so an ending can be reached; so does the pacing guard.
             ending unchanged (Act I 4.64 d … VI 12.63, heat 28.8, raids 0); after it 3–7 contracts (mean 4.8),
             56–67 tiers past the book, top tier 12–13, 7–16 new bests, heat about 5, no raids; empire value
             9.1–10.0M on day 60. (2× reached tier 14 with 64–78 tiers; 2.5 slows sooner.) Kept.
+2026-09-30  incidents (ADR 0054): three new types. frontPage from Act V (buy: 1.5 h gross in Clean, +4 opinion;
+            default −3 opinion), workersAtGate Act V only (pay: 3 h, +5 opinion, +6 attention; listen: +2 opinion,
+            busy 4 h; default −4 opinion), schoolRoof after the story (pay: 3 h, +★180; tar: 0.35 h, busy 6 h;
+            default −2 opinion). Bot: opinionHours 0.5. 5 seeds, 60 d: Act I 4.64 d, II 3.73, III 6.49, IV 9.76,
+            V 12.33 (was 12.03), VI 12.73 (was 12.63, now 5/5 in range), heat 28.6, raids 0, partial 0.46. Kept.
 ```
 
 ## Open

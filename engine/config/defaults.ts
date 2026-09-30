@@ -592,6 +592,39 @@ export const defaults: Config = {
           { id: 'chase', name: 'Send someone after him', contest: { stat: 'nerve', diff: 50, win: { dirtyPerDue: 0.5 }, lose: { injureHours: 12 } } },
         ],
       },
+      // The city's story (ADR 0054; design: Home · Act V, Home after the story): decisions about the city, not the
+      // business. Their Clean is hours of the city's gross income, so they keep up; opinion and the Ministry move
+      // now and drift back to their targets; `{crew}` is whoever the item names, kept busy if sent.
+      frontPage: {
+        name: 'The Newspaper has two front pages',
+        text: 'One has the Development Fund paying the Blocks’ heating bill. The other has Golovin’s workers, six months unpaid. The editor prints whichever is paid for by nine.',
+        act: 5,
+        options: [
+          { id: 'buy', name: 'Buy the front page', cleanHoursOfYield: -1.5, opinion: 4 },
+          { id: 'let', name: 'Let him choose', default: true, opinion: -3 },
+        ],
+      },
+      workersAtGate: {
+        name: 'Golovin’s workers are at the gate',
+        text: 'Four hundred of them, six months unpaid. Their vouchers won Golovin the first round. A Ministry car has been parked opposite since noon.',
+        act: 5,
+        lastAct: 5,
+        options: [
+          { id: 'pay', name: 'Pay a month', cleanHoursOfYield: -3, opinion: 5, attention: 6 },
+          { id: 'listen', name: 'Send {crew} to listen', opinion: 2, busyHours: 4 },
+          { id: 'leave', name: 'Leave them to Golovin', default: true, opinion: -4 },
+        ],
+      },
+      schoolRoof: {
+        name: 'School No. 14 wants a roof',
+        text: 'It leaks onto the second floor. The headmistress wrote to the mayor by hand: a roof, not a visit.',
+        needs: 'afterStory',
+        options: [
+          { id: 'pay', name: 'Pay for the roof', cleanHoursOfYield: -3, rep: 180 },
+          { id: 'tar', name: 'Send {crew} with tar', cleanHoursOfYield: -0.35, busyHours: 6 },
+          { id: 'council', name: 'Pass it to the council', default: true, opinion: -2 },
+        ],
+      },
     },
   },
 

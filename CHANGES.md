@@ -3,6 +3,38 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-30 — The city's story: opinion, the Ministry, someone sent (D10)
+
+Branch: `feature/design-v2`. Reasoning: [ADR 0054](docs/decisions/0054-the-city-story.md); the rules: [inbox.md](docs/systems/inbox.md#the-citys-story).
+
+### What changed, for a player
+
+- **From Act V the city asks you things**, in the designs' words:
+  - *The Newspaper has two front pages:* buy one for opinion, or let the editor choose.
+  - *Golovin's workers are at the gate:* pay a month (opinion, but the Ministry notices), send someone to listen, or leave them to Golovin.
+  - After the story, *School No. 14 wants a roof*.
+- **What a choice does:**
+  - Opinion and the Ministry's attention move at once, then drift back as usual.
+  - Sending someone keeps them busy for a few hours; the option says who ("Send Sasha to listen · Sasha busy 4h").
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| Engine | `engine/systems/inbox.ts` (`opinion`, `attention` and `busyHours` effects; `{crew}` in option names; `incidentEligible` with `lastAct` and the `afterStory` need; errands); `engine/systems/ops.ts` (an errand resolves); `engine/config/schema.ts` and `defaults.ts` (three incidents); `engine/model/state.ts`, `events.ts` (`'errand'` jobs, `ERRAND_DONE`) |
+| Bot | `sim/persona.ts`: values opinion and attention (`opinionHours`) and a busy hour |
+| App | `app/inbox.ts` (the new effects' words; no bracketed name when an option names them), `app/components/InboxCard.tsx`, `app/components/EventNoticeModal.tsx`, `app/eventText.ts` |
+| Tests | `tests/city.test.ts` (new) |
+| Docs | [ADR 0054](docs/decisions/0054-the-city-story.md), [inbox.md](docs/systems/inbox.md), [politics.md](docs/systems/politics.md), [ops.md](docs/systems/ops.md), [app.md](docs/app.md), [sim.md](docs/sim.md), [testing.md](docs/testing.md), [TUNING.md](TUNING.md) |
+
+No save change.
+
+### Verified
+
+- `npm run check`: 242 tests.
+- 5 seeds, 60 days: Act V 12.33 d (was 12.03), Act VI 12.73 (was 12.63), the rest unchanged; heat 28.6; no raids.
+- The web build: Home in Act V with both decisions, and after the story with the school's roof.
+
 ## 2026-09-30 — The endings, the credits, the cover after the story (D9)
 
 Branch: `feature/design-v2`. Reasoning: [ADR 0053](docs/decisions/0053-endings-and-credits.md); the scenes: [story.md](docs/story.md#scenes).

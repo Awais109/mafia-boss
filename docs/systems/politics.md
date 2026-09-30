@@ -27,6 +27,8 @@ What it does:
 
 Stepping only at whole hours keeps it constant inside a reconcile segment, like prosperity ([prosperity.md](prosperity.md)).
 
+A decision can also move opinion, or the Ministry's attention, at once: the front pages, the workers at the gate, the school's roof ([inbox.md](inbox.md#the-citys-story), [ADR 0054](../decisions/0054-the-city-story.md)). The bump drifts back toward the target like any other difference.
+
 ## The Ministry
 
 The capital's attention, 0–100. It steps toward its target at whole hours (`ministry.stepPerHr`), after opinion:

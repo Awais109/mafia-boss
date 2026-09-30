@@ -13,6 +13,7 @@ import {
 } from '../config/schema'
 import { emit, newId, type Ctx } from '../core/ctx'
 import { derive } from '../core/derive'
+import { storyOver } from '../core/formulas'
 import { hourIndex, hoursToMs } from '../core/time'
 import type { InboxEffects, InboxItem, InboxOption, OpInstance, PlayerState } from '../model/state'
 import { changeLoyalty, effectiveStat } from './crew'
@@ -39,6 +40,7 @@ export type MaterializeContext = {
   stash?: boolean
   enforced?: boolean
   caseFile?: number // the prosecutor's file (ADR 0045)
+  crewName?: string // the crew member the item names, for `{crew}` in an option's name (ADR 0054)
 }
 
 function materializeEffects(fx: ChoiceEffectsConfig, m: MaterializeContext): InboxEffects {
@@ -51,10 +53,12 @@ function materializeEffects(fx: ChoiceEffectsConfig, m: MaterializeContext): Inb
   if (dirty) effects.dirty = dirty
   const clean = Math.round((fx.cleanPerDue ?? 0) * (m.due ?? 0)) + Math.round((fx.cleanHoursOfYield ?? 0) * (m.grossPerHr ?? 0))
   if (clean) effects.clean = clean
-  for (const k of ['influence', 'rep', 'heat', 'loyalty', 'disposition', 'cigarettes', 'closeHours', 'injureHours', 'freezeHours'] as const) {
+  for (const k of ['influence', 'rep', 'heat', 'loyalty', 'disposition', 'cigarettes', 'closeHours', 'injureHours', 'freezeHours', 'opinion', 'attention'] as const) {
     if (fx[k]) effects[k] = fx[k]
   }
   if (fx.hearingWon) effects.hearingWon = true
+  // Only with someone to send: the item names them when it's filed.
+  if (fx.busyHours && m.crewName) effects.busyHours = fx.busyHours
   // A Stash House on the street takes some of the damage (ADR 0042).
   if (fx.condition) effects.condition = Math.round(fx.condition * (m.stash && fx.stashConditionMult !== undefined ? fx.stashConditionMult : 1))
   if (fx.contest) {
@@ -70,7 +74,7 @@ function materializeEffects(fx: ChoiceEffectsConfig, m: MaterializeContext): Inb
 }
 
 export function materializeChoice(choice: ChoiceConfig, m: MaterializeContext): InboxOption {
-  return { id: choice.id, name: choice.name, effects: materializeEffects(choice, m) }
+  return { id: choice.id, name: choice.name.replace('{crew}', m.crewName ?? 'someone'), effects: materializeEffects(choice, m) }
 }
 
 const defaultOf = (choices: ChoiceConfig[]) => (choices.find((ch) => ch.default) ?? choices[0]).id
@@ -118,6 +122,8 @@ export function incidentNeedHolds(state: PlayerState, c: Config, need: IncidentN
       return state.inspected
     case 'printShop':
       return state.rackets.some((r) => r.type === 'printShop' && r.closedUntil === undefined)
+    case 'afterStory':
+      return storyOver(state, c)
   }
 }
 
@@ -140,7 +146,10 @@ export function raiseIncident(
   const { c } = ctx
   const cfg = c.incidents.types[type]
   const idle = state.crew.filter((m) => m.status === 'idle')
-  const crewId = cfg.needs === 'idleCrew' && idle.length ? idle[Math.floor(pick() * idle.length)].id : undefined
+  // Someone is named when the incident needs idle crew, or an option would send someone (ADR 0054).
+  const wantsCrew = cfg.needs === 'idleCrew' || cfg.options.some((o) => o.busyHours)
+  const crewId = wantsCrew && idle.length ? idle[Math.floor(pick() * idle.length)].id : undefined
+  const crewName = crewId ? state.crew.find((m) => m.id === crewId)!.name.split(' ')[0] : undefined
   const racketId = about.racketId ?? incidentRacket(state, cfg.needs)
   const racket = racketId ? state.rackets.find((r) => r.id === racketId) : undefined
   const stash = racket !== undefined && state.rackets.some((r) => r.districtId === racket.districtId && c.rackets.types[r.type].shieldPerTier !== undefined)
@@ -153,6 +162,7 @@ export function raiseIncident(
     stash,
     enforced: !!racket?.enforcerId,
     caseFile: about.caseFile,
+    crewName,
   }
   const item: InboxItem = {
     id: newId(state, 'in'),
@@ -170,6 +180,13 @@ export function raiseIncident(
   emit(ctx, t, { type: 'INCIDENT_RAISED', itemId: item.id, incidentType: type, crewId, racketId, expiresAt: item.expiresAt })
 }
 
+// Whether the hourly roll can pick this incident: not one a system files, within its acts, its need met.
+export function incidentEligible(state: PlayerState, c: Config, type: IncidentType): boolean {
+  const inc = c.incidents.types[type]
+  const inActs = (inc.act ?? 1) <= state.act && (inc.lastAct === undefined || state.act <= inc.lastAct)
+  return !inc.filed && inActs && incidentNeedHolds(state, c, inc.needs)
+}
+
 // Whole-hour roll, seeded by the hour: the same hour always rolls the same incident.
 export function rollIncident(state: PlayerState, ctx: Ctx, t: number): void {
   const { c } = ctx
@@ -178,10 +195,7 @@ export function rollIncident(state: PlayerState, ctx: Ctx, t: number): void {
   if (state.inbox.filter((i) => i.kind === 'incident').length >= c.inbox.maxPending) return
   const rand = ctx.rng.derive('incident', hourIndex(c, t))
   if (!rand.chance(c.incidents.chancePerHr)) return
-  const eligible = INCIDENT_TYPES.filter((type) => {
-    const inc = c.incidents.types[type]
-    return !inc.filed && (inc.act ?? 1) <= state.act && incidentNeedHolds(state, c, inc.needs)
-  })
+  const eligible = INCIDENT_TYPES.filter((type) => incidentEligible(state, c, type))
   if (eligible.length === 0) return
   raiseIncident(state, ctx, t, rand.pick(eligible), rand.next)
 }
@@ -257,6 +271,10 @@ function applyEffects(state: PlayerState, ctx: Ctx, t: number, item: InboxItem, 
   // Act VI (ADR 0045): a hearing left to run, or lost, costs a front for a while; one beaten counts toward the Empire.
   if (e.freezeHours) freezeBusiestFront(state, ctx, t, e.freezeHours)
   if (e.hearingWon) state.stats.hearings.won++
+  // The city's story (ADR 0054): opinion and the Ministry move now and drift back to their targets.
+  if (e.opinion) state.politics.opinion = Math.max(0, Math.min(100, state.politics.opinion + e.opinion))
+  if (e.attention) state.politics.attention = Math.max(0, Math.min(100, state.politics.attention + e.attention))
+  if (e.busyHours) sendOnErrand(state, ctx, t, item, e.busyHours)
   if (e.rep && e.rep > 0) gainRep(state, ctx, t, e.rep)
   if (e.perk) {
     const perk = e.perk as PerkId
@@ -268,6 +286,29 @@ function applyEffects(state: PlayerState, ctx: Ctx, t: number, item: InboxItem, 
       }
     }
   }
+}
+
+// The crew member the item names goes, if they're still free: a job of type 'errand' that brings nothing back
+// but them.
+function sendOnErrand(state: PlayerState, ctx: Ctx, t: number, item: InboxItem, hours: number): void {
+  const m = state.crew.find((x) => x.id === item.crewIds?.[0])
+  if (!m || m.status !== 'idle') return
+  const opId = newId(state, 'op')
+  const name = item.kind === 'incident' ? (ctx.c.incidents.types[item.ref as IncidentType]?.name ?? 'An errand') : 'An errand'
+  state.ops.push({ id: opId, type: 'errand', name, crewIds: [m.id], startedAt: t, completesAt: t + hoursToMs(ctx.c, hours) })
+  m.status = 'on_op'
+  m.assignedTo = opId
+}
+
+export function resolveErrand(state: PlayerState, ctx: Ctx, op: OpInstance, t: number): void {
+  state.ops = state.ops.filter((o) => o.id !== op.id)
+  for (const m of state.crew) {
+    if (m.status === 'on_op' && m.assignedTo === op.id) {
+      m.status = 'idle'
+      delete m.assignedTo
+    }
+  }
+  emit(ctx, t, { type: 'ERRAND_DONE', opId: op.id, crewIds: op.crewIds, name: op.name ?? 'An errand' })
 }
 
 export function resolveInboxItem(state: PlayerState, ctx: Ctx, t: number, item: InboxItem, option: InboxOption, auto: boolean): void {

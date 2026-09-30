@@ -26,7 +26,7 @@ export function InboxCard({ item, game }: { item: InboxItem; game: Snapshot }) {
           <Choice
             key={o.id}
             name={o.name}
-            effects={effectsText(o.effects, c, game)}
+            effects={effectsText(o.effects, c, game, item)}
             isDefault={o.id === item.defaultOptionId}
             disabled={!canAffordEffects(s, o.effects)}
             onPress={() => store.dispatch({ type: 'RESOLVE_INBOX', itemId: item.id, optionId: o.id })}

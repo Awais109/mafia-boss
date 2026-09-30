@@ -19,15 +19,19 @@ export function itemTitle(item: InboxItem, c: Config): string {
 export function itemBody(item: InboxItem, s: PlayerState, c: Config): string {
   const names = (item.crewIds ?? []).map((id) => s.crew.find((m) => m.id === id)?.name ?? 'someone').join(' & ')
   if (item.kind === 'incident') {
-    const text = c.incidents.types[item.ref as IncidentType]?.text ?? ''
-    return names ? `${text} (${names})` : text
+    const cfg = c.incidents.types[item.ref as IncidentType]
+    const text = cfg?.text ?? ''
+    // An option that sends someone already names them (ADR 0054).
+    const named = cfg?.options.some((o) => o.name.includes('{crew}'))
+    return names && !named ? `${text} (${names})` : text
   }
   if (item.kind === 'report') return `${names || 'The crew'}: ${OUTCOME[item.outcome ?? 'partial']}. How do you want to handle it?`
   const m = s.crew.find((x) => x.id === item.ref)
   return `${names} made ${m ? RANK_NAMES[m.rank] : 'a new rank'}. Pick a perk: it stays for good.`
 }
 
-export function effectsText(e: InboxEffects, c?: Config, game?: Snapshot): string {
+// `item` names who'd be kept busy (ADR 0054).
+export function effectsText(e: InboxEffects, c?: Config, game?: Snapshot, item?: InboxItem): string {
   if (e.perk) return c ? c.crew.experience.perks[e.perk as PerkId].text : e.perk
   const sign = (n: number) => (n > 0 ? '+' : '−')
   const parts = [
@@ -44,6 +48,9 @@ export function effectsText(e: InboxEffects, c?: Config, game?: Snapshot): strin
     e.injureHours ? `hurt for ${fmt(e.injureHours)}h` : '',
     e.freezeHours ? `your busiest front frozen for ${fmt(e.freezeHours)}h` : '',
     e.hearingWon ? 'one hearing toward the Empire' : '',
+    e.opinion ? `${sign(e.opinion)}${Math.abs(e.opinion)} opinion` : '',
+    e.attention ? `${sign(e.attention)}${Math.abs(e.attention)} Ministry` : '',
+    e.busyHours ? `${busyName(game, item)} busy ${fmt(e.busyHours)}h` : '',
   ].filter(Boolean)
   // A contest: who'd go, the odds, and what each branch does (ADR 0042).
   if (e.contest) {
@@ -57,6 +64,11 @@ export function effectsText(e: InboxEffects, c?: Config, game?: Snapshot): strin
 }
 
 const STAT_WORD = { muscle: 'Muscle', brains: 'Brains', nerve: 'Nerve' } as const
+
+const busyName = (game?: Snapshot, item?: InboxItem) => {
+  const m = game?.state.crew.find((x) => x.id === item?.crewIds?.[0])
+  return m ? m.name.split(' ')[0] : 'someone'
+}
 
 // Home's alerts (design: Home · Alerts): what's wrong, why in a line, and the tab that fixes it.
 export type HomeAlert = { key: string; title: string; sub?: string; icon: Resource | IconName; tone: 'warn' | 'bad'; tab?: TabId; cta?: string }
