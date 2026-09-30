@@ -100,6 +100,8 @@ See [ADR 0035](../decisions/0035-guided-opening.md), which replaces [ADR 0010](.
 
 Each step emits `TUTORIAL_STEP`.
 
+The opening's hire step plays Scene 2, where the three can be hired, and Tolya's step plays Scene 3 when his demand arrives, with his answer inside it ([ADR 0049](../decisions/0049-scenes.md)). A new game opens on the prologue.
+
 ## Act I goals
 
 ([ADR 0035](../decisions/0035-guided-opening.md), gate [ADR 0039](../decisions/0039-goals-gate-act-two.md)) `goals.list`, checked by `checkGoals` after every action and at every reconcile boundary once the opening is over, so each is dated to the boundary where its condition first held. Each pays `goals.rewardGold` gold once (`GOAL_DONE { goalId, gold }`, a `goal` grant; [gold.md](gold.md)) and is kept in `state.goals.done`. Home lists them until all are done — and once all are, Act II opens (see Acts, above). The goals that count something (two full districts, three crew, Act I's fronts at rate level 2, three smuggling runs) report `goalProgress(state, config, id)` → `{ have, need }`, and their check is `have >= need`, so Home's "1 of 2" and the check can't disagree.

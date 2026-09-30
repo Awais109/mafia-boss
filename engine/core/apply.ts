@@ -515,6 +515,12 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       if (!state.tutorial.done) applyQuickStart(state, ctx, t)
       return null
 
+    // A scene the app has shown (ADR 0049): kept once, in order. No event: the log's action line records it.
+    case 'SEE_SCENE':
+      if (!/^[a-z0-9-]{1,40}$/.test(a.sceneId)) return 'Unknown scene'
+      if (!state.story.seen.includes(a.sceneId)) state.story.seen.push(a.sceneId)
+      return null
+
     case 'SESSION_START':
       state.stats.sessions++
       state.stats.lastSessionAt = t

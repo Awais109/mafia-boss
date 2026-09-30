@@ -50,6 +50,19 @@ The endings are the Holding and the Empire. The last line, either way, is Vitya'
 
 The map is Lyosha's notebook. A district is revealed when someone shows it to you, not when a number is reached. Before that it's a pencil outline with a fragment in his hand; the reveal inks it in, writes its name, and puts one line on the page. The map's title, *Sevgorod*, is only written in once every page is. Act II reveals two districts because the built game opens them together; every other act reveals one. `DISTRICT_STORY` in `app/story.ts` holds each district's fragment, reveal line and who shows it. The drawing is the design's ([ADR 0048](decisions/0048-notebook-map-and-people.md)): pencil for what you don't know, ink for what you do, red pencil for what's yours, and the newest page's line written beside it.
 
+## Scenes
+
+The story plays as grown-up crime manga ([ADR 0049](decisions/0049-scenes.md)): full-screen scenes, one panel at a time, from the design brief's scripts (Part 5). `app/scenes.ts` holds them as data; each is due from the save, so one missed while the app was shut plays on return.
+
+| Scene | When | What |
+|---|---|---|
+| 1 · The envelope (`prologue`) | A new game, before the opening's first step | Zarechye in February; Lyosha's photograph; the envelope, the notebook and the rule; Vitya at the door: "Car's downstairs." Then VOLUME I · THE STREETS |
+| 2 · Two people you trust (`crew`) | The opening's hire step | Vitya, Dima and Sasha "Cold" as cards, each with Hire; then "Two is enough to start. Lyosha started with one." |
+| 3 · Your uncle paid on the day (`tolya`) | Tolya's demand at the opening's Tolya step | His splash and card; the stare, with his demand to pay, haggle or refuse; "Lyosha owed me. Now you do." |
+| Volumes II–VI (`chapter-2` … `chapter-6`) | Each act opening | The chapter page: the volume's title over its panel, the turn line, the boss, each district new on the map with its line, what the act opens |
+
+The cover (the tram window over Lyosha's table) opens the app. The missions' scenes, rock bottom and the endings in the brief aren't built yet.
+
 ## How the game talks
 
 - Short, dry, specific. Numbers are numbers with their glyph.

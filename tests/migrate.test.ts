@@ -37,6 +37,7 @@ function asV1(): Record<string, unknown> {
   delete s.premiumEmpty
   delete s.rival.colonel
   delete s.politics
+  delete s.story
   for (const k of ['elections', 'campaignPaid', 'frontsFrozen', 'legalized', 'legalClean', 'hearings', 'endings']) delete s.stats[k]
   for (const k of ['premiumMade', 'premiumSold', 'premiumLostToCap', 'premiumShortageHours', 'convoys', 'passagesPaid']) delete s.stats[k]
   s.districts = s.districts
@@ -90,6 +91,11 @@ describe('migrate', () => {
     expect(m.lending).toBeNull()
     expect(m.stats.loans).toEqual({ borrowed: 0, interest: 0, repaid: 0, missed: 0, seized: 0 })
     expect(m.stats.contests).toEqual({ won: 0, lost: 0 })
+  })
+
+  it('starts the story’s seen-list where the save stands, so its past counts as seen (ADR 0049)', () => {
+    const m = migrate(asV1())
+    expect(m.story).toEqual({ seen: [], since: { act: m.act, step: m.tutorial.step, done: m.tutorial.done } })
   })
 
   it('puts Nagornaya on the map, nobody’s until Act VI, with nothing legal and no ending', () => {

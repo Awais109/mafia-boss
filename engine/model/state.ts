@@ -18,7 +18,7 @@ import type {
 } from '../config/schema'
 import type { GameEvent } from './events'
 
-export const SCHEMA_VERSION = 13
+export const SCHEMA_VERSION = 14
 export const LOG_CAP = 200
 export const LEDGER_ROWS = 8 // 7 closed days plus today's opening snapshot
 
@@ -294,6 +294,10 @@ export type PlayerState = {
   rival: { tolya: TolyaState; zhanna: ZhannaState; colonel: ColonelState }
   politics: PoliticsState
   tutorial: { step: number; done: boolean }
+  // The story's scenes this save has been shown (ADR 0049). The ids are the app's; the engine only keeps the
+  // list. `since` is where the save stood when the list began: anything the story passed before that counts
+  // as seen, so an old save doesn't replay its past.
+  story: { seen: string[]; since: { act: Act; step: number; done: boolean } }
   goals: { done: GoalId[] } // Act I goals completed (ADR 0035)
   firstConversionDone: boolean
 

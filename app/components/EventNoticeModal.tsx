@@ -8,7 +8,6 @@ import { unlockInfo, type QueuedNotice } from '../notices'
 import { ACT_TITLE } from '../story'
 import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
-import { ChapterPage } from './ChapterPage'
 import { Glyph, Icon, type IconName, type Resource } from './Glyph'
 import { Choice } from './InboxCard'
 import { ModalPanel, NoticeHead } from './Modal'
@@ -16,8 +15,8 @@ import { Btn, colors, rich, Title } from './ui'
 
 // The head of the live-notice queue (ADR 0038; design: Notice · decision, just unlocked, event). A freshly
 // filed decision with its options ("Decide later" leaves it on Home); what just unlocked, each with its
-// figures; a notable event with an icon and, where it helps, what happens next. An act opening is a whole
-// chapter page (`ChapterPage`).
+// figures; a notable event with an icon and, where it helps, what happens next. An act opening is a chapter
+// scene, not a notice (ADR 0049).
 
 type Look = { label: string; icon: IconName | Resource; color: string }
 
@@ -115,8 +114,6 @@ export function EventNoticeModal({ notice, game }: { notice: QueuedNotice; game:
       </ModalPanel>
     )
   }
-
-  if (notice.event.type === 'ACT_UNLOCKED') return <ChapterPage game={game} act={notice.event.act} onTurn={store.dismissNotice} />
 
   const e = notice.event
   const line = describeEvent(e, s, c)

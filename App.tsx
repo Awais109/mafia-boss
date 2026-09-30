@@ -5,15 +5,18 @@ import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'rea
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { gameDay } from './engine'
 import { AwayModal } from './app/components/AwayModal'
+import { Cover } from './app/components/Cover'
 import { EventNoticeModal } from './app/components/EventNoticeModal'
 import { Icon, type IconName } from './app/components/Glyph'
 import { Header } from './app/components/Header'
 import { NoticeBar } from './app/components/NoticeBar'
+import { SceneViewer } from './app/components/Scene'
 import { SkipSheet } from './app/components/SkipSheet'
 import { TutorialBanner } from './app/components/TutorialBanner'
 import { FONT_ASSETS } from './app/fonts'
 import { homeNeedsAttention } from './app/inbox'
-import { previewNotice, PREVIEWS, type PreviewName } from './app/previews'
+import { PREVIEWS, showPreview, type PreviewName } from './app/previews'
+import { SCENES } from './app/scenes'
 import { CrewScreen } from './app/screens/CrewScreen'
 import { DebugScreen } from './app/screens/DebugScreen'
 import { FrontsScreen } from './app/screens/FrontsScreen'
@@ -97,14 +100,15 @@ export default function App() {
   const [skipping, setSkipping] = useState(() => webParam('sheet') === 'skip')
   const [more, setMore] = useState(() => webParam('sheet') === 'more')
   const ready = game && (fontsLoaded || fontError)
-  // On web, `?preview=chapter4` opens with a notice showing, for the screenshot rig (app/previews.ts).
+  // The cover shows when the app opens (ADR 0049). The web rig, which opens on a tab, starts past it.
+  const [cover, setCover] = useState(() => webParam('tab') === null)
+  // On web, `?preview=chapter-4` opens with a notice or scene showing, for the screenshot rig (app/previews.ts).
   const previewed = useRef(false)
   useEffect(() => {
     if (!game || previewed.current) return
     previewed.current = true
     const name = webParam('preview')
-    const notice = name && PREVIEWS.some((p) => p.name === name) ? previewNotice(game, name as PreviewName) : null
-    if (notice) store.previewNotice(notice)
+    if (name && PREVIEWS.some((p) => p.name === name)) showPreview(game, name as PreviewName)
   }, [game])
   const go = (t: TabId) => {
     setMore(false)
@@ -119,6 +123,8 @@ export default function App() {
           <View style={styles.loading}>
             <ActivityIndicator color={colors.accent} />
           </View>
+        ) : cover ? (
+          <Cover game={game} onContinue={() => setCover(false)} />
         ) : (
           <>
             <Header game={game} onGold={() => setSkipping(true)} go={go} />
@@ -128,8 +134,11 @@ export default function App() {
             <BottomBar tab={tab} game={game} onChange={go} onMore={() => setMore(true)} />
             {more && <MoreSheet game={game} tab={tab} onChange={go} onClose={() => setMore(false)} />}
             {skipping && <SkipSheet game={game} onClose={() => setSkipping(false)} />}
+            {/* One at a time: what happened while away, then a scene, then live notices. */}
             {game.away ? (
               <AwayModal summary={game.away} game={game} onGo={go} />
+            ) : game.scene ? (
+              <SceneViewer key={game.scene} game={game} scene={SCENES[game.scene]} />
             ) : (
               game.notices.length > 0 && <EventNoticeModal notice={game.notices[0]} game={game} />
             )}

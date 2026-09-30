@@ -3,6 +3,39 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-30 — Scenes, the cover and the chapters (D5)
+
+Branch: `feature/design-v2`. Reasoning: [ADR 0049](docs/decisions/0049-scenes.md); the scenes: [story.md](docs/story.md#scenes).
+
+### What changed, for a player
+
+- **The cover:** the tram window over Lyosha's table, with Continue (where you are) or New game (it asks first).
+- **The story plays as manga,** full screen, panel by panel, with Skip:
+  - **Scene 1, the prologue:** Zarechye in February, Lyosha's photograph, the envelope, and Vitya at the door;
+  - **Scene 2:** hire the crew from their cards;
+  - **Scene 3:** Tolya's first visit, with his demand to pay, haggle or refuse inside the scene.
+- **Each act opens as a chapter page,** now even if it opened while you were away: it plays after the away summary. Two acts opened while away play both chapters, in order.
+- **Debug → Preview** plays any scene.
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| Scenes | `app/scenes.ts`, `app/components/Scene.tsx`, `app/components/Cover.tsx` (new); `app/components/ChapterPage.tsx` (played as a scene) |
+| Art | `app/art/scenes.ts` (new: the cover, the crew, Tolya, and panels for later scenes) |
+| The store and shell | `app/store.ts` (`scene`, `playScene`, `endScene`), `App.tsx` (the cover; the away summary, then a scene, then notices) |
+| Notices | `app/notices.ts` (`ACT_UNLOCKED` is no longer a notice), `app/components/EventNoticeModal.tsx`, `app/previews.ts` (scenes) |
+| Engine | `engine/model/state.ts` (`story`, schema 14), `engine/model/migrate.ts` (`v13to14`), `engine/model/actions.ts` and `engine/core/apply.ts` (`SEE_SCENE`, passive), `engine/newGame.ts` |
+| Tests | `tests/scenes.test.ts` (new), `tests/migrate.test.ts` |
+| Docs | [ADR 0049](docs/decisions/0049-scenes.md) (supersedes part of 0038 and 0046), [architecture.md](docs/architecture.md), [story.md](docs/story.md), [app.md](docs/app.md), [progression.md](docs/systems/progression.md), [testing.md](docs/testing.md), the doc map |
+
+**Save change:** schema 14. An old save counts the scenes it has passed as seen.
+
+### Verified
+
+- `npm run check`.
+- The web build: the cover, the prologue, the crew and Tolya scenes, and the chapter pages for Acts II–V.
+
 ## 2026-09-30 — The warm-ledger design, part 6: the pop-ups (D4)
 
 Branch: `feature/design-v2`. The design: While you were away, the three notices, Skip ahead, and the Act IV chapter page.

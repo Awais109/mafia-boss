@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: paper.paper },
   art: { aspectRatio: 390 / 432, backgroundColor: INK, overflow: 'hidden' },
   artPlain: { aspectRatio: 390 / 330 },
-  headWrap: { position: 'absolute', left: '18%', right: '18%', top: '6%', bottom: 0 },
+  headWrap: { position: 'absolute', left: '26%', right: '26%', top: '5%', aspectRatio: 1 },
   volume: { position: 'absolute', left: 22, gap: 6 },
   volumeLabel: { fontFamily: fonts.display700, fontSize: 13, letterSpacing: 5.5, color: paper.paper },
   volumeTitle: { fontFamily: fonts.display900, fontSize: 50, lineHeight: 46, color: paper.paper },

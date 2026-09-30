@@ -50,7 +50,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0035](0035-guided-opening.md) | A guided opening: buy the starting setup yourself, then Act I goals | Accepted; the `actII` goal and "goals are optional" superseded by 0039 |
 | [0036](0036-zhanna-and-the-port.md) | Zhanna sells lots of cigarettes, buys the surplus, and makes smuggling past her Port harder | Accepted |
 | [0037](0037-act-ii-premises.md) | Act II premises: the Stash House and the Union Office, and their synergies | Accepted |
-| [0038](0038-live-event-notices.md) | Live event and unlock notices, queued one at a time; a `description` field on every business/front/district/official | Accepted |
+| [0038](0038-live-event-notices.md) | Live event and unlock notices, queued one at a time; a `description` field on every business/front/district/official | Superseded in part by [0049](0049-scenes.md) (the act opening) |
 | [0039](0039-goals-gate-act-two.md) | Act II is gated by Act I goals, not Reputation; three goals redefined, `actII` removed | Accepted |
 | [0040](0040-six-acts.md) | Six acts, each opened by a gate; the last built act is cleared, not left | Accepted |
 | [0041](0041-act-iii-the-centre.md) | Act III, the Centre: prosperity, the Card Club, Print Shop, hotels, the Bank, City Hall, tier 6 | Accepted |
@@ -58,9 +58,10 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0043](0043-act-iv-zastava.md) | Act IV, Zastava: premium cigarettes as a second stock, convoys past the Colonel and customs, passage, the importer that washes only what its trade explains | Accepted |
 | [0044](0044-act-v-kombinat.md) | Act V, the Kombinat: an auctioned district, public opinion, the Ministry that freezes a front, elections and the mayor | Accepted |
 | [0045](0045-act-vi-nagornaya.md) | Act VI, Nagornaya: Legalize, the Holding, the reckoning's hearings, and two recorded endings | Accepted |
-| [0046](0046-map-and-story.md) | The map is Lyosha's notebook: districts revealed by the story, the act transition as a page, the story's text in one place | Superseded in part by [0048](0048-notebook-map-and-people.md) |
+| [0046](0046-map-and-story.md) | The map is Lyosha's notebook: districts revealed by the story, the act transition as a page, the story's text in one place | Superseded in part by [0048](0048-notebook-map-and-people.md) and [0049](0049-scenes.md) |
 | [0047](0047-warm-ledger-design.md) | The warm-ledger design: bundled fonts, SVG glyphs, a bottom bar with More | Accepted |
 | [0048](0048-notebook-map-and-people.md) | The notebook map drawn from the design, and People | Accepted |
+| [0049](0049-scenes.md) | Scenes: the story played as manga, due from the save; chapters, the cover, a seen-list in the save | Accepted |
 
 ## Template
 

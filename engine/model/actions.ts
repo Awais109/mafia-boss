@@ -32,6 +32,7 @@ export type Action =
   | { type: 'LEND'; amount: number }
   | { type: 'TUTORIAL_ADVANCE' }
   | { type: 'TUTORIAL_SKIP' }
+  | { type: 'SEE_SCENE'; sceneId: string }
   | { type: 'SESSION_START' }
   | { type: 'SESSION_END'; durationMs: number; actions: number }
   | DebugAction
@@ -55,4 +56,4 @@ export type DebugAction =
 export type ActionType = Action['type']
 
 // Bookkeeping actions that shouldn't count toward "actions per session".
-export const PASSIVE_ACTIONS: readonly ActionType[] = ['SESSION_START', 'SESSION_END', 'TUTORIAL_ADVANCE', 'TUTORIAL_SKIP']
+export const PASSIVE_ACTIONS: readonly ActionType[] = ['SESSION_START', 'SESSION_END', 'TUTORIAL_ADVANCE', 'TUTORIAL_SKIP', 'SEE_SCENE']

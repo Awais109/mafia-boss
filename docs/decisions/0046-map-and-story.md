@@ -1,6 +1,6 @@
 # 0046. The map is Lyosha's notebook, and the story reveals it
 
-- **Status:** Superseded in part by [0048](0048-notebook-map-and-people.md): the drawing and the marks. The reveal rules, the act page and the story as data stand.
+- **Status:** Superseded in part by [0048](0048-notebook-map-and-people.md) (the drawing and the marks) and [0049](0049-scenes.md) (the act page is a chapter scene, due from the save). The reveal rules and the story as data stand.
 - **Date:** 2026-09-29
 
 ## Context

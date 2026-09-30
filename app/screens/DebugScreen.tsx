@@ -5,7 +5,7 @@ import { ACT_NAME } from '../acts'
 import { formatSummary, summarize } from '../../sim/report'
 import { Btn, BtnRow, Card, colors, Row, Screen, T } from '../components/ui'
 import { fmt, fmtClock, fmtDuration } from '../format'
-import { previewNotice, PREVIEWS } from '../previews'
+import { canPreview, PREVIEWS, showPreview } from '../previews'
 import { store, type Snapshot } from '../store'
 import type { ScreenProps } from './types'
 
@@ -371,16 +371,15 @@ function DataPanel({ game }: { game: Snapshot }) {
   )
 }
 
-// Shows a notice now, to look at it (app/previews.ts). A previewed decision is the first real one pending.
+// Shows a pop-up or plays a scene now, to look at it (app/previews.ts). A previewed decision is the first real one pending.
 function PreviewPanel({ game }: { game: Snapshot }) {
   return (
     <Card>
-      <T small muted>Shows a pop-up without waiting for the game to raise it. Nothing changes until you choose something in a real decision.</T>
+      <T small muted>Shows a pop-up or plays a scene without waiting for the game. Nothing changes until you choose something in a real decision or a scene.</T>
       <BtnRow>
-        {PREVIEWS.map((p) => {
-          const notice = previewNotice(game, p.name)
-          return <Btn key={p.name} small title={p.title} disabled={!notice} onPress={() => notice && store.previewNotice(notice)} />
-        })}
+        {PREVIEWS.map((p) => (
+          <Btn key={p.name} small title={p.title} disabled={!canPreview(game, p.name)} onPress={() => showPreview(game, p.name)} />
+        ))}
       </BtnRow>
     </Card>
   )

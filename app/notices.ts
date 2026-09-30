@@ -17,7 +17,8 @@ export type QueuedNotice =
   | { kind: 'unlockBatch'; items: UnlockRef[] }
 
 // Notable-but-not-a-decision events worth a pop-up. Bookkeeping (COLLECTED, OP_STARTED, config
-// and debug events, etc.) stays out, same spirit as `away.ts`'s FOLDED set.
+// and debug events, etc.) stays out, same spirit as `away.ts`'s FOLDED set. An act opening isn't here: its
+// chapter is a scene, due from state (ADR 0049), so it plays even if the act opened while the app was shut.
 const INFO_EVENTS = new Set<GameEvent['type']>([
   'RAID',
   'ARREST',
@@ -26,7 +27,6 @@ const INFO_EVENTS = new Set<GameEvent['type']>([
   'UPKEEP_MISSED',
   'DISTRICT_FLIPPED',
   'GOAL_DONE',
-  'ACT_UNLOCKED',
   'ACT_CLEARED',
   'TOLYA_TICK',
   'CREW_INJURED',
