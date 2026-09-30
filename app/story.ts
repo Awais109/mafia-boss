@@ -1,4 +1,4 @@
-import { tolyaHostile, TUTORIAL_STEPS, type Act, type Config, type DistrictId, type LaterAct, type MissionId, type OfficialId, type PlayerState } from '../engine'
+import { tolyaHostile, TUTORIAL_STEPS, type Act, type Config, type ContractId, type DistrictId, type Ending, type LaterAct, type MissionId, type OfficialId, type PlayerState } from '../engine'
 import type { HeadId } from './art/heads'
 
 // The story's canon in the game's own words (docs/story.md, ADR 0046): each act's title, the line that
@@ -142,4 +142,16 @@ export const ENVELOPE_NOTES: Record<Act, string> = {
   4: 'Borrow less.',
   5: 'The city’s watching now.',
   6: 'Last one. Make it count.',
+}
+
+// After the story (ADR 0052): the endings by name, and what each contract on the board is for.
+export const ENDING_NAME: Record<Ending, string> = { holding: 'the Holding', empire: 'the Empire' }
+
+export const CONTRACT_TEXT: Record<ContractId, string> = {
+  tramDepot: 'The number 4’s sheds, roof first. The council pays when the trams sleep indoors again.',
+  boilerHouse: 'Thirty-one buildings on one boiler, built in 1961. The council promised heat before the first frost.',
+  portChannel: 'The big ships have anchored outside the silt since autumn. Zhanna’s co-operative will share the dredger.',
+  bridgeLights: 'The lamps on the bridge went out in 1991, and nobody asked why. The mayor’s office is asking now.',
+  palaceRoof: 'It rains on the stage of the Palace of Culture. The council wants the cinema open by the holidays.',
+  stationClock: 'The clock over the station has said twenty to four for two years. Nobody meets under it any more.',
 }

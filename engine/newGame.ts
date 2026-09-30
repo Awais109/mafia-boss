@@ -65,6 +65,7 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
     story: { seen: [], since: { act: 1, step: 0, done: false } },
     missions: {},
     rockBottom: { pending: false, usedActs: [] },
+    after: { contracts: { items: [], refreshAt: 0, refreshCount: 0 }, best: 0, history: [] },
     goals: { done: [] },
     firstConversionDone: false,
 

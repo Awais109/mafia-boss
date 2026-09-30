@@ -1,4 +1,4 @@
-import { RANK_NAMES, type Config, type GameEvent, type LaterAct, type PlayerState } from '../engine'
+import { formulas, RANK_NAMES, type Config, type GameEvent, type LaterAct, type PlayerState } from '../engine'
 import { ACT_NAME, ACT_OPENS } from './acts'
 import { colors, glyph } from './components/ui'
 import { GOAL_TEXT } from './goals'
@@ -10,7 +10,7 @@ export type EventLine = { text: string; color?: string; quiet?: boolean }
 const OUTCOME = { full: 'clean job', partial: 'got some of it', fail: 'went wrong' } as const
 const STAT_NAME = { muscle: 'Muscle', brains: 'Brains', nerve: 'Nerve' } as const
 const MODE_TEXT = { push: 'pushing', normal: 'running normally', layLow: 'lying low' } as const
-const GOLD_SOURCE = { start: 'to start', act: 'for opening a new act', goal: 'for a goal', debug: 'from Debug', ad: 'for an ad', purchase: 'bought' } as const
+const GOLD_SOURCE = { start: 'to start', act: 'for opening a new act', goal: 'for a goal', contract: 'for a contract', debug: 'from Debug', ad: 'for an ad', purchase: 'bought' } as const
 
 // Player-facing line for an event. `quiet` lines are bookkeeping, hidden unless the Log asks.
 export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLine {
@@ -40,6 +40,8 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
     case 'RACKET_BOUGHT':
       return { text: `Opened a ${c.rackets.types[e.racketType].name} in ${c.districts.list[e.districtId].name} (${cl}${fmt(e.cost)})` }
     case 'RACKET_UPGRADED':
+      // Past the book (ADR 0052): the tiers after the story.
+      if (e.tier > formulas.bookMaxTier(c)) return { text: `The ${racketName(e.racketId)} went past the book: tier ${e.tier} (${cl}${fmt(e.cost)})`, color: colors.accent }
       return { text: `${racketName(e.racketId)} → tier ${e.tier}${e.specialization ? `, ${e.specialization}` : ''} (${cl}${fmt(e.cost)})` }
     case 'RACKET_REPAIRED':
       return { text: `Repaired the ${racketName(e.racketId)} (${d}${fmt(e.cost)})`, quiet: true }
@@ -117,7 +119,15 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
       return { text: line, color: e.result === 'won' ? colors.good : e.result === 'lost' ? colors.warn : colors.heat }
     }
     case 'OP_RUSHED':
-      return { text: `Finished ${e.name ?? (e.opType === 'mission' ? 'the mission' : c.ops.list[e.opType].name)} early for ${glyph.gold}${e.bars}`, color: colors.gold }
+      return { text: `Finished ${e.name ?? (e.opType === 'mission' || e.opType === 'contract' ? 'the job' : c.ops.list[e.opType].name)} early for ${glyph.gold}${e.bars}`, color: colors.gold }
+    case 'CONTRACTS_POSTED':
+      return { text: e.count === 1 ? 'A new contract on the board' : `${e.count} new contracts on the board`, color: colors.accent, quiet: e.count === 0 }
+    case 'CONTRACT_STARTED':
+      return { text: `${e.crewIds.map(crewName).join(' & ')}: ${e.name}, ${cl}${fmt(e.cost)} up front`, color: colors.accent }
+    case 'CONTRACT_DONE':
+      return { text: `${e.name}: done. The council pays ${cl}${fmt(e.clean)}.`, color: colors.good }
+    case 'EMPIRE_BEST':
+      return { text: `A new best: the empire at ${fmt(e.value)}`, color: colors.accent }
     case 'GOAL_DONE':
       return { text: `Goal done: ${GOAL_TEXT[e.goalId]} (+${glyph.gold}${e.gold})`, color: colors.gold }
     case 'SHIPMENT_BOUGHT':

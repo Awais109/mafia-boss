@@ -13,6 +13,7 @@ import { frontBlocked } from '../systems/fronts'
 import { arrest, raid } from '../systems/heat'
 import { canAffordEffects, incidentNeedHolds, raiseIncident, resolveInboxItem } from '../systems/inbox'
 import { missionDone, startMission } from '../systems/missions'
+import { startContract } from '../systems/after'
 import { regenerateOffers } from '../systems/offers'
 import { opConfigAt, opMinutesFor, opUnlocked, resolveOp } from '../systems/ops'
 import { checkGoals } from '../systems/goals'
@@ -121,7 +122,7 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
     case 'UPGRADE_RACKET': {
       const r = state.rackets.find((x) => x.id === a.racketId)
       if (!r) return 'No such racket'
-      if (r.tier >= F.racketMaxTier(c, r.type, state.act)) return 'Already at max tier'
+      if (r.tier >= F.racketMaxTier(c, r.type, state.act, F.storyOver(state, c))) return 'Already at max tier'
       // The upgrades to tier 3 and tier 6 are each a choice between greed and stealth (ADRs 0027, 0041).
       const atTier = c.rackets.specialization.atTier
       const atTier6 = c.rackets.specialization6.atTier
@@ -136,6 +137,7 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       const cost = F.racketUpgradeCost(c, r.type, r.tier)
       if (state.clean < cost - EPS) return 'Not enough Clean'
       r.tier++
+      if (r.tier > F.bookMaxTier(c)) state.stats.after.pastBook++
       if (a.specialization) {
         if (r.tier === atTier6) r.specialization6 = a.specialization
         else r.specialization = a.specialization
@@ -436,6 +438,8 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
     case 'RUSH_OP': {
       const op = state.ops.find((o) => o.id === a.opId)
       if (!op) return 'That job is already done'
+      // A contract pays gold: buying its time with gold would be a loop (ADR 0052).
+      if (op.type === 'contract') return 'A contract takes the time it takes'
       const bars = rushCost(c, op.completesAt - t)
       if (state.gold < bars) return 'Not enough gold'
       state.gold -= bars
@@ -531,6 +535,9 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
 
     case 'START_MISSION':
       return startMission(state, ctx, t, a.missionId, a.crewIds)
+
+    case 'START_CONTRACT':
+      return startContract(state, ctx, t, a.contractId, a.crewIds)
 
     // A scene the app has shown (ADR 0049): kept once, in order. No event: the log's action line records it.
     case 'SEE_SCENE':

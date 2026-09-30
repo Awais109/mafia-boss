@@ -11,6 +11,7 @@ import {
   passageActive,
   passageCost,
   contestOdds,
+  contractBlocked,
   creditOpen,
   lendCap,
   loanCap,
@@ -403,6 +404,16 @@ export function playSession(
     tryAct({ type: 'START_MISSION', missionId: id, crewIds: team.map((x) => x.id) })
   }
 
+  // After the story (ADR 0052): take every contract the Clean covers, with the idle crew the bot values least.
+  // It always comes back done and pays more than it costs.
+  for (const k of state.after.contracts.items) {
+    if (contractBlocked(state, c, k, t)) continue
+    const idle = state.crew.filter((x) => x.status === 'idle')
+    if (idle.length < k.crew) continue
+    const team = [...idle].sort((a, b) => statSum(a) - statSum(b)).slice(0, k.crew)
+    tryAct({ type: 'START_CONTRACT', contractId: k.id, crewIds: team.map((x) => x.id) })
+  }
+
   // 5. Dispatch every idle crew member to the best op they can do
   const gapMinutes = Math.max(15, ((nextSessionAt - t) / c.time.hourMs) * 60)
   const dispatchIdle = () => {
@@ -416,6 +427,7 @@ export function playSession(
   for (let round = 0; p.rushJobs && round < 20; round++) {
     let rushed = false
     for (const op of [...state.ops].sort((a, b) => a.completesAt - b.completesAt)) {
+      if (op.type === 'contract') continue // a contract can't be rushed (ADR 0052)
       if (state.gold >= rushCost(c, op.completesAt - t)) rushed = tryAct({ type: 'RUSH_OP', opId: op.id }) || rushed
     }
     if (!rushed) break

@@ -12,6 +12,7 @@ import { landConvoy } from './convoys'
 import { addVotes } from './politics'
 import { fileReport } from './inbox'
 import { maybeInjureTeam } from './injuries'
+import { resolveContract } from './after'
 import { resolveMission } from './missions'
 import { gainRep } from './reputation'
 import { zhannaHoldsPort } from './rivals'
@@ -86,7 +87,7 @@ export function opConfigOf(c: Config, op: OpInstance): OpConfig {
   return op.cfg ?? c.ops.list[op.type as OpType]
 }
 
-// What a running job is called: an offer's or a mission's own name, else its listed job's.
+// What a running job is called: an offer's, a mission's or a contract's own name, else its listed job's.
 export function opName(c: Config, op: OpInstance): string {
   return op.name ?? c.ops.list[op.type as OpType]?.name ?? 'A job'
 }
@@ -129,6 +130,7 @@ function freeCrew(team: CrewMember[], op: OpInstance): void {
 export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: number): void {
   const { c } = ctx
   if (op.missionId) return resolveMission(state, ctx, op, t)
+  if (op.contractId) return resolveContract(state, ctx, op, t)
   const type = op.type as OpType
   const cfg = opConfigOf(c, op)
   state.ops = state.ops.filter((o) => o.id !== op.id)

@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import {
   canPressure,
+  gameCleared,
   convoyLoad,
   customsChance,
   DISTRICT_IDS,
@@ -30,6 +31,7 @@ import {
 } from '../../engine'
 import { ACT_NAME } from '../acts'
 import { Icon } from '../components/Glyph'
+import { ContractCard } from '../components/AfterStory'
 import { MissionCard } from '../components/MissionCard'
 import { Btn, BuyRow, colors, Empty, glyph, Item, List, Note, rich, Screen, Section, Tag } from '../components/ui'
 import { fmt, fmtDuration, pct } from '../format'
@@ -71,6 +73,8 @@ export function OpsScreen({ game }: ScreenProps) {
 
   const missions = MISSION_IDS.filter((id) => c.missions.enabled && c.missions.list[id].act === s.act && !missionDone(s, id))
   const ready = missions.filter((id) => !missionBlocked(s, c, id, now)).length
+  // After the story (ADR 0052): the week's contracts, under way first.
+  const contracts = gameCleared(s, c) ? s.after.contracts.items.filter((k) => k.opId || k.expiresAt > now).sort((a, b) => Number(!a.opId) - Number(!b.opId)) : []
 
   return (
     <Screen>
@@ -79,6 +83,20 @@ export function OpsScreen({ game }: ScreenProps) {
           {missions.map((id) => (
             <MissionCard key={id} game={game} id={id} picked={team} onSent={() => setSelected([])} />
           ))}
+        </Section>
+      )}
+
+      {gameCleared(s, c) && (
+        <Section title="Contracts" right={`new board in ${fmtDuration(s.after.contracts.refreshAt - now, c)}`}>
+          {contracts.length ? (
+            <View style={styles.contracts}>
+              {contracts.map((k) => (
+                <ContractCard key={k.id} game={game} k={k} picked={team} onSent={() => setSelected([])} />
+              ))}
+            </View>
+          ) : (
+            <Empty title="Nothing on the board this week" sub="The council posts new contracts each week." />
+          )}
         </Section>
       )}
 
@@ -93,15 +111,18 @@ export function OpsScreen({ game }: ScreenProps) {
                   <Text style={styles.outName}>{opName(c, op)}</Text>
                   <Text style={styles.outBack}>{`back in ${fmtDuration(op.completesAt - now, c)}${op.districtId ? ` · ${c.districts.list[op.districtId].name}` : ''}`}</Text>
                 </View>
-                <Pressable
-                  onPress={() => store.dispatch({ type: 'RUSH_OP', opId: op.id })}
-                  disabled={s.gold < cost}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Finish now for ${cost} gold`}
-                  style={({ pressed }) => [styles.rush, s.gold < cost && styles.off, pressed && styles.pressed]}
-                >
-                  <Text style={styles.rushText}>{rich(`Finish now ${glyph.gold}${cost}`, 14, { plain: true })}</Text>
-                </Pressable>
+                {/* A contract takes the time it takes (ADR 0052). */}
+                {op.type !== 'contract' && (
+                  <Pressable
+                    onPress={() => store.dispatch({ type: 'RUSH_OP', opId: op.id })}
+                    disabled={s.gold < cost}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Finish now for ${cost} gold`}
+                    style={({ pressed }) => [styles.rush, s.gold < cost && styles.off, pressed && styles.pressed]}
+                  >
+                    <Text style={styles.rushText}>{rich(`Finish now ${glyph.gold}${cost}`, 14, { plain: true })}</Text>
+                  </Pressable>
+                )}
               </View>
             )
           })}
@@ -330,6 +351,8 @@ function JobCard({ game, type, cfg, team, onStart, children }: {
 const styles = StyleSheet.create({
   caps: { fontFamily: fonts.text400, fontSize: 11, letterSpacing: 1.1, textTransform: 'uppercase', color: colors.muted },
   muted: { fontFamily: fonts.text400, fontSize: 13, lineHeight: 19, color: colors.muted },
+  // The contracts share one card; each draws the rule above it, so the card has no top border of its own.
+  contracts: { backgroundColor: colors.card, borderWidth: 1, borderTopWidth: 0, borderColor: colors.divider, borderRadius: 6, overflow: 'hidden' },
   out: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.divider, borderRadius: 6 },
   outText: { flex: 1, gap: 2 },
   outName: { fontFamily: fonts.text600, fontSize: 15, color: colors.text },

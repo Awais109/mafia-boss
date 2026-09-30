@@ -82,6 +82,7 @@ The cover (the tram window over Lyosha's table) opens the app. A mission's scene
 - Tolya's demand is in his words, by mood (`tolyaMood` and `TOLYA_ASKS` in `app/story.ts`): watchful ("and we'll say no more about the window"), cold, friendly (from disposition 20, a word on the card, not a rule), hostile.
 - The opening's three have epithets on their Crew cards: Vitya the driver, Dima the nephew, Sasha the card player (`OPENING_CREW`). The officials are people on Heat: Sergeant Pasha (Ward Cop), Major Kravets (Precinct Captain), Ignatov (City Hall), "the stamp" (the Customs Chief) and "the telephone to the capital" (the Governor) (`OFFICIAL_PERSON`).
 - The People pages (`app/people.ts`) carry each person's epithet and line from the design brief's cast, and a fragment of Lyosha's for everyone not met yet ("…the army left. The men didn't."). You meet the crew at the opening's hire step, Tolya with his boys, each act's boss when the act opens, officials when they go on the payroll, and the lender's men at a first missed payment.
+- After the story the council's contracts say what they're for in the same voice (`CONTRACT_TEXT`): "Thirty-one buildings on one boiler, built in 1961. The council promised heat before the first frost."
 - Loanwords only where English is worse (kiosk, tram, banya, dacha, kombinat).
 - Business, front, district and official descriptions stay mechanical: they're for the unlock notices. The voice is for events and the map.
 

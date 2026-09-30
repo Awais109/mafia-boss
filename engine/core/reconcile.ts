@@ -1,6 +1,7 @@
 import type { Config } from '../config/schema'
 import type { GameEvent } from '../model/events'
 import { LOG_CAP, type PlayerState } from '../model/state'
+import { afterDayBoundary, refreshContractsIfDue } from '../systems/after'
 import { crewDayBoundary, refreshPoolIfDue, releaseJailed } from '../systems/crew'
 import { creditDayBoundary, lendingDue } from '../systems/credit'
 import { releaseInjured } from '../systems/injuries'
@@ -70,6 +71,7 @@ function nextBoundary(state: PlayerState, c: Config, t: number, now: number): nu
   if (state.bribeControl > 0) consider(state.bribeUntil)
   consider(state.recruitPool.refreshAt)
   consider(state.offers.refreshAt)
+  consider(state.after.contracts.refreshAt)
   consider(state.rival.tolya.nextTickAt)
   for (const m of state.crew) {
     if (m.status === 'jailed') consider(m.jailedUntil)
@@ -121,6 +123,7 @@ function hourBoundary(state: PlayerState, ctx: Ctx, t: number): void {
     settleUpkeep(state, ctx, t) // after wages: the crew get paid first
     creditDayBoundary(state, ctx, t) // then the loan, from Clean
     reckoningDayBoundary(state, ctx, t) // a hearing may be filed (Act VI)
+    afterDayBoundary(state, ctx, t) // the empire value, once the day's costs are settled (ADR 0052)
     ledgerDayBoundary(state, t) // last: the snapshot sees the day's settled costs
   }
 }
@@ -147,6 +150,7 @@ export function processDue(state: PlayerState, ctx: Ctx, t: number): void {
   electionDue(state, ctx, t)
   refreshPoolIfDue(state, ctx, t)
   refreshOffersIfDue(state, ctx, t)
+  refreshContractsIfDue(state, ctx, t)
   if (state.rival.tolya.nextTickAt <= t) tolyaTick(state, ctx, t)
   // Goals only change at boundaries and actions, so checking here dates each to where it happened.
   checkGoals(state, ctx, t)

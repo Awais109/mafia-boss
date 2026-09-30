@@ -24,6 +24,7 @@ What is built, how it works, and why. Written so a person or an LLM new to the r
 | [systems/credit.md](systems/credit.md) | Act III: borrowing Clean and paying it back, the collectors and repossession, lending Dirty through a loan desk |
 | [systems/politics.md](systems/politics.md) | Act V: public opinion, the Ministry's attention and frozen fronts, elections, campaigning, the mayor |
 | [systems/endgame.md](systems/endgame.md) | Act VI: Legalize, the Holding, the case file and hearings, the two endings |
+| [systems/after.md](systems/after.md) | After the story: tiers past the book, the empire value, the contracts board |
 | [app.md](app.md) | The React Native app: shell, look and feel, store, storage, screens, the map, Debug tab, export, checking screens against the design |
 | [story.md](story.md) | The story's canon: the world, the cast, the acts and their turns, the notebook map, how the game talks |
 | [sim.md](sim.md) | The headless bot, report metrics, CLI, log replay, baseline |
@@ -64,6 +65,7 @@ When you change a path on the left, update the doc on the right in the same comm
 | `engine/systems/credit.ts` | [systems/credit.md](systems/credit.md) |
 | `engine/systems/politics.ts` | [systems/politics.md](systems/politics.md) |
 | `engine/systems/legal.ts` | [systems/endgame.md](systems/endgame.md) |
+| `engine/systems/after.ts` | [systems/after.md](systems/after.md) |
 | `engine/systems/convoys.ts` | [systems/convoys.md](systems/convoys.md) (the Colonel's disposition and passage also in [systems/districts-and-rivals.md](systems/districts-and-rivals.md)) |
 | `engine/systems/injuries.ts` | [systems/crew.md](systems/crew.md) |
 | `App.tsx`, `app/` | [app.md](app.md) |
@@ -71,6 +73,7 @@ When you change a path on the left, update the doc on the right in the same comm
 | `app/story.ts` | [story.md](story.md) and [app.md](app.md) |
 | `app/art/` | [app.md](app.md#look-and-feel) (art extracted from `design/`) |
 | `app/scenes.ts`, `app/components/Scene.tsx`, `app/components/Cover.tsx`, `app/components/ChapterPage.tsx` | [app.md](app.md), [story.md](story.md#scenes) and [ADR 0049](decisions/0049-scenes.md) |
+| `app/components/AfterStory.tsx` | [app.md](app.md) and [systems/after.md](systems/after.md) |
 | `app/previews.ts`, `app/webParams.ts` | [app.md](app.md#checking-screens-against-the-design) |
 | `app/people.ts`, `app/components/People.tsx`, `app/components/CityMap.tsx` | [app.md](app.md), [story.md](story.md) and [ADR 0048](decisions/0048-notebook-map-and-people.md) |
 | `sim/` | [sim.md](sim.md) |

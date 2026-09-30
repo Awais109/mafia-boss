@@ -329,6 +329,8 @@ function BusinessCard({ game, r, rd }: { game: Snapshot; r: Racket; rd: RacketDe
     ...(rd.closed ? [{ text: 'shut', color: colors.bad }] : []),
     ...(enforcer ? [{ text: `enforcer · ${enforcer.name.split(' ')[0]}` }] : []),
     ...(r.legal ? [{ text: 'legal', color: colors.clean }] : []),
+    // After the story (ADR 0052): tiers the book didn't have.
+    ...(r.tier > formulas.bookMaxTier(c) ? [{ text: 'past the book', color: colors.accent }] : []),
   ]
   const yieldHint = [
     rd.tribute > 0 ? `−${glyph.dirty}${fmt(rd.tribute)} tribute` : '',
@@ -419,8 +421,13 @@ function BusinessCard({ game, r, rd }: { game: Snapshot; r: Racket; rd: RacketDe
         ) : (
           <>
             <UpgradeBtn
-              title={`Tier ${r.tier + 1} · ${glyph.clean}${fmt(rd.upgradeCost)}`}
-              gains={`+${glyph.dirty}${fmt(nextYield)}/h · +${glyph.heat}${fmt(nextHeat)}`}
+              title={`${r.tier + 1 > formulas.bookMaxTier(c) ? 'Past the book · ' : ''}Tier ${r.tier + 1} · ${glyph.clean}${fmt(rd.upgradeCost)}`}
+              gains={
+                // A legal business earns Clean, after tax, and draws no heat (ADR 0045).
+                r.legal
+                  ? `+${glyph.clean}${fmt(nextYield * c.legalize.cleanShare * d.holdingMult)}/h · ${glyph.heat}0`
+                  : `+${glyph.dirty}${fmt(nextYield)}/h · +${glyph.heat}${fmt(nextHeat)}`
+              }
               disabled={s.clean < rd.upgradeCost}
               onPress={() => store.dispatch({ type: 'UPGRADE_RACKET', racketId: r.id })}
             />

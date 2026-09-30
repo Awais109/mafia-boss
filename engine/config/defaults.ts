@@ -725,6 +725,28 @@ export const defaults: Config = {
   // Rock bottom (ADR 0051): the family helps once per act, never a game over.
   rockBottom: { cleanBelowHours: 24, stakeHours: 36, minStake: 60 },
 
+  // After the story (ADR 0052). Tiers 7–20 for joints and rackets, each 2.5× dearer again than the curve, so
+  // growth slows but never stops; heat still compounds faster than yield, so past the book suits legal
+  // businesses. Contracts: three a week, their Clean in days of income (yield plus legal Clean, × 24), so they
+  // keep up with the empire.
+  after: {
+    extraTiers: 14,
+    pastBookCostMult: 2.5,
+    contracts: {
+      count: 3,
+      refreshDays: 7,
+      minDayIncome: 20000,
+      list: {
+        tramDepot: { name: 'Rebuild the tram depot', crew: 2, hours: 72, costDays: 0.5, payDays: 1.5, gold: 6 },
+        boilerHouse: { name: 'Fix the Blocks’ boiler house', crew: 2, hours: 48, costDays: 0.4, payDays: 1.25, gold: 5 },
+        portChannel: { name: 'Dredge the port channel', crew: 3, hours: 96, costDays: 0.75, payDays: 1.8, gold: 8 },
+        bridgeLights: { name: 'Light the bridge', crew: 1, hours: 24, costDays: 0.2, payDays: 0.6, gold: 3 },
+        palaceRoof: { name: 'Reroof the Palace of Culture', crew: 2, hours: 60, costDays: 0.5, payDays: 1.4, gold: 5 },
+        stationClock: { name: 'Start the station clock', crew: 1, hours: 36, costDays: 0.3, payDays: 0.8, gold: 4 },
+      },
+    },
+  },
+
   // The boss missions (ADR 0050). An overreach appears once the rest of the next act's gate holds, fails by
   // design and opens that act; its cost is fixed. A rematch is open all through its act, rolled like a job.
   missions: {

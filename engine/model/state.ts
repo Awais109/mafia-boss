@@ -1,5 +1,6 @@
 import type {
   Act,
+  ContractId,
   Controller,
   DistrictId,
   Ending,
@@ -19,9 +20,10 @@ import type {
 } from '../config/schema'
 import type { GameEvent } from './events'
 
-export const SCHEMA_VERSION = 16
+export const SCHEMA_VERSION = 17
 export const LOG_CAP = 200
 export const LEDGER_ROWS = 8 // 7 closed days plus today's opening snapshot
+export const EMPIRE_DAYS = 8 // the empire value at the last 8 day starts (ADR 0052)
 
 export type Racket = {
   id: string
@@ -73,7 +75,9 @@ export type CrewMember = {
 
 export type OpInstance = {
   id: string
-  type: OpType | 'mission' // a boss mission (ADR 0050) rides the job machinery: `missionId` says which, `cfg` its terms
+  // A boss mission (ADR 0050) and a contract (ADR 0052) ride the job machinery: `missionId` says which
+  // mission, with `cfg` its terms; `contractId` which contract on the board.
+  type: OpType | 'mission' | 'contract'
   crewIds: string[]
   startedAt: number
   completesAt: number
@@ -83,6 +87,28 @@ export type OpInstance = {
   name?: string
   missionId?: MissionId
   stake?: number // an overreach's Dirty, paid when it's sent and lost
+  contractId?: string
+}
+
+// A contract on the board (ADR 0052), its terms fixed when it was posted. `opId` while it's under way.
+export type Contract = {
+  id: string
+  kind: ContractId
+  name: string
+  crew: number
+  hours: number
+  cost: number // Clean up front
+  pay: number // Clean when it's done
+  gold: number
+  expiresAt: number // off the board at the next posting, unless under way
+  opId?: string
+}
+
+// After the story (ADR 0052): the contracts board, and the empire value at each day start with its best.
+export type AfterState = {
+  contracts: { items: Contract[]; refreshAt: number; refreshCount: number } // refreshAt 0: not posted yet
+  best: number
+  history: { at: number; value: number }[] // the last EMPIRE_DAYS day starts, oldest first
 }
 
 // A boss mission's outcome (ADR 0050): an overreach sent (it always fails), a rematch won, or lost and
@@ -253,6 +279,7 @@ export type PlaytestStats = {
   attacks: number
   contests: { won: number; lost: number }
   missions: { sent: number; won: number; lost: number } // boss missions (ADR 0050): overreaches count as sent
+  after: { contracts: number; contractClean: number; contractGold: number; pastBook: number; bests: number } // ADR 0052
   firstRaidAt: number | null
   officialBoughtAt: Partial<Record<OfficialId, number>>
   lastSessionAt: number | null
@@ -311,6 +338,7 @@ export type PlayerState = {
   // Rock bottom (ADR 0051): the envelope waiting after a payday missed with no Clean, and the acts it's been
   // opened in (once each).
   rockBottom: { pending: boolean; usedActs: Act[] }
+  after: AfterState
   goals: { done: GoalId[] } // Act I goals completed (ADR 0035)
   firstConversionDone: boolean
 
@@ -381,6 +409,7 @@ export function emptyStats(): PlaytestStats {
     attacks: 0,
     contests: { won: 0, lost: 0 },
     missions: { sent: 0, won: 0, lost: 0 },
+    after: { contracts: 0, contractClean: 0, contractGold: 0, pastBook: 0, bests: 0 },
     firstRaidAt: null,
     officialBoughtAt: {},
     lastSessionAt: null,

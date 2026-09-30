@@ -105,6 +105,8 @@ The roll is seeded by the job's id. `outcomeOdds` computes the exact probabiliti
 - `stats.missions` counts `sent` (both kinds), `won` and `lost` (rematches).
 - `DEBUG_COMPLETE_MISSIONS` marks the current act's missions done.
 
+**Contracts** ([ADR 0052](../decisions/0052-after-the-story.md)) ride the same machinery after the story: `START_CONTRACT` pushes a job of type `'contract'` with `contractId`, which `resolveOp` hands to `resolveContract`. It's never rolled and can't be rushed ([after.md](after.md#contracts)).
+
 ## Events
 
 - `MISSION_STARTED { missionId, opId, crewIds, stake }`
@@ -114,6 +116,6 @@ The roll is seeded by the job's id. `outcomeOdds` computes the exact probabiliti
 - `OFFERS_REFRESHED { count }` (quiet)
 - `TRAINING_DONE { opId, crewId, name, stat, xp }`
 
-`DEBUG_COMPLETE_OPS` resolves every job in progress immediately. `RUSH_OP` finishes one now for gold bars, with the roll it would have had ([gold.md](gold.md)).
+`DEBUG_COMPLETE_OPS` resolves every job in progress immediately. `RUSH_OP` finishes one now for gold bars, with the roll it would have had, except a contract ([gold.md](gold.md)).
 
 **Tests:** `tests/ops.test.ts` (partial success is the most common outcome among rolled jobs, odds match rolls, team scoring, traits), `tests/apply.test.ts` (job lifecycle, pressure flips a district), `tests/offers.test.ts` (the board's schedule, taking an offer, stale offers), `tests/crew.test.ts` (training cost and XP, perks on jobs), `tests/supply.test.ts` (smuggling's Clean, its difficulty with heat, and its packs), `tests/sim.test.ts` (the bot's partial share stays 40–60%).

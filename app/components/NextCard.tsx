@@ -3,15 +3,17 @@ import { gameDay, TUTORIAL_STEPS, type Act } from '../../engine'
 import { ACT_NAME, ACT_OPENS, actMilestones, actProgress } from '../acts'
 import type { TabId } from '../screens/types'
 import { ACT_TITLE } from '../story'
-import { store, type Snapshot } from '../store'
+import type { Snapshot } from '../store'
 import { fonts } from '../theme'
+import { AfterStory } from './AfterStory'
 import { openingCopy } from './TutorialBanner'
-import { Btn, BtnRow, Check, colors, Item, List, Section, Tag, Title } from './ui'
+import { Check, colors, Item, List, Section, Tag, Title } from './ui'
 
 const TAB_TITLE: Partial<Record<TabId, string>> = { rackets: 'Business', fronts: 'Fronts', crew: 'Crew', home: 'Home', ops: 'Ops' }
 
 // Home's Next (design: Home · Next): the act the next gate opens, what it opens, each condition with a
-// tick, a bar toward it and the milestones so far. During the opening, its thirteen steps instead.
+// tick, a bar toward it and the milestones so far. During the opening, its thirteen steps instead; after the
+// story, After the story (AfterStory.tsx).
 export function NextCard({ game, go }: { game: Snapshot; go: (tab: TabId) => void }) {
   const { state: s, config: c } = game
   const progress = actProgress(s, c)
@@ -69,31 +71,19 @@ export function NextCard({ game, go }: { game: Snapshot; go: (tab: TabId) => voi
     )
   }
 
-  if (progress.cleared || progress.nextAct === null) {
+  // After the story (ADR 0052): the empire value and the contracts board.
+  if (progress.cleared) return <AfterStory game={game} go={go} />
+
+  if (progress.nextAct === null) {
     const last = s.act as Act
     return (
-      <Section title={progress.cleared ? 'After the story' : 'Next'} right={progress.cleared ? `Act ${ACT_NAME[last]} cleared` : undefined}>
+      <Section title="Next">
         <List style={styles.list}>
-          {progress.cleared ? (
-            <Head
-              title="The book is closed"
-              text={`Act ${ACT_NAME[last]} was the last. Nothing more unlocks, and Reputation keeps counting. Keep playing to see how the late game holds up, or export the log and start over from Debug.`}
-            />
-          ) : (
-            <Head title={`Act ${ACT_NAME[last]} · ${ACT_TITLE[last]}`} text="The last act. Either ending clears it." />
-          )}
+          <Head title={`Act ${ACT_NAME[last]} · ${ACT_TITLE[last]}`} text="The last act. Either ending clears it." />
           {progress.requirements.map((r) => (
             <Item key={r.label} left={<Check state={r.done ? 'done' : 'todo'} />} label={r.label} hint={r.hint} value={r.value} muted={r.done} />
           ))}
           {footer}
-          {progress.cleared && (
-            <View style={styles.actions}>
-              <BtnRow>
-                <Btn small title="Export log" onPress={() => void store.exportLog()} />
-                {c.debug.enabled && <Btn small kind="outline" chevron title="Debug" onPress={() => go('debug')} />}
-              </BtnRow>
-            </View>
-          )}
         </List>
       </Section>
     )
@@ -140,5 +130,4 @@ const styles = StyleSheet.create({
   stepLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   stepNo: { width: 16, textAlign: 'right', fontFamily: fonts.text400, fontSize: 13, color: colors.faint, fontVariant: ['tabular-nums'] },
   nowRow: { backgroundColor: '#221c12' },
-  actions: { paddingHorizontal: 14, paddingBottom: 14 },
 })

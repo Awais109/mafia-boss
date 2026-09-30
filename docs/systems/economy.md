@@ -123,7 +123,7 @@ upgrade (t → t+1) = round(purchase × costs.upgradeBaseFactor × costs.upgrade
 repair            = max(1, round(purchase × rackets.conditionRepairPct))   (Dirty; restores condition to 100)
 ```
 
-Purchases, upgrades and all other Clean spending give Rep ([progression.md](progression.md)). Tiers stop at `rackets.maxTierByAct[act]` for joints and rackets and at `rackets.premises.maxTier` for premises (`racketMaxTier`).
+Purchases, upgrades and all other Clean spending give Rep ([progression.md](progression.md)). Tiers stop at `rackets.maxTierByAct[act]` for joints and rackets and at `rackets.premises.maxTier` for premises (`racketMaxTier`). After the story, joints and rackets go `after.extraTiers` past the book, each tier dearer again ([after.md](after.md#past-the-book)).
 
 ### Condition
 

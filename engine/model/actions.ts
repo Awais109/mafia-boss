@@ -35,6 +35,7 @@ export type Action =
   | { type: 'SEE_SCENE'; sceneId: string }
   | { type: 'START_MISSION'; missionId: MissionId; crewIds: string[] }
   | { type: 'OPEN_ENVELOPE' }
+  | { type: 'START_CONTRACT'; contractId: string; crewIds: string[] }
   | { type: 'SESSION_START' }
   | { type: 'SESSION_END'; durationMs: number; actions: number }
   | DebugAction

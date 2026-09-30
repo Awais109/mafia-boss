@@ -393,6 +393,16 @@ The sim now runs 60 days so an ending can be reached; so does the pacing guard.
             earner and closes the loan). The bot never goes broke: 5 seeds, 60 d unchanged (Act I 4.64 d, II 3.73,
             III 6.49, IV 9.76, V 12.03, VI 12.63, heat 28.8, raids 0, missed wages 0). Kept; tested by
             tests/rockbottom.test.ts, not the sim.
+2026-09-30  after (ADR 0052): new section. extraTiers 4 (tiers 7–10), pastBookCostMult 1.5; contracts: count 3,
+            refreshDays 7, minDayIncome 20000, six kinds at 0.2–0.75 days of income up front, 0.6–1.8 days paid,
+            gold 3–8. 5 seeds, 60 d: pacing to the ending unchanged; after it (from day 44–52) 3–7 contracts,
+            89–99 tiers past the book, every business at tier 10 within 8–16 days. Reverted the tiers: past the
+            book ran out within a week.
+2026-09-30  after: extraTiers 4→14 (tiers 7–20), pastBookCostMult 1.5→2.5
+            Each tier past the book now costs about 3.5× the last for 1.2× the yield. 5 seeds, 60 d: pacing to the
+            ending unchanged (Act I 4.64 d … VI 12.63, heat 28.8, raids 0); after it 3–7 contracts (mean 4.8),
+            56–67 tiers past the book, top tier 12–13, 7–16 new bests, heat about 5, no raids; empire value
+            9.1–10.0M on day 60. (2× reached tier 14 with 64–78 tiers; 2.5 slows sooner.) Kept.
 ```
 
 ## Open

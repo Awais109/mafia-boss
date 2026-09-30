@@ -3,6 +3,36 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-30 — After the story: past the book, the empire value, contracts (D8)
+
+Branch: `feature/design-v2`. Reasoning: [ADR 0052](docs/decisions/0052-after-the-story.md); the rules: [systems/after.md](docs/systems/after.md).
+
+### What changed, for a player
+
+- **The city carries on after an ending.**
+  - **Past the book:** joints and rackets go past tier 6, up to tier 20, each tier dearer than the last. A business there is tagged "past the book". A legal business's upgrade now shows the Clean it adds rather than Dirty and heat.
+  - **The empire value:** everything you own at what it cost, plus a day of income. It shows in the header in place of the vault, with its change since yesterday and your best. Home's Next becomes *After the story*: the value, a week's chart with the ending marked, and what it's made of.
+  - **Contracts:** each week the council posts three big jobs (the tram depot, the boiler house, the port channel…). Each takes Clean up front and crew for one to four days, and always pays back more Clean, plus gold. Take them on Ops; Home shows the board. They can't be finished early with gold.
+- **Stats** has an *After the story* section.
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| Engine | `engine/systems/after.ts` (new); `engine/core/formulas.ts` (`storyOver`, `bookMaxTier`, `racketMaxTier` past the book, the dearer upgrade); `engine/config/schema.ts` and `defaults.ts` (`after`); `engine/core/derive.ts`, `apply.ts` (`START_CONTRACT`, no rushing a contract), `reconcile.ts` (postings, the day-start empire value); `engine/systems/ops.ts`, `acts.ts`, `legal.ts` (the first board when the story ends); `engine/model/state.ts`, `actions.ts`, `events.ts`, `migrate.ts` (`v16to17`); `engine/core/time.ts` (`shiftTimes` now shifts `stats.endings` too) |
+| Bot | `sim/persona.ts`: takes every contract it can cover, never rushes one |
+| App | `app/components/AfterStory.tsx` (new), `app/components/Header.tsx`, `app/components/NextCard.tsx`, `app/screens/OpsScreen.tsx`, `app/screens/RacketsScreen.tsx`, `app/screens/StatsScreen.tsx`, `app/screens/HowItWorksScreen.tsx`, `app/story.ts` (`ENDING_NAME`, `CONTRACT_TEXT`), `app/eventText.ts` |
+| Tests | `tests/after.test.ts` (new); `tests/sim.test.ts` (after the story, every seed grows) |
+| Docs | [ADR 0052](docs/decisions/0052-after-the-story.md) (0022 superseded in part), [systems/after.md](docs/systems/after.md) (new), [endgame.md](docs/systems/endgame.md), [economy.md](docs/systems/economy.md), [progression.md](docs/systems/progression.md), [ops.md](docs/systems/ops.md), [gold.md](docs/systems/gold.md), [architecture.md](docs/architecture.md), [app.md](docs/app.md), [story.md](docs/story.md), [sim.md](docs/sim.md), [testing.md](docs/testing.md), [TUNING.md](TUNING.md) |
+
+**Save change:** schema 17. A save whose story was already over gets its first contracts on load.
+
+### Verified
+
+- `npm run check`: 236 tests.
+- 5 seeds, 60 days: pacing to the ending unchanged. After it: 3–7 contracts per seed, 56–67 tiers past the book, top tier 12–13, heat about 5, no raids.
+- The web build, on a day-58 save after the Holding: the header's empire cell, Home's After the story with its chart and contracts, and Ops' Contracts with Send.
+
 ## 2026-09-30 — Rock bottom, no game over (D7)
 
 Branch: `feature/design-v2`. Reasoning: [ADR 0051](docs/decisions/0051-rock-bottom.md); the rules: [crew.md](docs/systems/crew.md#wages) and [credit.md](docs/systems/credit.md#borrowing).

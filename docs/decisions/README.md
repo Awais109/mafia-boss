@@ -34,7 +34,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0019](0019-reputation-sources.md) | Rep comes from all Clean spending, jobs and districts | Accepted |
 | [0020](0020-sim-report-metrics.md) | How the sim report measures the dev manual's targets | Accepted; act clear rows superseded by 0022; vault fill amended by 0037 |
 | [0021](0021-environment-doctor-and-native-env.md) | Environment doctor, per-command toolchain wrapper, default app IDs | Accepted |
-| [0022](0022-end-of-prototype-state.md) | The end of the prototype is a cleared Act II, said in words; reports measure from game start | Accepted; the end state is now the last built act cleared (0040) |
+| [0022](0022-end-of-prototype-state.md) | The end of the prototype is a cleared Act II, said in words; reports measure from game start | Accepted; the end state is now the last built act cleared (0040); superseded in part by [0052](0052-after-the-story.md) (Home after the story) |
 | [0023](0023-away-summary.md) | "While you were away" is built in the app from the catch-up reconcile | Accepted |
 | [0024](0024-inbox.md) | Pending decisions: crew reports and incidents with baked options and a default | Accepted; the default-option rule amended by 0032 |
 | [0025](0025-opportunities-board.md) | An opportunities board of generated, expiring job variants | Accepted |
@@ -64,6 +64,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0049](0049-scenes.md) | Scenes: the story played as manga, due from the save; chapters, the cover, a seen-list in the save | Accepted |
 | [0050](0050-boss-missions.md) | Boss missions: an overreach that opens each act, a rematch that pays it off | Accepted |
 | [0051](0051-rock-bottom.md) | Rock bottom, no game over: the family's envelope once per act, the lender takes a business, Vitya stays | Accepted |
+| [0052](0052-after-the-story.md) | After the story: tiers past the book, the empire value, a weekly contracts board | Accepted |
 
 ## Template
 

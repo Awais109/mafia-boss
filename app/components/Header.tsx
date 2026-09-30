@@ -5,14 +5,16 @@ import { fmt, fmtClock, fmtRate, fmtShort } from '../format'
 import type { TabId } from '../screens/types'
 import type { Snapshot } from '../store'
 import { colors, fonts } from '../theme'
+import { empireNow } from './AfterStory'
 import { Glyph, type Resource } from './Glyph'
 import { rich } from './ui'
 
 // The shell's header (design: Components · The shell). The wordmark, the clock and the gold chip; six cells
 // with three significant figures (tap one for the whole figure and its rate; Heat opens the Heat screen);
-// and the Rep line, which always says what it's for.
+// and the Rep line, which always says what it's for. After the story the first cell is the empire value, its
+// change since the day began and its best (ADR 0052); the vault stays on Home.
 
-type Cell = 'vault' | 'dirty' | 'clean' | 'influence' | 'packs'
+type Cell = 'vault' | 'empire' | 'dirty' | 'clean' | 'influence' | 'packs'
 
 export function Header({ game, onGold, go }: { game: Snapshot; onGold?: () => void; go?: (tab: TabId) => void }) {
   const { state: s, derived: d, config: c, now } = game
@@ -25,11 +27,14 @@ export function Header({ game, onGold, go }: { game: Snapshot; onGold?: () => vo
   const heatColor = s.heat >= c.heat.raidThreshold ? colors.bad : s.heat >= c.heat.inspectThreshold ? colors.warn : colors.text
   const premiumOn = s.act >= c.premium.fromAct
   const toggle = (cell: Cell) => setOpen((o) => (o === cell ? null : cell))
+  const empire = progress.cleared ? empireNow(game) : null
 
   const detail = (() => {
     switch (open) {
       case 'vault':
         return `◆${fmt(s.vault)} of ${fmt(d.vaultCap)} in the vault · +◆${fmtRate(d.yieldPerHr)}`
+      case 'empire':
+        return empire ? `Empire value ${fmt(empire.value.total)} · ${empire.change >= 0 ? '+' : '−'}${fmt(Math.abs(empire.change))} since yesterday · best ${fmt(empire.best)}` : null
       case 'dirty':
         return `◆${fmt(s.dirty)} Dirty on hand · wages and upkeep −◆${fmtRate(d.wagesPerHr + d.upkeepPerHr)}`
       case 'clean':
@@ -63,19 +68,32 @@ export function Header({ game, onGold, go }: { game: Snapshot; onGold?: () => vo
       </View>
 
       <View style={styles.cells}>
-        <Pressable style={[styles.cell, styles.vaultCell]} onPress={() => toggle('vault')} accessibilityLabel={`Vault ${fmt(s.vault)} of ${fmt(d.vaultCap)}`}>
-          <View style={styles.vaultLabel}>
-            <Text style={[styles.cellLabel, vaultFull && { color: colors.bad }]}>{vaultFull ? 'Vault full' : 'Vault'}</Text>
-            {!vaultFull && <Text style={styles.cellLabel}>{Math.round(vaultPct * 100)}%</Text>}
-          </View>
-          <Text style={[styles.cellValue, { color: vaultFull ? colors.bad : colors.text }]} numberOfLines={1}>
-            {fmtShort(s.vault)}
-            <Text style={styles.cellOf}>/{fmtShort(d.vaultCap)}</Text>
-          </Text>
-          <View style={styles.vaultTrack}>
-            <View style={[styles.vaultFill, { width: `${vaultPct * 100}%`, backgroundColor: vaultFull ? colors.bad : colors.dirty }]} />
-          </View>
-        </Pressable>
+        {empire ? (
+          <Pressable style={[styles.cell, styles.vaultCell, styles.empireCell]} onPress={() => toggle('empire')} accessibilityLabel={`Empire value ${fmt(empire.value.total)}, best ${fmt(empire.best)}`}>
+            <View style={styles.vaultLabel}>
+              <Text style={styles.cellLabel}>Empire</Text>
+              <Text style={[styles.cellLabel, { color: empire.change >= 0 ? colors.good : colors.bad }]}>{`${empire.change >= 0 ? '+' : '−'}${Math.abs(empire.pct * 100).toFixed(1)}%`}</Text>
+            </View>
+            <Text style={styles.cellValue} numberOfLines={1}>
+              {fmtShort(empire.value.total)}
+            </Text>
+            <Text style={styles.empireBest}>{`best ${fmtShort(empire.best)}`}</Text>
+          </Pressable>
+        ) : (
+          <Pressable style={[styles.cell, styles.vaultCell]} onPress={() => toggle('vault')} accessibilityLabel={`Vault ${fmt(s.vault)} of ${fmt(d.vaultCap)}`}>
+            <View style={styles.vaultLabel}>
+              <Text style={[styles.cellLabel, vaultFull && { color: colors.bad }]}>{vaultFull ? 'Vault full' : 'Vault'}</Text>
+              {!vaultFull && <Text style={styles.cellLabel}>{Math.round(vaultPct * 100)}%</Text>}
+            </View>
+            <Text style={[styles.cellValue, { color: vaultFull ? colors.bad : colors.text }]} numberOfLines={1}>
+              {fmtShort(s.vault)}
+              <Text style={styles.cellOf}>/{fmtShort(d.vaultCap)}</Text>
+            </Text>
+            <View style={styles.vaultTrack}>
+              <View style={[styles.vaultFill, { width: `${vaultPct * 100}%`, backgroundColor: vaultFull ? colors.bad : colors.dirty }]} />
+            </View>
+          </Pressable>
+        )}
         <ResCell kind="dirty" label="Dirty" value={fmtShort(s.dirty)} onPress={() => toggle('dirty')} />
         <ResCell kind="clean" label="Clean" value={fmtShort(s.clean)} onPress={() => toggle('clean')} />
         <ResCell kind="influence" label="Infl." value={fmtShort(s.influence)} onPress={() => toggle('influence')} />
@@ -210,6 +228,8 @@ const styles = StyleSheet.create({
   cell: { flex: 1, height: 56, justifyContent: 'center', gap: 4, paddingLeft: 8, borderLeftWidth: 1, borderLeftColor: colors.divider },
   vaultCell: { flex: 2, paddingLeft: 16, paddingRight: 12, borderLeftWidth: 0 },
   vaultLabel: { flexDirection: 'row', justifyContent: 'space-between' },
+  empireCell: { gap: 2 },
+  empireBest: { fontFamily: fonts.text400, fontSize: 9.5, lineHeight: 11, color: colors.faint },
   cellHead: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   cellLabel: { fontFamily: fonts.text400, fontSize: 9.5, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.muted },
   cellValue: { fontFamily: fonts.text600, fontSize: 16, lineHeight: 18, color: colors.text, fontVariant: ['tabular-nums'] },

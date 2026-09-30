@@ -287,6 +287,20 @@ export type MissionId = 'crateThroughPort' | 'acrossTheBridge' | 'firstTruck' | 
 export const MISSION_IDS: readonly MissionId[] = ['crateThroughPort', 'herTerms', 'acrossTheBridge', 'secondLunch', 'firstTruck', 'firstAuction', 'overGovernor']
 export type Boss = 'tolya' | 'zhanna' | 'ignatov' | 'colonel' | 'golovin' | 'prosecutor'
 
+// After the story (ADR 0052): big weekly jobs that pay Clean and gold. Their terms are in days of income,
+// so they keep up with the empire.
+export type ContractId = 'tramDepot' | 'boilerHouse' | 'portChannel' | 'bridgeLights' | 'palaceRoof' | 'stationClock'
+export const CONTRACT_IDS: readonly ContractId[] = ['tramDepot', 'boilerHouse', 'portChannel', 'bridgeLights', 'palaceRoof', 'stationClock']
+
+export type ContractConfig = {
+  name: string
+  crew: number
+  hours: number
+  costDays: number // Clean up front, in days of income
+  payDays: number // Clean on completion, in days of income
+  gold: number
+}
+
 export type MissionConfig = {
   name: string
   kind: 'overreach' | 'rematch'
@@ -586,6 +600,17 @@ export type Config = {
     cleanBelowHours: number // "no Clean": less than this many hours of wages
     stakeHours: number // the envelope holds this many hours of wages and upkeep, in Dirty
     minStake: number
+  }
+  // After the story (ADR 0052): once the final act is cleared, play carries on.
+  after: {
+    extraTiers: number // joints and rackets tier this far past the book's last tier
+    pastBookCostMult: number // each tier past the book costs this much more again
+    contracts: {
+      count: number // on the board at a time
+      refreshDays: number // the board is posted anew this often; one under way stays
+      minDayIncome: number // terms are scaled to at least this day of income
+      list: Record<ContractId, ContractConfig>
+    }
   }
   // The boss missions (ADR 0050). `enabled: false` leaves every gate's missions out (Debug, older tests).
   missions: {
@@ -970,6 +995,23 @@ export function validateConfig(c: Config): string[] {
       nonNeg(e, 'rockBottom.cleanBelowHours', c.rockBottom.cleanBelowHours)
       positive(e, 'rockBottom.stakeHours', c.rockBottom.stakeHours)
       nonNeg(e, 'rockBottom.minStake', c.rockBottom.minStake)
+      const af = c.after
+      int(e, 'after.extraTiers', af.extraTiers, 0)
+      num(e, 'after.pastBookCostMult', af.pastBookCostMult, (n) => n >= 1, '>= 1')
+      int(e, 'after.contracts.count', af.contracts.count, 1)
+      if (af.contracts.count > CONTRACT_IDS.length) e.push(`after.contracts.count: at most ${CONTRACT_IDS.length}, one of each`)
+      positive(e, 'after.contracts.refreshDays', af.contracts.refreshDays)
+      nonNeg(e, 'after.contracts.minDayIncome', af.contracts.minDayIncome)
+      for (const id of CONTRACT_IDS) {
+        const k = af.contracts.list[id]
+        if (!k) { e.push(`after.contracts.list.${id}: missing`); continue }
+        const p = `after.contracts.list.${id}`
+        int(e, `${p}.crew`, k.crew, 1)
+        positive(e, `${p}.hours`, k.hours)
+        nonNeg(e, `${p}.costDays`, k.costDays)
+        num(e, `${p}.payDays`, k.payDays, (n) => n > k.costDays, '> costDays')
+        int(e, `${p}.gold`, k.gold, 0)
+      }
       for (const id of MISSION_IDS) {
         const m = c.missions.list[id]
         if (!m) { e.push(`missions.list.${id}: missing`); continue }

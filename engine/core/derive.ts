@@ -133,7 +133,8 @@ const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0)
 export function derive(state: PlayerState, c: Config): Derived {
   const controllerOf = (id: DistrictId) => state.districts.find((d) => d.id === id)?.controller ?? 'none'
   const inspectionMult = state.inspected ? c.heat.inspectYieldMult : 1
-  const maxTier = c.rackets.maxTierByAct[state.act]
+  const afterStory = F.storyOver(state, c)
+  const maxTier = c.rackets.maxTierByAct[state.act] + (afterStory ? c.after.extraTiers : 0)
   const kindOf = (t: RacketType) => c.rackets.types[t].kind
   const sells = state.act >= c.supply.sellFromAct
   const premiumOn = state.act >= c.premium.fromAct
@@ -284,7 +285,7 @@ export function derive(state: PlayerState, c: Config): Derived {
       leashHours: leash,
       shield: 0, // set below, once total yield is known
       influence: (rt.influencePerHrPerTier ?? 0) * r.tier * cond * fx.influenceMult,
-      upgradeCost: r.tier < F.racketMaxTier(c, r.type, state.act) ? F.racketUpgradeCost(c, r.type, r.tier) : null,
+      upgradeCost: r.tier < F.racketMaxTier(c, r.type, state.act, afterStory) ? F.racketUpgradeCost(c, r.type, r.tier) : null,
       repairCost: F.racketRepairCost(c, r.type),
     }
   })

@@ -59,11 +59,15 @@ export function shiftTimes(state: PlayerState, delta: number): PlayerState {
   s.offers.refreshAt = shift(s.offers.refreshAt)
   for (const o of s.offers.items) o.expiresAt = shift(o.expiresAt)
   for (const row of s.ledger) row.startsAt = shift(row.startsAt)
+  if (s.after.contracts.refreshAt > 0) s.after.contracts.refreshAt = shift(s.after.contracts.refreshAt)
+  for (const k of s.after.contracts.items) k.expiresAt = shift(k.expiresAt)
+  for (const h of s.after.history) h.at = shift(h.at)
   for (const e of s.log) e.t = shift(e.t)
   const st = s.stats
   for (const k of Object.keys(st.actClearedAt) as unknown as (keyof typeof st.actClearedAt)[]) {
     st.actClearedAt[k] = shift(st.actClearedAt[k]!)
   }
+  for (const k of Object.keys(st.endings) as (keyof typeof st.endings)[]) st.endings[k] = shift(st.endings[k]!)
   if (st.firstRaidAt !== null) st.firstRaidAt = shift(st.firstRaidAt)
   if (st.lastSessionAt !== null) st.lastSessionAt = shift(st.lastSessionAt)
   for (const k of Object.keys(st.officialBoughtAt) as (keyof typeof st.officialBoughtAt)[]) {

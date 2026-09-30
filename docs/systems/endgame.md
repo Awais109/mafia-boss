@@ -45,7 +45,7 @@ holdingMult = 1 + legalBonusPerTier × tier × condition/100            (the Hol
 - **The Holding:** every joint and racket is legal.
 - **The Empire:** every district is yours, and `reckoning.empireWins` hearings have been won in court.
 
-Each is recorded once, in `stats.endings[ending]`, with `ENDING_REACHED { ending }`. The first clears Act VI (`stats.actClearedAt[6]`, `ACT_CLEARED`). Play carries on either way.
+Each is recorded once, in `stats.endings[ending]`, with `ENDING_REACHED { ending }`. The first clears Act VI (`stats.actClearedAt[6]`, `ACT_CLEARED`) and posts the first contracts. Play carries on either way: tiers past the book, the empire value and the contracts board ([after.md](after.md)).
 
 ## The bot
 

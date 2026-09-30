@@ -212,8 +212,21 @@ function v15to16(doc: Doc): Doc {
   }
 }
 
+// After the story (ADR 0052): no contracts yet, posted on the next reconcile if the story is already over;
+// no empire history or best yet (the next day start records one); zeroed counters.
+function v16to17(doc: Doc): Doc {
+  const stats = doc.stats as { actClearedAt: Record<number, number | undefined>; after?: object }
+  const over = stats.actClearedAt[defaults.progression.finalAct] !== undefined
+  return {
+    ...doc,
+    schemaVersion: 17,
+    after: doc.after ?? { contracts: { items: [], refreshAt: over ? (doc.updatedAt as number) : 0, refreshCount: 0 }, best: 0, history: [] },
+    stats: { ...emptyStats(), ...stats, after: { ...emptyStats().after, ...stats.after } },
+  }
+}
+
 const STEPS: Record<number, (doc: Doc) => Doc> = {
-  1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7, 7: v7to8, 8: v8to9, 9: v9to10, 10: v10to11, 11: v11to12, 12: v12to13, 13: v13to14, 14: v14to15, 15: v15to16,
+  1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7, 7: v7to8, 8: v8to9, 9: v9to10, 10: v10to11, 11: v11to12, 12: v12to13, 13: v13to14, 14: v14to15, 15: v15to16, 16: v16to17,
 }
 
 export function migrate(doc: unknown): PlayerState {

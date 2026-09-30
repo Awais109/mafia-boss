@@ -38,7 +38,7 @@ Reputation is the progress currency: it unlocks bigger businesses, fronts and of
 - any district with `grantedOnOpen` in act *n* becomes yours (Nagornaya);
 - Act II also emits the note about Zhanna.
 
-With `finalAct` at 6 there's no gate after it: the first ending clears Act VI ([endgame.md](endgame.md#the-endings)). With a lower `finalAct` (a preset or a test), when the gate after `finalAct` holds, the final act is **cleared** instead: `stats.actClearedAt[finalAct] = t` and `ACT_CLEARED`, once. The game carries on (`gameCleared`), and the app says so in words ([ADR 0022](../decisions/0022-end-of-prototype-state.md)).
+With `finalAct` at 6 there's no gate after it: the first ending clears Act VI ([endgame.md](endgame.md#the-endings)). With a lower `finalAct` (a preset or a test), when the gate after `finalAct` holds, the final act is **cleared** instead: `stats.actClearedAt[finalAct] = t` and `ACT_CLEARED`, once. The game carries on (`gameCleared`, from `formulas.storyOver`), and the app says so in words ([ADR 0022](../decisions/0022-end-of-prototype-state.md)); after the story there's still growth ([after.md](after.md)).
 
 What each act changes, beyond its own businesses, fronts, officials, districts and jobs (tagged `act` in config):
 - the vault leash `vault.targetHoursByAct`, the max tier `rackets.maxTierByAct` (6 from Act III), the price of a business `costs.paybackHoursByAct`;

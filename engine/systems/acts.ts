@@ -1,6 +1,8 @@
 import type { ActGate, Config, LaterAct } from '../config/schema'
 import { emit, type Ctx } from '../core/ctx'
+import { storyOver } from '../core/formulas'
 import type { PlayerState } from '../model/state'
+import { openAfterStory } from './after'
 import { grantGold } from './gold'
 import { checkEndings } from './legal'
 import { initPolitics } from './politics'
@@ -30,7 +32,7 @@ export function nextGate(state: PlayerState, c: Config): { act: LaterAct; gate: 
 
 // The built game is over: the final act's gate has been met. Play continues.
 export function gameCleared(state: PlayerState, c: Config): boolean {
-  return state.act === c.progression.finalAct && state.stats.actClearedAt[state.act] !== undefined
+  return storyOver(state, c)
 }
 
 // Opens every act whose gate holds, in order. Called whenever Reputation, goals, districts or fronts change.
@@ -45,6 +47,7 @@ export function checkActs(state: PlayerState, ctx: Ctx, t: number): void {
       if (state.stats.actClearedAt[state.act] === undefined) {
         state.stats.actClearedAt[state.act] = t
         emit(ctx, t, { type: 'ACT_CLEARED', act: state.act })
+        if (state.act === c.progression.finalAct) openAfterStory(state, ctx, t)
       }
       return
     }

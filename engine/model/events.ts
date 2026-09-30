@@ -1,5 +1,6 @@
 import type {
   Act,
+  ContractId,
   Controller,
   DistrictId,
   Ending,
@@ -18,7 +19,7 @@ import type {
 } from '../config/schema'
 import type { InboxEffects, InboxItem } from './state'
 
-export type GoldSource = 'start' | 'act' | 'goal' | 'debug' | 'ad' | 'purchase'
+export type GoldSource = 'start' | 'act' | 'goal' | 'contract' | 'debug' | 'ad' | 'purchase'
 
 // What happened during a reconcile or apply. Events are the playtest log.
 export type EventBody =
@@ -83,7 +84,11 @@ export type EventBody =
       rep?: number
       influence?: number
     }
-  | { type: 'OP_RUSHED'; opId: string; opType: OpType | 'mission'; bars: number; name?: string }
+  | { type: 'OP_RUSHED'; opId: string; opType: OpType | 'mission' | 'contract'; bars: number; name?: string }
+  | { type: 'CONTRACTS_POSTED'; count: number } // after the story (ADR 0052)
+  | { type: 'CONTRACT_STARTED'; contractId: string; kind: ContractId; name: string; opId: string; crewIds: string[]; cost: number }
+  | { type: 'CONTRACT_DONE'; contractId: string; kind: ContractId; name: string; crewIds: string[]; clean: number; gold: number }
+  | { type: 'EMPIRE_BEST'; value: number }
   | { type: 'GOAL_DONE'; goalId: GoalId; gold: number }
   | { type: 'SHIPMENT_BOUGHT'; packs: number; cost: number; product?: 'premium' }
   | { type: 'PASSAGE_BOUGHT'; cost: number; until: number }

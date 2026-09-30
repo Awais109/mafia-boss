@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native'
-import { ACTS, DISTRICT_IDS, RANK_NAMES, gameCleared, gameDay, type Act } from '../../engine'
+import { ACTS, DISTRICT_IDS, RANK_NAMES, empireValue, gameCleared, gameDay, type Act } from '../../engine'
 import { ACT_NAME, actProgress } from '../acts'
 import { colors, glyph, Item, List, PageHead, rich, Screen, Section, SubHead } from '../components/ui'
 import { fmt, fmtClock } from '../format'
@@ -49,6 +49,16 @@ export function StatsScreen({ game }: ScreenProps) {
           {gameCleared(s, c) && t.actClearedAt[s.act] !== undefined && <Item label={`Act ${ACT_NAME[s.act]} cleared`} value={day(t.actClearedAt[s.act]!)} color={colors.good} />}
         </List>
       </Section>
+
+      {gameCleared(s, c) && (
+        <Section title="After the story">
+          <List>
+            <Item label="Empire value" hint={`best ${fmt(Math.max(s.after.best, empireValue(s, c, game.derived).total))}${t.after.bests ? ` · ${t.after.bests} new best${t.after.bests === 1 ? '' : 's'}` : ''}`} value={fmt(empireValue(s, c, game.derived).total)} />
+            <Item label="Contracts done" hint={`${glyph.clean}${fmt(t.after.contractClean)} · ${glyph.gold}${fmt(t.after.contractGold)}`} value={fmt(t.after.contracts)} />
+            <Item label="Tiers past the book" value={fmt(t.after.pastBook)} />
+          </List>
+        </Section>
+      )}
 
       <Section title="Money" right="lifetime">
         <List>

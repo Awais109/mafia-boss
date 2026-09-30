@@ -4,6 +4,7 @@ import { derive, type Derived } from '../core/derive'
 import * as F from '../core/formulas'
 import { dayIndex } from '../core/time'
 import type { PlayerState } from '../model/state'
+import { openAfterStory } from './after'
 import { raiseIncident } from './inbox'
 import { spendClean } from './reputation'
 
@@ -96,6 +97,7 @@ export function checkEndings(state: PlayerState, ctx: Ctx, t: number): void {
     if (state.act === c.progression.finalAct && state.stats.actClearedAt[state.act] === undefined) {
       state.stats.actClearedAt[state.act] = t
       emit(ctx, t, { type: 'ACT_CLEARED', act: state.act })
+      openAfterStory(state, ctx, t)
     }
   }
 }
