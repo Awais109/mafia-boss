@@ -1,11 +1,14 @@
-import { StyleSheet, Text, View } from 'react-native'
-import { gameDay, TUTORIAL_STEPS, type Act } from '../../engine'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { gameDay, missionBlocked, missionDone, missionOut, TUTORIAL_STEPS, type Act } from '../../engine'
 import { ACT_NAME, ACT_OPENS, actMilestones, actProgress } from '../acts'
 import type { TabId } from '../screens/types'
-import { ACT_TITLE } from '../story'
+import { PEOPLE } from '../people'
+import { ACT_ARC, ACT_TITLE } from '../story'
 import type { Snapshot } from '../store'
 import { fonts } from '../theme'
 import { AfterStory } from './AfterStory'
+import { Icon } from './Glyph'
+import { Head as Face } from './Portrait'
 import { openingCopy } from './TutorialBanner'
 import { Check, colors, Item, List, Section, Tag, Title } from './ui'
 
@@ -91,18 +94,63 @@ export function NextCard({ game, go }: { game: Snapshot; go: (tab: TabId) => voi
 
   const next = progress.nextAct
   const met = progress.requirements.filter((r) => r.done).length
+  // The boss's arc (design: Home · Act V) stands in for its missions' rows and the payoff's.
+  const arc = c.missions.enabled ? ACT_ARC[s.act] : undefined
+  const inArc = new Set(arc ? [...[arc.payoff.mission, arc.overreach].map((id) => (id ? c.missions.list[id].name : '')), arc.payoff.requirement ?? ''] : [])
   const goalsOnly = progress.requirements.length === 1 && progress.segments
   const note = goalsOnly ? `${s.goals.done.length} of ${c.goals.list.length}` : `${met} of ${progress.requirements.length}`
   return (
     <Section title="Next" right={note}>
       <List style={styles.list}>
         <Head title={`Act ${ACT_NAME[next]} · ${ACT_TITLE[next]}`} text={`Opens ${ACT_OPENS[next]}.`} />
-        {progress.requirements.map((r) => (
-          <Item key={r.label} left={<Check state={r.done ? 'done' : 'todo'} />} label={r.label} hint={r.hint} value={r.value} muted={r.done} />
-        ))}
+        {progress.requirements
+          .filter((r) => !inArc.has(r.label))
+          .map((r) => (
+            <Item key={r.label} left={<Check state={r.done ? 'done' : 'todo'} />} label={r.label} hint={r.hint} value={r.value} muted={r.done} />
+          ))}
+        {arc && <ArcStrip game={game} go={go} />}
         {footer}
       </List>
     </Section>
+  )
+}
+
+// The act's boss, the payoff that settles their arc and the overreach that ends the act, as chips; tap for Ops.
+function ArcStrip({ game, go }: { game: Snapshot; go: (tab: TabId) => void }) {
+  const { state: s, config: c, now } = game
+  const arc = ACT_ARC[s.act]!
+  const boss = PEOPLE.find((p) => p.id === arc.boss)
+  const pay = arc.payoff
+  const paid = pay.mission ? missionDone(s, pay.mission) : (pay.done?.(s) ?? false)
+  const payNote = paid ? (pay.mission ? 'won' : 'done') : pay.mission && missionOut(s, pay.mission) ? 'out' : pay.mission && s.missions[pay.mission]?.result === 'lost' ? 'lost' : 'not yet'
+  const over = arc.overreach
+  const overName = c.missions.list[over].name
+  const overState = missionDone(s, over) ? 'done' : missionOut(s, over) ? 'out' : missionBlocked(s, c, over, now) === 'The rest of the act comes first' ? 'locked' : 'ready'
+  return (
+    <Pressable onPress={() => go('ops')} accessibilityRole="button" accessibilityLabel={`${boss?.name}'s arc: ${pay.name} ${payNote}; ${overName} ${overState}`} style={styles.arc}>
+      <Face id={arc.boss} size={40} />
+      <View style={styles.arcBody}>
+        <Text style={styles.arcHead}>{`${boss?.name ?? ''} · the arc`.toUpperCase()}</Text>
+        <ArcChip text={`${pay.name} · ${payNote}`} state={paid ? 'done' : 'open'} />
+        <ArcChip text={overState === 'locked' ? overName : `${overName} · ${overState === 'done' ? 'sent' : overState}`} state={overState === 'out' ? 'open' : overState} />
+      </View>
+      <Icon name="chevronRight" size={16} color={colors.muted} strokeWidth={2} />
+    </Pressable>
+  )
+}
+
+function ArcChip({ text, state }: { text: string; state: 'open' | 'done' | 'ready' | 'locked' }) {
+  return (
+    <View style={[styles.chip, state === 'locked' && styles.chipLocked, state === 'ready' && styles.chipReady]}>
+      {state === 'locked' ? (
+        <Icon name="lock" size={11} color={colors.faint} />
+      ) : state === 'done' ? (
+        <Icon name="check" size={11} color={colors.good} strokeWidth={2.4} />
+      ) : (
+        <View style={[styles.ring, state === 'ready' && { borderColor: colors.accent }]} />
+      )}
+      <Text style={[styles.chipText, state === 'locked' && styles.chipTextLocked, state === 'done' && styles.chipTextDone]}>{text}</Text>
+    </View>
   )
 }
 
@@ -130,4 +178,14 @@ const styles = StyleSheet.create({
   stepLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   stepNo: { width: 16, textAlign: 'right', fontFamily: fonts.text400, fontSize: 13, color: colors.faint, fontVariant: ['tabular-nums'] },
   nowRow: { backgroundColor: '#221c12' },
+  arc: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14 },
+  arcBody: { flex: 1, alignItems: 'flex-start', gap: 6 },
+  arcHead: { fontFamily: fonts.text600, fontSize: 11, letterSpacing: 1.3, color: colors.muted },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4, paddingHorizontal: 8, borderRadius: 3, borderWidth: 1, borderColor: colors.control, backgroundColor: colors.cardAlt },
+  chipReady: { borderColor: colors.accent },
+  chipLocked: { borderStyle: 'dashed', borderColor: colors.border, backgroundColor: 'transparent' },
+  ring: { width: 8, height: 8, borderRadius: 4, borderWidth: 1.2, borderColor: colors.text },
+  chipText: { fontFamily: fonts.text600, fontSize: 12.5, color: colors.text },
+  chipTextLocked: { fontFamily: fonts.text400, color: colors.faint },
+  chipTextDone: { color: colors.muted },
 })

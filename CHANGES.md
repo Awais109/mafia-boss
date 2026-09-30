@@ -3,6 +3,14 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-30 — Next: the boss's arc (D11)
+
+Branch: `feature/design-v2`. The design's arc strip (Home · Act V) on Home's Next, for the missions of [ADR 0050](docs/decisions/0050-boss-missions.md).
+
+- **What a player sees:** Next shows the act's boss with two chips, the payoff that settles their arc (a rematch, or the Row, the road, the count) and the overreach. The overreach stays locked and dashed until the rest of the act is done. The mission rows, and the gate row the payoff stands for, fold into it. Tap it for Ops.
+- **Code:** `app/components/NextCard.tsx` (`ArcStrip`, `ArcChip`), `app/story.ts` (`ACT_ARC`); [app.md](docs/app.md).
+- **Verified:** `npm run check`; the web build on Day 32 in Act V: "GOLOVIN · THE ARC", "The count · not yet", "Over the Governor's head" locked.
+
 ## 2026-09-30 — The city's story: opinion, the Ministry, someone sent (D10)
 
 Branch: `feature/design-v2`. Reasoning: [ADR 0054](docs/decisions/0054-the-city-story.md); the rules: [inbox.md](docs/systems/inbox.md#the-citys-story).

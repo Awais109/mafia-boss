@@ -163,3 +163,15 @@ export const CONTRACT_TEXT: Record<ContractId, string> = {
   palaceRoof: 'It rains on the stage of the Palace of Culture. The council wants the cinema open by the holidays.',
   stationClock: 'The clock over the station has said twenty to four for two years. Nobody meets under it any more.',
 }
+
+// Each act's boss arc on Home's Next (design: Home · Act V, the arc strip; ADR 0050): the payoff that
+// settles it and the overreach that ends the act. A payoff is a rematch, or a moment the gate already asks
+// for (`requirement`: the Next row it stands in for).
+export type ArcStep = { name: string; mission?: MissionId; done?: (s: PlayerState) => boolean; requirement?: string }
+export const ACT_ARC: Partial<Record<Act, { boss: HeadId; payoff: ArcStep; overreach: MissionId }>> = {
+  1: { boss: 'tolya', payoff: { name: 'The Row', done: (s) => s.districts.find((d) => d.id === 'kioskRow')?.controller === 'player' }, overreach: 'crateThroughPort' },
+  2: { boss: 'zhanna', payoff: { name: 'Her terms', mission: 'herTerms' }, overreach: 'acrossTheBridge' },
+  3: { boss: 'ignatov', payoff: { name: 'The second lunch', mission: 'secondLunch' }, overreach: 'firstTruck' },
+  4: { boss: 'colonel', payoff: { name: 'The road', done: (s) => s.districts.find((d) => d.id === 'zastava')?.controller === 'player', requirement: 'Hold Zastava' }, overreach: 'firstAuction' },
+  5: { boss: 'golovin', payoff: { name: 'The count', done: (s) => s.politics.mayor, requirement: 'Win an election' }, overreach: 'overGovernor' },
+}
