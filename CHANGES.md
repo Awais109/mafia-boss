@@ -3,6 +3,40 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-30 — The warm-ledger design, part 5: the Map and People (D3)
+
+Branch: `feature/design-v2`. Reasoning: [ADR 0048](docs/decisions/0048-notebook-map-and-people.md). The design: the Map frames (start, Act III, complete), People and the dossier.
+
+### What changed, for a player
+
+- **The Map is Lyosha's notebook, drawn:**
+  - the river, the bridge, the railway and the tram, and a sketch of every district;
+  - a district is faint pencil with his note until someone shows it to you, then inked with its name and who holds it;
+  - your businesses are red-pencil marks;
+  - the district you tap is ringed, and the newest page's line is written beside it.
+- **The district card** says who holds it, what it hosts, its prosperity, tribute and pairings, and what taking it gives. It has Buy out and Pressure, and the line that revealed it, on paper.
+- **People,** the Map's second view:
+  - everyone you've met as a card on the notebook's page, and everyone not yet as a shape with Lyosha's note;
+  - a card opens a dossier: the person's panel or portrait, their line, who they are, their role, what they hold and their mood.
+- **Zhanna and Tolya** have their faces on the Map. Zhanna's next lot is a box with Buy, and the surplus sells in one tap.
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| The map | `app/components/CityMap.tsx` (rewritten in SVG) |
+| People | `app/people.ts`, `app/components/People.tsx`, `app/art/people.ts` (new) |
+| The Map screen | `app/screens/TurfScreen.tsx`; `app/components/DistrictSummary.tsx` (new, shared with Business), `app/components/ZhannaCard.tsx` |
+| Kit | `app/components/Notebook.tsx` (`Paper` gets `tight`), `app/components/Glyph.tsx` (`chevronLeft`), `app/webParams.ts` (new: `?view=` and `?person=` for the rig) |
+| Docs | [ADR 0048](docs/decisions/0048-notebook-map-and-people.md) (supersedes part of 0046), [app.md](docs/app.md), [story.md](docs/story.md), the doc map |
+
+No engine, config or save change.
+
+### Verified
+
+- `npm run check`.
+- The web build against the frames: the Map at the start, in Act III and after the story; People in Act III; Zhanna's and Tolya's dossiers.
+
 ## 2026-09-30 — The warm-ledger design, part 4: Ops, Crew, Heat, Stats, Log, How it works (D2)
 
 Branch: `feature/design-v2`. The design: the Ops, Crew, Heat, Stats, Log and How it works frames.

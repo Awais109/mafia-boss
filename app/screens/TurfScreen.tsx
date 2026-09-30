@@ -1,155 +1,216 @@
 import { useState } from 'react'
-import { View } from 'react-native'
-import { DISTRICT_IDS, prosperityOn, prosperityTarget, tolyaHostile, tolyaIntervalHours, type DistrictId, type RacketType } from '../../engine'
+import { StyleSheet, Text, View } from 'react-native'
+import { DISTRICT_IDS, tolyaHostile, tolyaIntervalHours, type DistrictId, type RacketType } from '../../engine'
+import type { PersonId } from '../art/people'
 import { ACT_NAME } from '../acts'
 import { CityMap } from '../components/CityMap'
 import { ColonelCard } from '../components/ColonelCard'
+import { DistrictSummary } from '../components/DistrictSummary'
+import { Dossier, PeopleGrid } from '../components/People'
 import { PoliticsCard } from '../components/PoliticsCard'
+import { Head } from '../components/Portrait'
 import { ReckoningCard } from '../components/ReckoningCard'
 import { TributeCard } from '../components/TributeCard'
+import { Btn, Card, colors, glyph, rich, Screen, Section, Segmented, Tag, Title } from '../components/ui'
 import { ZhannaCard } from '../components/ZhannaCard'
-import { Btn, BtnRow, Card, colors, Row, Screen, Section, T, Tag } from '../components/ui'
-import { fmt, fmtDuration, fmtRate, pct } from '../format'
+import { fmt, fmtDuration, pct } from '../format'
+import { PEOPLE } from '../people'
 import { store } from '../store'
 import { DISTRICT_STORY, revealed, tolyaMood } from '../story'
+import { fonts, paper } from '../theme'
+import { webParam } from '../webParams'
 import type { ScreenProps } from './types'
 
-const CONTROLLER = { player: 'yours', tolya: 'Tolya’s', zhanna: 'Zhanna’s', colonel: 'the Colonel’s', state: 'the state’s', none: 'nobody’s' } as const
+// The Map (ADR 0046; design: Map and People). The city: Lyosha's notebook drawn as a map, the district you
+// tap with who holds it and what it's worth, and the rivals, newest first. People: everyone you've met, and
+// each one's dossier.
+
+const CONTROLLER = { player: 'yours', tolya: 'Tolya’s', zhanna: 'Zhanna’s', colonel: 'the Colonel’s', state: 'the state’s', none: 'open turf' } as const
+const VIEWS = [
+  { key: 'city', title: 'The city' },
+  { key: 'people', title: 'People' },
+] as const
 
 export function TurfScreen({ game, go }: ScreenProps) {
-  const { state: s, config: c, now } = game
-  const tol = s.rival.tolya
-  const hostile = tolyaHostile(s, c)
-  const mood = tolyaMood(s, c)
+  const { state: s, config: c } = game
+  const [view, setView] = useState<'city' | 'people'>(webParam('view') === 'people' ? 'people' : 'city')
+  const [person, setPerson] = useState<PersonId | null>(() => (PEOPLE.find((p) => p.id === webParam('person'))?.id ?? null))
   const [selected, setSelected] = useState<DistrictId | null>(null)
   const home = DISTRICT_IDS.find((id) => c.districts.list[id].home)!
   const picked = selected ?? home
 
   return (
     <Screen>
-      <Section title="The map">
-        <CityMap game={game} selected={picked} onSelect={setSelected} />
-        <DistrictCard game={game} go={go} id={picked} />
-        {revealed(s, c, picked) && (
-          <Card>
-            <T small style={{ fontStyle: 'italic' }}>{DISTRICT_STORY[picked].reveal}</T>
-            <T small color={colors.faint}>{`Shown to you by ${DISTRICT_STORY[picked].by}.`}</T>
-          </Card>
-        )}
-      </Section>
+      <Segmented label="Map view" options={VIEWS} value={view} onChange={(v) => { setView(v); setPerson(null) }} />
 
-      <Section title="Tolya">
-        <TributeCard game={game} />
-        <Card>
-          <T small muted>
-            The old boss of these streets. Every few hours he sends his boys: to break something, to ask for a cut, or just to be seen.
-          </T>
-          <Row label="Mood" hint={`disposition ${fmt(tol.disposition)}`} value={mood} color={hostile ? colors.heat : tol.disposition < 0 ? colors.warn : colors.good} />
-          <Row label="Next visit" hint={`every ${fmt(tolyaIntervalHours(s, c))}h`} value={fmtDuration(tol.nextTickAt - now, c)} />
-          {tol.demand === null && <T small muted>No demands right now.</T>}
-          <T small color={colors.faint}>
-            Paying keeps him sweet. Pressuring or buying his turf sours him; below {c.rivals.tolya.hostileBelow} he visits more often.
-          </T>
-        </Card>
-      </Section>
+      {view === 'people' ? (
+        person ? (
+          <Dossier game={game} id={person} onBack={() => setPerson(null)} onMap={PEOPLE.find((p) => p.id === person)?.mood ? () => { setView('city'); setPerson(null) } : undefined} />
+        ) : (
+          <PeopleGrid game={game} onOpen={setPerson} />
+        )
+      ) : (
+        <>
+          <View style={styles.bleed}>
+            <CityMap game={game} selected={picked} onSelect={setSelected} />
+          </View>
+          <DistrictCard game={game} go={go} id={picked} />
 
-      {s.act >= 2 && (
-        <Section title="Zhanna">
-          <ZhannaCard game={game} />
-        </Section>
-      )}
-
-      {s.act >= c.reckoning.fromAct && (
-        <Section title="The reckoning">
-          <ReckoningCard game={game} />
-        </Section>
-      )}
-
-      {s.act >= c.opinion.fromAct && (
-        <Section title="Politics">
-          <PoliticsCard game={game} />
-        </Section>
-      )}
-
-      {s.act >= c.premium.fromAct && (
-        <Section title="The Colonel">
-          <ColonelCard game={game} />
-        </Section>
+          {s.act >= c.reckoning.fromAct && (
+            <Section title="The reckoning">
+              <ReckoningCard game={game} />
+            </Section>
+          )}
+          {s.act >= c.opinion.fromAct && (
+            <Section title="Politics">
+              <PoliticsCard game={game} />
+            </Section>
+          )}
+          {s.act >= c.premium.fromAct && (
+            <Section title="The Colonel">
+              <ColonelCard game={game} />
+            </Section>
+          )}
+          {s.act >= 2 && (
+            <Section title="Zhanna Arkadyevna" right="the Port Quarter">
+              <ZhannaCard game={game} />
+            </Section>
+          )}
+          <Tolya game={game} go={go} />
+        </>
       )}
     </Screen>
   )
 }
 
-// One district, as the map shows it when you tap it: who holds it, what it hosts and what it's worth.
+function Tolya({ game }: ScreenProps) {
+  const { state: s, config: c, now } = game
+  const tol = s.rival.tolya
+  const mood = tolyaMood(s, c)
+  const holdsRow = s.districts.find((d) => d.id === 'kioskRow')?.controller === 'tolya'
+  return (
+    <Section title="Tolya" right={holdsRow ? 'Kiosk Row' : 'lost the Row'}>
+      {tol.demand !== null ? (
+        <TributeCard game={game} />
+      ) : (
+        <Card style={styles.tolya}>
+          <View style={styles.tolyaHead}>
+            <Head id="tolya" size={44} />
+            <View style={styles.tolyaText}>
+              <Text style={styles.line}>
+                {'Mood '}
+                <Text style={[styles.bold, tolyaHostile(s, c) ? { color: colors.bad } : null]}>{mood}</Text>
+              </Text>
+              <Text style={styles.muted}>{`No demand right now. Next visit in ${fmtDuration(tol.nextTickAt - now, c)}, every ${fmt(tolyaIntervalHours(s, c))}h.`}</Text>
+            </View>
+          </View>
+          <Text style={styles.note}>{`Paying keeps him sweet. Pressuring or buying his turf sours him; below ${c.rivals.tolya.hostileBelow} he visits more often.`}</Text>
+        </Card>
+      )}
+    </Section>
+  )
+}
+
+// One district, as the map shows it when you tap it: who holds it, what it hosts and what it's worth, how to
+// take it, and the line that showed it to you.
 function DistrictCard({ game, go, id }: ScreenProps & { id: DistrictId }) {
-  const { state: s, derived: d, config: c, now } = game
+  const { state: s, derived: d, config: c } = game
   const story = DISTRICT_STORY[id]
+  const dc = c.districts.list[id]
   if (!revealed(s, c, id)) {
     return (
-      <Card>
-        <T bold color={colors.faint}>A page you can’t read yet</T>
-        <T small muted style={{ fontStyle: 'italic' }}>{`Lyosha’s note: ${story.fragment}`}</T>
-        <T small color={colors.faint}>Someone will show it to you.</T>
-      </Card>
+      <View style={styles.card}>
+        <View style={styles.head}>
+          <Title size={22} weight={700} color={colors.muted}>
+            A page you can’t read yet
+          </Title>
+        </View>
+        <View style={styles.paperNote}>
+          <Text style={styles.hand}>{story.fragment}</Text>
+          <Text style={styles.shown}>Lyosha’s note · someone will show it to you</Text>
+        </View>
+      </View>
     )
   }
-  const dc = c.districts.list[id]
   const district = s.districts.find((x) => x.id === id)!
   const ours = district.controller === 'player'
-  const count = s.rackets.filter((r) => r.districtId === id && c.rackets.types[r.type].kind !== 'premises').length
-  const lotsUsed = s.rackets.filter((r) => r.districtId === id && c.rackets.types[r.type].kind === 'premises').length
-  const tributeHere = d.perRacket.reduce((sum, rd, i) => (s.rackets[i].districtId === id ? sum + rd.tribute : sum), 0)
+  const open = d.unlocked.district[id]
   const perks = [
     ...Object.entries(dc.mod.yieldMult ?? {}).map(([t, m]) => `${c.rackets.types[t as RacketType].name} yield ×${m}`),
     dc.mod.wageMult ? `crew wages ×${dc.mod.wageMult}` : '',
     dc.home ? '' : `control +${pct(c.heat.districtControlPct)}`,
+    ours || dc.home ? '' : `${glyph.rep}${c.reputation.perDistrict}`,
   ].filter(Boolean)
   return (
-    <Card>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <T bold>{dc.name}</T>
-        <Tag text={dc.home ? 'home turf' : CONTROLLER[district.controller]} color={ours ? colors.good : colors.muted} />
+    <View style={styles.card}>
+      <View style={styles.head}>
+        <Title size={22} weight={700}>
+          {dc.name}
+        </Title>
+        <Tag text={dc.home ? 'home turf' : CONTROLLER[district.controller]} color={ours ? colors.good : undefined} />
       </View>
-      {!d.unlocked.district[id] ? (
-        <T small muted>{`Opens in Act ${ACT_NAME[dc.act]}.`}</T>
+      {!open ? (
+        <Text style={[styles.muted, styles.pad]}>{`Opens in Act ${ACT_NAME[dc.act]}.`}</Text>
       ) : (
         <>
-          {prosperityOn(s, c) && (
-            <Row
-              label="Prosperity"
-              hint={`heading for ${Math.round(prosperityTarget(s, c, id, now))}`}
-              value={String(Math.round(district.prosperity))}
-              color={colors.good}
-            />
-          )}
-          <T small muted>
-            {dc.allows.length
-              ? `Hosts ${dc.allows.map((t) => c.rackets.types[t].name).join(', ')} · ${count}/${dc.allows.length} running · premises lots ${lotsUsed}/${dc.premisesLots}`
-              : `Nothing earns here · ${dc.lotsFor?.map((t) => c.rackets.types[t].name).join(', ') ?? 'premises'} lots ${lotsUsed}/${dc.premisesLots}`}
-          </T>
-          {dc.auction && !ours && <T small color={colors.warn}>A state asset: it sells at auction, can’t be pressured, and nothing goes in until it’s yours.</T>}
-          {!ours && dc.tribute > 0 && (
-            <Row label="Tribute" hint={`${pct(dc.tribute)} of yield here`} value={`◆${fmtRate(tributeHere)}`} color={colors.warn} />
-          )}
+          <DistrictSummary game={game} id={id} tribute style={styles.flush} />
+          {dc.auction && !ours && <Text style={[styles.warn, styles.pad]}>A state asset: it sells at auction, can’t be pressured, and nothing goes in until it’s yours.</Text>}
           {perks.length > 0 && (
-            <T small>{`${ours ? 'You get' : 'Take it for'}: ${perks.join(' · ')}${ours ? '' : ` · ★${c.reputation.perDistrict}`}`}</T>
+            <View style={styles.perks}>
+              <Text style={styles.perksLabel}>{ours ? 'You get' : 'Take it for'}</Text>
+              <View style={styles.chips}>
+                {perks.map((p) => (
+                  <View key={p} style={styles.chip}>
+                    <Text style={styles.chipText}>{rich(p, 12.5)}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
           )}
           {!ours && (
-            <BtnRow>
+            <View style={styles.actions}>
               <Btn
-                small
                 kind="primary"
-                title={dc.auction ? `Buy at auction ●${fmt(dc.buyout)}` : `Buy out ●${fmt(dc.buyout)}`}
+                title={`${dc.auction ? 'Buy at auction' : 'Buy out'} ${glyph.clean}${fmt(dc.buyout)}`}
                 disabled={s.clean < dc.buyout}
                 onPress={() => store.dispatch({ type: 'BUY_DISTRICT', districtId: id })}
+                style={styles.grow}
               />
-              {!dc.auction && (
-                <Btn small title={`Pressure ${district.pressureCount}/${c.districts.pressureOpsToFlip} → Ops`} onPress={() => go('ops')} />
-              )}
-            </BtnRow>
+              {!dc.auction && <Btn kind="outline" chevron title={`Pressure ${district.pressureCount}/${c.districts.pressureOpsToFlip}`} onPress={() => go('ops')} style={styles.grow} />}
+            </View>
           )}
         </>
       )}
-    </Card>
+      <View style={styles.paperNote}>
+        <Text style={styles.hand}>{story.reveal.replace(/^“|”$/g, '')}</Text>
+        <Text style={styles.shown}>{`Shown to you by ${story.by} · Act ${ACT_NAME[dc.act]}`}</Text>
+      </View>
+    </View>
   )
 }
+
+const styles = StyleSheet.create({
+  bleed: { marginHorizontal: -6 },
+  card: { backgroundColor: colors.card, borderRadius: 6, borderWidth: 1, borderColor: colors.divider, overflow: 'hidden' },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: 14 },
+  pad: { paddingHorizontal: 14, paddingBottom: 12 },
+  flush: { borderWidth: 0, borderTopWidth: 1, borderTopColor: colors.cardAlt, borderRadius: 0, backgroundColor: 'transparent', paddingVertical: 0 },
+  muted: { fontFamily: fonts.text400, fontSize: 13, lineHeight: 18, color: colors.muted },
+  warn: { fontFamily: fonts.text400, fontSize: 12.5, lineHeight: 18, color: colors.warn },
+  note: { fontFamily: fonts.text400, fontSize: 12, lineHeight: 17, color: colors.faint },
+  line: { fontFamily: fonts.text400, fontSize: 14, color: colors.text },
+  bold: { fontFamily: fonts.text600 },
+  perks: { gap: 8, paddingHorizontal: 14, paddingTop: 12, paddingBottom: 4, borderTopWidth: 1, borderTopColor: colors.cardAlt },
+  perksLabel: { fontFamily: fonts.text400, fontSize: 14, color: colors.text },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chip: { paddingVertical: 5, paddingHorizontal: 8, borderRadius: 3, backgroundColor: colors.cardAlt },
+  chipText: { fontFamily: fonts.text400, fontSize: 12.5, color: colors.text },
+  actions: { flexDirection: 'row', gap: 8, padding: 14 },
+  grow: { flex: 1 },
+  paperNote: { gap: 4, margin: 14, marginTop: 4, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: paper.squared, borderRadius: 2 },
+  hand: { fontFamily: fonts.hand700, fontSize: 19, lineHeight: 22, color: paper.fountain },
+  shown: { fontFamily: fonts.text500, fontSize: 10.5, letterSpacing: 1, textTransform: 'uppercase', color: '#5a5144' },
+  tolya: { gap: 10 },
+  tolyaHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  tolyaText: { flex: 1, gap: 2 },
+})

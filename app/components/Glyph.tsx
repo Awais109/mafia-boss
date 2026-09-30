@@ -45,7 +45,7 @@ export function Glyph({ kind, size = 10, color }: { kind: Resource; size?: numbe
 // Line icons on a 24-unit square: the bottom bar, the More sheet, alerts and events.
 export type IconName =
   | 'home' | 'business' | 'fronts' | 'ops' | 'map' | 'more' | 'crew' | 'heat' | 'stats' | 'help' | 'log' | 'debug'
-  | 'close' | 'chevronRight' | 'chevronDown' | 'chevronUp' | 'done' | 'lock' | 'warning' | 'ministry' | 'election'
+  | 'close' | 'chevronLeft' | 'chevronRight' | 'chevronDown' | 'chevronUp' | 'done' | 'lock' | 'warning' | 'ministry' | 'election'
   | 'walkout' | 'frozen' | 'ending' | 'blocked' | 'check' | 'clock' | 'flag' | 'fork' | 'cash'
 
 export function Icon({ name, size = 24, color = colors.muted, strokeWidth = 1.6 }: { name: IconName; size?: number; color?: string; strokeWidth?: number }) {
@@ -82,6 +82,7 @@ export function Icon({ name, size = 24, color = colors.muted, strokeWidth = 1.6 
       {name === 'log' && <Path d="M4 6h2M9 6h11M4 12h2M9 12h11M4 18h2M9 18h11" {...common} />}
       {name === 'debug' && <Path d="M9 4.5 7.5 3M15 4.5 16.5 3M8 8h8v8a4 4 0 0 1-8 0zM4 11h4M16 11h4M4 17h4M16 17h4M12 8v12" {...common} />}
       {name === 'close' && <Path d="M6 6l12 12M18 6 6 18" {...common} />}
+      {name === 'chevronLeft' && <Path d="M15 6l-6 6 6 6" {...common} />}
       {name === 'chevronRight' && <Path d="M9 5l7 7-7 7" {...common} />}
       {name === 'chevronDown' && <Path d="M5 9l7 7 7-7" {...common} />}
       {name === 'chevronUp' && <Path d="M5 15l7-7 7 7" {...common} />}

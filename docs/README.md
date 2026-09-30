@@ -70,6 +70,7 @@ When you change a path on the left, update the doc on the right in the same comm
 | `app/theme.ts`, `app/fonts.ts`, `app/components/Glyph.tsx`, `app/components/ui.tsx` | [app.md](app.md#look-and-feel), and [ADR 0047](decisions/0047-warm-ledger-design.md) for a change to the design system itself |
 | `app/story.ts` | [story.md](story.md) and [app.md](app.md) |
 | `app/art/` | [app.md](app.md#look-and-feel) (art extracted from `design/`) |
+| `app/people.ts`, `app/components/People.tsx`, `app/components/CityMap.tsx` | [app.md](app.md), [story.md](story.md) and [ADR 0048](decisions/0048-notebook-map-and-people.md) |
 | `sim/` | [sim.md](sim.md) |
 | `tests/`, `vitest.config.mts` | [testing.md](testing.md) |
 | `eslint.config.js`, `package.json` scripts | [architecture.md](architecture.md) and the root [README](../README.md) |

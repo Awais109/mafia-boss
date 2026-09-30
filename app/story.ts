@@ -70,8 +70,8 @@ export const LAST_LINE = '“Where to?”'
 // Tolya's mood, from his disposition, and what he says when he wants his cut. He talks in grievances.
 export type TolyaMood = 'watchful' | 'cold' | 'friendly' | 'hostile'
 
-// Where "watchful" turns "friendly": a word on the card, not a rule. Nothing in the engine reads it.
-const FRIENDLY_FROM = 20
+// Where a rival's mood turns friendly: a word on the card, not a rule. Nothing in the engine reads it.
+export const FRIENDLY_FROM = 20
 
 export function tolyaMood(s: PlayerState, c: Config): TolyaMood {
   const disposition = s.rival.tolya.disposition

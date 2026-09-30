@@ -5,8 +5,6 @@ import {
   formulas,
   openLots,
   openSpots,
-  prosperityOn,
-  prosperityTarget,
   RACKET_TYPES,
   legalizeBlocked,
   legalizeCost,
@@ -18,9 +16,9 @@ import {
   type Racket,
   type RacketDerived,
   type RacketType,
-  type SynergyConfig,
 } from '../../engine'
 import { ACT_NAME } from '../acts'
+import { DistrictSummary } from '../components/DistrictSummary'
 import { Icon } from '../components/Glyph'
 import { SupplyCard, supplyNote } from '../components/SupplyCard'
 import { Btn, BuyRow, colors, glyph, Item, List, Note, rich, Screen, Section, Strip, Tag } from '../components/ui'
@@ -65,18 +63,6 @@ function premisesEffect(c: Config, type: RacketType, tier: number, making = true
 
 // "a Kiosk", "an Auto Shop", "the Holding".
 const withArticle = (name: string) => (name.startsWith('The ') ? `the ${name.slice(4)}` : /^[AEIOU]/.test(name) ? `an ${name}` : `a ${name}`)
-
-const nameOf = (c: Config, t: RacketType | 'joints') => (t === 'joints' ? 'joints' : c.rackets.types[t].name)
-
-function synergyText(c: Config, syn: SynergyConfig): string {
-  const effects = [
-    syn.effect.yieldMult ? `${syn.b ? nameOf(c, syn.b) : 'businesses'} earn ×${syn.effect.yieldMult}` : '',
-    syn.effect.servedFirst ? 'get cigarettes first in a shortage' : '',
-    ...Object.entries(syn.effect.upkeepMultOf ?? {}).map(([t, m]) => `${nameOf(c, t as RacketType)} upkeep ×${m}`),
-    syn.effect.influenceMult ? `Influence ×${syn.effect.influenceMult}` : '',
-  ].filter(Boolean)
-  return `${nameOf(c, syn.a)}${syn.b ? ` beside ${nameOf(c, syn.b)}` : ''}: ${effects.join(', ')}`
-}
 
 function controllerLabel(c: Config, id: DistrictId, controller: Controller | undefined): string {
   const tribute = c.districts.list[id].tribute
@@ -199,7 +185,7 @@ function DistrictSection({ game, id }: { game: Snapshot; id: DistrictId }) {
       </Pressable>
       {expanded && (
         <View style={styles.districtBody}>
-          <DistrictSummary game={game} id={id} running={spots.length} lots={lotsTaken.length} />
+          <DistrictSummary game={game} id={id} />
           {spots.map(({ r, rd }) => (
             <BusinessCard key={r.id} game={game} r={r} rd={rd} />
           ))}
@@ -231,62 +217,6 @@ function lotFits(game: Snapshot, id: DistrictId, type: RacketType): boolean {
   if (rt.onlyIn !== undefined && rt.onlyIn !== id) return false
   const lotsFor = c.districts.list[id].lotsFor
   return !lotsFor || lotsFor.includes(type)
-}
-
-// Hosts, prosperity (from Act III) and pairings, before the businesses.
-function DistrictSummary({ game, id, running, lots }: { game: Snapshot; id: DistrictId; running: number; lots: number }) {
-  const { state: s, derived: d, config: c, now } = game
-  const dc = c.districts.list[id]
-  const prosperity = s.districts.find((x) => x.id === id)?.prosperity ?? 0
-  const target = prosperityTarget(s, c, id, now)
-  // The next business on this street that waits on prosperity: the brass mark on the bar.
-  const next = [...dc.allows, ...(dc.lotsFor ?? [])]
-    .map((t) => ({ t, at: c.rackets.types[t].minProsperity }))
-    .filter((x): x is { t: RacketType; at: number } => x.at !== undefined && x.at > prosperity)
-    .sort((a, b) => a.at - b.at)[0]
-  const active = d.synergies.filter((x) => x.districtId === id).flatMap((x) => c.rackets.synergies.filter((syn) => syn.id === x.id))
-  const typesHere = new Set(s.rackets.filter((r) => r.districtId === id).map((r) => r.type))
-  const jointsHere = s.rackets.some((r) => r.districtId === id && c.rackets.types[r.type].kind === 'joint')
-  const has = (t: RacketType | 'joints') => (t === 'joints' ? jointsHere : typesHere.has(t))
-  const couldBuild = (t: RacketType | 'joints') => t === 'joints' || dc.allows.includes(t) || (dc.premisesLots > 0 && c.rackets.types[t].kind === 'premises')
-  const potential = c.rackets.synergies.find(
-    (syn) => (!syn.district || syn.district === id) && syn.b && !active.includes(syn) && (has(syn.a) || has(syn.b)) && couldBuild(syn.a) && couldBuild(syn.b),
-  )
-  return (
-    <List>
-      <Item
-        label="Hosts"
-        hint={dc.allows.map((t) => c.rackets.types[t].name).join(', ') || 'premises only'}
-        value={
-          <View style={styles.hosts}>
-            <Text style={styles.hostsValue}>{`${running}/${dc.allows.length} running`}</Text>
-            <Text style={styles.hostsLots}>{`lots ${lots}/${dc.premisesLots}`}</Text>
-          </View>
-        }
-      />
-      {prosperityOn(s, c) && (
-        <View style={styles.prosperity}>
-          <View style={styles.prosperityLine}>
-            <Text style={styles.label}>Prosperity</Text>
-            <Text style={styles.prosperityValue}>
-              {Math.round(prosperity)}
-              <Text style={styles.muted}>{` heading for ${Math.round(target)}`}</Text>
-            </Text>
-          </View>
-          <View style={styles.prosperityTrack}>
-            <View style={[styles.prosperityFill, { width: `${Math.min(100, prosperity)}%` }]} />
-            {target > prosperity && <View style={[styles.prosperityToward, { left: `${prosperity}%`, width: `${Math.min(100, target) - prosperity}%` }]} />}
-            {next && <View style={[styles.prosperityMark, { left: `${next.at}%` }]} />}
-          </View>
-          {next && <Text style={styles.faintNote}>{`Brass mark: ${next.at}, where the ${c.rackets.types[next.t].name} opens`}</Text>}
-        </View>
-      )}
-      {active.map((syn) => (
-        <Item key={syn.id} label="Pairing" hint={synergyText(c, syn)} value={syn.effect.yieldMult ? `×${syn.effect.yieldMult}` : 'on'} color={colors.good} />
-      ))}
-      {active.length === 0 && potential && <Item label="Pairing" hint={`None yet. ${synergyText(c, potential)}`} value={<Text style={styles.muted}>none</Text>} />}
-    </List>
-  )
 }
 
 // A spot or lot still open: a button with its price and what it earns or does, or a dashed row saying why not.

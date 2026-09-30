@@ -1,7 +1,7 @@
 import { useFonts } from 'expo-font'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect, useState, type ReactNode } from 'react'
-import { ActivityIndicator, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { gameDay } from './engine'
 import { AwayModal } from './app/components/AwayModal'
@@ -27,6 +27,7 @@ import { TurfScreen } from './app/screens/TurfScreen'
 import type { ScreenProps, TabId } from './app/screens/types'
 import { store, useGame, type Snapshot } from './app/store'
 import { colors, fonts } from './app/theme'
+import { webParam } from './app/webParams'
 
 type Tab = { id: TabId; title: string; icon: IconName; debugOnly?: boolean; render: (p: ScreenProps) => ReactNode }
 
@@ -82,8 +83,7 @@ function moreNote(game: Snapshot, id: TabId): { text: string; color?: string } {
 
 // On web, `?tab=ops` opens on a tab: the screenshot rig for design checks uses it (docs/app.md).
 function initialTab(): TabId {
-  if (Platform.OS !== 'web') return 'home'
-  const wanted = new URLSearchParams((globalThis as { location?: { search: string } }).location?.search ?? '').get('tab')
+  const wanted = webParam('tab')
   return ALL.some((t) => t.id === wanted) ? (wanted as TabId) : 'home'
 }
 

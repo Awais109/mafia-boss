@@ -58,8 +58,9 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0043](0043-act-iv-zastava.md) | Act IV, Zastava: premium cigarettes as a second stock, convoys past the Colonel and customs, passage, the importer that washes only what its trade explains | Accepted |
 | [0044](0044-act-v-kombinat.md) | Act V, the Kombinat: an auctioned district, public opinion, the Ministry that freezes a front, elections and the mayor | Accepted |
 | [0045](0045-act-vi-nagornaya.md) | Act VI, Nagornaya: Legalize, the Holding, the reckoning's hearings, and two recorded endings | Accepted |
-| [0046](0046-map-and-story.md) | The map is Lyosha's notebook: districts revealed by the story, the act transition as a page, the story's text in one place | Accepted |
+| [0046](0046-map-and-story.md) | The map is Lyosha's notebook: districts revealed by the story, the act transition as a page, the story's text in one place | Superseded in part by [0048](0048-notebook-map-and-people.md) |
 | [0047](0047-warm-ledger-design.md) | The warm-ledger design: bundled fonts, SVG glyphs, a bottom bar with More | Accepted |
+| [0048](0048-notebook-map-and-people.md) | The notebook map drawn from the design, and People | Accepted |
 
 ## Template
 

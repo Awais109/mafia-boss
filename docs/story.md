@@ -48,7 +48,7 @@ The endings are the Holding and the Empire. The last line, either way, is Vitya'
 
 ## The map
 
-The map is Lyosha's notebook. A district is revealed when someone shows it to you, not when a number is reached. Before that it's a pencil outline with a fragment in his hand; the reveal inks it in, writes its name, and puts one line on the page. The map's title, *Sevgorod*, is only written in once every page is. Act II reveals two districts because the built game opens them together; every other act reveals one. `DISTRICT_STORY` in `app/story.ts` holds each district's fragment, reveal line and who shows it.
+The map is Lyosha's notebook. A district is revealed when someone shows it to you, not when a number is reached. Before that it's a pencil outline with a fragment in his hand; the reveal inks it in, writes its name, and puts one line on the page. The map's title, *Sevgorod*, is only written in once every page is. Act II reveals two districts because the built game opens them together; every other act reveals one. `DISTRICT_STORY` in `app/story.ts` holds each district's fragment, reveal line and who shows it. The drawing is the design's ([ADR 0048](decisions/0048-notebook-map-and-people.md)): pencil for what you don't know, ink for what you do, red pencil for what's yours, and the newest page's line written beside it.
 
 ## How the game talks
 
@@ -57,6 +57,7 @@ The map is Lyosha's notebook. A district is revealed when someone shows it to yo
 - People talk in their own register: Vitya in two words, Dima in too many, Tolya in grievances, Zhanna in prices, officials in the passive voice. The narration sounds like the notebook: flat, exact, occasionally wry.
 - Tolya's demand is in his words, by mood (`tolyaMood` and `TOLYA_ASKS` in `app/story.ts`): watchful ("and we'll say no more about the window"), cold, friendly (from disposition 20, a word on the card, not a rule), hostile.
 - The opening's three have epithets on their Crew cards: Vitya the driver, Dima the nephew, Sasha the card player (`OPENING_CREW`). The officials are people on Heat: Sergeant Pasha (Ward Cop), Major Kravets (Precinct Captain), Ignatov (City Hall), "the stamp" (the Customs Chief) and "the telephone to the capital" (the Governor) (`OFFICIAL_PERSON`).
+- The People pages (`app/people.ts`) carry each person's epithet and line from the design brief's cast, and a fragment of Lyosha's for everyone not met yet ("…the army left. The men didn't."). You meet the crew at the opening's hire step, Tolya with his boys, each act's boss when the act opens, officials when they go on the payroll, and the lender's men at a first missed payment.
 - Loanwords only where English is worse (kiosk, tram, banya, dacha, kombinat).
 - Business, front, district and official descriptions stay mechanical: they're for the unlock notices. The voice is for events and the map.
 

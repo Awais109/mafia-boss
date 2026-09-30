@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { DISTRICT_IDS, LATER_ACTS, TUTORIAL_STEPS, type PlayerState } from '../engine'
 import { ACT_TITLE, ACT_TURN, DISTRICT_STORY, mapTitle, revealed, revealedBy } from '../app/story'
+import { PORTRAITS, SILHOUETTES } from '../app/art/people'
+import { PEOPLE } from '../app/people'
 import { act, blank, config, fresh, T0 } from './helpers'
 
 // The map's reveals (ADR 0046): a district is inked in when someone shows it to you, not when a number is reached.
@@ -39,6 +41,39 @@ describe('the map', () => {
     for (const a of LATER_ACTS) {
       expect(ACT_TURN[a].length).toBeGreaterThan(0)
       expect(ACT_TITLE[a].length).toBeGreaterThan(0)
+    }
+  })
+})
+
+// People (ADR 0048): who you've met follows the story, not the numbers.
+describe('people', () => {
+  const met = (s: PlayerState) => PEOPLE.filter((p) => p.met(s, config)).map((p) => p.id)
+
+  it('starts knowing only Lyosha, and meets the crew at the opening’s hire step', () => {
+    const s = blank()
+    expect(met(s)).toEqual(['lyosha'])
+    s.tutorial.step = TUTORIAL_STEPS.findIndex((st) => st.id === 'hire')
+    expect(met(s)).toEqual(['lyosha', 'vitya', 'dima', 'sasha'])
+  })
+
+  it('meets each act’s boss with the act, officials on the payroll, and the lender’s men at a missed payment', () => {
+    const s = blank()
+    s.tutorial.done = true
+    s.act = 3
+    expect(met(s)).toEqual(expect.arrayContaining(['tolya', 'zhanna', 'ignatov']))
+    expect(met(s)).not.toContain('colonel')
+    expect(met(s)).not.toContain('pasha')
+    s.officials.push('wardCop')
+    expect(met(s)).toContain('pasha')
+    expect(met(s)).not.toContain('collectors')
+    s.stats.loans.missed = 1
+    expect(met(s)).toContain('collectors')
+  })
+
+  it('has a fragment for everyone who can be unmet, and art for everyone', () => {
+    for (const p of PEOPLE) {
+      if (p.id !== 'lyosha') expect(p.fragment.length, p.id).toBeGreaterThan(0)
+      expect(PORTRAITS[p.id] ?? (p.head ? 'head' : SILHOUETTES[p.id]), p.id).toBeTruthy()
     }
   })
 })

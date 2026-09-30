@@ -11,8 +11,8 @@ import { rich } from './ui'
 const GRID = 13
 const PENCIL_RULE = 'rgba(107, 103, 95, 0.5)'
 
-// A sheet of squared paper; its content sits inside the margin.
-export function Paper({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+// A sheet of squared paper; its content sits inside the margin, or (`tight`) runs over it, like the map.
+export function Paper({ children, style, tight }: { children: ReactNode; style?: StyleProp<ViewStyle>; tight?: boolean }) {
   return (
     <View style={[styles.paper, style]}>
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
@@ -24,7 +24,7 @@ export function Paper({ children, style }: { children: ReactNode; style?: StyleP
         <Rect width="100%" height="100%" fill="url(#squared)" />
       </Svg>
       <View style={styles.margin} />
-      <View style={styles.inside}>{children}</View>
+      <View style={tight ? styles.tight : styles.inside}>{children}</View>
     </View>
   )
 }
@@ -101,6 +101,7 @@ const styles = StyleSheet.create({
   paper: { backgroundColor: paper.squared, borderRadius: 2, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.45, shadowRadius: 12, shadowOffset: { width: 0, height: 10 }, elevation: 6 },
   margin: { position: 'absolute', top: 0, bottom: 0, right: 26, width: 1, backgroundColor: 'rgba(206, 96, 96, 0.55)' },
   inside: { gap: 30, paddingTop: 16, paddingBottom: 28, paddingLeft: 16, paddingRight: 40 },
+  tight: { gap: 8, paddingTop: 14, paddingBottom: 14, paddingHorizontal: 10 },
   titleLine: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
   title: { fontFamily: fonts.hand700, fontSize: 36, lineHeight: 40, color: paper.fountain },
   titleNote: { fontFamily: fonts.hand500, fontSize: 18, color: paper.pencil },
