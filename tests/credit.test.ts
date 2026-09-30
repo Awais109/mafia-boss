@@ -18,7 +18,7 @@ function actThree(c: Config = config): PlayerState {
 }
 
 const configWith = (overlay: object) => {
-  const { config: c, errors } = tryBuildConfig(overlay as never)
+  const { config: c, errors } = tryBuildConfig({ missions: { enabled: false }, ...overlay } as never)
   if (errors.length) throw new Error(errors.join('\n'))
   return c
 }

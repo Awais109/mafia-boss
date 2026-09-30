@@ -1,4 +1,4 @@
-import type { DistrictId, FrontMode, FrontType, IncidentType, OfficialId, OpType, RacketType, Specialization } from '../config/schema'
+import type { DistrictId, FrontMode, FrontType, IncidentType, MissionId, OfficialId, OpType, RacketType, Specialization } from '../config/schema'
 
 export type Action =
   | { type: 'COLLECT' }
@@ -33,6 +33,7 @@ export type Action =
   | { type: 'TUTORIAL_ADVANCE' }
   | { type: 'TUTORIAL_SKIP' }
   | { type: 'SEE_SCENE'; sceneId: string }
+  | { type: 'START_MISSION'; missionId: MissionId; crewIds: string[] }
   | { type: 'SESSION_START' }
   | { type: 'SESSION_END'; durationMs: number; actions: number }
   | DebugAction
@@ -44,6 +45,7 @@ export type DebugAction =
   | { type: 'DEBUG_SET_HEAT'; heat: number }
   | { type: 'DEBUG_SET_REP'; reputation: number }
   | { type: 'DEBUG_COMPLETE_GOALS' }
+  | { type: 'DEBUG_COMPLETE_MISSIONS' } // the current act's missions, done
   | { type: 'DEBUG_HOLD_ELECTION' }
   | { type: 'DEBUG_FORCE_RAID' }
   | { type: 'DEBUG_FORCE_ARREST' }

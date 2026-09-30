@@ -12,6 +12,7 @@ import { landConvoy } from './convoys'
 import { addVotes } from './politics'
 import { fileReport } from './inbox'
 import { maybeInjureTeam } from './injuries'
+import { resolveMission } from './missions'
 import { gainRep } from './reputation'
 import { zhannaHoldsPort } from './rivals'
 import { addStock } from './supply'
@@ -81,7 +82,13 @@ export function influenceRoom(state: PlayerState, c: Config, t: number): number 
 
 // A job taken from the board resolves with its own snapshotted config.
 export function opConfigOf(c: Config, op: OpInstance): OpConfig {
-  return op.cfg ?? c.ops.list[op.type]
+  // A mission always carries its terms (ADR 0050); a listed job may not.
+  return op.cfg ?? c.ops.list[op.type as OpType]
+}
+
+// What a running job is called: an offer's or a mission's own name, else its listed job's.
+export function opName(c: Config, op: OpInstance): string {
+  return op.name ?? c.ops.list[op.type as OpType]?.name ?? 'A job'
 }
 
 // The terms a job starts on right now. Smuggling gets harder with heat (plan (o)); START_OP stores
@@ -121,6 +128,8 @@ function freeCrew(team: CrewMember[], op: OpInstance): void {
 
 export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: number): void {
   const { c } = ctx
+  if (op.missionId) return resolveMission(state, ctx, op, t)
+  const type = op.type as OpType
   const cfg = opConfigOf(c, op)
   state.ops = state.ops.filter((o) => o.id !== op.id)
   const team = op.crewIds
@@ -188,7 +197,7 @@ export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: numbe
   emit(ctx, t, {
     type: 'OP_RESOLVED',
     opId: op.id,
-    opType: op.type,
+    opType: type,
     crewIds: op.crewIds,
     outcome,
     score: Math.round(score * 10) / 10,

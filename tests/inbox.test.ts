@@ -62,12 +62,12 @@ describe('incidents', () => {
 
   it('never rolls during the tutorial', () => {
     const s = fresh()
-    const r = reconcile(s, T0 + 60 * H, buildConfig('default', { 'incidents.chancePerHr': 1 }))
+    const r = reconcile(s, T0 + 60 * H, buildConfig('default', { 'incidents.chancePerHr': 1, 'missions.enabled': false }))
     expect(find(r.events, 'INCIDENT_RAISED')).toBeUndefined()
   })
 
   it('rolls only at whole hours and never above maxPending', () => {
-    const c = buildConfig('default', { 'incidents.chancePerHr': 1 })
+    const c = buildConfig('default', { 'incidents.chancePerHr': 1, 'missions.enabled': false })
     const s = fresh()
     s.tutorial.done = true
     const r = reconcile(s, T0 + 30 * H, c)

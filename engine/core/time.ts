@@ -47,6 +47,11 @@ export function shiftTimes(state: PlayerState, delta: number): PlayerState {
     if (m.injuredUntil !== undefined) m.injuredUntil = shift(m.injuredUntil)
   }
   if (s.lending) s.lending.dueAt = shift(s.lending.dueAt)
+  for (const m of Object.values(s.missions)) {
+    if (!m) continue
+    m.at = shift(m.at)
+    if (m.retryAt !== undefined) m.retryAt = shift(m.retryAt)
+  }
   for (const item of s.inbox) {
     item.createdAt = shift(item.createdAt)
     item.expiresAt = shift(item.expiresAt)

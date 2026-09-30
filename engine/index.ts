@@ -21,6 +21,7 @@ export {
   opBaseScore,
   opConfigAt,
   opConfigOf,
+  opName,
   opDirtyReward,
   opDirtyRewardFor,
   opMinutesFor,
@@ -50,3 +51,4 @@ export { ledgerDays, type LedgerDay } from './systems/ledger'
 export { tolyaHostile, tolyaIntervalHours } from './systems/rivals'
 export { currentTutorialStep, TUTORIAL_STEPS, type TutorialStep, type TutorialStepId } from './systems/tutorial'
 export { GOAL_CHECKS, goalProgress } from './systems/goals'
+export { missionBlocked, missionDone, missionOp, missionOut, missionStake } from './systems/missions'

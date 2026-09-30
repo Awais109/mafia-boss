@@ -4,6 +4,7 @@ import type { PlayerState } from '../model/state'
 import { grantGold } from './gold'
 import { checkEndings } from './legal'
 import { initPolitics } from './politics'
+import { missionDone } from './missions'
 import { initProsperity } from './prosperity'
 
 // Six acts (ADR 0040). Each act after the first opens when its gate in `progression.acts` holds: the Act I
@@ -16,6 +17,7 @@ export function gateMet(state: PlayerState, c: Config, gate: ActGate): boolean {
   if (gate.holds?.some((id) => state.districts.find((d) => d.id === id)?.controller !== 'player')) return false
   if (gate.fronts?.some((f) => !state.fronts.some((x) => x.type === f))) return false
   if (gate.mayor && !state.politics.mayor) return false
+  if (c.missions.enabled && gate.missions?.some((id) => !missionDone(state, id))) return false
   return true
 }
 

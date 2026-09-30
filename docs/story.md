@@ -59,9 +59,19 @@ The story plays as grown-up crime manga ([ADR 0049](decisions/0049-scenes.md)): 
 | 1 · The envelope (`prologue`) | A new game, before the opening's first step | Zarechye in February; Lyosha's photograph; the envelope, the notebook and the rule; Vitya at the door: "Car's downstairs." Then VOLUME I · THE STREETS |
 | 2 · Two people you trust (`crew`) | The opening's hire step | Vitya, Dima and Sasha "Cold" as cards, each with Hire; then "Two is enough to start. Lyosha started with one." |
 | 3 · Your uncle paid on the day (`tolya`) | Tolya's demand at the opening's Tolya step | His splash and card; the stare, with his demand to pay, haggle or refuse; "Lyosha owed me. Now you do." |
+| 4 · The Row (`row`) | Kiosk Row becomes yours | Tolya alone on a bench: "Count them yourself now." |
+| 5 · A crate through the Port (`crate`) | The Act I overreach, failed ([ADR 0050](decisions/0050-boss-missions.md)) | The east gate at night; Vitya's split lip: "Gate wasn't empty."; FAILED; Zhanna's card; VOLUME II |
+| 6 · Her terms (`terms`) | The Act II rematch, won | The co-operative's office; Dima: "We pay on the day."; "Forty a lot, not forty-five."; WON |
+| 7 · Across the bridge (`bridge`) | The Act II overreach, failed | The militia's cordon on the bridge; FAILED; Ignatov's invitation; VOLUME III |
+| 8 · The second lunch (`lunch`) | The Act III rematch, won | The Hotel Sevgorod; an envelope under a napkin; "It will be noted that you were helpful."; WON |
+| 9 · The first truck (`truck`) | The Act III overreach, failed | The barrier on the highway; the empty truck; "The Colonel sends his regards. And his rates."; FAILED |
+| 10 · The road (`road`) | Zastava becomes yours | "You bought the road. You didn't buy the men." |
+| 11 · The first auction round (`auction`) | The Act IV overreach, failed | Round one at the Palace of Culture; Golovin's vouchers; FAILED; VOLUME V |
+| 12 · The count (`count`) | The election won | The gymnasium at midnight; "That's… all of the Blocks."; "Lights up there. The dachas." |
+| 13 · Over the Governor's head (`governor`) | The Act V overreach, failed | The capital's corridor; the prosecutor: "That was the interesting part."; FAILED; Vitya: "Home?"; VOLUME VI |
 | Volumes II–VI (`chapter-2` … `chapter-6`) | Each act opening | The chapter page: the volume's title over its panel, the turn line, the boss, each district new on the map with its line, what the act opens |
 
-The cover (the tram window over Lyosha's table) opens the app. The missions' scenes, rock bottom and the endings in the brief aren't built yet.
+The cover (the tram window over Lyosha's table) opens the app. A mission's scene plays before the chapter it opens. The prosecutor's last hearing, rock bottom and the endings in the brief aren't built yet.
 
 ## How the game talks
 

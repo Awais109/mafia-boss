@@ -5,7 +5,7 @@ import { act, fresh, H, T0 } from './helpers'
 // Act VI, Nagornaya (ADR 0045): Legalize, the Holding, the reckoning's hearings, and the two endings.
 
 const configWith = (overlay: object) => {
-  const { config: c, errors } = tryBuildConfig(overlay as never)
+  const { config: c, errors } = tryBuildConfig({ missions: { enabled: false }, ...overlay } as never)
   if (errors.length) throw new Error(errors.join('\n'))
   return c
 }

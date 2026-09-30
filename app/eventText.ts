@@ -3,7 +3,7 @@ import { ACT_NAME, ACT_OPENS } from './acts'
 import { colors, glyph } from './components/ui'
 import { GOAL_TEXT } from './goals'
 import { fmt, fmtDuration } from './format'
-import { ACT_TITLE, ACT_TURN } from './story'
+import { ACT_TITLE, ACT_TURN, MISSION_LINES } from './story'
 
 export type EventLine = { text: string; color?: string; quiet?: boolean }
 
@@ -101,8 +101,17 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
       return { text: `+${glyph.gold}${fmt(e.amount)} ${GOLD_SOURCE[e.source]}`, color: colors.gold }
     case 'TIME_SKIPPED':
       return { text: `Skipped ${e.hours}h for ${glyph.gold}${e.bars}`, color: colors.gold }
+    case 'MISSION_STARTED':
+      return {
+        text: `${e.crewIds.map(crewName).join(' & ')}: ${c.missions.list[e.missionId].name}${e.stake ? `, staking ${d}${fmt(e.stake)}` : ''}`,
+        color: colors.accent,
+      }
+    case 'MISSION_RESOLVED': {
+      const line = MISSION_LINES[e.missionId][e.result] ?? c.missions.list[e.missionId].name
+      return { text: line, color: e.result === 'won' ? colors.good : e.result === 'lost' ? colors.warn : colors.heat }
+    }
     case 'OP_RUSHED':
-      return { text: `Finished ${e.name ?? c.ops.list[e.opType].name} early for ${glyph.gold}${e.bars}`, color: colors.gold }
+      return { text: `Finished ${e.name ?? (e.opType === 'mission' ? 'the mission' : c.ops.list[e.opType].name)} early for ${glyph.gold}${e.bars}`, color: colors.gold }
     case 'GOAL_DONE':
       return { text: `Goal done: ${GOAL_TEXT[e.goalId]} (+${glyph.gold}${e.gold})`, color: colors.gold }
     case 'SHIPMENT_BOUGHT':

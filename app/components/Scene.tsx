@@ -1,19 +1,22 @@
 import { useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Svg, { Path, SvgXml } from 'react-native-svg'
-import { bestHaggler, canHaggle, haggleOdds, TUTORIAL_STEPS, type Act } from '../../engine'
+import Svg, { Circle, Defs, Path, Pattern, Rect, SvgXml } from 'react-native-svg'
+import { bestHaggler, canHaggle, DISTRICT_IDS, haggleOdds, TUTORIAL_STEPS, type Act, type MissionId } from '../../engine'
+import { HEADS } from '../art/heads'
 import { PORTRAITS } from '../art/people'
 import { ART, type ArtId } from '../art/scenes'
 import { ACT_NAME } from '../acts'
 import { fmt, pct } from '../format'
 import { PEOPLE } from '../people'
 import { sceneLabel, type Beat, type Crop, type Scene } from '../scenes'
-import { ACT_TITLE, OPENING_CREW, TOLYA_ASKS, tolyaMood } from '../story'
+import { ACT_TITLE, OPENING_CREW, revealedBy, TOLYA_ASKS, tolyaMood } from '../story'
 import { store, type Snapshot } from '../store'
 import { fonts, paper } from '../theme'
+import { webParam } from '../webParams'
 import { ChapterPage } from './ChapterPage'
 import { Icon } from './Glyph'
+import { Stamp } from './MissionCard'
 import { colors, glyph, rich } from './ui'
 
 // The scene viewer (ADR 0049; design: Scene viewer, Scenes 2 and 3): a scene's beats full screen, one at a
@@ -23,7 +26,8 @@ import { colors, glyph, rich } from './ui'
 
 export function SceneViewer({ game, scene }: { game: Snapshot; scene: Scene }) {
   const insets = useSafeAreaInsets()
-  const [at, setAt] = useState(0)
+  // On web, `?beat=3` starts a scene at that beat, for the screenshot rig.
+  const [at, setAt] = useState(() => Math.min(scene.beats.length - 1, Math.max(0, Number(webParam('beat')) || 0)))
   const beat = scene.beats[at]
   const done = () => store.endScene(scene.id)
   const next = () => (at + 1 < scene.beats.length ? setAt(at + 1) : done())
@@ -83,7 +87,13 @@ function BeatView({ game, beat }: { game: Snapshot; beat: Beat }) {
     case 'portrait':
       return <PortraitPanel person={beat.person} caption={beat.caption} />
     case 'intro':
-      return <IntroPanel game={game} art={beat.art} person={beat.person} speech={beat.speech} />
+      return <IntroPanel game={game} art={beat.art} person={beat.person} speech={beat.speech} caption={beat.caption} />
+    case 'face':
+      return <FacePanel person={beat.person} speech={beat.speech} caption={beat.caption} />
+    case 'slug':
+      return <SlugPanel caption={beat.caption} />
+    case 'result':
+      return <ResultPanel game={game} mission={beat.mission} />
     case 'hire':
       return <HirePanel game={game} />
     case 'tribute':
@@ -112,7 +122,7 @@ function ArtPanel({ art, crop, caption, speech, fill }: { art: ArtId; crop?: Cro
         </View>
       ) : null}
       {caption ? (
-        <View style={[styles.caption, speech ? styles.captionLow : null]}>
+        <View style={speech ? styles.captionLow : styles.caption}>
           <Text style={styles.captionText}>{rich(caption, 14.5, { ink: true })}</Text>
         </View>
       ) : null}
@@ -138,19 +148,113 @@ function PortraitPanel({ person, caption }: { person: 'lyosha' | string; caption
   )
 }
 
-// The splash: the art with their line, then their card: epithet, name, what they hold, their mood.
-function IntroPanel({ game, art, person, speech }: { game: Snapshot; art: ArtId; person: string; speech: string }) {
+// A person's portrait for a panel: the crew's full portraits, else the People page's, else their headshot.
+function portraitOf(person: string): { xml: string; aspect: number } | null {
+  if (person === 'vitya' || person === 'dima' || person === 'sasha') return { xml: ART[person].xml, aspect: ART[person].width / ART[person].height }
+  const p = PEOPLE.find((x) => x.id === person)
+  const xml = PORTRAITS[person as keyof typeof PORTRAITS] ?? (p?.head ? HEADS[p.head] : undefined)
+  return xml ? { xml, aspect: 1 } : null
+}
+
+// A face on screentone, with their line in a bubble or a caption under it.
+function FacePanel({ person, speech, caption }: { person: string; speech?: string; caption?: string }) {
+  const art = portraitOf(person)
+  return (
+    <View style={[styles.panel, styles.tonePanel]}>
+      <Tone />
+      {art ? (
+        <View style={[styles.face, { aspectRatio: art.aspect, width: art.aspect < 1 ? '46%' : '64%' }]}>
+          <SvgXml xml={art.xml} width="100%" height="100%" />
+        </View>
+      ) : null}
+      {speech ? (
+        <View style={styles.bubble}>
+          <Text style={styles.bubbleText}>{speech}</Text>
+        </View>
+      ) : null}
+      {caption ? (
+        <View style={speech ? styles.captionLow : styles.caption}>
+          <Text style={styles.captionText}>{caption}</Text>
+        </View>
+      ) : null}
+    </View>
+  )
+}
+
+// Words alone on the dark page: a place and a time, or what nobody says.
+function SlugPanel({ caption }: { caption: string }) {
+  return (
+    <View style={[styles.panel, styles.slug]}>
+      <Tone dark />
+      <View style={styles.captionInline}>
+        <Text style={styles.captionText}>{caption}</Text>
+      </View>
+    </View>
+  )
+}
+
+// The stamp: an overreach FAILED in red ink with what it cost and what it opened; a rematch WON in brass.
+function ResultPanel({ game, mission }: { game: Snapshot; mission: MissionId }) {
+  const { state: s, config: c } = game
+  const m = c.missions.list[mission]
+  const record = s.missions[mission]
+  const failed = m.kind === 'overreach'
+  const costs = [record?.stake ? `−${glyph.dirty}${fmt(record.stake)}` : '', m.injureHours ? `someone hurt ${m.injureHours}h` : '', m.heat ? `+${glyph.heat}${m.heat}` : ''].filter(Boolean)
+  const opened = (m.act + 1) as Act
+  const districts = revealedBy(c, opened, DISTRICT_IDS).map((id) => c.districts.list[id].name)
+  const reward = m.reward ?? {}
+  const gains = [reward.rep ? `+${glyph.rep}${fmt(reward.rep)}` : '', reward.influence ? `+${glyph.influence}${reward.influence}` : '', reward.disposition?.zhanna ? 'Zhanna warmer, her lots cheaper' : ''].filter(Boolean)
+  return (
+    <View style={[styles.panel, styles.paperPanel, styles.result]}>
+      <Text style={styles.resultName}>{m.name.toUpperCase()}</Text>
+      {failed ? (
+        <View style={styles.resultStamp}>
+          <SvgXml xml={ART.stampFailed.xml} width="100%" height="100%" />
+        </View>
+      ) : (
+        <Stamp text="Won" color={paper.brassInk} big />
+      )}
+      {failed ? (
+        <>
+          <Text style={styles.resultLine}>{rich(costs.join(' · ') || 'It cost little.', 15, { ink: true })}</Text>
+          <Text style={styles.resultOpened}>{`Act ${ACT_NAME[opened]}${districts.length ? ` · ${districts.join(', ')}` : ''}`}</Text>
+        </>
+      ) : (
+        <Text style={styles.resultLine}>{rich(gains.join(' · ') || 'Paid off.', 15, { ink: true })}</Text>
+      )}
+    </View>
+  )
+}
+
+// A screentone ground: ink dots on paper, or (dark) paper dots on ink for a night or a silence.
+function Tone({ dark }: { dark?: boolean }) {
+  const id = dark ? 'slugTone' : 'faceTone'
+  return (
+    <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+      <Defs>
+        <Pattern id={id} width={5} height={5} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <Circle cx={2.5} cy={2.5} r={dark ? 0.55 : 0.7} fill={dark ? '#3a332a' : paper.ink} />
+        </Pattern>
+      </Defs>
+      <Rect width="100%" height="100%" fill={dark ? paper.ink : paper.paper} />
+      <Rect width="100%" height="100%" fill={`url(#${id})`} />
+    </Svg>
+  )
+}
+
+// The splash: the art (or their portrait) with their line, then their card: epithet, name, holds, mood.
+function IntroPanel({ game, art, person, speech, caption }: { game: Snapshot; art?: ArtId; person: string; speech?: string; caption?: string }) {
   const { state: s, config: c } = game
   const p = PEOPLE.find((x) => x.id === person)!
   const holds = p.holds?.(s, c)
   const mood = p.mood?.(s, c)
   return (
     <ScrollView contentContainerStyle={styles.introScroll}>
-      <ArtPanel art={art} speech={speech} />
+      {art ? <ArtPanel art={art} speech={speech} caption={caption} /> : <FacePanel person={person} speech={speech} caption={caption} />}
       <View style={styles.card}>
         <Text style={styles.cardEpithet}>{p.epithet}</Text>
         <View style={styles.cardRow}>
-          <Text style={styles.cardName}>{p.name.toUpperCase()}</Text>
+          <Text style={[styles.cardName, p.name.length > 10 && styles.cardNameLong]}>{p.name.toUpperCase()}</Text>
           {holds ? (
             <View style={styles.holds}>
               <Text style={styles.holdsLabel}>HOLDS</Text>
@@ -315,7 +419,7 @@ const styles = StyleSheet.create({
   bubble: { position: 'absolute', left: 12, top: 12, maxWidth: '70%', paddingVertical: 12, paddingHorizontal: 18, borderRadius: 100, backgroundColor: paper.paperLight, borderWidth: 1.5, borderColor: INK },
   bubbleText: { fontFamily: fonts.speech, fontSize: 18, lineHeight: 22, color: INK, textAlign: 'center', textTransform: 'uppercase' },
   caption: { position: 'absolute', left: 12, top: 12, maxWidth: '78%', paddingVertical: 9, paddingHorizontal: 12, backgroundColor: paper.paperLight, borderWidth: 1.5, borderColor: INK },
-  captionLow: { top: undefined, bottom: 12 },
+  captionLow: { position: 'absolute', left: 12, bottom: 12, maxWidth: '78%', paddingVertical: 9, paddingHorizontal: 12, backgroundColor: paper.paperLight, borderWidth: 1.5, borderColor: INK },
   captionInline: { marginHorizontal: 16, paddingVertical: 9, paddingHorizontal: 12, backgroundColor: paper.paperLight, borderWidth: 1.5, borderColor: INK },
   captionText: { fontFamily: fonts.caption, fontSize: 14.5, lineHeight: 20, color: INK },
   cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 40 },
@@ -325,7 +429,8 @@ const styles = StyleSheet.create({
   cardEpithet: { fontFamily: fonts.text600, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: '#5a5144' },
   cardRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 },
   cardName: { flex: 1, fontFamily: fonts.display900, fontSize: 54, lineHeight: 52, color: INK },
-  holds: { alignItems: 'flex-end', gap: 2, paddingVertical: 6, paddingHorizontal: 10, borderWidth: 1, borderColor: INK },
+  cardNameLong: { fontSize: 36, lineHeight: 36 },
+  holds: { maxWidth: '42%', alignItems: 'flex-end', gap: 2, paddingVertical: 6, paddingHorizontal: 10, borderWidth: 1, borderColor: INK },
   holdsLabel: { fontFamily: fonts.text600, fontSize: 10, letterSpacing: 1.2, color: '#5a5144' },
   holdsValue: { fontFamily: fonts.text600, fontSize: 13.5, color: INK, textAlign: 'right' },
   moodBlock: { gap: 6 },
@@ -367,6 +472,14 @@ const styles = StyleSheet.create({
   answerTitle: { fontFamily: fonts.text600, fontSize: 15, color: colors.text },
   answerSub: { fontFamily: fonts.text400, fontSize: 12.5, color: colors.muted },
   answerRight: { fontFamily: fonts.text600, fontSize: 14, color: colors.text },
+  tonePanel: { aspectRatio: 366 / 440, alignItems: 'center', justifyContent: 'flex-end' },
+  face: { marginBottom: 0 },
+  slug: { aspectRatio: 366 / 440, justifyContent: 'center' },
+  result: { gap: 16, paddingHorizontal: 16 },
+  resultName: { fontFamily: fonts.display900, fontSize: 30, lineHeight: 30, color: INK, textAlign: 'center' },
+  resultStamp: { width: '86%', aspectRatio: 340 / 150 },
+  resultLine: { fontFamily: fonts.text600, fontSize: 15, color: INK, textAlign: 'center' },
+  resultOpened: { fontFamily: fonts.text600, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: '#5a5144' },
   titlePage: { flex: 1, justifyContent: 'center', gap: 10, paddingHorizontal: 22, borderWidth: 1.5, borderColor: paper.paper, backgroundColor: INK },
   volume: { fontFamily: fonts.display700, fontSize: 14, letterSpacing: 6, color: paper.paper },
   volumeTitle: { fontFamily: fonts.display900, fontSize: 56, lineHeight: 52, color: paper.paper },

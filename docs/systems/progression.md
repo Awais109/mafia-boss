@@ -28,6 +28,7 @@ Reputation is the progress currency: it unlocks bigger businesses, fronts and of
 | `holds` | you control every district listed |
 | `fronts` | you own every front type listed |
 | `mayor` | you've won an election ([politics.md](politics.md)) |
+| `missions` | each boss mission listed is done: an overreach sent, a rematch won ([ADR 0050](../decisions/0050-boss-missions.md); [ops.md](ops.md#boss-missions)). Left out while `missions.enabled` is off |
 
 `progression.finalAct` is the last act this build has content for. `checkActs` (`engine/systems/acts.ts`) runs after every Rep gain (`gainRep`), at the end of every `checkGoals` (so after every action and every reconcile boundary), and from Debug; it opens every act whose gate holds, in order. Opening act *n*:
 - `state.act = n`, `stats.actClearedAt[n − 1] = t`, `ACT_UNLOCKED { act: n }`;
@@ -47,11 +48,11 @@ What each act changes, beyond its own businesses, fronts, officials, districts a
 | Act | Setting | Gate | Built |
 |---|---|---|---|
 | I | the streets: Zarechye, Kiosk Row, Station Square | — | yes |
-| II | the Port Quarter and Sovietsky Blocks | every Act I goal ([ADR 0039](../decisions/0039-goals-gate-act-two.md)) | yes |
-| III | the Centre ([ADR 0041](../decisions/0041-act-iii-the-centre.md)) | `progression.acts[3].rep` | yes |
-| IV | Zastava and the road to the border ([ADR 0043](../decisions/0043-act-iv-zastava.md)) | `progression.acts[4].rep` | yes |
-| V | the Kombinat: the auction, opinion, the Ministry, elections ([ADR 0044](../decisions/0044-act-v-kombinat.md)) | `progression.acts[5]`: Rep, hold Zastava, own the Import–Export Company | yes |
-| VI | Nagornaya, the hills: Legalize, the Holding, the reckoning ([ADR 0045](../decisions/0045-act-vi-nagornaya.md)) | `progression.acts[6]`: Rep and the mayor's office | yes: an ending clears it ([endgame.md](endgame.md)) |
+| II | the Port Quarter and Sovietsky Blocks | every Act I goal ([ADR 0039](../decisions/0039-goals-gate-act-two.md)), then *A crate through the Port* | yes |
+| III | the Centre ([ADR 0041](../decisions/0041-act-iii-the-centre.md)) | `progression.acts[3].rep`, *Her terms* won, then *Across the bridge* | yes |
+| IV | Zastava and the road to the border ([ADR 0043](../decisions/0043-act-iv-zastava.md)) | `progression.acts[4].rep`, *The second lunch* won, then *The first truck* | yes |
+| V | the Kombinat: the auction, opinion, the Ministry, elections ([ADR 0044](../decisions/0044-act-v-kombinat.md)) | `progression.acts[5]`: Rep, hold Zastava, own the Import–Export Company, then *The first auction round* | yes |
+| VI | Nagornaya, the hills: Legalize, the Holding, the reckoning ([ADR 0045](../decisions/0045-act-vi-nagornaya.md)) | `progression.acts[6]`: Rep and the mayor's office, then *Over the Governor's head* | yes: an ending clears it ([endgame.md](endgame.md)) |
 
 The unlock ladder (`unlockRep`) sits inside each act: every Act II business opens below Act III's gate, and each later act's businesses spread from just above its own gate. Every non-zero threshold includes the 38 Rep the opening's setup earns ([ADR 0035](../decisions/0035-guided-opening.md)).
 

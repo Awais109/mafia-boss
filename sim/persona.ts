@@ -38,6 +38,9 @@ import {
   opDirtyRewardFor,
   opUnlocked,
   OP_OUTCOMES,
+  MISSION_IDS,
+  missionBlocked,
+  missionOp,
   OP_TYPES,
   outcomeOdds,
   frontBlocked,
@@ -385,6 +388,18 @@ export function playSession(
     if (m.loyalty < p.raiseBelow && state.clean >= d().costs.raise) tryAct({ type: 'RAISE', crewId: m.id })
   }
 
+  // Boss missions (ADR 0050), before any other job claims the crew. An overreach goes out the moment it
+  // appears, since it's the only door to the next act, with the idle crew the bot values least. A rematch
+  // goes with the team that gives it the best odds; lost, it comes back after the wait.
+  for (const id of MISSION_IDS) {
+    if (missionBlocked(state, c, id, t)) continue
+    const m = c.missions.list[id]
+    const idle = state.crew.filter((x) => x.status === 'idle')
+    if (idle.length < m.crew) continue
+    const team = m.kind === 'rematch' ? bestMissionTeam(c, missionOp(c, id), idle) : [...idle].sort((a, b) => statSum(a) - statSum(b)).slice(0, m.crew)
+    tryAct({ type: 'START_MISSION', missionId: id, crewIds: team.map((x) => x.id) })
+  }
+
   // 5. Dispatch every idle crew member to the best op they can do
   const gapMinutes = Math.max(15, ((nextSessionAt - t) / c.time.hourMs) * 60)
   const dispatchIdle = () => {
@@ -520,6 +535,17 @@ export function playSession(
 }
 
 const statSum = (m: CrewMember) => m.muscle + m.brains + m.nerve
+
+// The team of the job's size with the best chance of a clean or partial result: every pair (or single) of
+// the idle crew, which stays small.
+function bestMissionTeam(c: Config, op: OpConfig, idle: CrewMember[]): CrewMember[] {
+  const teams: CrewMember[][] = op.crew === 1 ? idle.map((m) => [m]) : idle.flatMap((a, i) => idle.slice(i + 1).map((b) => [a, b]))
+  const win = (team: CrewMember[]) => {
+    const o = outcomeOdds(c, op, team)
+    return o.full + o.partial
+  }
+  return teams.reduce((best, team) => (win(team) > win(best) ? team : best), teams[0]).slice(0, op.crew)
+}
 
 const controllerOf = (state: PlayerState, id: DistrictId) => state.districts.find((x) => x.id === id)?.controller
 

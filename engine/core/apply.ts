@@ -1,4 +1,4 @@
-import { FRONT_MODES, INCIDENT_TYPES, type Config } from '../config/schema'
+import { FRONT_MODES, INCIDENT_TYPES, MISSION_IDS, type Config } from '../config/schema'
 import { PASSIVE_ACTIONS, type Action } from '../model/actions'
 import type { GameEvent } from '../model/events'
 import type { CrewMember, PlayerState } from '../model/state'
@@ -12,6 +12,7 @@ import { lend, repayLoan, takeLoan } from '../systems/credit'
 import { frontBlocked } from '../systems/fronts'
 import { arrest, raid } from '../systems/heat'
 import { canAffordEffects, incidentNeedHolds, raiseIncident, resolveInboxItem } from '../systems/inbox'
+import { missionDone, startMission } from '../systems/missions'
 import { regenerateOffers } from '../systems/offers'
 import { opConfigAt, opMinutesFor, opUnlocked, resolveOp } from '../systems/ops'
 import { checkGoals } from '../systems/goals'
@@ -515,6 +516,9 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       if (!state.tutorial.done) applyQuickStart(state, ctx, t)
       return null
 
+    case 'START_MISSION':
+      return startMission(state, ctx, t, a.missionId, a.crewIds)
+
     // A scene the app has shown (ADR 0049): kept once, in order. No event: the log's action line records it.
     case 'SEE_SCENE':
       if (!/^[a-z0-9-]{1,40}$/.test(a.sceneId)) return 'Unknown scene'
@@ -597,6 +601,17 @@ function handleDebug(state: PlayerState, ctx: Ctx, a: Action, t: number): string
       state.politics.nextElectionAt = t
       electionDue(state, ctx, t)
       checkActs(state, ctx, t)
+      return null
+
+    case 'DEBUG_COMPLETE_MISSIONS':
+      // The current act's missions, done as if sent and won: Debug's fast path through a gate (ADR 0050).
+      for (const id of MISSION_IDS) {
+        const m = c.missions.list[id]
+        if (m.act !== state.act || missionDone(state, id)) continue
+        state.missions[id] = { result: m.kind === 'overreach' ? 'failed' : 'won', at: t }
+      }
+      checkActs(state, ctx, t)
+      note()
       return null
 
     case 'DEBUG_COMPLETE_GOALS':

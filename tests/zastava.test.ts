@@ -18,7 +18,7 @@ import { act, config, fresh, H, T0 } from './helpers'
 // past the Colonel's men and the customs post; passage; the bonded warehouse and convoy depot; the importer.
 
 const configWith = (overlay: object) => {
-  const { config: c, errors } = tryBuildConfig(overlay as never)
+  const { config: c, errors } = tryBuildConfig({ missions: { enabled: false }, ...overlay } as never)
   if (errors.length) throw new Error(errors.join('\n'))
   return c
 }

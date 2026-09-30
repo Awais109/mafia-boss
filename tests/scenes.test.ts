@@ -53,6 +53,21 @@ describe('scenes', () => {
     expect(dueScene(s)?.id).toBe('chapter-4')
   })
 
+  it('plays a mission’s scene before the chapter it opens, once the mission has come to it (ADR 0050)', () => {
+    const s = blank()
+    s.story.seen.push('prologue', 'crew', 'tolya')
+    s.tutorial.done = true
+    s.act = 2
+    expect(dueScene(s)?.id).toBe('chapter-2')
+    s.missions.crateThroughPort = { result: 'failed', at: T0 }
+    expect(dueScene(s)?.id).toBe('crate')
+    s.story.seen.push('crate', 'chapter-2')
+    s.missions.herTerms = { result: 'lost', at: T0, retryAt: T0 + 12 * 3_600_000 }
+    expect(dueScene(s)).toBeNull()
+    s.missions.herTerms = { result: 'won', at: T0 }
+    expect(dueScene(s)?.id).toBe('terms')
+  })
+
   it('records a scene once, and refuses an id that isn’t one', () => {
     let s = blank()
     s = act(s, [{ type: 'SEE_SCENE', sceneId: 'crew' }, { type: 'SEE_SCENE', sceneId: 'crew' }], T0)
@@ -62,7 +77,7 @@ describe('scenes', () => {
 
   it('draws every beat with art that exists', () => {
     for (const id of Object.keys(SCENES) as SceneId[]) {
-      for (const beat of SCENES[id].beats) if ('art' in beat) expect(ART[beat.art], `${id}: ${beat.art}`).toBeTruthy()
+      for (const beat of SCENES[id].beats) if ('art' in beat && beat.art) expect(ART[beat.art], `${id}: ${beat.art}`).toBeTruthy()
     }
   })
 })

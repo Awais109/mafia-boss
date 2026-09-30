@@ -85,8 +85,30 @@ The roll is seeded by the job's id. `outcomeOdds` computes the exact probabiliti
 
 ([ADR 0030](../decisions/0030-crew-experience.md)) A job with `training: <stat>` is a paid lesson: `costDirty × act` up front, `xp` of that stat when it ends. There's no roll (`outcomeOdds` returns full = 1), no heat, Dirty, Influence, Rep, loyalty change or report, and it doesn't count in `stats.opOutcomes`, so the partial-share target only measures real jobs. `resolveOp` frees the member, grants the XP and emits `TRAINING_DONE { opId, crewId, name, stat, xp }`. Validation requires `crew: 1` and a known stat.
 
+## Boss missions
+
+([ADR 0050](../decisions/0050-boss-missions.md)) Seven missions in `missions.list`, one overreach per act from I to V and a rematch in Acts II and III, each against a boss (`boss`), in its act (`act`). They ride the job machinery (`engine/systems/missions.ts`):
+- `START_MISSION { missionId, crewIds }` pushes a job of type `'mission'` with `missionId`, the mission's terms as `cfg` (`missionOp`), its name, and an overreach's `stake`. The crew are on it like any job, and `RUSH_OP` finishes it for gold.
+- `missionBlocked(state, config, id, t)` says why it can't go:
+  - missions are off, or it's done or already out;
+  - it's not this act;
+  - a lost rematch's wait (`missions.retryHours`) hasn't run out;
+  - for an overreach, the rest of the next act's gate doesn't hold yet.
+- **An overreach** stakes `stakeHours` of Dirty yield (or all the Dirty on hand if less; `missionStake`) when it's sent. `resolveMission` then:
+  - fails it at a fixed cost: the first crew member hurt for `injureHours`, and `heat` added;
+  - records `{ result: 'failed', at, stake }` in `state.missions`;
+  - runs `checkActs`, so the next act opens at once.
+- **A rematch** is rolled like a job on `rng.derive('mission', opId)`, and the crew earn a job's XP.
+  - Clean or partial wins it: `reward` pays Rep, Influence, and a rival's disposition (Zhanna's lowers her lots' price), recorded as `won`.
+  - A fail records `lost` with `retryAt`.
+- `missionDone` (an overreach failed, a rematch won) is what act gates read (`missions` in `progression.acts`; [progression.md](progression.md#acts)). With `missions.enabled` off, gates leave missions out.
+- `stats.missions` counts `sent` (both kinds), `won` and `lost` (rematches).
+- `DEBUG_COMPLETE_MISSIONS` marks the current act's missions done.
+
 ## Events
 
+- `MISSION_STARTED { missionId, opId, crewIds, stake }`
+- `MISSION_RESOLVED { missionId, result, crewIds, outcome?, stake?, heat?, injuredId?, rep?, influence? }`
 - `OP_STARTED { opId, opType, crewIds, districtId?, name?, offerId? }`
 - `OP_RESOLVED { opId, opType, crewIds, outcome, score, diff, dirty, influence, influenceLostToCap, spike, rep, districtId?, name?, offerId?, cigarettes? }`
 - `OFFERS_REFRESHED { count }` (quiet)

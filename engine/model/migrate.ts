@@ -179,8 +179,24 @@ function v13to14(doc: Doc): Doc {
   }
 }
 
+// Missions (ADR 0050): an act already past had its missions done: its overreach sent, its rematch won.
+function v14to15(doc: Doc): Doc {
+  const act = doc.act as number
+  const at = doc.updatedAt as number
+  const missions: Record<string, { result: 'failed' | 'won'; at: number }> = {}
+  for (const [id, m] of Object.entries(defaults.missions.list)) {
+    if (m.act < act) missions[id] = { result: m.kind === 'overreach' ? 'failed' : 'won', at }
+  }
+  return {
+    ...doc,
+    schemaVersion: 15,
+    missions: doc.missions ?? missions,
+    stats: { ...emptyStats(), ...(doc.stats as object) },
+  }
+}
+
 const STEPS: Record<number, (doc: Doc) => Doc> = {
-  1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7, 7: v7to8, 8: v8to9, 9: v9to10, 10: v10to11, 11: v11to12, 12: v12to13, 13: v13to14,
+  1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7, 7: v7to8, 8: v8to9, 9: v9to10, 10: v10to11, 11: v11to12, 12: v12to13, 13: v13to14, 14: v14to15,
 }
 
 export function migrate(doc: unknown): PlayerState {

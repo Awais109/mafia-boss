@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { simulate } from '../sim/driver'
 import { GOLD_RUSH } from '../sim/persona'
 import { summarize, type Summary } from '../sim/report'
-import { config } from './helpers'
+import { withMissions as config } from './helpers'
 
 // Pacing regression guard: the casual bot on default config must stay on the dev manual §3
 // targets, and on the six-act design's for later acts (ADR 0040). Means over 5 seeds, so one unlucky

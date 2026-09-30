@@ -277,6 +277,32 @@ export type ActGate = {
   holds?: DistrictId[] // districts you control
   fronts?: FrontType[] // fronts you own
   mayor?: boolean // you've won an election (ADR 0044)
+  missions?: MissionId[] // each done: an overreach sent (it fails), a rematch won (ADR 0050)
+}
+
+// The boss missions (ADR 0050). An overreach is the last step of an act: sent against someone bigger, it
+// fails by design, costs a little, and opens the next act. A rematch is rolled like a job, can be retried
+// after a wait, and pays the arc off.
+export type MissionId = 'crateThroughPort' | 'acrossTheBridge' | 'firstTruck' | 'firstAuction' | 'overGovernor' | 'herTerms' | 'secondLunch'
+export const MISSION_IDS: readonly MissionId[] = ['crateThroughPort', 'herTerms', 'acrossTheBridge', 'secondLunch', 'firstTruck', 'firstAuction', 'overGovernor']
+export type Boss = 'tolya' | 'zhanna' | 'ignatov' | 'colonel' | 'golovin' | 'prosecutor'
+
+export type MissionConfig = {
+  name: string
+  kind: 'overreach' | 'rematch'
+  act: Act // the act it's sent in
+  boss: Boss // who it's against (the story; nothing reads it for a rule)
+  crew: number
+  minutes: number
+  w: Partial<Record<Stat, number>>
+  diff: number // a rematch rolls against it; an overreach only shows it
+  // An overreach's cost, fixed: Dirty yield staked for this many hours and lost, the first crew member hurt,
+  // heat added. It never costs Clean, a business or a crew member.
+  stakeHours?: number
+  injureHours?: number
+  heat?: number
+  // A rematch won.
+  reward?: { rep?: number; influence?: number; disposition?: Partial<Record<'tolya' | 'zhanna' | 'colonel', number>> }
 }
 
 export type CrewSeed = {
@@ -552,6 +578,12 @@ export type Config = {
   progression: {
     finalAct: Act
     acts: Record<LaterAct, ActGate>
+  }
+  // The boss missions (ADR 0050). `enabled: false` leaves every gate's missions out (Debug, older tests).
+  missions: {
+    enabled: boolean
+    retryHours: number // a lost rematch can be tried again after this
+    list: Record<MissionId, MissionConfig>
   }
   // Act III's consequences (ADR 0042): hurt crew, borrowing, lending.
   injuries: {
@@ -926,6 +958,19 @@ export function validateConfig(c: Config): string[] {
         if (op.premium !== undefined) nonNeg(e, `ops.list.${t}.premium`, op.premium)
       }
       for (const b of o.reports.bands) if (!OP_BANDS.includes(b)) e.push(`ops.reports.bands: unknown band ${b}`)
+      positive(e, 'missions.retryHours', c.missions.retryHours)
+      for (const id of MISSION_IDS) {
+        const m = c.missions.list[id]
+        if (!m) { e.push(`missions.list.${id}: missing`); continue }
+        const p = `missions.list.${id}`
+        positive(e, `${p}.minutes`, m.minutes)
+        int(e, `${p}.crew`, m.crew, 1)
+        nonNeg(e, `${p}.diff`, m.diff)
+        const wSum = STATS.reduce((sum, k) => sum + (m.w[k] ?? 0), 0)
+        num(e, `${p}.w (sum)`, wSum, (n) => n > 0, '> 0')
+        if (m.kind === 'overreach' && m.act >= 6) e.push(`${p}.act: an overreach opens the act after it, so it can't be in Act VI`)
+        for (const k of ['stakeHours', 'injureHours', 'heat'] as const) if (m[k] !== undefined) nonNeg(e, `${p}.${k}`, m[k]!)
+      }
       for (const outcome of OP_OUTCOMES) choices(e, `ops.reports.byOutcome.${outcome}`, o.reports.byOutcome[outcome])
     },
     (e) => {
@@ -1022,7 +1067,12 @@ export function validateConfig(c: Config): string[] {
         if (g.rep !== undefined) nonNeg(e, `${p}.rep`, g.rep)
         for (const id of g.holds ?? []) if (!DISTRICT_IDS.includes(id)) e.push(`${p}.holds: unknown district ${id}`)
         for (const f of g.fronts ?? []) if (!FRONT_TYPES.includes(f)) e.push(`${p}.fronts: unknown front ${f}`)
-        if (!g.goals && !g.mayor && g.rep === undefined && !(g.holds ?? []).length && !(g.fronts ?? []).length) {
+        for (const id of g.missions ?? []) {
+          const m = c.missions.list[id]
+          if (!m) e.push(`${p}.missions: unknown mission ${id}`)
+          else if (m.act !== a - 1) e.push(`${p}.missions: ${id} is sent in Act ${m.act}, not the act before this one`)
+        }
+        if (!g.goals && !g.mayor && g.rep === undefined && !(g.holds ?? []).length && !(g.fronts ?? []).length && !(g.missions ?? []).length) {
           e.push(`${p}: a gate needs at least one condition`)
         }
       }

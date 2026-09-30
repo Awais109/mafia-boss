@@ -62,6 +62,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0047](0047-warm-ledger-design.md) | The warm-ledger design: bundled fonts, SVG glyphs, a bottom bar with More | Accepted |
 | [0048](0048-notebook-map-and-people.md) | The notebook map drawn from the design, and People | Accepted |
 | [0049](0049-scenes.md) | Scenes: the story played as manga, due from the save; chapters, the cover, a seen-list in the save | Accepted |
+| [0050](0050-boss-missions.md) | Boss missions: an overreach that opens each act, a rematch that pays it off | Accepted |
 
 ## Template
 

@@ -26,7 +26,7 @@ describe('acts', () => {
 
   it('clears the last built act, rather than leaving it, when the next gate holds', () => {
     // Pinned to a build whose last act is III, so the test is about the rule, not today's content.
-    const { config: c } = tryBuildConfig({ progression: { finalAct: 3 } })
+    const { config: c } = tryBuildConfig({ progression: { finalAct: 3 }, missions: { enabled: false } } as never)
     let s = act(act(fresh('acts', c), [{ type: 'DEBUG_COMPLETE_GOALS' }], T0, c), [{ type: 'DEBUG_SET_REP', reputation: gate(3) }], T0, c)
     expect(gameCleared(s, c)).toBe(false)
     s = act(s, [{ type: 'DEBUG_SET_REP', reputation: gate(4) }], T0, c)
@@ -38,6 +38,7 @@ describe('acts', () => {
 
   it('can ask for districts held and fronts owned as well as Reputation', () => {
     const { config: c, errors } = tryBuildConfig({
+      missions: { enabled: false },
       progression: { acts: { 3: { rep: 500, holds: ['stationSquare'], fronts: ['restaurant'] } } },
     })
     expect(errors).toEqual([])
@@ -65,7 +66,7 @@ describe('acts', () => {
   })
 
   it('rejects a gate with no conditions', () => {
-    const { errors } = tryBuildConfig({ progression: { acts: { 4: { rep: undefined } } } } as never)
+    const { errors } = tryBuildConfig({ progression: { acts: { 4: { rep: undefined, missions: [] } } } } as never)
     expect(errors.some((e) => e.includes('progression.acts.4'))).toBe(true)
   })
 

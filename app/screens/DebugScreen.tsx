@@ -112,6 +112,7 @@ function StatePanel({ game }: { game: Snapshot }) {
           <Btn small title="Tolya visits" onPress={() => d({ type: 'DEBUG_FORCE_TOLYA' })} />
           <Btn small title={`Finish ${s.ops.length} jobs`} disabled={!s.ops.length} onPress={() => d({ type: 'DEBUG_COMPLETE_OPS' })} />
           <Btn small title="Complete goals → Act II" disabled={s.act !== 1} onPress={() => d({ type: 'DEBUG_COMPLETE_GOALS' })} />
+          <Btn small title="Complete this act's missions" onPress={() => d({ type: 'DEBUG_COMPLETE_MISSIONS' })} />
           <Btn small title="Hold the election now" disabled={!electionScheduled(s)} onPress={() => d({ type: 'DEBUG_HOLD_ELECTION' })} />
           {next?.gate.rep !== undefined && next.act <= c.progression.finalAct && (
             <Btn small title={`Rep ${fmt(next.gate.rep)} → Act ${ACT_NAME[next.act]}`} onPress={() => d({ type: 'DEBUG_SET_REP', reputation: next.gate.rep! })} />

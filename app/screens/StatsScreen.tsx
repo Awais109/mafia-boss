@@ -98,6 +98,7 @@ export function StatsScreen({ game }: ScreenProps) {
           <Item label="Stat points gained" hint="from jobs, training and enforcing" value={fmt(t.statPointsGained)} />
           <Item label="Specializations" hint={`${t.specializations.greed} greed · ${t.specializations.stealth} stealth`} value={fmt(t.specializations.greed + t.specializations.stealth)} />
           <Item label="Haggles" hint="with Tolya" value={`${t.haggles.won} of ${t.haggles.won + t.haggles.lost} won`} />
+          {t.missions.sent > 0 && <Item label="Boss missions" hint={`${t.missions.won} rematches won · ${t.missions.lost} lost`} value={fmt(t.missions.sent)} />}
           <Item label="Front dial changes" value={fmt(t.frontModeChanges)} />
           <Item label="Walkouts" value={fmt(t.walkouts)} color={t.walkouts > 0 ? colors.bad : undefined} />
           {t.injuries > 0 && <Item label="Injuries" hint={`${t.contests.won} contests won · ${t.contests.lost} lost`} value={fmt(t.injuries)} />}

@@ -1,4 +1,4 @@
-import { tolyaHostile, TUTORIAL_STEPS, type Act, type Config, type DistrictId, type LaterAct, type OfficialId, type PlayerState } from '../engine'
+import { tolyaHostile, TUTORIAL_STEPS, type Act, type Config, type DistrictId, type LaterAct, type MissionId, type OfficialId, type PlayerState } from '../engine'
 import type { HeadId } from './art/heads'
 
 // The story's canon in the game's own words (docs/story.md, ADR 0046): each act's title, the line that
@@ -108,4 +108,28 @@ export const OFFICIAL_PERSON: Record<OfficialId, { who: string; head: HeadId }> 
   cityHall: { who: 'Ignatov', head: 'ignatov' },
   customsChief: { who: 'The stamp', head: 'customs' },
   governor: { who: 'The telephone to the capital', head: 'governor' },
+}
+
+// What each boss mission comes to, in the story's words (ADR 0050; design brief, Part 5). An overreach only
+// fails; a rematch is won or lost, and can be tried again.
+export const MISSION_LINES: Record<MissionId, { failed?: string; won?: string; lost?: string }> = {
+  crateThroughPort: { failed: 'Gate wasn’t empty. The crate’s gone, and Zhanna Arkadyevna sends her card.' },
+  herTerms: { won: 'Zhanna: “Fine. Forty a lot, not forty-five. Don’t make me regret the five.”', lost: 'Zhanna: “Come back when you can afford to be polite.”' },
+  acrossTheBridge: { failed: 'The militia turned the stall back at the bridge. Trade on the north bank is licensed by City Hall.' },
+  secondLunch: { won: 'Ignatov: “It will be noted that you were helpful.”', lost: 'Ignatov: “It has been decided that lunch is over.”' },
+  firstTruck: { failed: 'The truck came back empty. The Colonel sends his regards, and his rates.' },
+  firstAuction: { failed: 'Golovin’s vouchers carried the first round. Your bid came back stamped REJECTED.' },
+  overGovernor: { failed: 'You went to the capital to ask it to stop looking. You came home with a case file.' },
+}
+
+// Each mission's card (ADR 0050; design: Ops · Unfinished business): the line that sends you, who says it,
+// and for a rematch what's at stake.
+export const MISSION_CARD: Record<MissionId, { line: string; by?: string; stake?: string }> = {
+  crateThroughPort: { line: 'Minsk truck at the Port tonight. East gate’s never watched.', by: 'Vitya' },
+  herTerms: { line: 'The Minsk drivers want paying on the day. We pay on the day.', by: 'Dima', stake: 'The Minsk drivers and her respect: her lots cheaper for good' },
+  acrossTheBridge: { line: 'Sell on the embankment. The Centre smokes too. Bridge has had militia on it since spring.', by: 'Vitya' },
+  secondLunch: { line: 'Lunch again, the Hotel Sevgorod. This time you bring the envelope.', stake: 'Ignatov as a partner' },
+  firstTruck: { line: 'Why pay Zhanna’s margin? Send our own truck to the border.' },
+  firstAuction: { line: 'The Combine is being sold. Bid.' },
+  overGovernor: { line: 'The Ministry won’t stop looking. Go to the capital and ask it to.' },
 }

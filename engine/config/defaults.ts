@@ -712,12 +712,50 @@ export const defaults: Config = {
   // finalAct is the last act this build has content for: its gate marks the game cleared instead.
   progression: {
     finalAct: 6,
+    // Each gate after Act I also asks for the act before's overreach, sent, and its rematch, won (ADR 0050).
     acts: {
-      2: { goals: true },
-      3: { rep: 1200 }, // 610 (Act II's old clear) → 1200: Act II ran 1.9 d against the manual's 3–5 (TUNING.md, M8)
-      4: { rep: 9000 }, // just under what the Centre's catalogue can earn (~10,200 on the bot)
-      5: { rep: 30000, holds: ['zastava'], fronts: ['importExport'] }, // the border held, the importer running (ADR 0043)
-      6: { rep: 96000, mayor: true }, // the mayor's office and the Rep to hold it (ADR 0044)
+      2: { goals: true, missions: ['crateThroughPort'] },
+      3: { rep: 1200, missions: ['herTerms', 'acrossTheBridge'] }, // 610 (Act II's old clear) → 1200: Act II ran 1.9 d against the manual's 3–5 (TUNING.md, M8)
+      4: { rep: 9000, missions: ['secondLunch', 'firstTruck'] }, // just under what the Centre's catalogue can earn (~10,200 on the bot)
+      5: { rep: 30000, holds: ['zastava'], fronts: ['importExport'], missions: ['firstAuction'] }, // the border held, the importer running (ADR 0043)
+      6: { rep: 96000, mayor: true, missions: ['overGovernor'] }, // the mayor's office and the Rep to hold it (ADR 0044)
+    },
+  },
+
+  // The boss missions (ADR 0050). An overreach appears once the rest of the next act's gate holds, fails by
+  // design and opens that act; its cost is fixed. A rematch is open all through its act, rolled like a job.
+  missions: {
+    enabled: true,
+    retryHours: 12,
+    list: {
+      crateThroughPort: {
+        name: 'A crate through the Port', kind: 'overreach', act: 1, boss: 'zhanna', crew: 2, minutes: 120,
+        w: { nerve: 0.6, muscle: 0.4 }, diff: 70, stakeHours: 2, injureHours: 12, heat: 10,
+      },
+      herTerms: {
+        name: 'Her terms', kind: 'rematch', act: 2, boss: 'zhanna', crew: 2, minutes: 120,
+        w: { brains: 0.6, nerve: 0.4 }, diff: 45, reward: { rep: 60, disposition: { zhanna: 25 } },
+      },
+      acrossTheBridge: {
+        name: 'Across the bridge', kind: 'overreach', act: 2, boss: 'ignatov', crew: 1, minutes: 180,
+        w: { nerve: 0.5, brains: 0.5 }, diff: 80, stakeHours: 2, heat: 8,
+      },
+      secondLunch: {
+        name: 'The second lunch', kind: 'rematch', act: 3, boss: 'ignatov', crew: 1, minutes: 180,
+        w: { brains: 0.6, nerve: 0.4 }, diff: 55, reward: { rep: 400, influence: 10 },
+      },
+      firstTruck: {
+        name: 'The first truck', kind: 'overreach', act: 3, boss: 'colonel', crew: 2, minutes: 180,
+        w: { muscle: 0.5, nerve: 0.5 }, diff: 90, stakeHours: 2, heat: 12,
+      },
+      firstAuction: {
+        name: 'The first auction round', kind: 'overreach', act: 4, boss: 'golovin', crew: 1, minutes: 120,
+        w: { brains: 0.7, nerve: 0.3 }, diff: 95, stakeHours: 2, heat: 5,
+      },
+      overGovernor: {
+        name: 'Over the Governor’s head', kind: 'overreach', act: 5, boss: 'prosecutor', crew: 1, minutes: 240,
+        w: { brains: 0.6, nerve: 0.4 }, diff: 99, stakeHours: 2, heat: 15,
+      },
     },
   },
 

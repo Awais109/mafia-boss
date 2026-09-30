@@ -3,6 +3,45 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-30 — Boss missions: lose, build, come back (D6)
+
+Branch: `feature/design-v2`. Reasoning: [ADR 0050](docs/decisions/0050-boss-missions.md); the missions: [ops.md](docs/systems/ops.md#boss-missions); the scenes: [story.md](docs/story.md#scenes).
+
+### What changed, for a player
+
+- **Every act ends with an overreach:** a mission against someone bigger that fails, by design. It costs a little (a stake of Dirty, and sometimes someone hurt or some heat), never Clean, a business or anyone for good. Failing it introduces the next boss and opens the next act:
+  - *A crate through the Port* brings Zhanna;
+  - *Across the bridge*, Ignatov;
+  - *The first truck*, the Colonel;
+  - *The first auction round*, Golovin;
+  - *Over the Governor's head*, the prosecutor.
+- **Acts II and III have a rematch you can win**, with real odds: *Her terms* with Zhanna (her lots get cheaper) and *The second lunch* with Ignatov. Lost, it can be tried again after 12 hours. Won, it's part of what opens the next act.
+- **Ops** opens with *Unfinished business*:
+  - a rematch shows the odds for the team that would go;
+  - an overreach shows only what it can cost;
+  - one not open yet says what comes first.
+- **Home's Next** lists the missions among what the next act needs.
+- **Scenes 4–13 play** as the arcs happen, each mission ending on a FAILED or WON stamp: the Row, the crate, her terms, the bridge, the lunch, the truck, the road, the auction, the count, the Governor.
+- **A boss's dossier** shows their arc with its stamps, and every scene of theirs can be replayed.
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| Engine | `engine/systems/missions.ts` (new); `engine/config/schema.ts` and `defaults.ts` (`missions`, gates' `missions`); `engine/systems/acts.ts` (`gateMet`), `ops.ts` (a mission's job resolves as a mission; `opName`); `engine/model/state.ts`, `actions.ts`, `events.ts` (`START_MISSION`, `DEBUG_COMPLETE_MISSIONS`, `MISSION_STARTED`, `MISSION_RESOLVED`); `engine/model/migrate.ts` (`v14to15`); `engine/core/time.ts` |
+| Bot | `sim/persona.ts`: sends every mission as it opens |
+| App | `app/components/MissionCard.tsx` (new), `app/screens/OpsScreen.tsx`, `app/acts.ts` (missions in the gate), `app/scenes.ts` and `app/components/Scene.tsx` (the arcs' scenes; face, slug and result beats), `app/components/People.tsx` (arcs and replays), `app/story.ts` (`MISSION_LINES`, `MISSION_CARD`), `app/eventText.ts`, `app/screens/StatsScreen.tsx`, `app/screens/DebugScreen.tsx` |
+| Tests | `tests/missions.test.ts` (new); `tests/helpers.ts` (`config` leaves missions out of gates; `withMissions`); the pacing test plays with missions |
+| Docs | [ADR 0050](docs/decisions/0050-boss-missions.md), [ops.md](docs/systems/ops.md), [progression.md](docs/systems/progression.md), [architecture.md](docs/architecture.md), [story.md](docs/story.md), [app.md](docs/app.md), [sim.md](docs/sim.md), [testing.md](docs/testing.md), [TUNING.md](TUNING.md) |
+
+**Save change:** schema 15. An old save counts its past acts' missions as done.
+
+### Verified
+
+- `npm run check`: 221 tests, including the pacing test with missions on.
+- 5 seeds, 60 days: Act I 4.64 d, II 3.73, III 6.49, IV 9.76, V 12.03, VI 12.63; heat 28.8; no raids.
+- The web build: Ops' Unfinished business in Act II, and Scene 5 from its opening panel to the stamp.
+
 ## 2026-09-30 — Scenes, the cover and the chapters (D5)
 
 Branch: `feature/design-v2`. Reasoning: [ADR 0049](docs/decisions/0049-scenes.md); the scenes: [story.md](docs/story.md#scenes).

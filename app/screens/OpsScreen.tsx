@@ -8,10 +8,14 @@ import {
   hijackChance,
   effectiveStat,
   influenceRoom,
+  MISSION_IDS,
+  missionBlocked,
+  missionDone,
   jobXp,
   opDirtyRewardFor,
   opConfigAt,
   opMinutesFor,
+  opName,
   opUnlocked,
   OP_TYPES,
   outcomeOdds,
@@ -26,6 +30,7 @@ import {
 } from '../../engine'
 import { ACT_NAME } from '../acts'
 import { Icon } from '../components/Glyph'
+import { MissionCard } from '../components/MissionCard'
 import { Btn, BuyRow, colors, Empty, glyph, Item, List, Note, rich, Screen, Section, Tag } from '../components/ui'
 import { fmt, fmtDuration, pct } from '../format'
 import { store, type Snapshot } from '../store'
@@ -64,8 +69,19 @@ export function OpsScreen({ game }: ScreenProps) {
     if (!error) setSelected([])
   }
 
+  const missions = MISSION_IDS.filter((id) => c.missions.enabled && c.missions.list[id].act === s.act && !missionDone(s, id))
+  const ready = missions.filter((id) => !missionBlocked(s, c, id, now)).length
+
   return (
     <Screen>
+      {missions.length > 0 && (
+        <Section title="Unfinished business" right={ready ? `${ready} ready` : undefined}>
+          {missions.map((id) => (
+            <MissionCard key={id} game={game} id={id} picked={team} onSent={() => setSelected([])} />
+          ))}
+        </Section>
+      )}
+
       {s.ops.length > 0 && (
         <Section title={`Out on jobs · ${s.ops.length}`}>
           {s.ops.map((op) => {
@@ -74,7 +90,7 @@ export function OpsScreen({ game }: ScreenProps) {
               <View key={op.id} style={styles.out}>
                 <View style={styles.outText}>
                   <Text style={styles.caps}>{`Out · ${names(op.crewIds.map((id) => first(s.crew.find((m) => m.id === id)?.name ?? '?')))}`}</Text>
-                  <Text style={styles.outName}>{op.name ?? c.ops.list[op.type].name}</Text>
+                  <Text style={styles.outName}>{opName(c, op)}</Text>
                   <Text style={styles.outBack}>{`back in ${fmtDuration(op.completesAt - now, c)}${op.districtId ? ` · ${c.districts.list[op.districtId].name}` : ''}`}</Text>
                 </View>
                 <Pressable

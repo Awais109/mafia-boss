@@ -5,6 +5,7 @@ import type {
   Ending,
   FrontMode,
   GoalId,
+  MissionId,
   FrontType,
   OfficialId,
   OpConfig,
@@ -18,7 +19,7 @@ import type {
 } from '../config/schema'
 import type { GameEvent } from './events'
 
-export const SCHEMA_VERSION = 14
+export const SCHEMA_VERSION = 15
 export const LOG_CAP = 200
 export const LEDGER_ROWS = 8 // 7 closed days plus today's opening snapshot
 
@@ -71,7 +72,7 @@ export type CrewMember = {
 
 export type OpInstance = {
   id: string
-  type: OpType
+  type: OpType | 'mission' // a boss mission (ADR 0050) rides the job machinery: `missionId` says which, `cfg` its terms
   crewIds: string[]
   startedAt: number
   completesAt: number
@@ -79,7 +80,13 @@ export type OpInstance = {
   offerId?: string // taken from the opportunities board
   cfg?: OpConfig // the offer's job, snapshotted: resolution uses this instead of ops.list
   name?: string
+  missionId?: MissionId
+  stake?: number // an overreach's Dirty, paid when it's sent and lost
 }
+
+// A boss mission's outcome (ADR 0050): an overreach sent (it always fails), a rematch won, or lost and
+// open again at `retryAt`.
+export type MissionRecord = { result: 'failed' | 'won' | 'lost'; at: number; retryAt?: number; stake?: number }
 
 export type District = {
   id: DistrictId
@@ -244,6 +251,7 @@ export type PlaytestStats = {
   injuries: number
   attacks: number
   contests: { won: number; lost: number }
+  missions: { sent: number; won: number; lost: number } // boss missions (ADR 0050): overreaches count as sent
   firstRaidAt: number | null
   officialBoughtAt: Partial<Record<OfficialId, number>>
   lastSessionAt: number | null
@@ -298,6 +306,7 @@ export type PlayerState = {
   // list. `since` is where the save stood when the list began: anything the story passed before that counts
   // as seen, so an old save doesn't replay its past.
   story: { seen: string[]; since: { act: Act; step: number; done: boolean } }
+  missions: Partial<Record<MissionId, MissionRecord>>
   goals: { done: GoalId[] } // Act I goals completed (ADR 0035)
   firstConversionDone: boolean
 
@@ -367,6 +376,7 @@ export function emptyStats(): PlaytestStats {
     injuries: 0,
     attacks: 0,
     contests: { won: 0, lost: 0 },
+    missions: { sent: 0, won: 0, lost: 0 },
     firstRaidAt: null,
     officialBoughtAt: {},
     lastSessionAt: null,

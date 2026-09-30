@@ -7,6 +7,7 @@ import type {
   FrontType,
   GoalId,
   IncidentType,
+  MissionId,
   OfficialId,
   OpOutcome,
   OpType,
@@ -66,7 +67,20 @@ export type EventBody =
   | { type: 'SHORTAGE_ENDED'; product?: 'premium' }
   | { type: 'GOLD_GRANTED'; amount: number; source: GoldSource }
   | { type: 'TIME_SKIPPED'; hours: number; bars: number }
-  | { type: 'OP_RUSHED'; opId: string; opType: OpType; bars: number; name?: string }
+  | { type: 'MISSION_STARTED'; missionId: MissionId; opId: string; crewIds: string[]; stake: number }
+  | {
+      type: 'MISSION_RESOLVED'
+      missionId: MissionId
+      result: 'failed' | 'won' | 'lost'
+      crewIds: string[]
+      outcome?: OpOutcome
+      stake?: number
+      heat?: number
+      injuredId?: string
+      rep?: number
+      influence?: number
+    }
+  | { type: 'OP_RUSHED'; opId: string; opType: OpType | 'mission'; bars: number; name?: string }
   | { type: 'GOAL_DONE'; goalId: GoalId; gold: number }
   | { type: 'SHIPMENT_BOUGHT'; packs: number; cost: number; product?: 'premium' }
   | { type: 'PASSAGE_BOUGHT'; cost: number; until: number }

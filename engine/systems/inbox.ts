@@ -7,6 +7,7 @@ import {
   type IncidentType,
   type OpConfig,
   type OpOutcome,
+  type OpType,
   type PerkId,
   type Stat,
 } from '../config/schema'
@@ -100,7 +101,7 @@ export function fileReport(
   }
   state.inbox.push(item)
   state.stats.inbox.filed++
-  emit(ctx, t, { type: 'REPORT_FILED', itemId: item.id, opId: op.id, opType: op.type, outcome, expiresAt: item.expiresAt })
+  emit(ctx, t, { type: 'REPORT_FILED', itemId: item.id, opId: op.id, opType: op.type as OpType, outcome, expiresAt: item.expiresAt })
 }
 
 export function incidentNeedHolds(state: PlayerState, c: Config, need: IncidentNeed | undefined): boolean {

@@ -6,7 +6,7 @@ import { act, fresh, H, T0 } from './helpers'
 // fights, the Clinic, and Tolya's boys coming for a business.
 
 const configWith = (overlay: object) => {
-  const { config: c, errors } = tryBuildConfig(overlay as never)
+  const { config: c, errors } = tryBuildConfig({ missions: { enabled: false }, ...overlay } as never)
   if (errors.length) throw new Error(errors.join('\n'))
   return c
 }

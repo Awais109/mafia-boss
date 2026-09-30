@@ -376,6 +376,17 @@ The sim now runs 60 days so an ending can be reached; so does the pacing guard.
             front util 0.52, Dirty idle 0.90, wage share 0.09.
             goldRush: Act V 13.65 d, Act VI 13.74 d (10/10), heat 29.6, missed wages 0.
 2026-09-29  tests/sim.test.ts: 45 → 60 days; an ending 10–18 d after Act V added.
+2026-09-30  missions (ADR 0050): new section. Seven boss missions, each act gate after Act I asking for the act
+            before's overreach and rematch. Overreaches: crate 2 h (2 crew, stake 2 h of yield, one hurt 12 h, +10
+            heat), bridge 3 h (1 crew, stake 2 h, +8), truck 4 h (2 crew, stake 2 h, +12), auction 4 h (1 crew,
+            stake 2 h, +5), Governor 8 h (1 crew, stake 2 h, +15). Rematches: Her terms diff 45 (2 crew, 2 h, ★60 and
+            Zhanna +25), The second lunch diff 55 (1 crew, 3 h, ★400 and ✦10); a lost one reopens after 12 h.
+            5 seeds, 60 d: Act I 4.64 d, II 3.73, III 6.53, IV 9.90, V 11.32, VI 12.97, heat 28.4, raids 0. Kept;
+            Act IV at the band's edge.
+2026-09-30  missions: truck 240→180 min, auction 240→120, Governor 480→240
+            Each act now waits for a session to send its overreach; shorter late ones give Act IV room. 5 seeds, 60 d:
+            Act I 4.64 d, II 3.73 (5/5), III 6.49 (4/5), IV 9.76 (5/5), V 12.03 (3/5), VI 12.63 (4/5), heat 28.8,
+            raids 0. Kept.
 ```
 
 ## Open

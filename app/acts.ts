@@ -1,4 +1,4 @@
-import { ACTS, gameCleared, nextGate, TUTORIAL_STEPS, type Act, type Config, type PlayerState } from '../engine'
+import { ACTS, gameCleared, missionDone, missionOut, nextGate, TUTORIAL_STEPS, type Act, type Config, type PlayerState } from '../engine'
 import { fmt } from './format'
 
 // The six acts as the app shows them (ADR 0040): numerals, what the next act asks for, and what it opens.
@@ -60,6 +60,19 @@ export function actProgress(s: PlayerState, c: Config): ActProgress {
       requirements.push({ text: `own the ${c.fronts.types[f].name}`, label: `Own the ${c.fronts.types[f].name}`, done: owned, value: owned ? 'owned' : undefined })
     }
     if (g.mayor) requirements.push({ text: 'win an election', label: 'Win an election', done: s.politics.mayor, value: s.politics.mayor ? 'mayor' : undefined })
+    // The boss missions (ADR 0050): the rematch won, and last the overreach, sent.
+    for (const id of c.missions.enabled ? (g.missions ?? []) : []) {
+      const m = c.missions.list[id]
+      const done = missionDone(s, id)
+      const lost = s.missions[id]?.result === 'lost'
+      requirements.push({
+        text: m.name,
+        label: m.name,
+        hint: m.kind === 'overreach' ? 'overreach: the last step' : 'rematch',
+        done,
+        value: done ? (m.kind === 'overreach' ? 'sent' : 'won') : missionOut(s, id) ? 'out' : lost ? 'lost' : undefined,
+      })
+    }
   }
   const clearedAt = s.stats.actClearedAt[s.act]
   if (cleared && clearedAt !== undefined) {

@@ -18,7 +18,7 @@ import { act, config, fresh, H, T0 } from './helpers'
 // Act V, the Kombinat (ADR 0044): the auction, public opinion, the Ministry's attention, and the elections.
 
 const configWith = (overlay: object) => {
-  const { config: c, errors } = tryBuildConfig(overlay as never)
+  const { config: c, errors } = tryBuildConfig({ missions: { enabled: false }, ...overlay } as never)
   if (errors.length) throw new Error(errors.join('\n'))
   return c
 }

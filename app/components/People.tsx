@@ -2,12 +2,31 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Svg, { Path, SvgXml } from 'react-native-svg'
 import { HEADS } from '../art/heads'
 import { DOSSIER_ART, PORTRAITS, SILHOUETTES, type PersonId } from '../art/people'
+import { MISSION_IDS } from '../../engine'
+import { ACT_NAME } from '../acts'
 import { PEOPLE, type Person } from '../people'
+import { SCENES, sceneLabel, type SceneId } from '../scenes'
+import { store } from '../store'
 import type { Snapshot } from '../store'
 import { fonts, paper } from '../theme'
 import { Icon } from './Glyph'
 import { Paper, PaperTitle } from './Notebook'
+import { Stamp } from './MissionCard'
 import { colors, Title } from './ui'
+
+// The scenes each person is in, to replay from their dossier.
+const PERSON_SCENES: Partial<Record<PersonId, SceneId[]>> = {
+  lyosha: ['prologue'],
+  vitya: ['prologue', 'crew'],
+  dima: ['crew', 'terms', 'count'],
+  sasha: ['crew'],
+  tolya: ['tolya', 'row'],
+  zhanna: ['crate', 'terms', 'chapter-2'],
+  ignatov: ['bridge', 'lunch', 'chapter-3'],
+  colonel: ['truck', 'road', 'chapter-4'],
+  golovin: ['auction', 'count', 'chapter-5'],
+  prosecutor: ['governor', 'chapter-6'],
+}
 
 // People (design: Map · People): everyone you've met as a card on the notebook's page, and everyone not yet
 // as a shape with Lyosha's fragment under it. A card opens the person's dossier.
@@ -75,6 +94,8 @@ export function Dossier({ game, id, onBack, onMap }: { game: Snapshot; id: Perso
   const holds = p.holds?.(s, c)
   const mood = p.mood?.(s, c)
   const art = DOSSIER_ART[p.id]
+  const arc = c.missions.enabled ? MISSION_IDS.filter((id) => c.missions.list[id].boss === p.id) : []
+  const seen = (PERSON_SCENES[p.id] ?? []).filter((id) => s.story.seen.includes(id))
   return (
     <View style={styles.dossier}>
       <View style={styles.back}>
@@ -125,6 +146,40 @@ export function Dossier({ game, id, onBack, onMap }: { game: Snapshot; id: Perso
                   </View>
                 ))}
               </View>
+            </View>
+          )}
+          {arc.length > 0 && (
+            <View style={styles.moodBlock}>
+              <Text style={styles.tileLabel}>Their arc</Text>
+              {arc.map((id) => {
+                const m = c.missions.list[id]
+                const r = s.missions[id]
+                const out = s.ops.some((o) => o.missionId === id)
+                const stamp = r?.result === 'failed' ? { text: 'Failed', color: paper.redPencil } : r?.result === 'won' ? { text: 'Won', color: paper.brassInk } : null
+                return (
+                  <View key={id} style={styles.arcRow}>
+                    <View style={styles.arcText}>
+                      <Text style={styles.arcKind}>{`${m.kind} · Act ${ACT_NAME[m.act]}`}</Text>
+                      <Text style={styles.arcName}>{m.name}</Text>
+                      <Text style={styles.arcState}>{stamp ? '' : out ? 'Out now' : r?.result === 'lost' ? 'Lost: it can be tried again' : 'Not yet'}</Text>
+                    </View>
+                    {stamp && <Stamp text={stamp.text} color={stamp.color} />}
+                  </View>
+                )
+              })}
+            </View>
+          )}
+          {seen.length > 0 && (
+            <View style={styles.moodBlock}>
+              <Text style={styles.tileLabel}>Their scenes</Text>
+              {seen.map((sceneId) => (
+                <View key={sceneId} style={styles.arcRow}>
+                  <Text style={[styles.arcName, styles.grow]}>{sceneLabel(SCENES[sceneId])}</Text>
+                  <Pressable onPress={() => store.playScene(sceneId)} accessibilityRole="button" style={styles.replay}>
+                    <Text style={styles.replayText}>Replay</Text>
+                  </Pressable>
+                </View>
+              ))}
             </View>
           )}
           {onMap && (
@@ -181,6 +236,14 @@ const styles = StyleSheet.create({
   moodOn: { backgroundColor: paper.ink },
   moodText: { fontFamily: fonts.text400, fontSize: 12, color: paper.ink },
   moodTextOn: { fontFamily: fonts.text600, color: paper.paper },
+  arcRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderTopWidth: 1, borderTopColor: 'rgba(21, 18, 15, 0.2)' },
+  arcText: { flex: 1, gap: 1 },
+  arcKind: { fontFamily: fonts.text600, fontSize: 10.5, letterSpacing: 1.2, textTransform: 'uppercase', color: '#5a5144' },
+  arcName: { fontFamily: fonts.text600, fontSize: 15, color: paper.ink },
+  arcState: { fontFamily: fonts.text400, fontSize: 12, color: '#5a5144' },
+  grow: { flex: 1 },
+  replay: { minHeight: 36, justifyContent: 'center', paddingHorizontal: 14, borderWidth: 1, borderColor: paper.ink },
+  replayText: { fontFamily: fonts.text600, fontSize: 13, color: paper.ink },
   mapLink: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', minHeight: 36 },
   mapLinkText: { fontFamily: fonts.text600, fontSize: 14, color: paper.fountain },
 })

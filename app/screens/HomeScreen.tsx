@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native'
-import { dayMs, gameDay } from '../../engine'
+import { dayMs, gameDay, opName } from '../../engine'
 import { Glyph } from '../components/Glyph'
 import { InboxCard } from '../components/InboxCard'
 import { MoneyFlow } from '../components/MoneyFlow'
@@ -179,7 +179,7 @@ function Operation({ game }: { game: ScreenProps['game'] }) {
         label="Jobs running"
         hint={
           soonest
-            ? `${soonest.crewIds.map((id) => first(s.crew.find((m) => m.id === id)?.name ?? 'someone')).join(', ')} · ${(soonest.name ?? c.ops.list[soonest.type].name).toLowerCase()}`
+            ? `${soonest.crewIds.map((id) => first(s.crew.find((m) => m.id === id)?.name ?? 'someone')).join(', ')} · ${opName(c, soonest).toLowerCase()}`
             : s.crew.length
               ? undefined
               : 'a job needs crew'

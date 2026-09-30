@@ -63,6 +63,7 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
     politics: { opinion: c.opinion.base, attention: 0, nextElectionAt: 0, elections: 0, points: 0, mayor: false },
     tutorial: { step: 0, done: false },
     story: { seen: [], since: { act: 1, step: 0, done: false } },
+    missions: {},
     goals: { done: [] },
     firstConversionDone: false,
 
