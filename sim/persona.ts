@@ -388,6 +388,9 @@ export function playSession(
     if (m.loyalty < p.raiseBelow && state.clean >= d().costs.raise) tryAct({ type: 'RAISE', crewId: m.id })
   }
 
+  // Rock bottom (ADR 0051): open the family's envelope the moment it's there.
+  if (state.rockBottom.pending) tryAct({ type: 'OPEN_ENVELOPE' })
+
   // Boss missions (ADR 0050), before any other job claims the crew. An overreach goes out the moment it
   // appears, since it's the only door to the next act, with the idle crew the bot values least. A rematch
   // goes with the team that gives it the best odds; lost, it comes back after the wait.

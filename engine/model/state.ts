@@ -19,7 +19,7 @@ import type {
 } from '../config/schema'
 import type { GameEvent } from './events'
 
-export const SCHEMA_VERSION = 15
+export const SCHEMA_VERSION = 16
 export const LOG_CAP = 200
 export const LEDGER_ROWS = 8 // 7 closed days plus today's opening snapshot
 
@@ -60,6 +60,7 @@ export type CrewMember = {
   traits: TraitId[]
   status: CrewStatus
   nephew?: boolean
+  stays?: boolean // never walks out (Vitya: ADR 0051)
   jailedUntil?: number
   injuredUntil?: number // hurt until then (ADR 0042): can't work, still draws wages
   assignedTo?: string // racket id (enforcer) or op id (on_op)
@@ -246,7 +247,7 @@ export type PlaytestStats = {
   haggles: { won: number; lost: number }
   statPointsGained: number
   gold: { granted: number; spentSkip: number; spentRush: number; hoursSkipped: number }
-  loans: { borrowed: number; interest: number; repaid: number; missed: number; seized: number }
+  loans: { borrowed: number; interest: number; repaid: number; missed: number; seized: number; repossessed: number } // seized: the old vault seizure, before ADR 0051
   lending: { lent: number; returned: number; defaults: number }
   injuries: number
   attacks: number
@@ -307,6 +308,9 @@ export type PlayerState = {
   // as seen, so an old save doesn't replay its past.
   story: { seen: string[]; since: { act: Act; step: number; done: boolean } }
   missions: Partial<Record<MissionId, MissionRecord>>
+  // Rock bottom (ADR 0051): the envelope waiting after a payday missed with no Clean, and the acts it's been
+  // opened in (once each).
+  rockBottom: { pending: boolean; usedActs: Act[] }
   goals: { done: GoalId[] } // Act I goals completed (ADR 0035)
   firstConversionDone: boolean
 
@@ -371,7 +375,7 @@ export function emptyStats(): PlaytestStats {
     haggles: { won: 0, lost: 0 },
     statPointsGained: 0,
     gold: { granted: 0, spentSkip: 0, spentRush: 0, hoursSkipped: 0 },
-    loans: { borrowed: 0, interest: 0, repaid: 0, missed: 0, seized: 0 },
+    loans: { borrowed: 0, interest: 0, repaid: 0, missed: 0, seized: 0, repossessed: 0 },
     lending: { lent: 0, returned: 0, defaults: 0 },
     injuries: 0,
     attacks: 0,

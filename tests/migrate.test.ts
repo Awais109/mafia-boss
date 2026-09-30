@@ -89,7 +89,7 @@ describe('migrate', () => {
     const m = migrate(asV1())
     expect(m.loan).toBeNull()
     expect(m.lending).toBeNull()
-    expect(m.stats.loans).toEqual({ borrowed: 0, interest: 0, repaid: 0, missed: 0, seized: 0 })
+    expect(m.stats.loans).toEqual({ borrowed: 0, interest: 0, repaid: 0, missed: 0, seized: 0, repossessed: 0 })
     expect(m.stats.contests).toEqual({ won: 0, lost: 0 })
   })
 

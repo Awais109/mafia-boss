@@ -64,6 +64,7 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
     tutorial: { step: 0, done: false },
     story: { seen: [], since: { act: 1, step: 0, done: false } },
     missions: {},
+    rockBottom: { pending: false, usedActs: [] },
     goals: { done: [] },
     firstConversionDone: false,
 

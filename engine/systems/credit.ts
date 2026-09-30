@@ -69,7 +69,8 @@ function pay(state: PlayerState, ctx: Ctx, t: number, amount: number): void {
 }
 
 // Day start, after wages and upkeep: interest, then the day's payment from Clean. A payment Clean can't
-// cover is missed: the collectors come, and on the second miss the lender takes a share of the vault.
+// cover is missed: the collectors come. At `missesToRepossess` misses in a row the lender's men take one
+// business and close the loan, so the debt never grows for ever (ADR 0051).
 export function creditDayBoundary(state: PlayerState, ctx: Ctx, t: number): void {
   const loan = state.loan
   if (!loan) return
@@ -84,14 +85,8 @@ export function creditDayBoundary(state: PlayerState, ctx: Ctx, t: number): void
   }
   loan.missed++
   state.stats.loans.missed++
-  let seized = 0
-  if (loan.missed >= 2) {
-    seized = Math.floor(state.vault * c.credit.secondMissVaultPct)
-    state.vault -= seized
-    state.stats.loans.seized += seized
-    loan.missed = 0
-  }
-  emit(ctx, t, { type: 'LOAN_MISSED', due, missed: loan.missed, seized })
+  emit(ctx, t, { type: 'LOAN_MISSED', due, missed: loan.missed })
+  if (loan.missed >= c.credit.missesToRepossess) return repossess(state, ctx, t)
   const rand = ctx.rng.derive('collectors', dayIndex(c, t))
   const targets = state.rackets.filter((r) => c.rackets.types[r.type].kind !== 'premises')
   const racketId = targets.length ? rand.pick(targets).id : undefined
@@ -153,4 +148,30 @@ export function lendingDue(state: PlayerState, ctx: Ctx, t: number): void {
   state.dirty += returned
   state.stats.lending.returned += returned
   emit(ctx, t, { type: 'LENDING_REPAID', amount: l.amount, returned })
+}
+
+// The keys (ADR 0051): the lender's men take one business and the loan is closed. Not the worst thing you
+// own, and not the best: the middle earner by yield (or, with nothing earning, a premises).
+function repossess(state: PlayerState, ctx: Ctx, t: number): void {
+  const { c } = ctx
+  const owed = state.loan?.owed ?? 0
+  state.loan = null
+  state.stats.loans.repossessed++
+  const d = derive(state, c)
+  const ranked = state.rackets
+    .map((r, i) => ({ r, yield: d.perRacket[i].yield + d.perRacket[i].legalClean }))
+    .sort((a, b) => b.yield - a.yield || a.r.id.localeCompare(b.r.id))
+  const earning = ranked.filter(({ r }) => c.rackets.types[r.type].kind !== 'premises')
+  const pool = earning.length ? earning : ranked
+  if (!pool.length) return
+  const taken = pool[Math.floor(pool.length / 2)].r
+  // Whoever minded it comes home.
+  for (const m of state.crew) {
+    if (m.status === 'enforcer' && m.assignedTo === taken.id) {
+      m.status = 'idle'
+      delete m.assignedTo
+    }
+  }
+  state.rackets = state.rackets.filter((r) => r.id !== taken.id)
+  emit(ctx, t, { type: 'LOAN_REPOSSESSED', racketId: taken.id, racketType: taken.type, districtId: taken.districtId, owed })
 }

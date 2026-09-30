@@ -516,6 +516,19 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       if (!state.tutorial.done) applyQuickStart(state, ctx, t)
       return null
 
+    // Rock bottom (ADR 0051): the family's envelope, once per act. A stake of Dirty to pay the crew and start again.
+    case 'OPEN_ENVELOPE': {
+      if (!state.rockBottom.pending) return 'There’s no envelope waiting'
+      if (state.rockBottom.usedActs.includes(state.act)) return 'The family has helped once this act'
+      const d = derive(state, c)
+      const stake = Math.max(c.rockBottom.minStake, Math.round((d.wagesPerHr + d.upkeepPerHr) * c.rockBottom.stakeHours))
+      state.dirty += stake
+      state.rockBottom.pending = false
+      state.rockBottom.usedActs.push(state.act)
+      emit(ctx, t, { type: 'ENVELOPE_OPENED', act: state.act, stake })
+      return null
+    }
+
     case 'START_MISSION':
       return startMission(state, ctx, t, a.missionId, a.crewIds)
 

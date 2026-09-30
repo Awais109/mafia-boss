@@ -39,7 +39,7 @@ export function CreditCard({ game }: { game: Snapshot }) {
               />
               <Item
                 label="Missed payments"
-                hint={`Miss two and the lender takes ${pct(cr.secondMissVaultPct)} of the vault.`}
+                hint={`Miss ${cr.missesToRepossess} in a row and the lender’s men take a business. The debt is closed.`}
                 value={String(loan.missed)}
                 color={loan.missed > 0 ? colors.bad : undefined}
               />
@@ -70,7 +70,7 @@ export function CreditCard({ game }: { game: Snapshot }) {
               })}
             </View>
             <Text style={styles.note}>
-              {`Up to ${cr.maxDaysOfClean} days of your Clean income. ${pct(cr.interestPerDay)} interest a day on what you owe; each morning ${pct(cr.repayPctPerDay)} of the loan plus that interest comes out of Clean. Miss it and the collectors come; miss twice and the lender takes ${pct(cr.secondMissVaultPct)} of the vault.`}
+              {`Up to ${cr.maxDaysOfClean} days of your Clean income. ${pct(cr.interestPerDay)} interest a day on what you owe; each morning ${pct(cr.repayPctPerDay)} of the loan plus that interest comes out of Clean. Miss it and the collectors come; miss ${cr.missesToRepossess} in a row and the lender’s men take a business and close the loan.`}
             </Text>
           </View>
         )}

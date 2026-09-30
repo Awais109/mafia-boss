@@ -313,6 +313,7 @@ export type CrewSeed = {
   loyalty: number
   traits?: TraitId[]
   nephew?: boolean
+  stays?: boolean // never walks out, though not family (Vitya: ADR 0051)
   potential?: Record<Stat, number> // ceilings; stat + 10 when omitted
 }
 
@@ -579,6 +580,13 @@ export type Config = {
     finalAct: Act
     acts: Record<LaterAct, ActGate>
   }
+  // Rock bottom (ADR 0051): a payday missed with too little Clean to fall back on brings the family's envelope,
+  // once per act. Never a game over.
+  rockBottom: {
+    cleanBelowHours: number // "no Clean": less than this many hours of wages
+    stakeHours: number // the envelope holds this many hours of wages and upkeep, in Dirty
+    minStake: number
+  }
   // The boss missions (ADR 0050). `enabled: false` leaves every gate's missions out (Debug, older tests).
   missions: {
     enabled: boolean
@@ -598,7 +606,7 @@ export type Config = {
     minCap: number
     interestPerDay: number // on what's owed, at each day start
     repayPctPerDay: number // of the principal, due from Clean at each day start
-    secondMissVaultPct: number // two missed payments: the lender takes this share of the vault
+    missesToRepossess: number // this many missed payments in a row: the lender takes a business and closes the loan (ADR 0051)
     lending: {
       termHours: number
       returnPct: number
@@ -959,6 +967,9 @@ export function validateConfig(c: Config): string[] {
       }
       for (const b of o.reports.bands) if (!OP_BANDS.includes(b)) e.push(`ops.reports.bands: unknown band ${b}`)
       positive(e, 'missions.retryHours', c.missions.retryHours)
+      nonNeg(e, 'rockBottom.cleanBelowHours', c.rockBottom.cleanBelowHours)
+      positive(e, 'rockBottom.stakeHours', c.rockBottom.stakeHours)
+      nonNeg(e, 'rockBottom.minStake', c.rockBottom.minStake)
       for (const id of MISSION_IDS) {
         const m = c.missions.list[id]
         if (!m) { e.push(`missions.list.${id}: missing`); continue }
@@ -1087,7 +1098,7 @@ export function validateConfig(c: Config): string[] {
       nonNeg(e, 'credit.minCap', cr.minCap)
       nonNeg(e, 'credit.interestPerDay', cr.interestPerDay)
       rate(e, 'credit.repayPctPerDay', cr.repayPctPerDay)
-      unit(e, 'credit.secondMissVaultPct', cr.secondMissVaultPct)
+      int(e, 'credit.missesToRepossess', cr.missesToRepossess, 1)
       positive(e, 'credit.lending.termHours', cr.lending.termHours)
       nonNeg(e, 'credit.lending.returnPct', cr.lending.returnPct)
       unit(e, 'credit.lending.defaultBase', cr.lending.defaultBase)

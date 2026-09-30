@@ -23,7 +23,7 @@ due      = min(owed, principal × credit.repayPctPerDay + interest)
 ```
 
 - **Clean covers it:** paid (`LOAN_PAYMENT { paid, owed }`, or `LOAN_REPAID` once nothing's left).
-- **It doesn't:** missed (`LOAN_MISSED { due, missed, seized }`). The collectors come: a `collectors` incident naming one of your joints or rackets, with `due` as its amount: let them make a point (the default: condition and heat), pay double in Clean, or show them out (a Muscle contest). A second miss in a row takes `credit.secondMissVaultPct` of the vault and resets the count.
+- **It doesn't:** missed (`LOAN_MISSED { due, missed }`). The collectors come: a `collectors` incident naming one of your joints or rackets, with `due` as its amount: let them make a point (the default: condition and heat), pay double in Clean, or show them out (a Muscle contest). At `credit.missesToRepossess` misses in a row the lender's men take the keys ([ADR 0051](../decisions/0051-rock-bottom.md)): the middle earner of your businesses by yield (a premises only if nothing earns) is gone, whoever minded it comes home, and the loan is closed (`LOAN_REPOSSESSED { racketId, racketType, districtId, owed }`, `stats.loans.repossessed`). The debt never compounds for ever. Saves from before this kept `seized`, the old vault share.
 
 Payments only ever come from Clean. Repaying in Dirty would turn Dirty into Clean at 1:1 less interest, better than any front.
 
@@ -46,10 +46,10 @@ Dirty goes out and Dirty comes back, so lending is a return on idle cash, never 
 
 ## Stats
 
-`stats.loans { borrowed, interest, repaid, missed, seized }`, `stats.lending { lent, returned, defaults }`.
+`stats.loans { borrowed, interest, repaid, missed, seized, repossessed }` (`seized` counts only old saves' vault seizures), `stats.lending { lent, returned, defaults }`.
 
 ## The bot
 
 It borrows only for the purchase it wants most that it can't afford, when that purchase pays for itself within 48 hours and fits the heat budget, keeps back the next payment when it spends, and repays from whatever Clean is left. It lends everything idle above its running-cost reserve whenever the desk is free, and values a desk by the expected return on the extra it could lend on that street ([sim.md](../sim.md#the-casual-bot)).
 
-**Tests:** `tests/credit.test.ts` (borrowing opens in Act III, one at a time, within the cap, without Rep; the cap follows the ledger; interest and the morning payment; the collectors, and the vault on a second miss; lending needs a desk and stays within its cap; repaid with interest; a default files a chase that can win half back), `tests/reconcile.test.ts` (split invariance with a loan and a loan falling due mid-window), `tests/migrate.test.ts`.
+**Tests:** `tests/credit.test.ts` (borrowing opens in Act III, one at a time, within the cap, without Rep; the cap follows the ledger; interest and the morning payment; the collectors, and repossession on a second miss; lending needs a desk and stays within its cap; repaid with interest; a default files a chase that can win half back), `tests/reconcile.test.ts` (split invariance with a loan and a loan falling due mid-window), `tests/migrate.test.ts`.

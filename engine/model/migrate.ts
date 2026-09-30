@@ -195,8 +195,25 @@ function v14to15(doc: Doc): Doc {
   }
 }
 
+// Rock bottom (ADR 0051): no envelope waiting or opened, Vitya never walks out (matched by the opening pool's
+// name), and a repossession counter.
+function v15to16(doc: Doc): Doc {
+  const stays = new Set(defaults.crew.openingPool.filter((p) => p.stays).map((p) => p.name))
+  const mark = (m: { name: string }) => (stays.has(m.name) ? { ...m, stays: true } : m)
+  const pool = doc.recruitPool as { candidates: { name: string }[] }
+  const stats = doc.stats as { loans?: object }
+  return {
+    ...doc,
+    schemaVersion: 16,
+    rockBottom: doc.rockBottom ?? { pending: false, usedActs: [] },
+    crew: (doc.crew as { name: string }[]).map(mark),
+    recruitPool: { ...pool, candidates: pool.candidates.map(mark) },
+    stats: { ...emptyStats(), ...stats, loans: { ...emptyStats().loans, ...stats.loans } },
+  }
+}
+
 const STEPS: Record<number, (doc: Doc) => Doc> = {
-  1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7, 7: v7to8, 8: v8to9, 9: v9to10, 10: v10to11, 11: v11to12, 12: v12to13, 13: v13to14, 14: v14to15,
+  1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7, 7: v7to8, 8: v8to9, 9: v9to10, 10: v10to11, 11: v11to12, 12: v12to13, 13: v13to14, 14: v14to15, 15: v15to16,
 }
 
 export function migrate(doc: unknown): PlayerState {

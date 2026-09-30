@@ -15,13 +15,13 @@ What is built, how it works, and why. Written so a person or an LLM new to the r
 | [systems/gold.md](systems/gold.md) | Gold bars: skipping ahead, finishing jobs now, where bars come from |
 | [systems/fronts.md](systems/fronts.md) | Laundering Dirty into Clean, buffers, rates, the push / lay low dial, capacity, suspicion |
 | [systems/heat.md](systems/heat.md) | Exposure, control, heat target, inspections, raids, arrests, bribes, officials, Influence |
-| [systems/crew.md](systems/crew.md) | Crew stats and traits, experience, ranks and perks, wages, loyalty, recruiting, slots, jail, injuries and the Clinic |
+| [systems/crew.md](systems/crew.md) | Crew stats and traits, experience, ranks and perks, wages and rock bottom (the family's envelope), loyalty, recruiting, slots, jail, injuries and the Clinic |
 | [systems/ops.md](systems/ops.md) | Jobs, training, resolution formula, rewards, district pressure, the opportunities board |
 | [systems/inbox.md](systems/inbox.md) | Pending decisions: crew reports, incidents (rolled and filed), contests, perk choices, defaults and expiry |
 | [systems/districts-and-rivals.md](systems/districts-and-rivals.md) | Districts, tribute, buy-outs and flips, the Kombinat's auction, Tolya and answering his demands, Zhanna's lots and surplus trade, the Colonel and passage |
 | [systems/progression.md](systems/progression.md) | Reputation, the six acts and their gates, the unlock ladder, the guided opening, Act I goals |
 | [systems/prosperity.md](systems/prosperity.md) | Act III: each district's prosperity, what raises and lowers it, what it pays and unlocks |
-| [systems/credit.md](systems/credit.md) | Act III: borrowing Clean and paying it back, the collectors, lending Dirty through a loan desk |
+| [systems/credit.md](systems/credit.md) | Act III: borrowing Clean and paying it back, the collectors and repossession, lending Dirty through a loan desk |
 | [systems/politics.md](systems/politics.md) | Act V: public opinion, the Ministry's attention and frozen fronts, elections, campaigning, the mayor |
 | [systems/endgame.md](systems/endgame.md) | Act VI: Legalize, the Holding, the case file and hearings, the two endings |
 | [app.md](app.md) | The React Native app: shell, look and feel, store, storage, screens, the map, Debug tab, export, checking screens against the design |

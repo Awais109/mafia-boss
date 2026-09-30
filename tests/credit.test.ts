@@ -63,7 +63,7 @@ describe('borrowing', () => {
     expect(repaid.stats.loans.interest).toBeCloseTo(interest)
   })
 
-  it('sends the collectors when a payment is missed, and takes from the vault on the second', () => {
+  it('sends the collectors when a payment is missed, and on the second takes a business and closes the loan (ADR 0051)', () => {
     let s = act(actThree(), [{ type: 'TAKE_LOAN', amount: 1000 }], T0)
     s.clean = 0
     s.vault = 1000
@@ -76,9 +76,17 @@ describe('borrowing', () => {
     expect(item.options.find((o) => o.id === 'payDouble')!.effects.clean).toBe(-Math.round(2 * due))
     s.clean = 0
     const vault = s.vault
-    s = reconcile(s, day + D, config).state
-    expect(s.loan!.missed).toBe(0)
-    expect(s.stats.loans.seized).toBe(Math.floor(vault * cr.secondMissVaultPct))
+    const owned = s.rackets.length
+    const r = reconcile(s, day + D, config)
+    s = r.state
+    expect(s.loan).toBeNull()
+    expect(s.stats.loans.repossessed).toBe(1)
+    expect(s.rackets).toHaveLength(owned - 1)
+    const taken = r.events.find((e) => e.type === 'LOAN_REPOSSESSED')
+    expect(taken).toBeDefined()
+    expect(s.rackets.some((x) => taken?.type === 'LOAN_REPOSSESSED' && x.id === taken.racketId)).toBe(false)
+    // Nothing else is taken: the vault only moves as it would.
+    expect(s.vault).toBeGreaterThanOrEqual(vault - 1)
   })
 })
 

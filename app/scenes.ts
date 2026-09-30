@@ -12,6 +12,7 @@ import { ACT_TITLE } from './story'
 export type SceneId =
   | 'prologue' | 'crew' | 'tolya'
   | 'row' | 'crate' | 'terms' | 'bridge' | 'lunch' | 'truck' | 'road' | 'auction' | 'count' | 'governor'
+  | 'envelope'
   | `chapter-${LaterAct}`
 
 // Part of a panel of art, as fractions of its height: the prologue shows the cover's window, then its table.
@@ -24,6 +25,7 @@ export type Beat =
   | { kind: 'face'; person: PersonId; speech?: string; caption?: string } // a portrait on screentone, with a line
   | { kind: 'slug'; caption: string } // a panel of words alone: a place and a time, a wordless beat
   | { kind: 'result'; mission: MissionId } // the stamp: FAILED in red ink with its cost, or WON in brass
+  | { kind: 'envelope' } // Lyosha's second envelope: this act's note, and the stake
   | { kind: 'hire' } // the three crew as cards, each with Hire; it waits until two are hired
   | { kind: 'tribute'; art: ArtId; caption: string } // the stare-down with Tolya's demand under it; it waits for an answer
   | { kind: 'title'; act: Act } // VOLUME and the act's title
@@ -187,6 +189,18 @@ export const SCENES: Record<SceneId, Scene> = {
       { kind: 'result', mission: 'overGovernor' },
       { kind: 'face', person: 'vitya', speech: 'Home?', caption: 'You don’t answer.' },
       { kind: 'title', act: 6 },
+    ],
+  },
+  // Rock bottom (ADR 0051; Scene 15): played when the envelope is opened, not due from the save.
+  envelope: {
+    id: 'envelope',
+    number: 15,
+    title: 'The second envelope',
+    beats: [
+      { kind: 'slug', caption: 'The flat in Zarechye at night. A tram passing, empty.' },
+      { kind: 'slug', caption: 'Payday came and there was nothing there. Vitya said nothing, which is how you know.' },
+      { kind: 'face', person: 'dima', speech: 'It was in the notebook. Behind the map.' },
+      { kind: 'envelope' },
     ],
   },
   'chapter-2': { id: 'chapter-2', title: ACT_TITLE[2], beats: [{ kind: 'chapter', act: 2 }] },

@@ -101,6 +101,12 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
       return { text: `+${glyph.gold}${fmt(e.amount)} ${GOLD_SOURCE[e.source]}`, color: colors.gold }
     case 'TIME_SKIPPED':
       return { text: `Skipped ${e.hours}h for ${glyph.gold}${e.bars}`, color: colors.gold }
+    case 'ROCK_BOTTOM':
+      return { text: 'Payday came up short, and there’s no Clean. The family can help, once this act.', color: colors.heat }
+    case 'ENVELOPE_OPENED':
+      return { text: `Lyosha’s second envelope: ${d}${fmt(e.stake)}. It isn’t much. It’s enough.`, color: colors.good }
+    case 'LOAN_REPOSSESSED':
+      return { text: `Two payments missed. The lender’s men took the ${c.rackets.types[e.racketType].name} in ${c.districts.list[e.districtId].name}. The debt is closed.`, color: colors.heat }
     case 'MISSION_STARTED':
       return {
         text: `${e.crewIds.map(crewName).join(' & ')}: ${c.missions.list[e.missionId].name}${e.stake ? `, staking ${d}${fmt(e.stake)}` : ''}`,

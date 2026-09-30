@@ -408,7 +408,7 @@ export const defaults: Config = {
     },
     // The first people looking for work (ADR 0035): the opening hires two of the three.
     openingPool: [
-      { name: 'Vitya', muscle: 48, brains: 30, nerve: 42, loyalty: 70, potential: { muscle: 60, brains: 38, nerve: 55 } },
+      { name: 'Vitya', muscle: 48, brains: 30, nerve: 42, loyalty: 70, stays: true, potential: { muscle: 60, brains: 38, nerve: 55 } },
       { name: 'Dima', muscle: 30, brains: 50, nerve: 38, loyalty: 70, nephew: true, potential: { muscle: 38, brains: 72, nerve: 48 } },
       { name: 'Sasha "Cold"', muscle: 34, brains: 36, nerve: 50, loyalty: 50, potential: { muscle: 42, brains: 44, nerve: 62 } },
     ],
@@ -722,6 +722,9 @@ export const defaults: Config = {
     },
   },
 
+  // Rock bottom (ADR 0051): the family helps once per act, never a game over.
+  rockBottom: { cleanBelowHours: 24, stakeHours: 36, minStake: 60 },
+
   // The boss missions (ADR 0050). An overreach appears once the rest of the next act's gate holds, fails by
   // design and opens that act; its cost is fixed. A rematch is open all through its act, rolled like a job.
   missions: {
@@ -769,7 +772,7 @@ export const defaults: Config = {
     minCap: 2000,
     interestPerDay: 0.05,
     repayPctPerDay: 0.25, // of the principal, from Clean, at each day start
-    secondMissVaultPct: 0.3,
+    missesToRepossess: 2, // the second miss in a row: a business taken, the loan closed (ADR 0051)
     lending: { termHours: 48, returnPct: 0.3, defaultBase: 0.25, defaultPerProsperity: 0.003, minDefault: 0.02 },
   },
 

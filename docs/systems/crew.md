@@ -3,7 +3,7 @@
 The people who work jobs and mind rackets. They cost wages, their loyalty decides whether they stay, and they get better with work.
 
 **Code:** `engine/systems/crew.ts` (`effectiveStat`, `baseWage`, `crewSlots`, `freshProgress`, `crewFromSeed`, `generateCandidates`, `regeneratePool`, `refreshPoolIfDue`, `releaseJailed`, `unassignEnforcer`, `crewDayBoundary`), `engine/systems/injuries.ts` (`injure`, `maybeInjureTeam`, `releaseInjured`, `injuryMult`, `clinicLoyaltyPerDay`), `engine/systems/experience.ts` (`RANK_NAMES`, `rankFor`, `hasPerk`, `jobXp`, `grantXp`, `levelUp`, `filePerkChoice`, `accrueEnforcerXp`, `crewXpHourBoundary`), the crew handlers in `engine/core/apply.ts`.
-**Config:** `crew.*`.
+**Config:** `crew.*`, `rockBottom.*`.
 
 ## A crew member
 
@@ -12,7 +12,7 @@ The people who work jobs and mind rackets. They cost wages, their loyalty decide
 - `loyalty`, from 0 to 100.
 - `traits` (zero or one).
 - `status`: `idle`, `on_op`, `enforcer`, `jailed` or `injured`, plus `assignedTo` (racket or op id), `jailedUntil` and `injuredUntil`.
-- An optional `nephew` flag.
+- An optional `nephew` flag, and an optional `stays` flag (Vitya: never walks out, [ADR 0051](../decisions/0051-rock-bottom.md)).
 - Progress: `xp` and `potential` per stat, `gained` (stat points earned), `rank`, `perks`.
 
 A new game's first recruit pool is `crew.openingPool`: Vitya; Dima, your nephew, who can't be fired and never walks out ([ADR 0018](../decisions/0018-crew-rules.md)); and Sasha. The opening hires two of the three ([ADR 0035](../decisions/0035-guided-opening.md)). Their potentials are set in config rather than rolled.
@@ -84,6 +84,8 @@ Wages accrue continuously into `wagesOwed` and are settled at every game day sta
 - **Paid in full:** `WAGES_PAID`.
 - **Short:** whatever is there gets paid, the rest is forgiven, `stats.missedWages` increments, and every crew member takes `crew.loyalty.perMissedWageDay` loyalty (`WAGES_MISSED`).
 
+**Rock bottom** ([ADR 0051](../decisions/0051-rock-bottom.md)). There is no game over. A short payday with Clean below `rockBottom.cleanBelowHours` of those wages too sets `rockBottom.pending` and emits `ROCK_BOTTOM { act }`, once per act (`rockBottom.usedActs`). A payday met in full clears it. `OPEN_ENVELOPE` refuses unless it's pending and unused this act; it pays `max(rockBottom.minStake, (wages + upkeep per hour) × rockBottom.stakeHours)` into Dirty, clears `pending`, records the act and emits `ENVELOPE_OPENED { act, stake }`. The app shows it as Lyosha's second envelope (Home's rock-bottom banner, Scene 15).
+
 ## Loyalty
 
 Clamped to 0–100.
@@ -99,7 +101,7 @@ Clamped to 0–100.
 
 Training jobs don't change loyalty.
 
-**Walkouts.** At each day start, every crew member below `loyalty.lowThreshold` rolls `loyalty.lowEventChancePerDay`. The nephew is exempt, as is anyone on a job or in jail. A walkout leaves the crew, taking `floor(dirty × walkoutStealPct)` Dirty (`WALKOUT`, `stats.walkouts`).
+**Walkouts.** At each day start, every crew member below `loyalty.lowThreshold` rolls `loyalty.lowEventChancePerDay`. The nephew and Vitya (`stays`) are exempt, as is anyone on a job or in jail. A walkout leaves the crew, taking `floor(dirty × walkoutStealPct)` Dirty (`WALKOUT`, `stats.walkouts`).
 
 ## Recruiting
 
@@ -126,4 +128,4 @@ Arrests come from heat ([heat.md](heat.md)). A jailed member keeps drawing wages
 
 `DEBUG_REFRESH_POOL` rerolls the recruit pool and restarts its timer.
 
-**Tests:** `tests/apply.test.ts` (missed wages cost loyalty, the nephew can't be fired), `tests/crew.test.ts` (XP split and mentor bonus, training cost and stat-ups, the ceiling, a promotion files a perk choice, enforcer stat-ups only on the hour, Fixer, Ghost and Earner on a job), `tests/reconcile.test.ts` (walkout rolls, a trainee and an enforcer near a stat point in the split-invariance check), `tests/sim.test.ts` (the bot never misses wages).
+**Tests:** `tests/apply.test.ts` (missed wages cost loyalty, the nephew can't be fired), `tests/crew.test.ts` (XP split and mentor bonus, training cost and stat-ups, the ceiling, a promotion files a perk choice, enforcer stat-ups only on the hour, Fixer, Ghost and Earner on a job), `tests/reconcile.test.ts` (walkout rolls, a trainee and an enforcer near a stat point in the split-invariance check), `tests/sim.test.ts` (the bot never misses wages), `tests/rockbottom.test.ts` (the envelope comes once per act and only with no Clean, pays its stake, a full payday clears it; Vitya never walks out).

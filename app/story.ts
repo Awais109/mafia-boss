@@ -133,3 +133,13 @@ export const MISSION_CARD: Record<MissionId, { line: string; by?: string; stake?
   firstAuction: { line: 'The Combine is being sold. Bid.' },
   overGovernor: { line: 'The Ministry won’t stop looking. Go to the capital and ask it to.' },
 }
+
+// Lyosha's second envelope (ADR 0051; design brief, Rock bottom): the note inside changes with the act.
+export const ENVELOPE_NOTES: Record<Act, string> = {
+  1: 'For when you’ve done something stupid.',
+  2: 'Again?',
+  3: 'Third time. Your father was the same.',
+  4: 'Borrow less.',
+  5: 'The city’s watching now.',
+  6: 'Last one. Make it count.',
+}

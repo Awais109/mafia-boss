@@ -246,7 +246,7 @@ function Money({ game }: { game: Snapshot }) {
         {`Everything your businesses earn goes into the vault. Yours holds ${glyph.dirty}${fmt(s.vault)} of ${glyph.dirty}${fmt(d.vaultCap)}. Once it's full, earning stops, and whatever your businesses would have made is lost. Collect it and it joins the Dirty you hold: ${glyph.dirty}${fmt(s.dirty)}.`}
       </Ink>
       <Ink>
-        {`Dirty pays wages and upkeep, ${glyph.dirty}${fmtRate(d.wagesPerHr + d.upkeepPerHr)} for you, and repairs and bribes. Nothing else. A front turns it into Clean at its rate${d.perFront.length ? `: ${d.perFront.map(rate).join(', ')}` : ''}. Clean buys everything that grows, and spending it earns Reputation, which never falls. A raid only ever takes from the vault; a crew member who walks out takes from the Dirty you hold.`}
+        {`Dirty pays wages and upkeep, ${glyph.dirty}${fmtRate(d.wagesPerHr + d.upkeepPerHr)} for you, and repairs and bribes. Nothing else. A front turns it into Clean at its rate${d.perFront.length ? `: ${d.perFront.map(rate).join(', ')}` : ''}. Clean buys everything that grows, and spending it earns Reputation, which never falls. A raid only ever takes from the vault; a crew member who walks out takes from the Dirty you hold. There’s no game over: miss a payday with no Clean to fall back on, and the family sends an envelope, once an act; miss ${c.credit.missesToRepossess} loan payments in a row and the lender takes a business and closes the loan.`}
       </Ink>
       <PaperRows title="What you hold" rows={hold} />
     </>
@@ -292,7 +292,7 @@ function Crew({ game }: { game: Snapshot }) {
   return (
     <>
       <Ink>
-        {`Crew work jobs and mind businesses, and earn experience toward Muscle, Brains and Nerve, each up to its own ceiling. Enough points earned promotes them (Associate, Soldier, Made, Capo), and Soldier and Made each bring a choice of a perk for good. Wages are paid daily from Dirty and rise with their stats, so a veteran costs more than a rookie. Keep loyalty up with raises: below ${c.crew.loyalty.lowThreshold}, someone can walk out for good and take a cut of your Dirty with them. Your nephew never does.`}
+        {`Crew work jobs and mind businesses, and earn experience toward Muscle, Brains and Nerve, each up to its own ceiling. Enough points earned promotes them (Associate, Soldier, Made, Capo), and Soldier and Made each bring a choice of a perk for good. Wages are paid daily from Dirty and rise with their stats, so a veteran costs more than a rookie. Keep loyalty up with raises: below ${c.crew.loyalty.lowThreshold}, someone can walk out for good and take a cut of your Dirty with them. Vitya and your nephew never do.`}
       </Ink>
       <PaperRows title="Perks" rows={PERK_IDS.map((id) => ({ key: id, label: c.crew.experience.perks[id].name, text: c.crew.experience.perks[id].text }))} />
     </>

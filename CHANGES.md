@@ -3,6 +3,34 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-09-30 — Rock bottom, no game over (D7)
+
+Branch: `feature/design-v2`. Reasoning: [ADR 0051](docs/decisions/0051-rock-bottom.md); the rules: [crew.md](docs/systems/crew.md#wages) and [credit.md](docs/systems/credit.md#borrowing).
+
+### What changed, for a player
+
+- **There's no game over.**
+  - **The envelope:** a payday you can't meet, with no Clean to fall back on, leaves Lyosha's second envelope waiting, once per act. It shows as a red banner at the top of Home. Opening it plays Scene 15, *The second envelope*, with his note for the act, and puts about a day and a half of running costs into Dirty.
+  - **The keys:** two missed loan payments in a row and the lender's men take a business (the middle earner, not your best) and close the loan. The debt stops there. The notice shows the design's repossession panel.
+- **Vitya never walks out**, like Dima. Both show "never leaves" on Crew.
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| Engine | `engine/config/schema.ts` and `defaults.ts` (`rockBottom`, `credit.missesToRepossess` replacing `secondMissVaultPct`, the seed's `stays`); `engine/systems/crew.ts` (rock bottom at a missed payday, `stays` skips walkouts); `engine/systems/credit.ts` (`repossess`); `engine/core/apply.ts` (`OPEN_ENVELOPE`); `engine/model/state.ts`, `actions.ts`, `events.ts` (`ROCK_BOTTOM`, `ENVELOPE_OPENED`, `LOAN_REPOSSESSED`); `engine/model/migrate.ts` (`v15to16`) |
+| Bot | `sim/persona.ts`: opens the envelope when it's there |
+| App | `app/screens/HomeScreen.tsx` (the banner), `app/scenes.ts` and `app/components/Scene.tsx` (Scene 15), `app/story.ts` (`ENVELOPE_NOTES`), `app/components/EventNoticeModal.tsx` (the keys), `app/components/CreditCard.tsx`, `app/inbox.ts`, `app/notices.ts`, `app/eventText.ts`, `app/previews.ts` (`keys`), `app/screens/CrewScreen.tsx`, `app/screens/HowItWorksScreen.tsx` |
+| Tests | `tests/rockbottom.test.ts` (new); `tests/credit.test.ts` (a second miss repossesses); `tests/migrate.test.ts` |
+| Docs | [ADR 0051](docs/decisions/0051-rock-bottom.md) (0042 superseded in part), [crew.md](docs/systems/crew.md), [credit.md](docs/systems/credit.md), [architecture.md](docs/architecture.md), [story.md](docs/story.md), [app.md](docs/app.md), [sim.md](docs/sim.md), [testing.md](docs/testing.md), [TUNING.md](TUNING.md) |
+
+**Save change:** schema 16. An old save gets no envelope waiting, and a Vitya already hired is marked as staying.
+
+### Verified
+
+- `npm run check`: 226 tests.
+- 5 seeds, 60 days: unchanged, since the bot never goes broke (Act I 4.64 d, II 3.73, III 6.49, IV 9.76, V 12.03, VI 12.63; heat 28.8; no raids; no missed wages).
+
 ## 2026-09-30 — Boss missions: lose, build, come back (D6)
 
 Branch: `feature/design-v2`. Reasoning: [ADR 0050](docs/decisions/0050-boss-missions.md); the missions: [ops.md](docs/systems/ops.md#boss-missions); the scenes: [story.md](docs/story.md#scenes).

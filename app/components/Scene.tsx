@@ -10,7 +10,7 @@ import { ACT_NAME } from '../acts'
 import { fmt, pct } from '../format'
 import { PEOPLE } from '../people'
 import { sceneLabel, type Beat, type Crop, type Scene } from '../scenes'
-import { ACT_TITLE, OPENING_CREW, revealedBy, TOLYA_ASKS, tolyaMood } from '../story'
+import { ACT_TITLE, ENVELOPE_NOTES, OPENING_CREW, revealedBy, TOLYA_ASKS, tolyaMood } from '../story'
 import { store, type Snapshot } from '../store'
 import { fonts, paper } from '../theme'
 import { webParam } from '../webParams'
@@ -94,6 +94,8 @@ function BeatView({ game, beat }: { game: Snapshot; beat: Beat }) {
       return <SlugPanel caption={beat.caption} />
     case 'result':
       return <ResultPanel game={game} mission={beat.mission} />
+    case 'envelope':
+      return <EnvelopePanel game={game} />
     case 'hire':
       return <HirePanel game={game} />
     case 'tribute':
@@ -227,6 +229,27 @@ function ResultPanel({ game, mission }: { game: Snapshot; mission: MissionId }) 
 }
 
 // A screentone ground: ink dots on paper, or (dark) paper dots on ink for a night or a silence.
+// Lyosha's second envelope on the table, this act's note in his hand, and what it held.
+function EnvelopePanel({ game }: { game: Snapshot }) {
+  const { state: s, config: c } = game
+  const opened = [...s.log].reverse().find((e) => e.type === 'ENVELOPE_OPENED')
+  const stake = opened?.type === 'ENVELOPE_OPENED' ? opened.stake : c.rockBottom.minStake
+  const a = ART.envelope
+  return (
+    <View style={[styles.panel, { backgroundColor: paper.paper }]}>
+      <View style={{ width: '100%', aspectRatio: a.width / a.height }} accessible accessibilityRole="image" accessibilityLabel={a.label}>
+        <SvgXml xml={a.xml} width="100%" height="100%" />
+      </View>
+      <View style={styles.envelopeText}>
+        <Text style={styles.envelopeNote}>{ENVELOPE_NOTES[s.act]}</Text>
+        <View style={styles.captionInline}>
+          <Text style={styles.captionText}>{rich(`It isn’t much. It’s enough. ${glyph.dirty}${fmt(stake)}`, 14.5, { ink: true })}</Text>
+        </View>
+      </View>
+    </View>
+  )
+}
+
 function Tone({ dark }: { dark?: boolean }) {
   const id = dark ? 'slugTone' : 'faceTone'
   return (
@@ -472,6 +495,8 @@ const styles = StyleSheet.create({
   answerTitle: { fontFamily: fonts.text600, fontSize: 15, color: colors.text },
   answerSub: { fontFamily: fonts.text400, fontSize: 12.5, color: colors.muted },
   answerRight: { fontFamily: fonts.text600, fontSize: 14, color: colors.text },
+  envelopeText: { gap: 12, paddingVertical: 16 },
+  envelopeNote: { fontFamily: fonts.hand700, fontSize: 26, lineHeight: 28, color: paper.fountain, textAlign: 'center', paddingHorizontal: 16 },
   tonePanel: { aspectRatio: 366 / 440, alignItems: 'center', justifyContent: 'flex-end' },
   face: { marginBottom: 0 },
   slug: { aspectRatio: 366 / 440, justifyContent: 'center' },

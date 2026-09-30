@@ -7,13 +7,14 @@ import { store, type Snapshot } from './store'
 // web, the screenshot rig's `?preview=<name>` (docs/app.md). A preview changes nothing: a previewed decision
 // is a real pending one (choosing in it resolves it), and a scene replays without touching what's due.
 
-type NoticePreview = 'decision' | 'unlock' | 'event'
+type NoticePreview = 'decision' | 'unlock' | 'event' | 'keys'
 export type PreviewName = NoticePreview | SceneId
 
 export const PREVIEWS: { name: PreviewName; title: string }[] = [
   { name: 'decision', title: 'A decision' },
   { name: 'unlock', title: 'Just unlocked' },
   { name: 'event', title: 'An event' },
+  { name: 'keys', title: 'The keys' },
   ...(Object.keys(SCENES) as SceneId[]).map((id) => ({ name: id, title: SCENES[id].title })),
 ]
 
@@ -30,6 +31,10 @@ function previewNotice(game: Snapshot, name: NoticePreview): QueuedNotice | null
       ...OFFICIAL_IDS.filter((id) => c.officials.list[id].act === s.act).map((id) => ({ category: 'official' as const, id })),
     ]
     return items.length ? { kind: 'unlockBatch', items } : null
+  }
+  if (name === 'keys') {
+    const r = s.rackets[0]
+    return r ? { kind: 'info', event: { type: 'LOAN_REPOSSESSED', t: now, racketId: r.id, racketType: r.type, districtId: r.districtId, owed: 0 } } : null
   }
   return { kind: 'info', event: { type: 'RAID', t: now, heat: s.heat, seized: Math.round(s.vault * c.heat.raidSeizePct), shielded: 0 } }
 }

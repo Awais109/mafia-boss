@@ -67,6 +67,9 @@ export type EventBody =
   | { type: 'SHORTAGE_ENDED'; product?: 'premium' }
   | { type: 'GOLD_GRANTED'; amount: number; source: GoldSource }
   | { type: 'TIME_SKIPPED'; hours: number; bars: number }
+  | { type: 'ROCK_BOTTOM'; act: Act }
+  | { type: 'ENVELOPE_OPENED'; act: Act; stake: number }
+  | { type: 'LOAN_REPOSSESSED'; racketId: string; racketType: RacketType; districtId: DistrictId; owed: number }
   | { type: 'MISSION_STARTED'; missionId: MissionId; opId: string; crewIds: string[]; stake: number }
   | {
       type: 'MISSION_RESOLVED'
@@ -129,7 +132,7 @@ export type EventBody =
   | { type: 'CREW_RECOVERED'; crewId: string; name: string }
   | { type: 'LOAN_TAKEN'; amount: number; owed: number }
   | { type: 'LOAN_PAYMENT'; paid: number; owed: number }
-  | { type: 'LOAN_MISSED'; due: number; missed: number; seized: number }
+  | { type: 'LOAN_MISSED'; due: number; missed: number; seized?: number } // seized: only in logs from before ADR 0051
   | { type: 'LOAN_REPAID'; paid: number }
   | { type: 'LENT'; amount: number; dueAt: number }
   | { type: 'LENDING_REPAID'; amount: number; returned: number }

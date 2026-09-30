@@ -171,7 +171,7 @@ function MemberCard({ game, m }: { game: Snapshot; m: CrewMember }) {
             <Text style={styles.rank}>{RANK_NAMES[m.rank] ?? 'Associate'}</Text>
           </Text>
           <View style={styles.tags}>
-            {m.nephew && <Tag text="never leaves" color={colors.accent} />}
+            {(m.nephew || m.stays) && <Tag text="never leaves" color={colors.accent} />}
             {m.nephew && <Tag text="nephew" color={colors.accent} />}
             {m.traits.map((t) => (
               <Tag key={t} text={TRAIT_NAME[t]} />
@@ -198,7 +198,7 @@ function MemberCard({ game, m }: { game: Snapshot; m: CrewMember }) {
           <View style={[styles.loyaltyMark, { left: `${low}%` }]} />
         </View>
         <View style={styles.statLine}>
-          <Text style={styles.small}>{m.nephew ? 'Never walks out' : `Below the red line at ${low}, ${first(m.name)} might walk out`}</Text>
+          <Text style={styles.small}>{m.nephew || m.stays ? 'Never walks out' : `Below the red line at ${low}, ${first(m.name)} might walk out`}</Text>
           <Text style={styles.small}>{rich(`wage ${glyph.dirty}${fmtRate(baseWage(c, m) * d.wageMult)}`, 12)}</Text>
         </View>
       </View>

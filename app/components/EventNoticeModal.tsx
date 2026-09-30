@@ -10,6 +10,8 @@ import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
 import { Glyph, Icon, type IconName, type Resource } from './Glyph'
 import { Choice } from './InboxCard'
+import { SvgXml } from 'react-native-svg'
+import { ART } from '../art/scenes'
 import { ModalPanel, NoticeHead } from './Modal'
 import { Btn, colors, rich, Title } from './ui'
 
@@ -32,6 +34,7 @@ const EVENT_LOOK: Partial<Record<GameEvent['type'], Look>> = {
   TOLYA_TICK: { label: 'Tolya', icon: 'flag', color: colors.warn },
   CREW_INJURED: { label: 'Hurt', icon: 'crew', color: colors.warn },
   LOAN_MISSED: { label: 'The lender', icon: 'clean', color: colors.bad },
+  ROCK_BOTTOM: { label: 'Rock bottom', icon: 'blocked', color: colors.bad },
   LENDING_DEFAULTED: { label: 'The loan desk', icon: 'dirty', color: colors.warn },
   FRONT_FROZEN: { label: 'The Ministry', icon: 'frozen', color: colors.bad },
   ELECTION_HELD: { label: 'Election', icon: 'election', color: colors.accent },
@@ -116,6 +119,21 @@ export function EventNoticeModal({ notice, game }: { notice: QueuedNotice; game:
   }
 
   const e = notice.event
+  // The keys (ADR 0051; Scene 16): the lender's men, and the business they took.
+  if (e.type === 'LOAN_REPOSSESSED') {
+    const a = ART.repossession
+    return (
+      <ModalPanel onRequestClose={store.dismissNotice}>
+        <NoticeHead label="The lender" color={colors.bad} count={count} />
+        <View style={styles.keysArt} accessible accessibilityRole="image" accessibilityLabel={a.label}>
+          <SvgXml xml={a.xml} width="100%" height="100%" />
+        </View>
+        <Text style={styles.keysSpeech}>“Two payments missed. We’ll take the keys. The debt is closed.”</Text>
+        <Text style={styles.body}>{`They took the ${c.rackets.types[e.racketType].name} in ${c.districts.list[e.districtId].name}. It wasn’t the worst thing you owned. They’re not stupid.`}</Text>
+        <Btn kind="primary" title="Got it" onPress={store.dismissNotice} />
+      </ModalPanel>
+    )
+  }
   const line = describeEvent(e, s, c)
   const look = EVENT_LOOK[e.type] ?? { label: 'News', icon: 'log' as IconName, color: colors.accent }
   const after =
@@ -146,6 +164,8 @@ export function EventNoticeModal({ notice, game }: { notice: QueuedNotice; game:
 }
 
 const styles = StyleSheet.create({
+  keysArt: { width: '100%', aspectRatio: 366 / 469 },
+  keysSpeech: { fontFamily: fonts.speech, fontSize: 17, lineHeight: 21, color: colors.text, textTransform: 'uppercase' },
   when: { fontFamily: fonts.text600, fontSize: 13, color: colors.warn, marginTop: -6 },
   body: { fontFamily: fonts.text400, fontSize: 14, lineHeight: 20, color: colors.text },
   options: { gap: 8 },

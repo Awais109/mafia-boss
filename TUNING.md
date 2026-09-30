@@ -387,6 +387,12 @@ The sim now runs 60 days so an ending can be reached; so does the pacing guard.
             Each act now waits for a session to send its overreach; shorter late ones give Act IV room. 5 seeds, 60 d:
             Act I 4.64 d, II 3.73 (5/5), III 6.49 (4/5), IV 9.76 (5/5), V 12.03 (3/5), VI 12.63 (4/5), heat 28.8,
             raids 0. Kept.
+2026-09-30  rockBottom (ADR 0051): new section. The envelope waits after a payday missed with Clean under
+            cleanBelowHours 24 of wages, once per act; it holds stakeHours 36 of wages and upkeep, at least
+            ◆60. credit.secondMissVaultPct 0.3 removed; missesToRepossess 2 (the lender takes the middle
+            earner and closes the loan). The bot never goes broke: 5 seeds, 60 d unchanged (Act I 4.64 d, II 3.73,
+            III 6.49, IV 9.76, V 12.03, VI 12.63, heat 28.8, raids 0, missed wages 0). Kept; tested by
+            tests/rockbottom.test.ts, not the sim.
 ```
 
 ## Open

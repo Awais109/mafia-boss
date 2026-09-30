@@ -84,7 +84,7 @@ export function homeAlerts(game: Snapshot): HomeAlert[] {
       cta: 'Fronts',
     })
   }
-  const low = s.crew.filter((m) => !m.nephew && m.loyalty < c.crew.loyalty.lowThreshold)
+  const low = s.crew.filter((m) => !m.nephew && !m.stays && m.loyalty < c.crew.loyalty.lowThreshold)
   if (low.length) {
     out.push({
       key: 'walkout',
@@ -156,5 +156,5 @@ export function sortedInbox(s: PlayerState): InboxItem[] {
 }
 
 export function homeNeedsAttention(game: Snapshot): boolean {
-  return game.state.inbox.length > 0 || game.state.rival.tolya.demand !== null || homeAlerts(game).length > 0
+  return game.state.inbox.length > 0 || game.state.rival.tolya.demand !== null || game.state.rockBottom.pending || homeAlerts(game).length > 0
 }

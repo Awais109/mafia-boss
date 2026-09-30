@@ -1,6 +1,6 @@
 # 0042. Act III's consequences: contests, injuries, Tolya's attacks, loans and the loan desk
 
-- **Status:** Accepted
+- **Status:** Accepted; superseded in part by [0051](0051-rock-bottom.md) (a second missed loan payment repossesses a business instead of taking a share of the vault)
 - **Date:** 2026-09-29
 
 ## Context

@@ -31,6 +31,7 @@ const INFO_EVENTS = new Set<GameEvent['type']>([
   'TOLYA_TICK',
   'CREW_INJURED',
   'LOAN_MISSED',
+  'LOAN_REPOSSESSED',
   'LENDING_DEFAULTED',
   'FRONT_FROZEN',
   'ELECTION_HELD',

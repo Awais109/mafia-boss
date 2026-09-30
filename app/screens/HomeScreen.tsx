@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { dayMs, gameDay, opName } from '../../engine'
-import { Glyph } from '../components/Glyph'
+import { Glyph, Icon } from '../components/Glyph'
 import { InboxCard } from '../components/InboxCard'
 import { MoneyFlow } from '../components/MoneyFlow'
 import { NextCard } from '../components/NextCard'
@@ -10,6 +10,7 @@ import { AlertRow, BigFigure, Btn, Card, Check, colors, Empty, glyph, Item, List
 import { WeekCard } from '../components/WeekCard'
 import { describeEvent } from '../eventText'
 import { fmt, fmtDuration, fmtRate, fmtStamp } from '../format'
+import { ACT_NAME } from '../acts'
 import { goalsView } from '../goals'
 import { homeAlerts, sortedInbox } from '../inbox'
 import { ledgerView } from '../ledger'
@@ -38,6 +39,8 @@ export function HomeScreen({ game, go }: ScreenProps) {
 
   return (
     <Screen>
+      {s.rockBottom.pending && !s.rockBottom.usedActs.includes(s.act) && <RockBottom game={game} />}
+
       {s.rival.tolya.demand !== null && (
         <Section title="Tolya’s demand" right={`back in ${fmtDuration(s.rival.tolya.nextTickAt - now, c)}`}>
           <TributeCard game={game} />
@@ -161,6 +164,38 @@ function Vault({ game }: { game: ScreenProps['game'] }) {
   )
 }
 
+// Rock bottom (ADR 0051; design: Home · rock bottom): payday came up short with no Clean. The family's envelope,
+// once per act; opening it plays Scene 15.
+function RockBottom({ game }: { game: ScreenProps['game'] }) {
+  const { state: s, config: c } = game
+  return (
+    <View style={styles.rock}>
+      <View style={styles.rockHead}>
+        <Icon name="blocked" size={15} color={colors.bad} />
+        <Text style={styles.rockLabel}>ROCK BOTTOM</Text>
+        <Text style={styles.rockWhen}>payday</Text>
+      </View>
+      <Text style={styles.rockTitle}>Payday came up short and there’s no Clean.</Text>
+      <Text style={styles.rockBody}>The family can help, once this act.</Text>
+      <Btn
+        kind="primary"
+        title="Open the envelope"
+        onPress={() => {
+          if (!store.dispatch({ type: 'OPEN_ENVELOPE' })) store.playScene('envelope')
+        }}
+      />
+      <View style={styles.rockFoot}>
+        <Text style={styles.rockFootText}>Once per act</Text>
+        <Text style={styles.rockFootText}>
+          {`Act ${ACT_NAME[s.act]} · `}
+          <Text style={styles.rockAvailable}>available</Text>
+        </Text>
+      </View>
+      <Text style={styles.rockNote}>{`It holds about ${c.rockBottom.stakeHours} hours of wages and upkeep. Nothing is ever lost for good: no game over.`}</Text>
+    </View>
+  )
+}
+
 // Who's free, what's running, what's owed, and where heat is heading.
 function Operation({ game }: { game: ScreenProps['game'] }) {
   const { state: s, derived: d, config: c, now } = game
@@ -214,6 +249,16 @@ function Operation({ game }: { game: ScreenProps['game'] }) {
 
 const styles = StyleSheet.create({
   paid: { fontFamily: fonts.text400, fontSize: 12, color: colors.faint },
+  rock: { gap: 10, marginHorizontal: -16, marginTop: -18, paddingHorizontal: 16, paddingVertical: 16, backgroundColor: '#2a1712', borderBottomWidth: 1, borderBottomColor: '#6b3127' },
+  rockHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rockLabel: { flex: 1, fontFamily: fonts.text600, fontSize: 11, letterSpacing: 1.8, color: colors.bad },
+  rockWhen: { fontFamily: fonts.text400, fontSize: 12, color: colors.muted },
+  rockTitle: { fontFamily: fonts.text600, fontSize: 17, color: colors.text },
+  rockBody: { fontFamily: fonts.text400, fontSize: 13.5, color: colors.muted, marginTop: -4 },
+  rockFoot: { flexDirection: 'row', justifyContent: 'space-between' },
+  rockFootText: { fontFamily: fonts.text400, fontSize: 12, color: colors.muted },
+  rockAvailable: { fontFamily: fonts.text600, color: colors.text },
+  rockNote: { fontFamily: fonts.text400, fontSize: 12, lineHeight: 17, color: colors.faint },
   reward: { fontFamily: fonts.text600, fontSize: 13, color: colors.gold },
   vault: { gap: 12 },
   vaultTop: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 },

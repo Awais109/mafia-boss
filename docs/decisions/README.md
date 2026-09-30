@@ -54,7 +54,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0039](0039-goals-gate-act-two.md) | Act II is gated by Act I goals, not Reputation; three goals redefined, `actII` removed | Accepted |
 | [0040](0040-six-acts.md) | Six acts, each opened by a gate; the last built act is cleared, not left | Accepted |
 | [0041](0041-act-iii-the-centre.md) | Act III, the Centre: prosperity, the Card Club, Print Shop, hotels, the Bank, City Hall, tier 6 | Accepted |
-| [0042](0042-act-iii-credit-and-consequences.md) | Act III's consequences: contests in the inbox, injuries and the Clinic, Tolya's attacks, loans and the loan desk | Accepted |
+| [0042](0042-act-iii-credit-and-consequences.md) | Act III's consequences: contests in the inbox, injuries and the Clinic, Tolya's attacks, loans and the loan desk | Superseded in part by [0051](0051-rock-bottom.md) (the second missed payment) |
 | [0043](0043-act-iv-zastava.md) | Act IV, Zastava: premium cigarettes as a second stock, convoys past the Colonel and customs, passage, the importer that washes only what its trade explains | Accepted |
 | [0044](0044-act-v-kombinat.md) | Act V, the Kombinat: an auctioned district, public opinion, the Ministry that freezes a front, elections and the mayor | Accepted |
 | [0045](0045-act-vi-nagornaya.md) | Act VI, Nagornaya: Legalize, the Holding, the reckoning's hearings, and two recorded endings | Accepted |
@@ -63,6 +63,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0048](0048-notebook-map-and-people.md) | The notebook map drawn from the design, and People | Accepted |
 | [0049](0049-scenes.md) | Scenes: the story played as manga, due from the save; chapters, the cover, a seen-list in the save | Accepted |
 | [0050](0050-boss-missions.md) | Boss missions: an overreach that opens each act, a rematch that pays it off | Accepted |
+| [0051](0051-rock-bottom.md) | Rock bottom, no game over: the family's envelope once per act, the lender takes a business, Vitya stays | Accepted |
 
 ## Template
 

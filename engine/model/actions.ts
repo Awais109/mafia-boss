@@ -34,6 +34,7 @@ export type Action =
   | { type: 'TUTORIAL_SKIP' }
   | { type: 'SEE_SCENE'; sceneId: string }
   | { type: 'START_MISSION'; missionId: MissionId; crewIds: string[] }
+  | { type: 'OPEN_ENVELOPE' }
   | { type: 'SESSION_START' }
   | { type: 'SESSION_END'; durationMs: number; actions: number }
   | DebugAction

@@ -69,9 +69,10 @@ The story plays as grown-up crime manga ([ADR 0049](decisions/0049-scenes.md)): 
 | 11 · The first auction round (`auction`) | The Act IV overreach, failed | Round one at the Palace of Culture; Golovin's vouchers; FAILED; VOLUME V |
 | 12 · The count (`count`) | The election won | The gymnasium at midnight; "That's… all of the Blocks."; "Lights up there. The dachas." |
 | 13 · Over the Governor's head (`governor`) | The Act V overreach, failed | The capital's corridor; the prosecutor: "That was the interesting part."; FAILED; Vitya: "Home?"; VOLUME VI |
+| 15 · The second envelope (`envelope`) | Opening the envelope at rock bottom, once per act ([ADR 0051](decisions/0051-rock-bottom.md)) | Two slugs; Dima: "It was in the notebook. Behind the map."; the envelope, with Lyosha's note for the act (`ENVELOPE_NOTES` in `app/story.ts`) and what it held |
 | Volumes II–VI (`chapter-2` … `chapter-6`) | Each act opening | The chapter page: the volume's title over its panel, the turn line, the boss, each district new on the map with its line, what the act opens |
 
-The cover (the tram window over Lyosha's table) opens the app. A mission's scene plays before the chapter it opens. The prosecutor's last hearing, rock bottom and the endings in the brief aren't built yet.
+The cover (the tram window over Lyosha's table) opens the app. A mission's scene plays before the chapter it opens. Rock bottom's second scene, the keys, is a notice rather than a scene: when the lender repossesses, the notice shows the design's panel and "Two payments missed. We'll take the keys. The debt is closed." The prosecutor's last hearing and the endings in the brief aren't built yet.
 
 ## How the game talks
 
