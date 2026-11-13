@@ -1,16 +1,24 @@
-import { FRONT_MODES, INCIDENT_TYPES, type Config } from '../config/schema'
+import { FRONT_MODES, INCIDENT_TYPES, MISSION_IDS, type Config } from '../config/schema'
 import { PASSIVE_ACTIONS, type Action } from '../model/actions'
 import type { GameEvent } from '../model/events'
 import type { CrewMember, PlayerState } from '../model/state'
 import { changeLoyalty, crewSlots, regeneratePool, unassignEnforcer } from '../systems/crew'
-import { canPressure, getDistrict, premisesBlocked, takeDistrict } from '../systems/districts'
+import { checkActs } from '../systems/acts'
+import { canPressure, getDistrict, racketBlocked, takeDistrict } from '../systems/districts'
+import { buyPassage } from '../systems/convoys'
+import { legalize } from '../systems/legal'
+import { campaign, electionDue, electionScheduled } from '../systems/politics'
+import { lend, repayLoan, takeLoan } from '../systems/credit'
+import { frontBlocked } from '../systems/fronts'
 import { arrest, raid } from '../systems/heat'
 import { canAffordEffects, incidentNeedHolds, raiseIncident, resolveInboxItem } from '../systems/inbox'
+import { missionDone, startMission } from '../systems/missions'
+import { startContract } from '../systems/after'
 import { regenerateOffers } from '../systems/offers'
 import { opConfigAt, opMinutesFor, opUnlocked, resolveOp } from '../systems/ops'
-import { checkActII, checkGoals } from '../systems/goals'
+import { checkGoals } from '../systems/goals'
 import { grantGold, rushCost, skipCost } from '../systems/gold'
-import { checkActs, spendClean } from '../systems/reputation'
+import { spendClean } from '../systems/reputation'
 import { bestHaggler, canHaggle, changeDisposition, changeZhanna, haggle, refuseDemand, surplusRoomToday, tolyaTick, zhannaDeals } from '../systems/rivals'
 import { addStock } from '../systems/supply'
 import { tutorialOnAction } from '../systems/tutorial'
@@ -79,6 +87,7 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       const f = state.fronts.find((x) => x.id === a.frontId)
       if (!f) return 'No such front'
       if (!(a.amount > 0)) return 'Nothing to deposit'
+      if (f.frozenUntil !== undefined) return 'The Ministry has frozen it'
       if (a.amount > state.dirty + EPS) return 'Not enough Dirty'
       const cap = F.frontBufferCap(c, f)
       if (f.buffer + a.amount > cap + EPS) return `The buffer only holds ${Math.floor(cap)}`
@@ -99,21 +108,9 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
     }
 
     case 'BUY_RACKET': {
-      const d = derive(state, c)
-      if (!c.rackets.types[a.racketType]) return 'Unknown racket'
-      if (!d.unlocked.racket[a.racketType]) return 'Not unlocked yet'
-      if (!c.districts.list[a.districtId] || !d.unlocked.district[a.districtId]) return 'That district is not open yet'
-      if (F.isPremises(c, a.racketType)) {
-        // Premises go on a free lot in any open district (ADR 0031).
-        const blocked = premisesBlocked(state, c, a.districtId, a.racketType)
-        if (blocked) return blocked
-      } else {
-        if (!c.districts.list[a.districtId].allows.includes(a.racketType)) return "That kind of business doesn't fit there"
-        if (state.rackets.some((r) => r.districtId === a.districtId && r.type === a.racketType)) {
-          return `You already run a ${c.rackets.types[a.racketType].name} there`
-        }
-      }
-      const cost = d.costs.racket[a.racketType]
+      const blocked = racketBlocked(state, c, a.racketType, a.districtId)
+      if (blocked) return blocked
+      const cost = F.racketPurchaseCost(c, a.racketType)
       if (state.clean < cost - EPS) return 'Not enough Clean'
       const racketId = newId(state, 'r')
       state.rackets.push({ id: racketId, type: a.racketType, districtId: a.districtId, tier: 1, condition: 100, enforcerId: null })
@@ -125,20 +122,25 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
     case 'UPGRADE_RACKET': {
       const r = state.rackets.find((x) => x.id === a.racketId)
       if (!r) return 'No such racket'
-      if (r.tier >= F.racketMaxTier(c, r.type, state.act)) return 'Already at max tier'
+      if (r.tier >= F.racketMaxTier(c, r.type, state.act, F.storyOver(state, c))) return 'Already at max tier'
+      // The upgrades to tier 3 and tier 6 are each a choice between greed and stealth (ADRs 0027, 0041).
       const atTier = c.rackets.specialization.atTier
+      const atTier6 = c.rackets.specialization6.atTier
+      const choosing = r.tier + 1 === atTier || r.tier + 1 === atTier6
       if (F.isPremises(c, r.type)) {
         if (a.specialization) return 'Premises don’t specialize'
-      } else if (r.tier + 1 === atTier) {
+      } else if (choosing) {
         if (a.specialization !== 'greed' && a.specialization !== 'stealth') return 'Pick greed or stealth'
       } else if (a.specialization) {
-        return `Businesses specialize on the way to tier ${atTier}`
+        return `Businesses specialize on the way to tiers ${atTier} and ${atTier6}`
       }
       const cost = F.racketUpgradeCost(c, r.type, r.tier)
       if (state.clean < cost - EPS) return 'Not enough Clean'
       r.tier++
+      if (r.tier > F.bookMaxTier(c)) state.stats.after.pastBook++
       if (a.specialization) {
-        r.specialization = a.specialization
+        if (r.tier === atTier6) r.specialization6 = a.specialization
+        else r.specialization = a.specialization
         state.stats.specializations[a.specialization]++
       }
       emit(ctx, t, { type: 'RACKET_UPGRADED', racketId: r.id, tier: r.tier, cost, ...(a.specialization ? { specialization: a.specialization } : {}) })
@@ -307,6 +309,7 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       const o = c.officials.list[a.officialId]
       if (!o) return 'No such official'
       if (o.act > state.act) return 'Not available yet'
+      if (o.needsMayor && !state.politics.mayor) return 'He only takes calls from the mayor'
       if (state.officials.includes(a.officialId)) return 'Already on the payroll'
       if (t < state.officialCooldownUntil) return 'Too soon after the last official'
       if (state.influence < o.cost - EPS) return 'Not enough Influence'
@@ -345,10 +348,9 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
     }
 
     case 'BUY_FRONT': {
+      const blocked = frontBlocked(state, c, a.frontType)
+      if (blocked) return blocked
       const ft = c.fronts.types[a.frontType]
-      if (!ft) return 'No such front'
-      if (state.fronts.some((f) => f.type === a.frontType)) return 'You already run one'
-      if (state.reputation < ft.unlockRep) return 'Not unlocked yet'
       if (state.clean < ft.cost - EPS) return 'Not enough Clean'
       const frontId = newId(state, 'f')
       state.fronts.push({ id: frontId, type: a.frontType, level: 0, capacityLevel: 0, mode: 'normal', buffer: 0, convertedThisHour: 0, util: 0 })
@@ -436,6 +438,8 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
     case 'RUSH_OP': {
       const op = state.ops.find((o) => o.id === a.opId)
       if (!op) return 'That job is already done'
+      // A contract pays gold: buying its time with gold would be a loop (ADR 0052).
+      if (op.type === 'contract') return 'A contract takes the time it takes'
       const bars = rushCost(c, op.completesAt - t)
       if (state.gold < bars) return 'Not enough gold'
       state.gold -= bars
@@ -450,19 +454,34 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
     case 'BUY_SHIPMENT': {
       const z = state.rival.zhanna
       const zc = c.rivals.zhanna
+      const premium = a.product === 'premium'
       if (!zhannaDeals(state, c)) return 'Zhanna deals from Act II'
+      if (premium && state.act < zc.premium.fromAct) return 'She sells premium from Act IV'
       if (z.nextShipmentAt > t) return 'Her next lot isn’t in yet'
-      const price = F.shipmentPrice(c, z.disposition)
+      // Her premium lots are dearer and share the cooldown (ADR 0043).
+      const price = F.shipmentPrice(c, z.disposition) * (premium ? zc.premium.priceMult : 1)
       if (state.dirty < price - EPS) return 'Not enough Dirty'
       state.dirty -= price
       state.stats.shipmentsPaid += price
-      const packs = addStock(state, derive(state, c).supply.cap, zc.shipment.cigarettes)
+      const d = derive(state, c)
+      const packs = premium
+        ? addStock(state, d.premium.cap, zc.premium.packs, 'premium')
+        : addStock(state, d.supply.cap, zc.shipment.cigarettes)
       z.shipmentsBought++
       z.nextShipmentAt = t + hoursToMs(c, zc.shipment.cooldownHours)
       changeZhanna(state, zc.dispositionPerShipment)
-      emit(ctx, t, { type: 'SHIPMENT_BOUGHT', packs, cost: price })
+      emit(ctx, t, { type: 'SHIPMENT_BOUGHT', packs, cost: price, ...(premium ? { product: 'premium' as const } : {}) })
       return null
     }
+
+    case 'BUY_PASSAGE':
+      return buyPassage(state, ctx, t)
+
+    case 'CAMPAIGN':
+      return campaign(state, ctx, t, a.points, a.pay)
+
+    case 'LEGALIZE':
+      return legalize(state, ctx, t, a.racketId)
 
     case 'SELL_SURPLUS': {
       const z = state.rival.zhanna
@@ -485,11 +504,45 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       return null
     }
 
+    case 'TAKE_LOAN':
+      return takeLoan(state, ctx, t, a.amount)
+
+    case 'REPAY_LOAN':
+      return repayLoan(state, ctx, t, a.amount)
+
+    case 'LEND':
+      return lend(state, ctx, t, a.amount)
+
     case 'TUTORIAL_ADVANCE':
       return null
 
     case 'TUTORIAL_SKIP':
       if (!state.tutorial.done) applyQuickStart(state, ctx, t)
+      return null
+
+    // Rock bottom (ADR 0051): the family's envelope, once per act. A stake of Dirty to pay the crew and start again.
+    case 'OPEN_ENVELOPE': {
+      if (!state.rockBottom.pending) return 'There’s no envelope waiting'
+      if (state.rockBottom.usedActs.includes(state.act)) return 'The family has helped once this act'
+      const d = derive(state, c)
+      const stake = Math.max(c.rockBottom.minStake, Math.round((d.wagesPerHr + d.upkeepPerHr) * c.rockBottom.stakeHours))
+      state.dirty += stake
+      state.rockBottom.pending = false
+      state.rockBottom.usedActs.push(state.act)
+      emit(ctx, t, { type: 'ENVELOPE_OPENED', act: state.act, stake })
+      return null
+    }
+
+    case 'START_MISSION':
+      return startMission(state, ctx, t, a.missionId, a.crewIds)
+
+    case 'START_CONTRACT':
+      return startContract(state, ctx, t, a.contractId, a.crewIds)
+
+    // A scene the app has shown (ADR 0049): kept once, in order. No event: the log's action line records it.
+    case 'SEE_SCENE':
+      if (!/^[a-z0-9-]{1,40}$/.test(a.sceneId)) return 'Unknown scene'
+      if (!state.story.seen.includes(a.sceneId)) state.story.seen.push(a.sceneId)
       return null
 
     case 'SESSION_START':
@@ -548,8 +601,9 @@ function handleDebug(state: PlayerState, ctx: Ctx, a: Action, t: number): string
       state.clean += a.clean ?? 0
       state.influence += a.influence ?? 0
       if (a.cigarettes) state.inventory.cigarettes = Math.max(0, state.inventory.cigarettes + a.cigarettes)
+      if (a.premium) state.inventory.premium = Math.max(0, state.inventory.premium + a.premium)
       if (a.gold) grantGold(state, ctx, t, a.gold, 'debug')
-      note(JSON.stringify({ dirty: a.dirty, clean: a.clean, influence: a.influence, cigarettes: a.cigarettes, gold: a.gold }))
+      note(JSON.stringify({ dirty: a.dirty, clean: a.clean, influence: a.influence, cigarettes: a.cigarettes, premium: a.premium, gold: a.gold }))
       return null
     case 'DEBUG_SET_HEAT':
       state.heat = Math.max(0, Math.min(100, a.heat))
@@ -560,9 +614,29 @@ function handleDebug(state: PlayerState, ctx: Ctx, a: Action, t: number): string
       note(String(state.reputation))
       checkActs(state, ctx, t)
       return null
+    case 'DEBUG_HOLD_ELECTION':
+      // The coming election, counted now (ADR 0044): Debug's way to the mayor's office without waiting a week.
+      if (!electionScheduled(state)) return 'No election is coming'
+      note()
+      state.politics.nextElectionAt = t
+      electionDue(state, ctx, t)
+      checkActs(state, ctx, t)
+      return null
+
+    case 'DEBUG_COMPLETE_MISSIONS':
+      // The current act's missions, done as if sent and won: Debug's fast path through a gate (ADR 0050).
+      for (const id of MISSION_IDS) {
+        const m = c.missions.list[id]
+        if (m.act !== state.act || missionDone(state, id)) continue
+        state.missions[id] = { result: m.kind === 'overreach' ? 'failed' : 'won', at: t }
+      }
+      checkActs(state, ctx, t)
+      note()
+      return null
+
     case 'DEBUG_COMPLETE_GOALS':
       // Act II is gated by goals now, not Rep (ADR 0039) — this is Debug's fast path to it.
-      // Calls checkActII directly: checkGoals itself waits for the tutorial to end, which a
+      // Checks the acts directly: checkGoals itself waits for the tutorial to end, which a
       // Debug/test shortcut shouldn't have to satisfy first.
       for (const id of c.goals.list) {
         if (state.goals.done.includes(id)) continue
@@ -570,7 +644,7 @@ function handleDebug(state: PlayerState, ctx: Ctx, a: Action, t: number): string
         emit(ctx, t, { type: 'GOAL_DONE', goalId: id, gold: c.goals.rewardGold })
         grantGold(state, ctx, t, c.goals.rewardGold, 'goal')
       }
-      checkActII(state, ctx, t)
+      checkActs(state, ctx, t)
       note()
       return null
     case 'DEBUG_FORCE_RAID':

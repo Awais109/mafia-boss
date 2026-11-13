@@ -1,11 +1,14 @@
 import type {
   Act,
+  ContractId,
   Controller,
   DistrictId,
+  Ending,
   FrontMode,
   FrontType,
   GoalId,
   IncidentType,
+  MissionId,
   OfficialId,
   OpOutcome,
   OpType,
@@ -16,7 +19,7 @@ import type {
 } from '../config/schema'
 import type { InboxEffects, InboxItem } from './state'
 
-export type GoldSource = 'start' | 'act' | 'goal' | 'debug' | 'ad' | 'purchase'
+export type GoldSource = 'start' | 'act' | 'goal' | 'contract' | 'debug' | 'ad' | 'purchase'
 
 // What happened during a reconcile or apply. Events are the playtest log.
 export type EventBody =
@@ -27,6 +30,8 @@ export type EventBody =
   | { type: 'RACKET_BOUGHT'; racketId: string; racketType: RacketType; districtId: DistrictId; cost: number }
   | { type: 'RACKET_UPGRADED'; racketId: string; tier: number; cost: number; specialization?: Specialization }
   | { type: 'RACKET_REPAIRED'; racketId: string; cost: number }
+  | { type: 'RACKET_CLOSED'; racketId: string; until: number }
+  | { type: 'RACKET_REOPENED'; racketId: string }
   | { type: 'FRONT_BOUGHT'; frontId: string; frontType: FrontType; cost: number }
   | { type: 'FRONT_UPGRADED'; frontId: string; level: number; cost: number; track?: 'rate' | 'capacity' }
   | { type: 'FRONT_MODE_SET'; frontId: string; mode: FrontMode }
@@ -50,18 +55,50 @@ export type EventBody =
       name?: string // an offer's own name
       offerId?: string
       cigarettes?: number // packs a smuggling run put in stock
+      premium?: number // premium packs a convoy put in stock (ADR 0043)
+      hijacked?: true // the Colonel's men took the load
+      seized?: true // customs took the load
+      votes?: number // campaign points delivered (ADR 0044)
     }
   | { type: 'UPKEEP_PAID'; amount: number }
   | { type: 'UPKEEP_MISSED'; owed: number; paid: number }
-  | { type: 'STOCK_OUT' }
-  | { type: 'STOCK_CAPPED'; cap: number }
-  | { type: 'SHORTAGE_STARTED'; demand: number; made: number }
-  | { type: 'SHORTAGE_ENDED' }
+  | { type: 'STOCK_OUT'; product?: 'premium' } // no product: cigarettes
+  | { type: 'STOCK_CAPPED'; cap: number; product?: 'premium' }
+  | { type: 'SHORTAGE_STARTED'; demand: number; made: number; product?: 'premium' }
+  | { type: 'SHORTAGE_ENDED'; product?: 'premium' }
   | { type: 'GOLD_GRANTED'; amount: number; source: GoldSource }
   | { type: 'TIME_SKIPPED'; hours: number; bars: number }
-  | { type: 'OP_RUSHED'; opId: string; opType: OpType; bars: number; name?: string }
+  | { type: 'ROCK_BOTTOM'; act: Act }
+  | { type: 'ENVELOPE_OPENED'; act: Act; stake: number }
+  | { type: 'LOAN_REPOSSESSED'; racketId: string; racketType: RacketType; districtId: DistrictId; owed: number }
+  | { type: 'MISSION_STARTED'; missionId: MissionId; opId: string; crewIds: string[]; stake: number }
+  | {
+      type: 'MISSION_RESOLVED'
+      missionId: MissionId
+      result: 'failed' | 'won' | 'lost'
+      crewIds: string[]
+      outcome?: OpOutcome
+      stake?: number
+      heat?: number
+      injuredId?: string
+      rep?: number
+      influence?: number
+    }
+  | { type: 'OP_RUSHED'; opId: string; opType: OpType | 'mission' | 'contract' | 'errand'; bars: number; name?: string }
+  | { type: 'ERRAND_DONE'; opId: string; crewIds: string[]; name: string } // ADR 0054
+  | { type: 'CONTRACTS_POSTED'; count: number } // after the story (ADR 0052)
+  | { type: 'CONTRACT_STARTED'; contractId: string; kind: ContractId; name: string; opId: string; crewIds: string[]; cost: number }
+  | { type: 'CONTRACT_DONE'; contractId: string; kind: ContractId; name: string; crewIds: string[]; clean: number; gold: number }
+  | { type: 'EMPIRE_BEST'; value: number }
   | { type: 'GOAL_DONE'; goalId: GoalId; gold: number }
-  | { type: 'SHIPMENT_BOUGHT'; packs: number; cost: number }
+  | { type: 'SHIPMENT_BOUGHT'; packs: number; cost: number; product?: 'premium' }
+  | { type: 'PASSAGE_BOUGHT'; cost: number; until: number }
+  | { type: 'FRONT_FROZEN'; frontId: string; until: number } // the Ministry (ADR 0044)
+  | { type: 'FRONT_THAWED'; frontId: string }
+  | { type: 'CAMPAIGNED'; points: number; cost: number; pay: 'dirty' | 'influence'; total: number }
+  | { type: 'ELECTION_HELD'; index: number; share: number; won: boolean }
+  | { type: 'LEGALIZED'; racketId: string; cost: number } // ADR 0045
+  | { type: 'ENDING_REACHED'; ending: Ending }
   | { type: 'SURPLUS_SOLD'; packs: number; dirty: number }
   | { type: 'REPORT_FILED'; itemId: string; opId: string; opType: OpType; outcome: OpOutcome; expiresAt: number }
   | { type: 'INCIDENT_RAISED'; itemId: string; incidentType: IncidentType; crewId?: string; racketId?: string; expiresAt: number }
@@ -96,6 +133,16 @@ export type EventBody =
   | { type: 'TRIBUTE_REFUSED'; amount: number; racketId?: string; explicit?: true }
   | { type: 'ACT_UNLOCKED'; act: Act }
   | { type: 'ACT_CLEARED'; act: Act }
+  | { type: 'CONTEST_RESOLVED'; itemId: string; stat: Stat; diff: number; won: boolean; crewId?: string; name?: string }
+  | { type: 'CREW_INJURED'; crewId: string; name: string; until: number }
+  | { type: 'CREW_RECOVERED'; crewId: string; name: string }
+  | { type: 'LOAN_TAKEN'; amount: number; owed: number }
+  | { type: 'LOAN_PAYMENT'; paid: number; owed: number }
+  | { type: 'LOAN_MISSED'; due: number; missed: number; seized?: number } // seized: only in logs from before ADR 0051
+  | { type: 'LOAN_REPAID'; paid: number }
+  | { type: 'LENT'; amount: number; dueAt: number }
+  | { type: 'LENDING_REPAID'; amount: number; returned: number }
+  | { type: 'LENDING_DEFAULTED'; amount: number }
   | { type: 'NOTE'; text: string }
   | { type: 'TUTORIAL_STEP'; step: number; done: boolean }
   | { type: 'SESSION_START' }

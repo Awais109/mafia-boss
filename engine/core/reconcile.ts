@@ -1,7 +1,10 @@
 import type { Config } from '../config/schema'
 import type { GameEvent } from '../model/events'
 import { LOG_CAP, type PlayerState } from '../model/state'
+import { afterDayBoundary, refreshContractsIfDue } from '../systems/after'
 import { crewDayBoundary, refreshPoolIfDue, releaseJailed } from '../systems/crew'
+import { creditDayBoundary, lendingDue } from '../systems/credit'
+import { releaseInjured } from '../systems/injuries'
 import { accrueEnforcerXp, crewXpHourBoundary } from '../systems/experience'
 import { convertFronts, frontsHourBoundary } from '../systems/fronts'
 import { checkGoals } from '../systems/goals'
@@ -10,7 +13,10 @@ import { autoResolveInbox, rollIncident } from '../systems/inbox'
 import { ledgerDayBoundary } from '../systems/ledger'
 import { refreshOffersIfDue } from '../systems/offers'
 import { resolveOp } from '../systems/ops'
-import { accrueVault, decayCondition, settleUpkeep } from '../systems/rackets'
+import { reckoningDayBoundary } from '../systems/legal'
+import { electionDue, electionScheduled, politicsHourBoundary, thawFronts } from '../systems/politics'
+import { prosperityHourBoundary } from '../systems/prosperity'
+import { accrueVault, decayCondition, reopenBusinesses, settleUpkeep } from '../systems/rackets'
 import { tolyaTick } from '../systems/rivals'
 import { accrueStock, supplyHourBoundary } from '../systems/supply'
 import { clone, emit, type Ctx } from './ctx'
@@ -65,9 +71,17 @@ function nextBoundary(state: PlayerState, c: Config, t: number, now: number): nu
   if (state.bribeControl > 0) consider(state.bribeUntil)
   consider(state.recruitPool.refreshAt)
   consider(state.offers.refreshAt)
+  consider(state.after.contracts.refreshAt)
   consider(state.rival.tolya.nextTickAt)
-  for (const m of state.crew) if (m.status === 'jailed') consider(m.jailedUntil)
+  for (const m of state.crew) {
+    if (m.status === 'jailed') consider(m.jailedUntil)
+    if (m.status === 'injured') consider(m.injuredUntil)
+  }
+  consider(state.lending?.dueAt)
   for (const item of state.inbox) consider(item.expiresAt)
+  for (const r of state.rackets) consider(r.closedUntil)
+  for (const f of state.fronts) consider(f.frozenUntil)
+  if (electionScheduled(state)) consider(state.politics.nextElectionAt)
   return b
 }
 
@@ -80,27 +94,36 @@ function accrue(state: PlayerState, ctx: Ctx, t: number, hours: number): void {
   const from = ctx.events.length
   accrueVault(state, ctx, t, hours, d.yieldPerHr, d.vaultCap)
   state.stats.tributeLost += d.tributePerHr * hours
-  convertFronts(state, c, hours)
+  convertFronts(state, c, hours, d)
   accrueStock(state, ctx, t, hours, d)
   state.heat = convergeHeat(state.heat, d.heatTarget, hours, c.heat.convergePerHr)
   state.wagesOwed += d.wagesPerHr * hours
   state.upkeepOwed += d.upkeepPerHr * hours
   state.influence += d.influencePerHr * hours
+  // Legal businesses earn Clean straight away (ADR 0045).
+  state.clean += d.legalCleanPerHr * hours
+  state.stats.cleanEarned += d.legalCleanPerHr * hours
+  state.stats.legalClean += d.legalCleanPerHr * hours
   accrueEnforcerXp(state, c, hours)
   // The vault and the stock each emit mid-segment instants: keep them in time order, so a split agrees.
   if (ctx.events.length - from > 1) ctx.events.push(...ctx.events.splice(from).sort((a, b) => a.t - b.t))
 }
 
 function hourBoundary(state: PlayerState, ctx: Ctx, t: number): void {
-  frontsHourBoundary(state, ctx.c)
+  frontsHourBoundary(state, ctx.c, derive(state, ctx.c))
   decayCondition(state, ctx.c)
   crewXpHourBoundary(state, ctx, t) // enforcers' banked XP becomes stat points on the hour
   heatHourBoundary(state, ctx, t)
   supplyHourBoundary(state, ctx, t)
+  prosperityHourBoundary(state, ctx, t) // after the inspection and shortage flags it reads
+  politicsHourBoundary(state, ctx, t) // after the fronts' utilization and the inspection flag
   rollIncident(state, ctx, t)
   if (isDayStart(ctx.c, t)) {
     crewDayBoundary(state, ctx, t)
     settleUpkeep(state, ctx, t) // after wages: the crew get paid first
+    creditDayBoundary(state, ctx, t) // then the loan, from Clean
+    reckoningDayBoundary(state, ctx, t) // a hearing may be filed (Act VI)
+    afterDayBoundary(state, ctx, t) // the empire value, once the day's costs are settled (ADR 0052)
     ledgerDayBoundary(state, t) // last: the snapshot sees the day's settled costs
   }
 }
@@ -120,8 +143,14 @@ export function processDue(state: PlayerState, ctx: Ctx, t: number): void {
     emit(ctx, t, { type: 'BRIBE_EXPIRED' })
   }
   releaseJailed(state, ctx, t)
+  releaseInjured(state, ctx, t)
+  reopenBusinesses(state, ctx, t)
+  lendingDue(state, ctx, t)
+  thawFronts(state, ctx, t)
+  electionDue(state, ctx, t)
   refreshPoolIfDue(state, ctx, t)
   refreshOffersIfDue(state, ctx, t)
+  refreshContractsIfDue(state, ctx, t)
   if (state.rival.tolya.nextTickAt <= t) tolyaTick(state, ctx, t)
   // Goals only change at boundaries and actions, so checking here dates each to where it happened.
   checkGoals(state, ctx, t)

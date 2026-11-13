@@ -3,30 +3,39 @@
 // negative durations, unknown keys). It does not reject badly tuned ones — that's
 // what the sim is for (dev manual §2).
 
-export type Act = 1 | 2
-export const ACTS: readonly Act[] = [1, 2]
+// Six acts (ADR 0040). `progression.finalAct` is the last one built; later acts exist as types and numbers only.
+export type Act = 1 | 2 | 3 | 4 | 5 | 6
+export const ACTS: readonly Act[] = [1, 2, 3, 4, 5, 6]
+export type LaterAct = Exclude<Act, 1>
+export const LATER_ACTS: readonly LaterAct[] = [2, 3, 4, 5, 6]
 
 // Every business, whatever its kind (ADR 0031): joints, rackets and premises share one list.
 export type RacketType =
   | 'kiosk' | 'marketStall' | 'beerTent' | 'videoSalon' | 'taxiRank' | 'slotHall' | 'tobaccoFactory' | 'warehouse'
   | 'autoShop' | 'cafe' | 'bathhouse' | 'petrol' | 'cargoBay' | 'stashHouse' | 'unionOffice'
+  | 'cardClub' | 'nightclub' | 'printShop' | 'hotel' | 'clinic' | 'loanDesk'
+  | 'truckStop' | 'motel' | 'foreignShop' | 'freightYard' | 'fuelDepot' | 'bondedWarehouse' | 'convoyDepot'
+  | 'palaceOfCulture' | 'constructionTrust' | 'combine' | 'newspaper' | 'tvStation' | 'holding'
 export const RACKET_TYPES: readonly RacketType[] = [
   'kiosk', 'marketStall', 'beerTent', 'videoSalon', 'taxiRank', 'slotHall', 'tobaccoFactory', 'warehouse',
   'autoShop', 'cafe', 'bathhouse', 'petrol', 'cargoBay', 'stashHouse', 'unionOffice',
+  'cardClub', 'nightclub', 'printShop', 'hotel', 'clinic', 'loanDesk',
+  'truckStop', 'motel', 'foreignShop', 'freightYard', 'fuelDepot', 'bondedWarehouse', 'convoyDepot',
+  'palaceOfCulture', 'constructionTrust', 'combine', 'newspaper', 'tvStation', 'holding',
 ]
 
-export type FrontType = 'currencyKiosk' | 'restaurant'
-export const FRONT_TYPES: readonly FrontType[] = ['currencyKiosk', 'restaurant']
+export type FrontType = 'currencyKiosk' | 'restaurant' | 'cooperativeBank' | 'importExport' | 'developmentFund'
+export const FRONT_TYPES: readonly FrontType[] = ['currencyKiosk', 'restaurant', 'cooperativeBank', 'importExport', 'developmentFund']
 
-export type OfficialId = 'wardCop' | 'precinctCaptain'
-export const OFFICIAL_IDS: readonly OfficialId[] = ['wardCop', 'precinctCaptain']
+export type OfficialId = 'wardCop' | 'precinctCaptain' | 'cityHall' | 'customsChief' | 'governor'
+export const OFFICIAL_IDS: readonly OfficialId[] = ['wardCop', 'precinctCaptain', 'cityHall', 'customsChief', 'governor']
 
 export type OpType =
   | 'shakeDown' | 'collectDebt' | 'leanOnWard' | 'pressure' | 'smuggleCigarettes' | 'moveShipment' | 'dinner'
-  | 'trainMuscle' | 'trainBrains' | 'trainNerve'
+  | 'trainMuscle' | 'trainBrains' | 'trainNerve' | 'bigScore' | 'runConvoy' | 'greasePost' | 'fixTender' | 'deliverVote'
 export const OP_TYPES: readonly OpType[] = [
   'shakeDown', 'collectDebt', 'leanOnWard', 'pressure', 'smuggleCigarettes', 'moveShipment', 'dinner',
-  'trainMuscle', 'trainBrains', 'trainNerve',
+  'trainMuscle', 'trainBrains', 'trainNerve', 'bigScore', 'runConvoy', 'greasePost', 'fixTender', 'deliverVote',
 ]
 
 export type FrontMode = 'push' | 'normal' | 'layLow'
@@ -48,8 +57,10 @@ export type PerkConfig = {
   noDrift?: boolean // steady: no daily loyalty drift
 }
 
-export type DistrictId = 'zarechye' | 'kioskRow' | 'stationSquare' | 'portQuarter' | 'sovietsky'
-export const DISTRICT_IDS: readonly DistrictId[] = ['zarechye', 'kioskRow', 'stationSquare', 'portQuarter', 'sovietsky']
+export type DistrictId = 'zarechye' | 'kioskRow' | 'stationSquare' | 'portQuarter' | 'sovietsky' | 'centre' | 'zastava' | 'kombinat' | 'nagornaya'
+export const DISTRICT_IDS: readonly DistrictId[] = [
+  'zarechye', 'kioskRow', 'stationSquare', 'portQuarter', 'sovietsky', 'centre', 'zastava', 'kombinat', 'nagornaya',
+]
 
 export type Stat = 'muscle' | 'brains' | 'nerve'
 export const STATS: readonly Stat[] = ['muscle', 'brains', 'nerve']
@@ -57,26 +68,33 @@ export const STATS: readonly Stat[] = ['muscle', 'brains', 'nerve']
 export type TraitId = 'exArmy' | 'gambler' | 'alcoholic'
 export const TRAIT_IDS: readonly TraitId[] = ['exArmy', 'gambler', 'alcoholic']
 
-export type Controller = 'player' | 'tolya' | 'zhanna' | 'none'
+export type Controller = 'player' | 'tolya' | 'zhanna' | 'colonel' | 'state' | 'none'
 export type OpBand = 'quick' | 'standard' | 'long'
 export const OP_BANDS: readonly OpBand[] = ['quick', 'standard', 'long']
 export type OpOutcome = 'full' | 'partial' | 'fail'
 export const OP_OUTCOMES: readonly OpOutcome[] = ['full', 'partial', 'fail']
 
-export type IncidentType = 'inspector' | 'drunkCrew' | 'shopkeeperLead' | 'copFavour' | 'badBatch'
-export const INCIDENT_TYPES: readonly IncidentType[] = ['inspector', 'drunkCrew', 'shopkeeperLead', 'copFavour', 'badBatch']
-export type IncidentNeed = 'idleCrew' | 'joint' | 'factory' | 'inspected'
+export type IncidentType =
+  | 'inspector' | 'drunkCrew' | 'shopkeeperLead' | 'copFavour' | 'badBatch' | 'investigation' | 'attack' | 'collectors' | 'lendingDefault'
+  | 'hearing'
+  | 'frontPage' | 'workersAtGate' | 'schoolRoof'
+export const INCIDENT_TYPES: readonly IncidentType[] = [
+  'inspector', 'drunkCrew', 'shopkeeperLead', 'copFavour', 'badBatch', 'investigation', 'attack', 'collectors', 'lendingDefault',
+  'hearing',
+  'frontPage', 'workersAtGate', 'schoolRoof',
+]
+
+// The two ways the game can end (ADR 0045): recorded, never final.
+export type Ending = 'holding' | 'empire'
+export const ENDINGS: readonly Ending[] = ['holding', 'empire']
+export type IncidentNeed = 'idleCrew' | 'joint' | 'factory' | 'inspected' | 'printShop' | 'afterStory'
 
 // Act I goals (ADR 0035, gate ADR 0039), each paying gold once. All of them must be done to open Act II.
 export type GoalId = 'secondDistrict' | 'factoryTier2' | 'thirdCrew' | 'wardCop' | 'workFront' | 'smuggleRun' | 'soldier'
 export const GOAL_IDS: readonly GoalId[] = ['secondDistrict', 'factoryTier2', 'thirdCrew', 'wardCop', 'workFront', 'smuggleRun', 'soldier']
 
-// One option on a pending decision (a crew report or an incident). Effects are materialized
-// into the save when the item is filed, so replays don't depend on later config edits.
-export type ChoiceConfig = {
-  id: string
-  name: string
-  default?: boolean // exactly one per list; applied when the item expires unanswered
+// What an option does, before it's materialized into the save (ChoiceConfig without its id and name).
+export type ChoiceEffectsConfig = {
   dirtyPct?: number // share of the job's Dirty reward (reports)
   dirtyPerAct?: number // flat Dirty × act
   influence?: number
@@ -86,13 +104,41 @@ export type ChoiceConfig = {
   condition?: number // the business named on the item
   disposition?: number // Tolya
   cigarettes?: number
+  dirtyHoursOfYield?: number // Dirty = this × yield per hour, fixed when the item is filed
+  closeHours?: number // the business named on the item shuts for this long
+  dirtyPerDue?: number // × the amount the item is about (a defaulted loan), fixed at filing
+  cleanPerDue?: number // × the amount the item is about (a missed payment), fixed at filing
+  stashConditionMult?: number // condition × this when a Stash House stands in the business's district
+  injureHours?: number // the crew member who fought is hurt for this long (ADR 0042)
+  cleanHoursOfYield?: number // Clean = this × gross yield per hour, legal included, fixed when filed (ADR 0045)
+  freezeHours?: number // the front moving the most money is frozen for this long (ADR 0045)
+  hearingWon?: boolean // counts toward the Empire (ADR 0045)
+  // The city's story (ADR 0054): public opinion and the Ministry's attention moved now (they drift back to their
+  // targets), and the crew member the item names kept busy this long.
+  opinion?: number
+  attention?: number
+  busyHours?: number
+  // A contest (ADR 0042): the best available crew member's stat + luck against diff; each branch is an effect.
+  // `perCase` adds this much difficulty per point of the case file (ADR 0045).
+  contest?: { stat: Stat; diff: number; enforcerBonus?: number; perCase?: number; win: ChoiceEffectsConfig; lose: ChoiceEffectsConfig }
+}
+
+// One option on a pending decision (a crew report or an incident). Effects are materialized
+// into the save when the item is filed, so replays don't depend on later config edits.
+export type ChoiceConfig = ChoiceEffectsConfig & {
+  id: string
+  name: string
+  default?: boolean // exactly one per list; applied when the item expires unanswered
 }
 
 export type IncidentConfig = {
   name: string
   text: string
   act?: Act
+  lastAct?: Act // rolled only up to this act (a story tied to one act)
   needs?: IncidentNeed
+  filed?: boolean // filed by a system (an attack, a missed payment), never rolled at random
+  hours?: number // how long it waits for an answer, instead of inbox.incidentHours
   options: ChoiceConfig[]
 }
 
@@ -131,6 +177,25 @@ export type RacketTypeConfig = {
   leashHoursPerTier?: number // stash houses: vault hours added per tier (the best one counts)
   shieldPerTier?: number // stash houses: share of a raid kept back per tier, weighted by the district's share of yield
   influencePerHrPerTier?: number // union offices: Influence per hour per tier
+  prosperity?: number // added to its district's prosperity target (negative for rackets that sour a street; ADR 0041)
+  prosperityPerTier?: number // hotels: prosperity target added per tier
+  minProsperity?: number // can only open where the district's prosperity is at least this
+  injuryMult?: number // clinics: injuries last × this (the best one counts)
+  loyaltyPerDay?: number // clinics: every crew member gains this at each day start
+  lendHoursPerTier?: number // loan desks: lend up to this many hours of Dirty yield per tier
+  // Act IV's second product (ADR 0043): premium imported cigarettes.
+  premiumSellsPerHr?: number // premium joints: premium packs sold per hour at tier 1, × tierYieldMult per tier
+  premiumShare?: number // premium joints: the share of yield that needs premium packs
+  premiumCapPerTier?: number // bonded warehouses: premium stock cap added per tier
+  premiumMakesPerHr?: number // the Combine (Act V): premium packs per hour at tier 1, × tierMakeMult
+  seizureMult?: number // bonded warehouses: customs seizure × this while one stands in the crossing's district
+  convoyBonusPerTier?: number // convoy depots: a convoy lands × (1 + this × tier) packs
+  hijackMult?: number // convoy depots: the Colonel's hijack chance × this
+  // Act V, politics (ADR 0044).
+  opinionPerTier?: number // added to public opinion's target per tier (the Newspaper, the TV Station, the Palace of Culture)
+  opinionYield?: [number, number] // rackets: yield × lerp(lo, hi, opinion ÷ 100) (the Construction Trust)
+  onlyIn?: DistrictId // premises: only on this district's lots (the Combine)
+  legalBonusPerTier?: number // the Holding: every legal business earns × (1 + this × tier) (ADR 0045)
 }
 
 // Businesses that work better side by side in one district (plan (m)). Active in a district that has
@@ -151,13 +216,26 @@ export type SynergyConfig = {
 export type FrontTypeConfig = {
   name: string
   description: string // one plain-language sentence: what it does, shown on unlock and in How It Works
+  act: Act // opens in this act (and at unlockRep)
+  minProsperity?: number // city prosperity needed to open it (ADR 0041)
+  coverPerPremiumPack?: number // launders at most this × premium packs sold per hour: the trade has to plausibly cover it (ADR 0043)
+  opinionAtFullUtil?: number // adds up to this to public opinion's target, × its utilization (the Development Fund, ADR 0044)
   rate: number // clean out per dirty in
   throughput: number // dirty/hr
   unlockRep: number
   cost: number // clean
 }
 
-export type OfficialConfig = { name: string; description: string; control: number; cost: number; act: Act }
+export type OfficialConfig = {
+  name: string
+  description: string
+  control: number
+  cost: number
+  act: Act
+  seizureMult?: number // customs seizes convoys × this (ADR 0043)
+  ministryRelief?: number // the Ministry's attention target − this (ADR 0044)
+  needsMayor?: boolean // only takes calls from the mayor (the Governor)
+}
 
 export type OpConfig = {
   name: string
@@ -177,6 +255,8 @@ export type OpConfig = {
   xp?: number // training XP to `training`
   districtPressure?: boolean
   act?: Act
+  premium?: number // premium packs a convoy lands on success (× the reward share); hijack and customs apply (ADR 0043)
+  votes?: number // campaign points on success (× the reward share) while an election is coming (ADR 0044)
 }
 
 export type DistrictConfig = {
@@ -189,10 +269,62 @@ export type DistrictConfig = {
   premisesLots: number // lots for premises of any type, one of each type
   buyout: number
   tribute: number // fraction of racket yield paid to the controller while not yours
+  auction?: boolean // a state asset (ADR 0044): bought outright, never pressured, and nothing is built until it's yours
+  lotsFor?: RacketType[] // its lots take only these premises (the Kombinat's: the Combine and the media)
+  grantedOnOpen?: boolean // yours when its act opens: there's no one to buy it from (Nagornaya, ADR 0045)
   mod: {
     yieldMult?: Partial<Record<RacketType, number>> // rackets in this district, once you control it
     wageMult?: number // all crew wages, once you control it
   }
+}
+
+// What opens the next act (ADR 0040). Every listed condition must hold.
+export type ActGate = {
+  goals?: boolean // every Act I goal done
+  rep?: number
+  holds?: DistrictId[] // districts you control
+  fronts?: FrontType[] // fronts you own
+  mayor?: boolean // you've won an election (ADR 0044)
+  missions?: MissionId[] // each done: an overreach sent (it fails), a rematch won (ADR 0050)
+}
+
+// The boss missions (ADR 0050). An overreach is the last step of an act: sent against someone bigger, it
+// fails by design, costs a little, and opens the next act. A rematch is rolled like a job, can be retried
+// after a wait, and pays the arc off.
+export type MissionId = 'crateThroughPort' | 'acrossTheBridge' | 'firstTruck' | 'firstAuction' | 'overGovernor' | 'herTerms' | 'secondLunch'
+export const MISSION_IDS: readonly MissionId[] = ['crateThroughPort', 'herTerms', 'acrossTheBridge', 'secondLunch', 'firstTruck', 'firstAuction', 'overGovernor']
+export type Boss = 'tolya' | 'zhanna' | 'ignatov' | 'colonel' | 'golovin' | 'prosecutor'
+
+// After the story (ADR 0052): big weekly jobs that pay Clean and gold. Their terms are in days of income,
+// so they keep up with the empire.
+export type ContractId = 'tramDepot' | 'boilerHouse' | 'portChannel' | 'bridgeLights' | 'palaceRoof' | 'stationClock'
+export const CONTRACT_IDS: readonly ContractId[] = ['tramDepot', 'boilerHouse', 'portChannel', 'bridgeLights', 'palaceRoof', 'stationClock']
+
+export type ContractConfig = {
+  name: string
+  crew: number
+  hours: number
+  costDays: number // Clean up front, in days of income
+  payDays: number // Clean on completion, in days of income
+  gold: number
+}
+
+export type MissionConfig = {
+  name: string
+  kind: 'overreach' | 'rematch'
+  act: Act // the act it's sent in
+  boss: Boss // who it's against (the story; nothing reads it for a rule)
+  crew: number
+  minutes: number
+  w: Partial<Record<Stat, number>>
+  diff: number // a rematch rolls against it; an overreach only shows it
+  // An overreach's cost, fixed: Dirty yield staked for this many hours and lost, the first crew member hurt,
+  // heat added. It never costs Clean, a business or a crew member.
+  stakeHours?: number
+  injureHours?: number
+  heat?: number
+  // A rematch won.
+  reward?: { rep?: number; influence?: number; disposition?: Partial<Record<'tolya' | 'zhanna' | 'colonel', number>> }
 }
 
 export type CrewSeed = {
@@ -203,6 +335,7 @@ export type CrewSeed = {
   loyalty: number
   traits?: TraitId[]
   nephew?: boolean
+  stays?: boolean // never walks out, though not family (Vitya: ADR 0051)
   potential?: Record<Stat, number> // ceilings; stat + 10 when omitted
 }
 
@@ -229,6 +362,12 @@ export type Config = {
       greed: { yieldMult: number; exposureMult: number }
       stealth: { yieldMult: number; exposureMult: number }
     }
+    // Act III's second choice, on the upgrade to tier 6 (ADR 0041).
+    specialization6: {
+      atTier: number
+      greed: { yieldMult: number; exposureMult: number }
+      stealth: { yieldMult: number; exposureMult: number }
+    }
     premises: { maxTier: number; missedUpkeepConditionHit: number; maxShield: number }
     synergies: SynergyConfig[]
     types: Record<RacketType, RacketTypeConfig>
@@ -237,6 +376,66 @@ export type Config = {
     baseCap: number // cigarettes the city holds without a warehouse
     startingStock: number
     sellFromAct: Act // joints' cigarette share applies from this act
+  }
+  // Act IV (ADR 0043): a second stock, premium imported cigarettes, brought in by convoy and sold by premium joints.
+  premium: {
+    fromAct: Act
+    baseCap: number
+    startingStock: number
+  }
+  // Act V (ADR 0044): the city's opinion of you, Moscow's attention, and the elections.
+  opinion: {
+    fromAct: Act
+    base: number // the target before media, the Palace and the Fund
+    stepPerHr: number // share of the gap to target closed at each whole hour
+    inspectedPenalty: number
+    raidPenalty: number // while the raid penalty from prosperity runs
+    controlBonus: number // control × (1 + this × opinion ÷ 100)
+  }
+  ministry: {
+    fromAct: Act
+    perYield: number // attention target per Dirty an hour of yield
+    opinionRelief: number // − this × opinion ÷ 100
+    stepPerHr: number
+    freezeAt: number // attention at a whole hour at or above this freezes a front
+    afterFreeze: number // attention falls to this once it has
+    freezeHours: number
+  }
+  elections: {
+    fromAct: Act
+    everyDays: number
+    baseShare: number // your share of the vote at opinion 50 with no campaign
+    perOpinion: number // + this per point of opinion above 50
+    perPoint: number // + this per campaign point
+    noise: number // the count: ± this, uniform
+    pointHoursOfYield: number // a campaign point costs this many hours of Dirty yield
+    influencePerPoint: number // or this much Influence
+    maxPoints: number
+    mayor: { perkMult: number; control: number } // the office: district perks amplified, control added, no tribute
+  }
+  // Act VI (ADR 0045): money with a story, and the past that keeps its books.
+  legalize: {
+    fromAct: Act
+    minOpinion: number // the city has to think well enough of you
+    hoursOfYield: number // a business costs this many hours of its tier yield, in Clean
+    cleanShare: number // a legal business earns this share of its gross yield as Clean: the rest is tax
+  }
+  reckoning: {
+    fromAct: Act
+    base: number // chance of a hearing at a day start, before the illegal share
+    perIllegalShare: number // + this × the share of gross yield still illegal
+    perRaid: number // the case file: points per raid, arrest, frozen front and missed loan payment on record
+    perArrest: number
+    perFreeze: number
+    perMissedPayment: number
+    maxCase: number
+    empireWins: number // hearings won, with every district held, for the Empire
+  }
+  convoys: {
+    customsBase: number // chance customs takes a load, before heat
+    customsPerHeat: number // + this × heat
+    hijackChance: number // while the Colonel holds the crossing and you haven't bought passage
+    hijackHostileMult: number // × this while he's hostile
   }
   costs: {
     paybackHoursByAct: Record<Act, number>
@@ -360,6 +559,8 @@ export type Config = {
       hostileBelow: number
       hostileTickMult: number
       haggle: { diff: number; noise: number; pricePct: number; dispositionOnWin: number; dispositionOnInsult: number }
+      // From Act III his boys come for a business (ADR 0042): likelier once he's lost the Row, likelier still when hostile.
+      attack: { fromAct: Act; chance: number; chanceNoTurf: number; chanceHostile: number }
     }
     // Zhanna sells cigarettes by the lot and buys the surplus (ADR 0036).
     zhanna: {
@@ -378,13 +579,85 @@ export type Config = {
       dispositionOnFlip: number
       hostileBelow: number
       seizureDiff: number // added to smuggling difficulty while she holds the Port
+      // From Act IV she also sells premium lots, dearer, on the same cooldown (ADR 0043).
+      premium: { fromAct: Act; packs: number; priceMult: number }
+    }
+    // The Colonel runs the road to the border (ADR 0043). Pay for passage or lose convoys.
+    colonel: {
+      passage: { hoursOfYield: number; hours: number } // Dirty = hoursOfYield × yield per hour, for this many hours
+      dispositionPerPassage: number
+      dispositionPerPressure: number
+      dispositionOnBuyout: number
+      dispositionOnFlip: number
+      hostileBelow: number
     }
   }
   reputation: {
     perCleanSpent: number
     perOpSuccess: number
     perDistrict: number
-    actThresholds: { 2: number; 3: number }
+  }
+  // Six acts (ADR 0040): what opens each one, and the last act this build has content for.
+  progression: {
+    finalAct: Act
+    acts: Record<LaterAct, ActGate>
+  }
+  // Rock bottom (ADR 0051): a payday missed with too little Clean to fall back on brings the family's envelope,
+  // once per act. Never a game over.
+  rockBottom: {
+    cleanBelowHours: number // "no Clean": less than this many hours of wages
+    stakeHours: number // the envelope holds this many hours of wages and upkeep, in Dirty
+    minStake: number
+  }
+  // After the story (ADR 0052): once the final act is cleared, play carries on.
+  after: {
+    extraTiers: number // joints and rackets tier this far past the book's last tier
+    pastBookCostMult: number // each tier past the book costs this much more again
+    contracts: {
+      count: number // on the board at a time
+      refreshDays: number // the board is posted anew this often; one under way stays
+      minDayIncome: number // terms are scaled to at least this day of income
+      list: Record<ContractId, ContractConfig>
+    }
+  }
+  // The boss missions (ADR 0050). `enabled: false` leaves every gate's missions out (Debug, older tests).
+  missions: {
+    enabled: boolean
+    retryHours: number // a lost rematch can be tried again after this
+    list: Record<MissionId, MissionConfig>
+  }
+  // Act III's consequences (ADR 0042): hurt crew, borrowing, lending.
+  injuries: {
+    fromAct: Act
+    chanceOnFail: number // a failed job leaning on Muscle hurts someone on it
+    minMuscleWeight: number
+    hours: number
+  }
+  credit: {
+    fromAct: Act
+    maxDaysOfClean: number // borrow up to this many days of Clean income (the ledger's closed days)
+    minCap: number
+    interestPerDay: number // on what's owed, at each day start
+    repayPctPerDay: number // of the principal, due from Clean at each day start
+    missesToRepossess: number // this many missed payments in a row: the lender takes a business and closes the loan (ADR 0051)
+    lending: {
+      termHours: number
+      returnPct: number
+      defaultBase: number // chance a borrower defaults, before the desk's street
+      defaultPerProsperity: number // − this × the desk district's prosperity
+      minDefault: number
+    }
+  }
+  // Districts earn more when they're doing well (ADR 0041), from `fromAct`.
+  prosperity: {
+    fromAct: Act
+    base: number // every district's target before its businesses
+    stepPerHr: number // share of the gap to target closed at each whole hour
+    yieldMult: [number, number] // joints earn × lerp(lo, hi, prosperity ÷ 100)
+    inspectedPenalty: number
+    raidPenalty: number
+    raidPenaltyHours: number
+    shortagePenalty: number
   }
   tutorial: { enabled: boolean; firstConversionInstant: boolean; tolyaAfterMinutes: number }
   // What Skip buys, and what a game starts with when the tutorial is off (ADR 0035).
@@ -395,7 +668,7 @@ export type Config = {
   // Gold bars buy time and nothing else (ADR 0034).
   gold: {
     starting: number
-    perActUnlocked: { 2: number; 3: number } // granted when that act opens
+    perActUnlocked: Record<LaterAct, number> // granted when that act opens
     hoursPerBar: number
     maxSkipHours: number
     skipChoices: number[]
@@ -441,9 +714,35 @@ function choices(e: string[], p: string, list: unknown) {
   const defaults = opts.filter((o) => o.default)
   if (defaults.length !== 1) e.push(`${p}: exactly one option must be the default`)
   const d = defaults[0]
-  // Stock only ever falls to zero, so a default may lose packs; it may never cost Dirty (ADR 0032).
-  if (d && ((d.dirtyPct ?? 0) < 0 || (d.dirtyPerAct ?? 0) < 0)) {
-    e.push(`${p}.${d.id}: the default option can't cost Dirty`)
+  // Stock only ever falls to zero, so a default may lose packs; it may never cost Dirty or Clean (ADR 0032).
+  if (
+    d &&
+    ((d.dirtyPct ?? 0) < 0 || (d.dirtyPerAct ?? 0) < 0 || (d.dirtyHoursOfYield ?? 0) < 0 || (d.dirtyPerDue ?? 0) < 0 || (d.cleanPerDue ?? 0) < 0 ||
+      (d.cleanHoursOfYield ?? 0) < 0)
+  ) {
+    e.push(`${p}.${d.id}: the default option can't cost Dirty or Clean`)
+  }
+  if (d?.contest) e.push(`${p}.${d.id}: the default option can't be a contest`)
+  for (const o of opts) effectsCheck(e, `${p}.${o.id}`, o)
+}
+
+// A contest's stat and difficulty, and its branches, which may not nest another contest.
+function effectsCheck(e: string[], p: string, fx: ChoiceEffectsConfig) {
+  if (fx.injureHours !== undefined) nonNeg(e, `${p}.injureHours`, fx.injureHours)
+  if (fx.closeHours !== undefined) nonNeg(e, `${p}.closeHours`, fx.closeHours)
+  if (fx.stashConditionMult !== undefined) unit(e, `${p}.stashConditionMult`, fx.stashConditionMult)
+  if (fx.freezeHours !== undefined) nonNeg(e, `${p}.freezeHours`, fx.freezeHours)
+  if (fx.busyHours !== undefined) positive(e, `${p}.busyHours`, fx.busyHours)
+  const k = fx.contest
+  if (!k) return
+  if (!STATS.includes(k.stat)) e.push(`${p}.contest.stat: unknown stat ${k.stat}`)
+  nonNeg(e, `${p}.contest.diff`, k.diff)
+  if (k.enforcerBonus !== undefined) nonNeg(e, `${p}.contest.enforcerBonus`, k.enforcerBonus)
+  if (k.perCase !== undefined) nonNeg(e, `${p}.contest.perCase`, k.perCase)
+  for (const [branch, sub] of [['win', k.win], ['lose', k.lose]] as const) {
+    if (!sub) { e.push(`${p}.contest.${branch}: missing`); continue }
+    if (sub.contest) e.push(`${p}.contest.${branch}: a contest can't nest another`)
+    effectsCheck(e, `${p}.contest.${branch}`, sub)
   }
 }
 
@@ -478,6 +777,12 @@ export function validateConfig(c: Config): string[] {
       positive(e, 'rackets.specialization.stealth.yieldMult', sp.stealth.yieldMult)
       // Stealth may cool a tier, but never below the tier it came from: tiering can't lower exposure.
       num(e, 'rackets.specialization.stealth.exposureMult', sp.stealth.exposureMult, (n) => n >= 1 / r.tierHeatMult, '>= 1 / tierHeatMult')
+      const sp6 = r.specialization6
+      num(e, 'rackets.specialization6.atTier', sp6.atTier, (n) => Number.isInteger(n) && n > sp.atTier, '> specialization.atTier')
+      positive(e, 'rackets.specialization6.greed.yieldMult', sp6.greed.yieldMult)
+      num(e, 'rackets.specialization6.greed.exposureMult', sp6.greed.exposureMult, (n) => n >= sp6.greed.yieldMult, '>= greed.yieldMult')
+      positive(e, 'rackets.specialization6.stealth.yieldMult', sp6.stealth.yieldMult)
+      num(e, 'rackets.specialization6.stealth.exposureMult', sp6.stealth.exposureMult, (n) => n >= 1 / r.tierHeatMult, '>= 1 / tierHeatMult')
       int(e, 'rackets.premises.maxTier', r.premises.maxTier, 1)
       nonNeg(e, 'rackets.premises.missedUpkeepConditionHit', r.premises.missedUpkeepConditionHit)
       unit(e, 'rackets.premises.maxShield', r.premises.maxShield)
@@ -488,6 +793,12 @@ export function validateConfig(c: Config): string[] {
         if (!RACKET_KINDS.includes(rt.kind)) e.push(`${p}.kind: expected joint, racket or premises`)
         nonNeg(e, `${p}.baseHeat`, rt.baseHeat)
         nonNeg(e, `${p}.unlockRep`, rt.unlockRep)
+        if (!ACTS.includes(rt.act)) e.push(`${p}.act: expected an act`)
+        if (rt.prosperity !== undefined) num(e, `${p}.prosperity`, rt.prosperity, (n) => Math.abs(n) <= 100, 'in [-100, 100]')
+        if (rt.prosperityPerTier !== undefined) nonNeg(e, `${p}.prosperityPerTier`, rt.prosperityPerTier)
+        if (rt.minProsperity !== undefined) num(e, `${p}.minProsperity`, rt.minProsperity, (n) => n >= 0 && n <= 100, 'in [0, 100]')
+        if (rt.opinionPerTier !== undefined) nonNeg(e, `${p}.opinionPerTier`, rt.opinionPerTier)
+        if (rt.opinionYield !== undefined) range(e, `${p}.opinionYield`, rt.opinionYield, (n) => n > 0)
         if (rt.kind === 'premises') {
           // Premises earn nothing directly: they make, keep or improve (ADR 0031).
           num(e, `${p}.baseYield`, rt.baseYield, (n) => n === 0, '0 for premises')
@@ -501,12 +812,25 @@ export function validateConfig(c: Config): string[] {
           if (rt.leashHoursPerTier !== undefined) nonNeg(e, `${p}.leashHoursPerTier`, rt.leashHoursPerTier)
           if (rt.shieldPerTier !== undefined) unit(e, `${p}.shieldPerTier`, rt.shieldPerTier)
           if (rt.influencePerHrPerTier !== undefined) nonNeg(e, `${p}.influencePerHrPerTier`, rt.influencePerHrPerTier)
+          if (rt.injuryMult !== undefined) rate(e, `${p}.injuryMult`, rt.injuryMult)
+          if (rt.loyaltyPerDay !== undefined) nonNeg(e, `${p}.loyaltyPerDay`, rt.loyaltyPerDay)
+          if (rt.lendHoursPerTier !== undefined) nonNeg(e, `${p}.lendHoursPerTier`, rt.lendHoursPerTier)
+          if (rt.premiumCapPerTier !== undefined) nonNeg(e, `${p}.premiumCapPerTier`, rt.premiumCapPerTier)
+          if (rt.premiumMakesPerHr !== undefined) nonNeg(e, `${p}.premiumMakesPerHr`, rt.premiumMakesPerHr)
+          if (rt.seizureMult !== undefined) unit(e, `${p}.seizureMult`, rt.seizureMult)
+          if (rt.convoyBonusPerTier !== undefined) nonNeg(e, `${p}.convoyBonusPerTier`, rt.convoyBonusPerTier)
+          if (rt.hijackMult !== undefined) unit(e, `${p}.hijackMult`, rt.hijackMult)
+          if (rt.onlyIn !== undefined && !DISTRICT_IDS.includes(rt.onlyIn)) e.push(`${p}.onlyIn: unknown district ${rt.onlyIn}`)
+          if (rt.legalBonusPerTier !== undefined) nonNeg(e, `${p}.legalBonusPerTier`, rt.legalBonusPerTier)
         } else {
           positive(e, `${p}.baseYield`, rt.baseYield)
         }
         if (rt.kind === 'joint') {
           nonNeg(e, `${p}.sellsPerHr`, rt.sellsPerHr)
           unit(e, `${p}.cigaretteShare`, rt.cigaretteShare)
+          if (rt.premiumSellsPerHr !== undefined) nonNeg(e, `${p}.premiumSellsPerHr`, rt.premiumSellsPerHr)
+          if (rt.premiumShare !== undefined) unit(e, `${p}.premiumShare`, rt.premiumShare)
+          num(e, `${p}.cigaretteShare + premiumShare`, (rt.cigaretteShare ?? 0) + (rt.premiumShare ?? 0), (n) => n <= 1, '<= 1')
         }
       }
       for (const syn of r.synergies) {
@@ -519,6 +843,13 @@ export function validateConfig(c: Config): string[] {
         for (const [k, v] of Object.entries(syn.effect.upkeepMultOf ?? {})) nonNeg(e, `${p}.effect.upkeepMultOf.${k}`, v)
       }
       positive(e, 'supply.baseCap', c.supply.baseCap)
+      if (!ACTS.includes(c.premium.fromAct)) e.push('premium.fromAct: expected an act')
+      positive(e, 'premium.baseCap', c.premium.baseCap)
+      nonNeg(e, 'premium.startingStock', c.premium.startingStock)
+      unit(e, 'convoys.customsBase', c.convoys.customsBase)
+      nonNeg(e, 'convoys.customsPerHeat', c.convoys.customsPerHeat)
+      unit(e, 'convoys.hijackChance', c.convoys.hijackChance)
+      num(e, 'convoys.hijackHostileMult', c.convoys.hijackHostileMult, (n) => n >= 1, '>= 1')
       nonNeg(e, 'supply.startingStock', c.supply.startingStock)
       if (!ACTS.includes(c.supply.sellFromAct)) e.push('supply.sellFromAct: expected an act')
     },
@@ -554,6 +885,10 @@ export function validateConfig(c: Config): string[] {
         num(e, `fronts.types.${t}.rate (max level)`, ft.rate + f.upgrade.rateStep * f.upgrade.levels,
           (n) => n <= 1, '<= 1 at max upgrade level')
         positive(e, `fronts.types.${t}.throughput`, ft.throughput)
+        if (!ACTS.includes(ft.act)) e.push(`fronts.types.${t}.act: expected an act`)
+        if (ft.minProsperity !== undefined) num(e, `fronts.types.${t}.minProsperity`, ft.minProsperity, (n) => n >= 0 && n <= 100, 'in [0, 100]')
+        if (ft.coverPerPremiumPack !== undefined) positive(e, `fronts.types.${t}.coverPerPremiumPack`, ft.coverPerPremiumPack)
+        if (ft.opinionAtFullUtil !== undefined) nonNeg(e, `fronts.types.${t}.opinionAtFullUtil`, ft.opinionAtFullUtil)
         nonNeg(e, `fronts.types.${t}.unlockRep`, ft.unlockRep)
         nonNeg(e, `fronts.types.${t}.cost`, ft.cost)
       }
@@ -582,6 +917,9 @@ export function validateConfig(c: Config): string[] {
       for (const id of OFFICIAL_IDS) {
         nonNeg(e, `officials.list.${id}.control`, c.officials.list[id].control)
         nonNeg(e, `officials.list.${id}.cost`, c.officials.list[id].cost)
+        if (!ACTS.includes(c.officials.list[id].act)) e.push(`officials.list.${id}.act: expected an act`)
+        if (c.officials.list[id].seizureMult !== undefined) unit(e, `officials.list.${id}.seizureMult`, c.officials.list[id].seizureMult)
+        if (c.officials.list[id].ministryRelief !== undefined) nonNeg(e, `officials.list.${id}.ministryRelief`, c.officials.list[id].ministryRelief)
       }
     },
     (e) => {
@@ -591,7 +929,9 @@ export function validateConfig(c: Config): string[] {
         const [lo, hi] = cr.statBandByAct[a] ?? []
         num(e, `crew.statBandByAct.${a}`, lo, (n) => isNum(hi) && n >= 0 && n <= hi, '[lo, hi] with 0 <= lo <= hi')
       }
-      if (cr.slotsByAct[2] < cr.slotsByAct[1]) e.push('crew.slotsByAct: act 2 must not have fewer slots than act 1')
+      for (const a of LATER_ACTS) {
+        if (cr.slotsByAct[a] < cr.slotsByAct[(a - 1) as Act]) e.push(`crew.slotsByAct: act ${a} must not have fewer slots than act ${a - 1}`)
+      }
       unit(e, 'crew.extraSlotCostPctOfBudget', cr.extraSlotCostPctOfBudget)
       nonNeg(e, 'crew.extraSlotMinCost', cr.extraSlotMinCost)
       int(e, 'crew.extraSlotMax', cr.extraSlotMax, 0)
@@ -657,8 +997,42 @@ export function validateConfig(c: Config): string[] {
         if (op.costClean !== undefined) nonNeg(e, `ops.list.${t}.costClean`, op.costClean)
         if (op.cigarettes !== undefined) nonNeg(e, `ops.list.${t}.cigarettes`, op.cigarettes)
         if (op.heatDiffPerPoint !== undefined) nonNeg(e, `ops.list.${t}.heatDiffPerPoint`, op.heatDiffPerPoint)
+        if (op.premium !== undefined) nonNeg(e, `ops.list.${t}.premium`, op.premium)
       }
       for (const b of o.reports.bands) if (!OP_BANDS.includes(b)) e.push(`ops.reports.bands: unknown band ${b}`)
+      positive(e, 'missions.retryHours', c.missions.retryHours)
+      nonNeg(e, 'rockBottom.cleanBelowHours', c.rockBottom.cleanBelowHours)
+      positive(e, 'rockBottom.stakeHours', c.rockBottom.stakeHours)
+      nonNeg(e, 'rockBottom.minStake', c.rockBottom.minStake)
+      const af = c.after
+      int(e, 'after.extraTiers', af.extraTiers, 0)
+      num(e, 'after.pastBookCostMult', af.pastBookCostMult, (n) => n >= 1, '>= 1')
+      int(e, 'after.contracts.count', af.contracts.count, 1)
+      if (af.contracts.count > CONTRACT_IDS.length) e.push(`after.contracts.count: at most ${CONTRACT_IDS.length}, one of each`)
+      positive(e, 'after.contracts.refreshDays', af.contracts.refreshDays)
+      nonNeg(e, 'after.contracts.minDayIncome', af.contracts.minDayIncome)
+      for (const id of CONTRACT_IDS) {
+        const k = af.contracts.list[id]
+        if (!k) { e.push(`after.contracts.list.${id}: missing`); continue }
+        const p = `after.contracts.list.${id}`
+        int(e, `${p}.crew`, k.crew, 1)
+        positive(e, `${p}.hours`, k.hours)
+        nonNeg(e, `${p}.costDays`, k.costDays)
+        num(e, `${p}.payDays`, k.payDays, (n) => n > k.costDays, '> costDays')
+        int(e, `${p}.gold`, k.gold, 0)
+      }
+      for (const id of MISSION_IDS) {
+        const m = c.missions.list[id]
+        if (!m) { e.push(`missions.list.${id}: missing`); continue }
+        const p = `missions.list.${id}`
+        positive(e, `${p}.minutes`, m.minutes)
+        int(e, `${p}.crew`, m.crew, 1)
+        nonNeg(e, `${p}.diff`, m.diff)
+        const wSum = STATS.reduce((sum, k) => sum + (m.w[k] ?? 0), 0)
+        num(e, `${p}.w (sum)`, wSum, (n) => n > 0, '> 0')
+        if (m.kind === 'overreach' && m.act >= 6) e.push(`${p}.act: an overreach opens the act after it, so it can't be in Act VI`)
+        for (const k of ['stakeHours', 'injureHours', 'heat'] as const) if (m[k] !== undefined) nonNeg(e, `${p}.${k}`, m[k]!)
+      }
       for (const outcome of OP_OUTCOMES) choices(e, `ops.reports.byOutcome.${outcome}`, o.reports.byOutcome[outcome])
     },
     (e) => {
@@ -673,6 +1047,8 @@ export function validateConfig(c: Config): string[] {
         const inc = c.incidents.types[t]
         if (!inc) { e.push(`incidents.types.${t}: missing`); continue }
         choices(e, `incidents.types.${t}.options`, inc.options)
+        if (inc.hours !== undefined) positive(e, `incidents.types.${t}.hours`, inc.hours)
+        if (inc.lastAct !== undefined && inc.lastAct < (inc.act ?? 1)) e.push(`incidents.types.${t}.lastAct: before its act`)
       }
     },
     (e) => {
@@ -694,7 +1070,8 @@ export function validateConfig(c: Config): string[] {
       int(e, 'districts.pressureOpsToFlip', c.districts.pressureOpsToFlip, 1)
       for (const id of DISTRICT_IDS) {
         const d = c.districts.list[id]
-        if (!Array.isArray(d.allows) || d.allows.length === 0) e.push(`districts.list.${id}.allows: list at least one racket type`)
+        // A district hosts at least one business: a spot, or failing that a lot (Nagornaya has only the Holding's).
+        if (!Array.isArray(d.allows) || (d.allows.length === 0 && !(d.premisesLots > 0))) e.push(`districts.list.${id}.allows: list at least one racket type`)
         else {
           for (const t of d.allows) {
             if (!RACKET_TYPES.includes(t)) e.push(`districts.list.${id}.allows: unknown racket type ${t}`)
@@ -702,6 +1079,9 @@ export function validateConfig(c: Config): string[] {
           }
         }
         int(e, `districts.list.${id}.premisesLots`, d.premisesLots, 0)
+        for (const t of d.lotsFor ?? []) {
+          if (!RACKET_TYPES.includes(t) || c.rackets.types[t].kind !== 'premises') e.push(`districts.list.${id}.lotsFor: ${t} is not premises`)
+        }
         nonNeg(e, `districts.list.${id}.buyout`, d.buyout)
         num(e, `districts.list.${id}.tribute`, d.tribute, (n) => n >= 0 && n < 1, 'in [0, 1)')
       }
@@ -718,6 +1098,10 @@ export function validateConfig(c: Config): string[] {
       nonNeg(e, 'rivals.tolya.haggle.diff', t.haggle.diff)
       nonNeg(e, 'rivals.tolya.haggle.noise', t.haggle.noise)
       rate(e, 'rivals.tolya.haggle.pricePct', t.haggle.pricePct)
+      if (!ACTS.includes(t.attack.fromAct)) e.push('rivals.tolya.attack.fromAct: expected an act')
+      unit(e, 'rivals.tolya.attack.chance', t.attack.chance)
+      unit(e, 'rivals.tolya.attack.chanceNoTurf', t.attack.chanceNoTurf)
+      unit(e, 'rivals.tolya.attack.chanceHostile', t.attack.chanceHostile)
       const z = c.rivals.zhanna
       positive(e, 'rivals.zhanna.shipment.cigarettes', z.shipment.cigarettes)
       positive(e, 'rivals.zhanna.shipment.basePrice', z.shipment.basePrice)
@@ -727,18 +1111,103 @@ export function validateConfig(c: Config): string[] {
       nonNeg(e, 'rivals.zhanna.surplus.pricePerPack', z.surplus.pricePerPack)
       int(e, 'rivals.zhanna.surplus.maxPerDay', z.surplus.maxPerDay, 0)
       nonNeg(e, 'rivals.zhanna.seizureDiff', z.seizureDiff)
+      if (!ACTS.includes(z.premium.fromAct)) e.push('rivals.zhanna.premium.fromAct: expected an act')
+      positive(e, 'rivals.zhanna.premium.packs', z.premium.packs)
+      positive(e, 'rivals.zhanna.premium.priceMult', z.premium.priceMult)
+      const col = c.rivals.colonel
+      nonNeg(e, 'rivals.colonel.passage.hoursOfYield', col.passage.hoursOfYield)
+      positive(e, 'rivals.colonel.passage.hours', col.passage.hours)
     },
     (e) => {
       const r = c.reputation
       nonNeg(e, 'reputation.perCleanSpent', r.perCleanSpent)
-      positive(e, 'reputation.actThresholds.2', r.actThresholds[2])
-      num(e, 'reputation.actThresholds.3', r.actThresholds[3], (n) => n > r.actThresholds[2], '> actThresholds.2')
+      const pr = c.progression
+      if (!ACTS.includes(pr.finalAct)) e.push('progression.finalAct: expected an act')
+      for (const a of LATER_ACTS) {
+        const g = pr.acts[a]
+        const p = `progression.acts.${a}`
+        if (!g) { e.push(`${p}: missing`); continue }
+        if (g.rep !== undefined) nonNeg(e, `${p}.rep`, g.rep)
+        for (const id of g.holds ?? []) if (!DISTRICT_IDS.includes(id)) e.push(`${p}.holds: unknown district ${id}`)
+        for (const f of g.fronts ?? []) if (!FRONT_TYPES.includes(f)) e.push(`${p}.fronts: unknown front ${f}`)
+        for (const id of g.missions ?? []) {
+          const m = c.missions.list[id]
+          if (!m) e.push(`${p}.missions: unknown mission ${id}`)
+          else if (m.act !== a - 1) e.push(`${p}.missions: ${id} is sent in Act ${m.act}, not the act before this one`)
+        }
+        if (!g.goals && !g.mayor && g.rep === undefined && !(g.holds ?? []).length && !(g.fronts ?? []).length && !(g.missions ?? []).length) {
+          e.push(`${p}: a gate needs at least one condition`)
+        }
+      }
+      const inj = c.injuries
+      if (!ACTS.includes(inj.fromAct)) e.push('injuries.fromAct: expected an act')
+      unit(e, 'injuries.chanceOnFail', inj.chanceOnFail)
+      unit(e, 'injuries.minMuscleWeight', inj.minMuscleWeight)
+      positive(e, 'injuries.hours', inj.hours)
+      const cr = c.credit
+      if (!ACTS.includes(cr.fromAct)) e.push('credit.fromAct: expected an act')
+      nonNeg(e, 'credit.maxDaysOfClean', cr.maxDaysOfClean)
+      nonNeg(e, 'credit.minCap', cr.minCap)
+      nonNeg(e, 'credit.interestPerDay', cr.interestPerDay)
+      rate(e, 'credit.repayPctPerDay', cr.repayPctPerDay)
+      int(e, 'credit.missesToRepossess', cr.missesToRepossess, 1)
+      positive(e, 'credit.lending.termHours', cr.lending.termHours)
+      nonNeg(e, 'credit.lending.returnPct', cr.lending.returnPct)
+      unit(e, 'credit.lending.defaultBase', cr.lending.defaultBase)
+      nonNeg(e, 'credit.lending.defaultPerProsperity', cr.lending.defaultPerProsperity)
+      unit(e, 'credit.lending.minDefault', cr.lending.minDefault)
+      const ps = c.prosperity
+      if (!ACTS.includes(ps.fromAct)) e.push('prosperity.fromAct: expected an act')
+      num(e, 'prosperity.base', ps.base, (n) => n >= 0 && n <= 100, 'in [0, 100]')
+      num(e, 'prosperity.stepPerHr', ps.stepPerHr, (n) => n > 0 && n <= 1, 'in (0, 1]')
+      range(e, 'prosperity.yieldMult', ps.yieldMult, (n) => n > 0)
+      nonNeg(e, 'prosperity.inspectedPenalty', ps.inspectedPenalty)
+      nonNeg(e, 'prosperity.raidPenalty', ps.raidPenalty)
+      positive(e, 'prosperity.raidPenaltyHours', ps.raidPenaltyHours)
+      nonNeg(e, 'prosperity.shortagePenalty', ps.shortagePenalty)
+      const op = c.opinion
+      if (!ACTS.includes(op.fromAct)) e.push('opinion.fromAct: expected an act')
+      num(e, 'opinion.base', op.base, (n) => n >= 0 && n <= 100, 'in [0, 100]')
+      num(e, 'opinion.stepPerHr', op.stepPerHr, (n) => n > 0 && n <= 1, 'in (0, 1]')
+      nonNeg(e, 'opinion.inspectedPenalty', op.inspectedPenalty)
+      nonNeg(e, 'opinion.raidPenalty', op.raidPenalty)
+      nonNeg(e, 'opinion.controlBonus', op.controlBonus)
+      const mi = c.ministry
+      if (!ACTS.includes(mi.fromAct)) e.push('ministry.fromAct: expected an act')
+      nonNeg(e, 'ministry.perYield', mi.perYield)
+      nonNeg(e, 'ministry.opinionRelief', mi.opinionRelief)
+      num(e, 'ministry.stepPerHr', mi.stepPerHr, (n) => n > 0 && n <= 1, 'in (0, 1]')
+      num(e, 'ministry.freezeAt', mi.freezeAt, (n) => n > 0 && n <= 100, 'in (0, 100]')
+      num(e, 'ministry.afterFreeze', mi.afterFreeze, (n) => n >= 0 && n < mi.freezeAt, 'in [0, freezeAt)')
+      positive(e, 'ministry.freezeHours', mi.freezeHours)
+      const el = c.elections
+      if (!ACTS.includes(el.fromAct)) e.push('elections.fromAct: expected an act')
+      positive(e, 'elections.everyDays', el.everyDays)
+      unit(e, 'elections.baseShare', el.baseShare)
+      nonNeg(e, 'elections.perOpinion', el.perOpinion)
+      nonNeg(e, 'elections.perPoint', el.perPoint)
+      num(e, 'elections.noise', el.noise, (n) => n > 0 && n < 0.5, 'in (0, 0.5)')
+      positive(e, 'elections.pointHoursOfYield', el.pointHoursOfYield)
+      positive(e, 'elections.influencePerPoint', el.influencePerPoint)
+      int(e, 'elections.maxPoints', el.maxPoints, 1)
+      num(e, 'elections.mayor.perkMult', el.mayor.perkMult, (n) => n >= 1, '>= 1')
+      nonNeg(e, 'elections.mayor.control', el.mayor.control)
+      const lg = c.legalize
+      if (!ACTS.includes(lg.fromAct)) e.push('legalize.fromAct: expected an act')
+      num(e, 'legalize.minOpinion', lg.minOpinion, (n) => n >= 0 && n <= 100, 'in [0, 100]')
+      positive(e, 'legalize.hoursOfYield', lg.hoursOfYield)
+      rate(e, 'legalize.cleanShare', lg.cleanShare)
+      const rk = c.reckoning
+      if (!ACTS.includes(rk.fromAct)) e.push('reckoning.fromAct: expected an act')
+      unit(e, 'reckoning.base', rk.base)
+      nonNeg(e, 'reckoning.perIllegalShare', rk.perIllegalShare)
+      for (const k of ['perRaid', 'perArrest', 'perFreeze', 'perMissedPayment', 'maxCase'] as const) nonNeg(e, `reckoning.${k}`, rk[k])
+      int(e, 'reckoning.empireWins', rk.empireWins, 1)
     },
     (e) => {
       const g = c.gold
       int(e, 'gold.starting', g.starting, 0)
-      int(e, 'gold.perActUnlocked.2', g.perActUnlocked[2], 0)
-      int(e, 'gold.perActUnlocked.3', g.perActUnlocked[3], 0)
+      for (const a of LATER_ACTS) int(e, `gold.perActUnlocked.${a}`, g.perActUnlocked[a], 0)
       positive(e, 'gold.hoursPerBar', g.hoursPerBar)
       int(e, 'gold.maxSkipHours', g.maxSkipHours, 1)
       if (!Array.isArray(g.skipChoices) || g.skipChoices.some((h) => !Number.isInteger(h) || h < 1 || h > g.maxSkipHours)) {
@@ -778,6 +1247,7 @@ const OPEN_PATHS = [
   /^ops\.list\.[^.]+\.w$/,
   /^districts\.list\.[^.]+\.mod(\..+)?$/,
   /^offers\.templates$/,
+  /^progression\.acts\.[^.]+$/, // a gate may ask for conditions its default doesn't (ADR 0040)
 ]
 
 // Every key in `overlay` must exist in `base` (outside open maps). Catches preset typos.

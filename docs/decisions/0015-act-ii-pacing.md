@@ -1,6 +1,6 @@
 # 0015. Act II ends at 480 Rep with a compressed unlock ladder
 
-- **Status:** Accepted
+- **Status:** Superseded by [0040](0040-six-acts.md): Act II now leads to Act III
 - **Date:** 2026-09-12
 
 ## Context

@@ -2,6 +2,7 @@ import type { Config, DistrictId, RacketType } from '../config/schema'
 import { emit, type Ctx } from '../core/ctx'
 import type { District, PlayerState } from '../model/state'
 import { gainRep } from './reputation'
+import { changeColonel } from './convoys'
 import { changeDisposition, changeZhanna } from './rivals'
 
 export function getDistrict(state: PlayerState, id: DistrictId): District {
@@ -34,6 +35,8 @@ export function openLots(state: PlayerState, c: Config, id: DistrictId): number 
 // Why a premises of this type can't go in this district right now, or null if it can.
 export function premisesBlocked(state: PlayerState, c: Config, id: DistrictId, type: RacketType): string | null {
   const max = c.rackets.types[type].maxInCity
+  const only = c.districts.list[id].lotsFor
+  if (only && !only.includes(type)) return `Its lots are for the ${only.map((t) => c.rackets.types[t].name).join(', ')}`
   if (state.rackets.some((r) => r.districtId === id && r.type === type)) return 'You already have one there'
   if (max !== undefined && state.rackets.filter((r) => r.type === type).length >= max) {
     return max === 1 ? 'Only one in the city' : `Only ${max} in the city`
@@ -42,9 +45,34 @@ export function premisesBlocked(state: PlayerState, c: Config, id: DistrictId, t
   return null
 }
 
+// Why a business of this type can't open in this district right now, or null if it can (Clean aside).
+// BUY_RACKET and the bot share it, so the bot never offers itself a purchase the engine would refuse.
+export function racketBlocked(state: PlayerState, c: Config, type: RacketType, id: DistrictId): string | null {
+  const rt = c.rackets.types[type]
+  if (!rt) return 'Unknown racket'
+  if (rt.act > state.act || state.reputation < rt.unlockRep) return 'Not unlocked yet'
+  if (!c.districts.list[id] || !districtUnlocked(state, c, id)) return 'That district is not open yet'
+  // A state asset (ADR 0044): nothing goes in until it's yours.
+  if (c.districts.list[id].auction && getDistrict(state, id).controller !== 'player') return 'Buy it at auction first'
+  if (rt.onlyIn !== undefined && rt.onlyIn !== id) return `Only in ${c.districts.list[rt.onlyIn].name}`
+  if (rt.kind === 'premises') {
+    // Premises go on a free lot in any open district (ADR 0031).
+    const blocked = premisesBlocked(state, c, id, type)
+    if (blocked) return blocked
+  } else {
+    if (!c.districts.list[id].allows.includes(type)) return "That kind of business doesn't fit there"
+    if (state.rackets.some((r) => r.districtId === id && r.type === type)) return `You already run a ${rt.name} there`
+  }
+  if (rt.minProsperity !== undefined && getDistrict(state, id).prosperity < rt.minProsperity) {
+    return `The street needs a prosperity of ${rt.minProsperity}`
+  }
+  return null
+}
+
 export function canPressure(state: PlayerState, c: Config, id: DistrictId): string | null {
   if (!districtUnlocked(state, c, id)) return 'That district is not open yet'
   if (getDistrict(state, id).controller === 'player') return 'Already yours'
+  if (c.districts.list[id].auction) return 'The state isn’t pressured: it sells at auction'
   return null
 }
 
@@ -57,6 +85,8 @@ export function takeDistrict(state: PlayerState, ctx: Ctx, t: number, id: Distri
   if (from === 'tolya') changeDisposition(state, how === 'buyout' ? cfg.dispositionOnBuyout : cfg.dispositionOnFlip)
   const z = ctx.c.rivals.zhanna
   if (from === 'zhanna') changeZhanna(state, how === 'buyout' ? z.dispositionOnBuyout : z.dispositionOnFlip)
+  const col = ctx.c.rivals.colonel
+  if (from === 'colonel') changeColonel(state, how === 'buyout' ? col.dispositionOnBuyout : col.dispositionOnFlip)
   if (how === 'pressure') emit(ctx, t, { type: 'DISTRICT_FLIPPED', districtId: id, from })
   gainRep(state, ctx, t, ctx.c.reputation.perDistrict)
 }
@@ -66,6 +96,7 @@ export function addPressure(state: PlayerState, ctx: Ctx, t: number, id: Distric
   if (d.controller === 'player') return
   d.pressureCount++
   if (d.controller === 'tolya') changeDisposition(state, ctx.c.rivals.tolya.dispositionPerPressure)
+  if (d.controller === 'colonel') changeColonel(state, ctx.c.rivals.colonel.dispositionPerPressure)
   const needed = ctx.c.districts.pressureOpsToFlip
   emit(ctx, t, { type: 'DISTRICT_PRESSURED', districtId: id, count: d.pressureCount, needed })
   if (d.pressureCount >= needed) takeDistrict(state, ctx, t, id, 'pressure')

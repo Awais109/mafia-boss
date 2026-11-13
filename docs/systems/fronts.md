@@ -2,12 +2,12 @@
 
 Dirty money can't buy anything. Fronts turn it into Clean at a fixed rate per hour, which is the game's throttle. Each front has a dial (push, normal, lay low) and two upgrade tracks (rate and capacity).
 
-**Code:** `engine/systems/fronts.ts` (`convertFronts`, `frontsHourBoundary`), `engine/core/formulas.ts` (`frontRate`, `frontBaseThroughput`, `frontModeMult`, `frontThroughput`, `frontBufferCap`, `frontUpgradeCost`, `frontCapacityUpgradeCost`, `frontSuspicion`), `engine/core/derive.ts` (`perFront`), the `DEPOSIT`, `BUY_FRONT`, `UPGRADE_FRONT` and `SET_FRONT_MODE` handlers in `engine/core/apply.ts`.
+**Code:** `engine/systems/fronts.ts` (`frontBlocked`, `convertFronts`, `frontsHourBoundary`), `engine/core/formulas.ts` (`frontRate`, `frontBaseThroughput`, `frontModeMult`, `frontThroughput`, `frontBufferCap`, `frontUpgradeCost`, `frontCapacityUpgradeCost`, `frontSuspicion`), `engine/core/derive.ts` (`perFront`), the `DEPOSIT`, `BUY_FRONT`, `UPGRADE_FRONT` and `SET_FRONT_MODE` handlers in `engine/core/apply.ts`.
 **Config:** `fronts.*`, `tutorial.firstConversionInstant`.
 
 ## Types
 
-`fronts.types`: `currencyKiosk` (bought in the opening) and `restaurant` (unlocks at its `unlockRep`, just before Act II). Both cost Clean, and you can run one of each type. Each also carries a `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)).
+`fronts.types`: `currencyKiosk` (bought in the opening), `restaurant` (unlocks at its `unlockRep`, just before Act II), `cooperativeBank` (Act III), `importExport` (Act IV, [below](#the-importer-act-iv)) and `developmentFund` (Act V: the best rate and the most room, and `opinionAtFullUtil × util` added to public opinion's target, [politics.md](politics.md)). Each costs Clean, and you can run one of each type. A front opens in its `act` and at its `unlockRep`; one with `minProsperity` also needs the city's prosperity to be that high ([prosperity.md](prosperity.md)). `frontBlocked(state, config, type)` says why a front can't be bought now, or returns null; `BUY_FRONT` and the bot both use it. Each also carries a `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)).
 
 ## Depositing and converting
 
@@ -29,6 +29,14 @@ clean    += converted × rate            (also stats.cleanEarned)
 ```
 
 **First conversion is instant.** While `tutorial.firstConversionInstant` is on, the very first deposit of the game converts immediately instead of entering the buffer. `DEPOSITED` then carries `instantClean`, and `state.firstConversionDone` is set. Without this, the first session would wait over an hour for its first Clean.
+
+### The importer (Act IV)
+
+([ADR 0043](../decisions/0043-act-iv-zastava.md)) A front with `coverPerPremiumPack` can only wash what its trade would explain: its throughput is `min(frontThroughput, premium packs sold per hour × coverPerPremiumPack)`, read from `Derived.premium.soldPerHr` ([supply-chain.md](supply-chain.md#premium-act-iv)). The Import–Export Company has the best rate in the city, but with premium stock out and nothing coming in it washes nothing. `derive`'s `perFront[i].throughput` carries the cap, and `convertFronts` and `frontsHourBoundary` read it from there, so the buffer drains and utilization is measured against what the front can actually do.
+
+### Frozen fronts (Act V)
+
+The Ministry freezes the front moving the most money when its attention peaks ([politics.md](politics.md#the-ministry)), and so does a hearing left to run or lost in Act VI ([endgame.md](endgame.md)); a second freeze extends the first: while `Front.frozenUntil` is set, `perFront[i].throughput` is 0 (`frozen`), the buffer waits, utilization falls, and `DEPOSIT` is refused ("The Ministry has frozen it"). It thaws at its boundary (`FRONT_THAWED`).
 
 ## Modes
 
@@ -72,8 +80,8 @@ suspicion = fronts.suspicionFactor × throughput × max(0, util − start)      
 
 | Action | Checks | Effect |
 |---|---|---|
-| `DEPOSIT { frontId, amount }` | amount > 0, enough Dirty, fits the buffer | `DEPOSITED` (with `instantClean` on the first conversion) |
-| `BUY_FRONT { frontType }` | unlocked, not already owned, enough Clean | new front at level 0, capacity 0, mode `normal`; `FRONT_BOUGHT` |
+| `DEPOSIT { frontId, amount }` | amount > 0, not frozen, enough Dirty, fits the buffer | `DEPOSITED` (with `instantClean` on the first conversion) |
+| `BUY_FRONT { frontType }` | `frontBlocked` is null (act, Rep, not owned, city prosperity), enough Clean | new front at level 0, capacity 0, mode `normal`; `FRONT_BOUGHT` |
 | `UPGRADE_FRONT { frontId, track? }` | below that track's max ("Fully upgraded", "No room left to expand"), enough Clean | level or capacity level +1; `FRONT_UPGRADED` |
 | `SET_FRONT_MODE { frontId, mode }` | a known mode, not the current one ("Already running that way") | `FRONT_MODE_SET` |
 

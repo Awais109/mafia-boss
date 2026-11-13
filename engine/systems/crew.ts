@@ -3,6 +3,7 @@ import { emit, type Ctx } from '../core/ctx'
 import type { Rand } from '../core/rng'
 import { dayIndex, hoursToMs } from '../core/time'
 import type { CrewMember, PlayerState } from '../model/state'
+import { clinicLoyaltyPerDay } from './injuries'
 
 export function effectiveStat(c: Config, m: CrewMember, stat: Stat): number {
   let v = m[stat]
@@ -65,6 +66,7 @@ export function crewFromSeed(seed: CrewSeed, id: string): CrewMember {
     traits: seed.traits ?? [],
     status: 'idle',
     ...(seed.nephew ? { nephew: true } : {}),
+    ...(seed.stays ? { stays: true } : {}),
     ...freshProgress(seed, seed.potential),
   }
 }
@@ -143,16 +145,26 @@ export function crewDayBoundary(state: PlayerState, ctx: Ctx, t: number): void {
       state.stats.missedWages++
       for (const m of state.crew) changeLoyalty(m, c.crew.loyalty.perMissedWageDay)
       emit(ctx, t, { type: 'WAGES_MISSED', owed, paid })
+      // Rock bottom (ADR 0051): nothing left in Clean either. The family's envelope waits, once per act.
+      const noClean = state.clean < (owed / 24) * c.rockBottom.cleanBelowHours
+      if (noClean && !state.rockBottom.pending && !state.rockBottom.usedActs.includes(state.act)) {
+        state.rockBottom.pending = true
+        emit(ctx, t, { type: 'ROCK_BOTTOM', act: state.act })
+      }
     } else {
+      state.rockBottom.pending = false
       emit(ctx, t, { type: 'WAGES_PAID', amount: paid })
     }
   }
 
   for (const m of state.crew) if (!m.perks.includes('steady')) changeLoyalty(m, c.crew.loyalty.driftPerDay)
+  // A Clinic looks after everyone a little (ADR 0042).
+  const cared = clinicLoyaltyPerDay(state, c)
+  if (cared > 0) for (const m of state.crew) changeLoyalty(m, cared)
 
   const day = dayIndex(c, t)
   for (const m of [...state.crew]) {
-    if (m.nephew || m.loyalty >= c.crew.loyalty.lowThreshold) continue
+    if (m.nephew || m.stays || m.loyalty >= c.crew.loyalty.lowThreshold) continue
     if (m.status === 'on_op' || m.status === 'jailed') continue
     if (!ctx.rng.derive('walkout', day, m.id).chance(c.crew.loyalty.lowEventChancePerDay)) continue
     const stolen = Math.floor(state.dirty * c.crew.loyalty.walkoutStealPct)

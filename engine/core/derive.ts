@@ -14,6 +14,7 @@ import {
 } from '../config/schema'
 import type { PlayerState, Racket } from '../model/state'
 import { baseWage, crewSlots } from '../systems/crew'
+import { cityProsperity, prosperityOn, prosperityYieldMult } from '../systems/prosperity'
 import * as F from './formulas'
 
 // Everything the game computes from state + config. Never persisted.
@@ -27,11 +28,19 @@ export type RacketDerived = {
   exposure: number
   conditionMult: number
   districtMult: number
+  prosperityMult: number // joints: × the district's prosperity (ADR 0041); 1 otherwise
+  opinionMult: number // the Construction Trust: × public opinion (ADR 0044); 1 otherwise
+  legal: boolean // legalized (ADR 0045): yield 0, exposure 0, no tribute
+  legalClean: number // Clean per hour it earns while legal
+  closed: boolean // shut by an investigation: earns, sells and heats nothing
   synergyMult: number // side-by-side yield bonus (plan (m))
   upkeep: number // premises: Dirty/hr
   packsPerHr: number // joints: packs they sell; factories: packs they make
   served: number // joints: share of their cigarette trade being supplied (1 unless stock is out)
   atStake: number // joints: Dirty/hr of yield that needs cigarettes, at full supply
+  premiumPacksPerHr: number // premium joints: premium packs they sell (ADR 0043)
+  premiumServed: number // premium joints: share of their premium trade being supplied
+  premiumAtStake: number // premium joints: Dirty/hr of yield that needs premium packs, at full supply
   capacity: number // warehouses: stock cap they add
   leashHours: number // stash houses: vault hours they add (only the best counts)
   shield: number // stash houses: their part of the raid shield
@@ -45,7 +54,8 @@ export type FrontDerived = {
   type: FrontType
   mode: FrontMode
   rate: number
-  throughput: number // after capacity and mode
+  throughput: number // after capacity and mode; 0 while frozen
+  frozen: boolean // the Ministry has frozen it (ADR 0044)
   baseThroughput: number // after capacity, before mode; sizes the buffer
   bufferCap: number
   util: number
@@ -69,15 +79,19 @@ export type SupplyDerived = {
 export type Derived = {
   yieldPerHr: number
   tributePerHr: number
+  legalCleanPerHr: number // Clean legal businesses earn directly (ADR 0045)
+  legalGrossPerHr: number // their gross yield, before tax
+  holdingMult: number // the Holding's bonus on legal businesses
   vaultCap: number // with the best Stash House's extra hours
   vaultCapBase: number // without them: Tolya's demand and the report read this
   stashHours: number
   raidShield: number // share of a raid's seizure kept back
+  cityProsperity: number // mean prosperity where you run joints and rackets; the Bank reads it (ADR 0041)
   exposure: number
   racketExposure: number
   frontSuspicion: number
   control: number
-  controlParts: { base: number; officials: number; bribe: number; districtMult: number }
+  controlParts: { base: number; officials: number; bribe: number; districtMult: number; mayor: number; opinionMult: number }
   heatTarget: number
   inspectionMult: number
   wagesPerHr: number
@@ -91,6 +105,7 @@ export type Derived = {
   perRacket: RacketDerived[]
   perFront: FrontDerived[]
   supply: SupplyDerived
+  premium: SupplyDerived // premium imported cigarettes, from Act IV (ADR 0043)
   synergies: { districtId: DistrictId; id: string }[]
   costs: {
     racket: Record<RacketType, number>
@@ -118,9 +133,19 @@ const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0)
 export function derive(state: PlayerState, c: Config): Derived {
   const controllerOf = (id: DistrictId) => state.districts.find((d) => d.id === id)?.controller ?? 'none'
   const inspectionMult = state.inspected ? c.heat.inspectYieldMult : 1
-  const maxTier = c.rackets.maxTierByAct[state.act]
+  const afterStory = F.storyOver(state, c)
+  const maxTier = c.rackets.maxTierByAct[state.act] + (afterStory ? c.after.extraTiers : 0)
   const kindOf = (t: RacketType) => c.rackets.types[t].kind
   const sells = state.act >= c.supply.sellFromAct
+  const premiumOn = state.act >= c.premium.fromAct
+  const prospering = prosperityOn(state, c)
+  const prosperityOf = (id: DistrictId) => state.districts.find((d) => d.id === id)?.prosperity ?? c.prosperity.base
+  // Act V (ADR 0044): opinion pays the Construction Trust and multiplies control; the mayor pays no tribute
+  // and gets more from every district's perks.
+  const politics = state.act >= c.opinion.fromAct
+  const opinion = state.politics.opinion
+  const mayor = state.politics.mayor
+  const perkMult = mayor ? c.elections.mayor.perkMult : 1
 
   // Synergies are active in a district that has an `a`, and a `b` when one is named.
   const synergies: { districtId: DistrictId; id: string }[] = []
@@ -155,7 +180,8 @@ export function derive(state: PlayerState, c: Config): Derived {
   // The supply chain (ADR 0032): what the factories make, what the joints would sell, the stock cap.
   const base = state.rackets.map((r) => {
     const kind = kindOf(r.type)
-    const cond = r.condition / 100
+    // A shut business is as good as a wrecked one while it's shut.
+    const cond = r.closedUntil !== undefined ? 0 : r.condition / 100
     return {
       r,
       kind,
@@ -164,6 +190,9 @@ export function derive(state: PlayerState, c: Config): Derived {
       demand: kind === 'joint' && sells ? F.jointSales(c, r.type, r.tier) * cond : 0,
       made: kind === 'premises' ? F.factoryOutput(c, r.type, r.tier) * cond : 0,
       capacity: kind === 'premises' ? F.warehouseCapacity(c, r.type, r.tier) * cond : 0,
+      premiumDemand: kind === 'joint' && premiumOn ? F.premiumSales(c, r.type, r.tier) * cond : 0,
+      premiumMade: kind === 'premises' && premiumOn ? F.premiumOutput(c, r.type, r.tier) * cond : 0,
+      premiumCapacity: kind === 'premises' ? (c.rackets.types[r.type].premiumCapPerTier ?? 0) * r.tier * cond : 0,
       leash: (c.rackets.types[r.type].leashHoursPerTier ?? 0) * r.tier * cond,
       shieldRaw: (c.rackets.types[r.type].shieldPerTier ?? 0) * r.tier * cond,
     }
@@ -172,6 +201,11 @@ export function derive(state: PlayerState, c: Config): Derived {
   const demandPerHr = sum(base.map((b) => b.demand))
   const cap = c.supply.baseCap + sum(base.map((b) => b.capacity))
   const stock = state.inventory.cigarettes
+  const premiumMade = sum(base.map((b) => b.premiumMade))
+  const premiumDemand = sum(base.map((b) => b.premiumDemand))
+  const premiumCap = c.premium.baseCap + sum(base.map((b) => b.premiumCapacity))
+  // While premium stock is out, what's made (by the Combine, Act V) is shared in proportion to demand.
+  const premiumServedAll = state.premiumEmpty && premiumDemand > 0 ? Math.min(1, premiumMade / premiumDemand) : 1
 
   // While stock is out, what comes off the line goes first to joints beside a factory, then to the
   // rest in proportion to what they'd sell.
@@ -186,15 +220,25 @@ export function derive(state: PlayerState, c: Config): Derived {
     })
   }
 
-  const perRacket: RacketDerived[] = base.map(({ r, kind, cond, fx, demand, made, capacity, leash }, i) => {
+  // The Holding (ADR 0045): every legal business earns × this.
+  const holdingMult = 1 + Math.max(0, ...base.map((b) => (c.rackets.types[b.r.type].legalBonusPerTier ?? 0) * b.r.tier * b.cond))
+
+  const perRacket: RacketDerived[] = base.map(({ r, kind, cond, fx, demand, made, capacity, leash, premiumDemand: pDemand }, i) => {
     const rt = c.rackets.types[r.type]
     const district = c.districts.list[r.districtId]
     const controller = controllerOf(r.districtId)
     const ours = controller === 'player'
-    const districtMult = ours ? (district.mod.yieldMult?.[r.type] ?? 1) : 1
+    const districtMult = ours ? 1 + ((district.mod.yieldMult?.[r.type] ?? 1) - 1) * perkMult : 1
     const enforced = r.enforcerId !== null
     const spec = r.specialization ? c.rackets.specialization[r.specialization] : null
+    const spec6 = r.specialization6 ? c.rackets.specialization6[r.specialization6] : null
     const share = kind === 'joint' && sells ? (rt.cigaretteShare ?? 0) : 0
+    const pShare = kind === 'joint' && premiumOn ? (rt.premiumShare ?? 0) : 0
+    const pServed = pDemand > 0 ? premiumServedAll : 1
+    const prosperityMult = kind === 'joint' && prospering ? prosperityYieldMult(c, prosperityOf(r.districtId)) : 1
+    const oy = politics ? rt.opinionYield : undefined
+    const opinionMult = oy ? oy[0] + ((oy[1] - oy[0]) * opinion) / 100 : 1
+    const closed = r.closedUntil !== undefined
     const fullYield =
       kind === 'premises'
         ? 0
@@ -204,41 +248,62 @@ export function derive(state: PlayerState, c: Config): Derived {
           inspectionMult *
           (enforced ? c.rackets.enforcer.yieldMult : 1) *
           (spec?.yieldMult ?? 1) *
+          (spec6?.yieldMult ?? 1) *
+          prosperityMult *
+          opinionMult *
           fx.yieldMult
-    const grossYield = fullYield * (1 - share + share * served[i])
-    const tributeRate = ours || controller === 'none' ? 0 : district.tribute
+    const grossYield = fullYield * (1 - share - pShare + share * served[i] + pShare * pServed)
+    // A legal business (ADR 0045) earns Clean directly, pays no tribute and draws no heat.
+    const legal = r.legal === true
+    const tributeRate = legal || ours || mayor || controller === 'none' ? 0 : district.tribute
     const tribute = grossYield * tributeRate
     return {
       id: r.id,
       kind,
-      yield: grossYield - tribute,
+      yield: legal ? 0 : grossYield - tribute,
       grossYield,
+      legal,
+      legalClean: legal ? grossYield * c.legalize.cleanShare * holdingMult : 0,
       tribute,
-      exposure: F.tierHeat(c, r.type, r.tier) * (enforced ? c.rackets.enforcer.heatMult : 1) * (spec?.exposureMult ?? 1),
+      exposure: closed || legal
+        ? 0
+        : F.tierHeat(c, r.type, r.tier) * (enforced ? c.rackets.enforcer.heatMult : 1) * (spec?.exposureMult ?? 1) * (spec6?.exposureMult ?? 1),
       conditionMult: cond,
       districtMult,
+      prosperityMult,
+      opinionMult,
+      closed,
       synergyMult: fx.yieldMult,
       upkeep: kind === 'premises' ? F.premisesUpkeep(c, r.type, r.tier) * fx.upkeepMult : 0,
       packsPerHr: kind === 'joint' ? demand : made,
       served: served[i],
       atStake: fullYield * share,
+      premiumPacksPerHr: pDemand,
+      premiumServed: pServed,
+      premiumAtStake: fullYield * pShare,
       capacity,
       leashHours: leash,
       shield: 0, // set below, once total yield is known
       influence: (rt.influencePerHrPerTier ?? 0) * r.tier * cond * fx.influenceMult,
-      upgradeCost: r.tier < F.racketMaxTier(c, r.type, state.act) ? F.racketUpgradeCost(c, r.type, r.tier) : null,
+      upgradeCost: r.tier < F.racketMaxTier(c, r.type, state.act, afterStory) ? F.racketUpgradeCost(c, r.type, r.tier) : null,
       repairCost: F.racketRepairCost(c, r.type),
     }
   })
 
+  const premiumSold = state.premiumEmpty ? Math.min(premiumDemand, premiumMade) : premiumDemand
   const perFront: FrontDerived[] = state.fronts.map((f) => {
-    const throughput = F.frontThroughput(c, f)
+    // An importer only washes what its premium trade would explain (ADR 0043).
+    const cover = c.fronts.types[f.type].coverPerPremiumPack
+    // A front the Ministry has frozen launders nothing until it thaws (ADR 0044).
+    const frozen = f.frozenUntil !== undefined
+    const throughput = frozen ? 0 : cover === undefined ? F.frontThroughput(c, f) : Math.min(F.frontThroughput(c, f), premiumSold * cover)
     return {
       id: f.id,
       type: f.type,
       mode: f.mode,
       rate: F.frontRate(c, f.type, f.level),
       throughput,
+      frozen,
       baseThroughput: F.frontBaseThroughput(c, f),
       bufferCap: F.frontBufferCap(c, f),
       util: f.util,
@@ -247,7 +312,7 @@ export function derive(state: PlayerState, c: Config): Derived {
       capacityLevel: f.capacityLevel,
       capacityUpgradeCost:
         f.capacityLevel < c.fronts.upgrade.capacity.levels ? F.frontCapacityUpgradeCost(c, f.type, f.capacityLevel) : null,
-      hoursToEmpty: f.buffer / throughput,
+      hoursToEmpty: throughput > 0 ? f.buffer / throughput : Infinity,
     }
   })
 
@@ -270,8 +335,11 @@ export function derive(state: PlayerState, c: Config): Derived {
     officials: sum(state.officials.map((id) => c.officials.list[id].control)),
     bribe: state.bribeControl,
     districtMult: 1 + c.heat.districtControlPct * taken,
+    mayor: mayor ? c.elections.mayor.control : 0,
+    opinionMult: politics ? 1 + (c.opinion.controlBonus * opinion) / 100 : 1,
   }
-  const control = (controlParts.base + controlParts.officials + controlParts.bribe) * controlParts.districtMult
+  const control =
+    (controlParts.base + controlParts.officials + controlParts.bribe + controlParts.mayor) * controlParts.districtMult * controlParts.opinionMult
 
   const wageMult = state.districts
     .filter((d) => d.controller === 'player')
@@ -280,10 +348,14 @@ export function derive(state: PlayerState, c: Config): Derived {
   return {
     yieldPerHr,
     tributePerHr: sum(perRacket.map((r) => r.tribute)),
+    legalCleanPerHr: sum(perRacket.map((r) => r.legalClean)),
+    legalGrossPerHr: sum(perRacket.map((r) => (r.legal ? r.grossYield : 0))),
+    holdingMult,
     vaultCap: F.vaultCap(c, yieldPerHr, state.act, stashHours),
     vaultCapBase: F.vaultCap(c, yieldPerHr, state.act),
     stashHours,
     raidShield,
+    cityProsperity: cityProsperity(state, c),
     exposure,
     racketExposure,
     frontSuspicion,
@@ -310,6 +382,15 @@ export function derive(state: PlayerState, c: Config): Derived {
       hoursToEmpty: demandPerHr > madePerHr ? Math.max(0, stock) / (demandPerHr - madePerHr) : Infinity,
       hoursToFull: madePerHr > demandPerHr ? Math.max(0, cap - stock) / (madePerHr - demandPerHr) : Infinity,
     },
+    premium: {
+      madePerHr: premiumMade,
+      demandPerHr: premiumDemand,
+      soldPerHr: premiumSold,
+      cap: premiumCap,
+      stock: state.inventory.premium,
+      hoursToEmpty: premiumDemand > premiumMade ? Math.max(0, state.inventory.premium) / (premiumDemand - premiumMade) : Infinity,
+      hoursToFull: premiumMade > premiumDemand ? Math.max(0, premiumCap - state.inventory.premium) / (premiumMade - premiumDemand) : Infinity,
+    },
     synergies,
     costs: {
       racket: mapKeys(RACKET_TYPES, (t) => F.racketPurchaseCost(c, t)),
@@ -326,9 +407,9 @@ export function derive(state: PlayerState, c: Config): Derived {
         const rt = c.rackets.types[t]
         return rt.act <= state.act && state.reputation >= rt.unlockRep
       }),
-      front: mapKeys(FRONT_TYPES, (t) => state.reputation >= c.fronts.types[t].unlockRep),
+      front: mapKeys(FRONT_TYPES, (t) => c.fronts.types[t].act <= state.act && state.reputation >= c.fronts.types[t].unlockRep),
       district: mapKeys(DISTRICT_IDS, (id) => c.districts.list[id].act <= state.act),
-      official: mapKeys(OFFICIAL_IDS, (id) => c.officials.list[id].act <= state.act),
+      official: mapKeys(OFFICIAL_IDS, (id) => c.officials.list[id].act <= state.act && (!c.officials.list[id].needsMayor || state.politics.mayor)),
     },
   }
 }

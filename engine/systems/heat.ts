@@ -30,6 +30,8 @@ export function raid(state: PlayerState, ctx: Ctx, t: number): void {
   const seized = Math.floor(exposed * (1 - derive(state, ctx.c).raidShield))
   const shielded = Math.max(0, Math.floor(exposed) - seized)
   state.vault -= seized
+  // The street remembers a raid for a day (ADR 0041).
+  state.raidPenaltyUntil = t + hoursToMs(ctx.c, ctx.c.prosperity.raidPenaltyHours)
   state.stats.raids++
   state.stats.seized += seized
   if (state.stats.firstRaidAt === null) state.stats.firstRaidAt = t

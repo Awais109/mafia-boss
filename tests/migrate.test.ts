@@ -30,7 +30,19 @@ function asV1(): Record<string, unknown> {
   delete s.skippedMs
   delete s.goals
   delete s.rival.zhanna
-  s.districts = s.districts.filter((d: { id: string }) => d.id !== 'stationSquare')
+  delete s.raidPenaltyUntil
+  delete s.loan
+  delete s.lending
+  for (const k of ['loans', 'lending', 'injuries', 'attacks', 'contests']) delete s.stats[k]
+  delete s.premiumEmpty
+  delete s.rival.colonel
+  delete s.politics
+  delete s.story
+  for (const k of ['elections', 'campaignPaid', 'frontsFrozen', 'legalized', 'legalClean', 'hearings', 'endings']) delete s.stats[k]
+  for (const k of ['premiumMade', 'premiumSold', 'premiumLostToCap', 'premiumShortageHours', 'convoys', 'passagesPaid']) delete s.stats[k]
+  s.districts = s.districts
+    .filter((d: { id: string }) => !['stationSquare', 'centre', 'zastava', 'kombinat', 'nagornaya'].includes(d.id))
+    .map(({ prosperity: _, ...d }: { prosperity: number }) => d)
   s.rackets = s.rackets.filter((r: { type: string }) => r.type === 'kiosk' || r.type === 'marketStall')
   s.stats.sessions = 3
   return { ...s, schemaVersion: 1 }
@@ -70,7 +82,65 @@ describe('migrate', () => {
     expect(m.inventory.cigarettes).toBe(config.supply.startingStock)
     expect(m.stockEmpty).toBe(false)
     expect(m.upkeepOwed).toBe(0)
-    expect(m.districts.find((d) => d.id === 'stationSquare')).toEqual({ id: 'stationSquare', controller: 'none', pressureCount: 0 })
+    expect(m.districts.find((d) => d.id === 'stationSquare')).toEqual({ id: 'stationSquare', controller: 'none', pressureCount: 0, prosperity: config.prosperity.base })
+  })
+
+  it('opens Act III\'s credit with nothing owed or lent, and zeroed counters', () => {
+    const m = migrate(asV1())
+    expect(m.loan).toBeNull()
+    expect(m.lending).toBeNull()
+    expect(m.stats.loans).toEqual({ borrowed: 0, interest: 0, repaid: 0, missed: 0, seized: 0, repossessed: 0 })
+    expect(m.stats.contests).toEqual({ won: 0, lost: 0 })
+  })
+
+  it('starts the story’s seen-list where the save stands, so its past counts as seen (ADR 0049)', () => {
+    const m = migrate(asV1())
+    expect(m.story).toEqual({ seen: [], since: { act: m.act, step: m.tutorial.step, done: m.tutorial.done } })
+  })
+
+  it('puts Nagornaya on the map, nobody’s until Act VI, with nothing legal and no ending', () => {
+    const m = migrate(asV1())
+    expect(m.districts.find((d) => d.id === 'nagornaya')).toEqual({ id: 'nagornaya', controller: 'none', pressureCount: 0, prosperity: config.prosperity.base })
+    expect(m.rackets.some((r) => r.legal)).toBe(false)
+    expect(m.stats.hearings).toEqual({ held: 0, won: 0 })
+    expect(m.stats.endings).toEqual({})
+  })
+
+  it('puts the Kombinat on the map, still the state’s, with opinion at its base and no election yet', () => {
+    const m = migrate(asV1())
+    expect(m.districts.find((d) => d.id === 'kombinat')).toEqual({ id: 'kombinat', controller: 'state', pressureCount: 0, prosperity: config.prosperity.base })
+    expect(m.politics).toEqual({ opinion: config.opinion.base, attention: 0, nextElectionAt: 0, elections: 0, points: 0, mayor: false })
+    expect(m.stats.elections).toEqual({ held: 0, won: 0 })
+    expect(m.stats.frontsFrozen).toBe(0)
+  })
+
+  it('puts Zastava on the map under the Colonel, with no premium stock and no passage', () => {
+    const m = migrate(asV1())
+    expect(m.districts.find((d) => d.id === 'zastava')).toEqual({ id: 'zastava', controller: 'colonel', pressureCount: 0, prosperity: config.prosperity.base })
+    expect(m.inventory.premium).toBe(config.premium.startingStock)
+    expect(m.premiumEmpty).toBe(false)
+    expect(m.rival.colonel).toEqual({ disposition: 0, passageUntil: 0, passagesBought: 0 })
+    expect(m.stats.convoys).toEqual({ run: 0, landed: 0, hijacked: 0, seized: 0 })
+  })
+
+  it('gives every district a prosperity and puts the Centre on the map', () => {
+    const m = migrate(asV1())
+    expect(m.districts.every((d) => d.prosperity === config.prosperity.base)).toBe(true)
+    expect(m.districts.find((d) => d.id === 'centre')).toEqual({ id: 'centre', controller: 'none', pressureCount: 0, prosperity: config.prosperity.base })
+    expect(m.raidPenaltyUntil).toBe(0)
+  })
+
+  it('turns an old "Act II cleared" into the road to Act III', () => {
+    // Before six acts, clearing Act II ended the prototype. Now it's a door: the old date goes, and Act III
+    // opens at its own gate, dated when it does.
+    const v8 = { ...JSON.parse(JSON.stringify(fresh())), schemaVersion: 8, act: 2, reputation: 700 }
+    v8.stats.actClearedAt = { 1: v8.updatedAt - 5 * H, 2: v8.updatedAt - H }
+    const m = migrate(v8)
+    expect(m.stats.actClearedAt).toEqual({ 1: v8.updatedAt - 5 * H })
+    m.reputation = config.progression.acts[3].rep!
+    const r = reconcile(m, m.updatedAt + H, config)
+    expect(r.state.act).toBe(3)
+    expect(r.state.stats.actClearedAt[2]).toBeGreaterThan(v8.updatedAt)
   })
 
   it("opens Zhanna's trade with her first lot ready", () => {

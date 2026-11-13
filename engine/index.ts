@@ -12,12 +12,16 @@ export { makeRng, type Rand, type RngFactory } from './core/rng'
 export * from './core/time'
 export { newGame } from './newGame'
 export { baseWage, crewSlots, effectiveStat } from './systems/crew'
-export { canPressure, districtUnlocked, openLots, openSpots, premisesBlocked } from './systems/districts'
+export { canPressure, districtUnlocked, openLots, openSpots, premisesBlocked, racketBlocked } from './systems/districts'
+export { frontBlocked } from './systems/fronts'
+export { gameCleared, gateMet, nextGate } from './systems/acts'
+export { cityProsperity, prosperityOn, prosperityTarget, prosperityYieldMult } from './systems/prosperity'
 export {
   influenceRoom,
   opBaseScore,
   opConfigAt,
   opConfigOf,
+  opName,
   opDirtyReward,
   opDirtyRewardFor,
   opMinutesFor,
@@ -27,7 +31,25 @@ export {
 export { jobXp, rankFor, RANK_NAMES } from './systems/experience'
 export { rushCost, skipCost } from './systems/gold'
 export { bestHaggler, canHaggle, haggleOdds, surplusRoomToday, zhannaDeals, zhannaHoldsPort, zhannaHostile } from './systems/rivals'
-export { canAffordEffects, incidentNeedHolds } from './systems/inbox'
+export { canAffordEffects, contestFighter, contestOdds, incidentEligible, incidentNeedHolds } from './systems/inbox'
+export { creditOpen, defaultChance, lendCap, loanCap, loanDue } from './systems/credit'
+export { colonelHolds, colonelHostile, convoyLoad, customsChance, hijackChance, passageActive, passageCost } from './systems/convoys'
+export {
+  electionScheduled,
+  ministryTarget,
+  opinionControlMult,
+  opinionTarget,
+  pointCost,
+  pointsRoom,
+  politicsOn,
+  voteShare,
+  winChance,
+} from './systems/politics'
+export { caseFile, endingMet, hearingChance, illegalShare, legalizeBlocked, legalizeCost, legalOn } from './systems/legal'
+export { clinicLoyaltyPerDay, injuryMult } from './systems/injuries'
 export { ledgerDays, type LedgerDay } from './systems/ledger'
 export { tolyaHostile, tolyaIntervalHours } from './systems/rivals'
 export { currentTutorialStep, TUTORIAL_STEPS, type TutorialStep, type TutorialStepId } from './systems/tutorial'
+export { GOAL_CHECKS, goalProgress } from './systems/goals'
+export { missionBlocked, missionDone, missionOp, missionOut, missionStake } from './systems/missions'
+export { contractBlocked, dayIncome, empireValue, frontValue, racketValue, type EmpireValue } from './systems/after'

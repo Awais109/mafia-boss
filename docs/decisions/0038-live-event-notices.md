@@ -1,6 +1,6 @@
 # 0038. Live event and unlock notices, queued one at a time
 
-- **Status:** Accepted
+- **Status:** Superseded in part by [0049](0049-scenes.md): an act opening is a chapter scene, due from the save, not a live notice.
 - **Date:** 2026-09-14
 
 ## Context

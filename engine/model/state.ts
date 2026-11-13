@@ -1,9 +1,12 @@
 import type {
   Act,
+  ContractId,
   Controller,
   DistrictId,
+  Ending,
   FrontMode,
   GoalId,
+  MissionId,
   FrontType,
   OfficialId,
   OpConfig,
@@ -17,9 +20,10 @@ import type {
 } from '../config/schema'
 import type { GameEvent } from './events'
 
-export const SCHEMA_VERSION = 8
+export const SCHEMA_VERSION = 17
 export const LOG_CAP = 200
 export const LEDGER_ROWS = 8 // 7 closed days plus today's opening snapshot
+export const EMPIRE_DAYS = 8 // the empire value at the last 8 day starts (ADR 0052)
 
 export type Racket = {
   id: string
@@ -29,6 +33,9 @@ export type Racket = {
   condition: number // 0–100; yield × condition/100
   enforcerId: string | null
   specialization?: Specialization // chosen on the way to rackets.specialization.atTier
+  specialization6?: Specialization // chosen on the way to rackets.specialization6.atTier (ADR 0041)
+  closedUntil?: number // shut (an investigation) until then: earns, sells and heats nothing
+  legal?: true // legalized (ADR 0045): earns Clean directly, draws no heat, pays no tribute
 }
 
 export type Front = {
@@ -40,9 +47,10 @@ export type Front = {
   buffer: number // dirty deposited, not yet converted
   convertedThisHour: number // dirty converted since the last whole hour
   util: number // smoothed utilization, updated at each whole hour; drives suspicion
+  frozenUntil?: number // the Ministry has frozen it until then: it launders nothing (ADR 0044)
 }
 
-export type CrewStatus = 'idle' | 'on_op' | 'enforcer' | 'jailed'
+export type CrewStatus = 'idle' | 'on_op' | 'enforcer' | 'jailed' | 'injured'
 
 export type CrewMember = {
   id: string
@@ -54,7 +62,9 @@ export type CrewMember = {
   traits: TraitId[]
   status: CrewStatus
   nephew?: boolean
+  stays?: boolean // never walks out (Vitya: ADR 0051)
   jailedUntil?: number
+  injuredUntil?: number // hurt until then (ADR 0042): can't work, still draws wages
   assignedTo?: string // racket id (enforcer) or op id (on_op)
   xp: Record<Stat, number> // toward the next point in each stat
   potential: Record<Stat, number> // ceilings
@@ -65,7 +75,10 @@ export type CrewMember = {
 
 export type OpInstance = {
   id: string
-  type: OpType
+  // A boss mission (ADR 0050), a contract (ADR 0052) and an errand (ADR 0054: a crew member kept busy by a
+  // decision) ride the job machinery: `missionId` says which mission, with `cfg` its terms; `contractId` which
+  // contract on the board.
+  type: OpType | 'mission' | 'contract' | 'errand'
   crewIds: string[]
   startedAt: number
   completesAt: number
@@ -73,12 +86,41 @@ export type OpInstance = {
   offerId?: string // taken from the opportunities board
   cfg?: OpConfig // the offer's job, snapshotted: resolution uses this instead of ops.list
   name?: string
+  missionId?: MissionId
+  stake?: number // an overreach's Dirty, paid when it's sent and lost
+  contractId?: string
 }
+
+// A contract on the board (ADR 0052), its terms fixed when it was posted. `opId` while it's under way.
+export type Contract = {
+  id: string
+  kind: ContractId
+  name: string
+  crew: number
+  hours: number
+  cost: number // Clean up front
+  pay: number // Clean when it's done
+  gold: number
+  expiresAt: number // off the board at the next posting, unless under way
+  opId?: string
+}
+
+// After the story (ADR 0052): the contracts board, and the empire value at each day start with its best.
+export type AfterState = {
+  contracts: { items: Contract[]; refreshAt: number; refreshCount: number } // refreshAt 0: not posted yet
+  best: number
+  history: { at: number; value: number }[] // the last EMPIRE_DAYS day starts, oldest first
+}
+
+// A boss mission's outcome (ADR 0050): an overreach sent (it always fails), a rematch won, or lost and
+// open again at `retryAt`.
+export type MissionRecord = { result: 'failed' | 'won' | 'lost'; at: number; retryAt?: number; stake?: number }
 
 export type District = {
   id: DistrictId
   controller: Controller
   pressureCount: number // successful pressure ops toward a flip
+  prosperity: number // 0–100, stepped toward its target at whole hours from prosperity.fromAct (ADR 0041)
 }
 
 export type TolyaState = {
@@ -98,6 +140,24 @@ export type ZhannaState = {
   surplusToday: { day: number; packs: number } // packs she's bought today
 }
 
+// The Colonel (ADR 0043): he runs the road to the border; passage keeps his men off your convoys.
+export type ColonelState = { disposition: number; passageUntil: number; passagesBought: number }
+
+// Act V (ADR 0044): the city's opinion of you, the Ministry's attention, and the elections.
+export type PoliticsState = {
+  opinion: number // 0–100, stepped toward its target at whole hours from opinion.fromAct
+  attention: number // the Ministry's, 0–100, stepped the same way; a front freezes at ministry.freezeAt
+  nextElectionAt: number // 0 when none is scheduled (before Act V, or once you're mayor)
+  elections: number // held so far; seeds each count
+  points: number // campaign points for the coming election
+  mayor: boolean // won an election: permanent
+}
+
+// Borrowed Clean (ADR 0042): one loan at a time, paid down from Clean at each day start.
+export type Loan = { principal: number; owed: number; missed: number }
+// Dirty lent out through a loan desk, due back with interest unless the borrower defaults.
+export type Lending = { id: string; amount: number; dueAt: number }
+
 // What an inbox option does, materialized when the item is filed.
 export type InboxEffects = {
   dirty?: number
@@ -110,6 +170,15 @@ export type InboxEffects = {
   disposition?: number // Tolya
   cigarettes?: number
   perk?: string
+  closeHours?: number // the business on the item shuts for this long
+  injureHours?: number // the crew member who fought is hurt for this long
+  freezeHours?: number // the front moving the most money freezes for this long (ADR 0045)
+  hearingWon?: true // a hearing beaten in court: counts toward the Empire (ADR 0045)
+  opinion?: number // public opinion, now (ADR 0054)
+  attention?: number // the Ministry's attention, now (ADR 0054)
+  busyHours?: number // the crew member the item names is kept busy this long (ADR 0054)
+  // Resolved when the option is chosen (ADR 0042): the best available crew member's stat + luck against diff.
+  contest?: { stat: Stat; diff: number; win: InboxEffects; lose: InboxEffects }
 }
 
 export type InboxOption = { id: string; name: string; effects: InboxEffects }
@@ -159,7 +228,7 @@ export type LedgerRow = { startsAt: number } & Record<LedgerCounter, number>
 export type PlaytestStats = {
   sessions: number
   actions: number
-  actClearedAt: { 1?: number; 2?: number }
+  actClearedAt: Partial<Record<Act, number>> // act n is cleared when act n + 1 opens (the final act: when its gate is met)
   raids: number
   arrests: number
   missedWages: number
@@ -189,12 +258,32 @@ export type PlaytestStats = {
   packsSold: number
   packsLostToCap: number // made or brought in with no room in stock
   shortageHours: number // whole hours that found stock empty with joints selling
+  premiumMade: number
+  premiumSold: number
+  premiumLostToCap: number
+  premiumShortageHours: number
+  convoys: { run: number; landed: number; hijacked: number; seized: number }
+  passagesPaid: number // Dirty
+  elections: { held: number; won: number }
+  legalized: number
+  legalClean: number // Clean earned by legal businesses
+  hearings: { held: number; won: number }
+  endings: Partial<Record<Ending, number>> // when each was first reached (ADR 0045)
+  campaignPaid: { dirty: number; influence: number }
+  frontsFrozen: number
   inbox: { filed: number; resolved: number; auto: number }
   specializations: { greed: number; stealth: number }
   frontModeChanges: number
   haggles: { won: number; lost: number }
   statPointsGained: number
   gold: { granted: number; spentSkip: number; spentRush: number; hoursSkipped: number }
+  loans: { borrowed: number; interest: number; repaid: number; missed: number; seized: number; repossessed: number } // seized: the old vault seizure, before ADR 0051
+  lending: { lent: number; returned: number; defaults: number }
+  injuries: number
+  attacks: number
+  contests: { won: number; lost: number }
+  missions: { sent: number; won: number; lost: number } // boss missions (ADR 0050): overreaches count as sent
+  after: { contracts: number; contractClean: number; contractGold: number; pastBook: number; bests: number } // ADR 0052
   firstRaidAt: number | null
   officialBoughtAt: Partial<Record<OfficialId, number>>
   lastSessionAt: number | null
@@ -219,9 +308,11 @@ export type PlayerState = {
 
   heat: number // displayed value; converges toward the target
   inspected: boolean // heat ≥ inspectThreshold at the last whole hour
+  raidPenaltyUntil: number // prosperity is down after a raid until then (ADR 0041)
 
-  inventory: { cigarettes: number } // the city-wide stock (ADR 0032)
+  inventory: { cigarettes: number; premium: number } // the city-wide stocks (ADRs 0032, 0043)
   stockEmpty: boolean // stock at zero with joints selling, at the last whole hour
+  premiumEmpty: boolean // premium stock at zero with premium joints selling, at the last whole hour
 
   rackets: Racket[]
   fronts: Front[]
@@ -237,9 +328,21 @@ export type PlayerState = {
 
   wagesOwed: number // accrues continuously, settled at each day boundary
   upkeepOwed: number // premises upkeep: accrues continuously, settled after wages
+  loan: Loan | null
+  lending: Lending | null
   influenceToday: { day: number; amount: number } // ops Influence, for the daily cap
-  rival: { tolya: TolyaState; zhanna: ZhannaState }
+  rival: { tolya: TolyaState; zhanna: ZhannaState; colonel: ColonelState }
+  politics: PoliticsState
   tutorial: { step: number; done: boolean }
+  // The story's scenes this save has been shown (ADR 0049). The ids are the app's; the engine only keeps the
+  // list. `since` is where the save stood when the list began: anything the story passed before that counts
+  // as seen, so an old save doesn't replay its past.
+  story: { seen: string[]; since: { act: Act; step: number; done: boolean } }
+  missions: Partial<Record<MissionId, MissionRecord>>
+  // Rock bottom (ADR 0051): the envelope waiting after a payday missed with no Clean, and the acts it's been
+  // opened in (once each).
+  rockBottom: { pending: boolean; usedActs: Act[] }
+  after: AfterState
   goals: { done: GoalId[] } // Act I goals completed (ADR 0035)
   firstConversionDone: boolean
 
@@ -285,12 +388,32 @@ export function emptyStats(): PlaytestStats {
     packsSold: 0,
     packsLostToCap: 0,
     shortageHours: 0,
+    premiumMade: 0,
+    premiumSold: 0,
+    premiumLostToCap: 0,
+    premiumShortageHours: 0,
+    convoys: { run: 0, landed: 0, hijacked: 0, seized: 0 },
+    passagesPaid: 0,
+    elections: { held: 0, won: 0 },
+    legalized: 0,
+    legalClean: 0,
+    hearings: { held: 0, won: 0 },
+    endings: {},
+    campaignPaid: { dirty: 0, influence: 0 },
+    frontsFrozen: 0,
     inbox: { filed: 0, resolved: 0, auto: 0 },
     specializations: { greed: 0, stealth: 0 },
     frontModeChanges: 0,
     haggles: { won: 0, lost: 0 },
     statPointsGained: 0,
     gold: { granted: 0, spentSkip: 0, spentRush: 0, hoursSkipped: 0 },
+    loans: { borrowed: 0, interest: 0, repaid: 0, missed: 0, seized: 0, repossessed: 0 },
+    lending: { lent: 0, returned: 0, defaults: 0 },
+    injuries: 0,
+    attacks: 0,
+    contests: { won: 0, lost: 0 },
+    missions: { sent: 0, won: 0, lost: 0 },
+    after: { contracts: 0, contractClean: 0, contractGold: 0, pastBook: 0, bests: 0 },
     firstRaidAt: null,
     officialBoughtAt: {},
     lastSessionAt: null,

@@ -23,7 +23,7 @@ A new game starts with `gold.starting`, counted as granted without an event.
 
 ## Finish now
 
-`RUSH_OP { opId }` costs `max(1, ceil(time left ÷ gold.hoursPerBar hours))` bars. The job's `completesAt` becomes now and it resolves at once through `resolveOp`. Resolution is seeded by the job's id, not the time, so rushing never rerolls. Training can be rushed. Event: `OP_RUSHED { opId, opType, bars, name? }`.
+`RUSH_OP { opId }` costs `max(1, ceil(time left ÷ gold.hoursPerBar hours))` bars. The job's `completesAt` becomes now and it resolves at once through `resolveOp`. Resolution is seeded by the job's id, not the time, so rushing never rerolls. Training can be rushed; a contract can't, since it pays gold ([ADR 0052](../decisions/0052-after-the-story.md)). Event: `OP_RUSHED { opId, opType, bars, name? }`. A contract done grants its gold (`source: 'contract'`).
 
 ## Where bars come from
 
@@ -31,7 +31,7 @@ Every grant goes through `grantGold(state, ctx, t, amount, source)` and emits `G
 
 | Source | When |
 |---|---|
-| `act` | Act II opens: `gold.perActUnlocked[2]`. `[3]` is for Act III, which isn't built |
+| `act` | Act II opens: `gold.perActUnlocked[2]`. `[3]`–`[6]` for each later act as it opens |
 | `debug` | `DEBUG_GRANT { gold }` |
 | `goal` | An Act I goal done: `goals.rewardGold` each ([progression.md](progression.md#act-i-goals)) |
 | `ad`, `purchase` | Reserved: rewarded ads and purchases aren't built |

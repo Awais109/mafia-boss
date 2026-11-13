@@ -101,7 +101,133 @@ function v7to8(doc: Doc): Doc {
   return { ...doc, schemaVersion: 8, goals: { ...goals, done: goals.done.filter((id) => id !== 'actII') } }
 }
 
-const STEPS: Record<number, (doc: Doc) => Doc> = { 1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7, 7: v7to8 }
+// v9 (M8): six acts and the Centre (ADRs 0040, 0041). Every district gets a prosperity, which only
+// starts to move in Act III; the Centre joins the map. "Act II cleared" used to mean the end of the
+// prototype; now Act II leads to Act III at its own gate, so a save still in Act II loses that date and
+// gets a real one when Act III opens.
+function v8to9(doc: Doc): Doc {
+  const districts = (doc.districts as ({ id: string } & Record<string, unknown>)[]).map((d) => ({ prosperity: defaults.prosperity.base, ...d }))
+  const stats = doc.stats as { actClearedAt: Record<string, number> } & Record<string, unknown>
+  const { 2: _oldClear, ...cleared } = stats.actClearedAt ?? {}
+  return {
+    ...doc,
+    schemaVersion: 9,
+    stats: doc.act === 2 ? { ...stats, actClearedAt: cleared } : stats,
+    raidPenaltyUntil: doc.raidPenaltyUntil ?? 0,
+    districts: districts.some((d) => d.id === 'centre')
+      ? districts
+      : [...districts, { id: 'centre', controller: defaults.districts.list.centre.startsAs, pressureCount: 0, prosperity: defaults.prosperity.base }],
+  }
+}
+
+// v10 (M9): Act III's consequences (ADR 0042): no loan out, no money lent, new stat counters.
+function v9to10(doc: Doc): Doc {
+  const stats = { ...emptyStats(), ...(doc.stats as object) }
+  return { ...doc, schemaVersion: 10, stats, loan: doc.loan ?? null, lending: doc.lending ?? null }
+}
+
+// v11 (M10): Act IV (ADR 0043): an empty premium stock, the Colonel, and Zastava on the map.
+function v10to11(doc: Doc): Doc {
+  const inventory = doc.inventory as Record<string, number>
+  const rival = doc.rival as Record<string, unknown>
+  const districts = doc.districts as { id: string }[]
+  const zastava = { id: 'zastava', controller: defaults.districts.list.zastava.startsAs, pressureCount: 0, prosperity: defaults.prosperity.base }
+  return {
+    ...doc,
+    schemaVersion: 11,
+    stats: { ...emptyStats(), ...(doc.stats as object) },
+    inventory: { premium: defaults.premium.startingStock, ...inventory },
+    premiumEmpty: doc.premiumEmpty ?? false,
+    rival: { colonel: { disposition: 0, passageUntil: 0, passagesBought: 0 }, ...rival },
+    districts: districts.some((d) => d.id === 'zastava') ? districts : [...districts, zastava],
+  }
+}
+
+// Act V (ADR 0044): public opinion, the Ministry and the elections; the Kombinat on the map, still the state's.
+function v11to12(doc: Doc): Doc {
+  const districts = doc.districts as { id: string }[]
+  const kombinat = { id: 'kombinat', controller: defaults.districts.list.kombinat.startsAs, pressureCount: 0, prosperity: defaults.prosperity.base }
+  return {
+    ...doc,
+    schemaVersion: 12,
+    stats: { ...emptyStats(), ...(doc.stats as object) },
+    politics: doc.politics ?? { opinion: defaults.opinion.base, attention: 0, nextElectionAt: 0, elections: 0, points: 0, mayor: false },
+    districts: districts.some((d) => d.id === 'kombinat') ? districts : [...districts, kombinat],
+  }
+}
+
+// Act VI (ADR 0045): Nagornaya on the map, nobody's until the act opens; legal businesses and endings start empty.
+function v12to13(doc: Doc): Doc {
+  const districts = doc.districts as { id: string }[]
+  const nagornaya = { id: 'nagornaya', controller: defaults.districts.list.nagornaya.startsAs, pressureCount: 0, prosperity: defaults.prosperity.base }
+  return {
+    ...doc,
+    schemaVersion: 13,
+    stats: { ...emptyStats(), ...(doc.stats as object) },
+    districts: districts.some((d) => d.id === 'nagornaya') ? districts : [...districts, nagornaya],
+  }
+}
+
+// Scenes (ADR 0049): nothing seen yet, and everything the story passed before now counts as seen, so an old
+// save opens where it was instead of replaying its past.
+function v13to14(doc: Doc): Doc {
+  const tutorial = doc.tutorial as { step: number; done: boolean }
+  return {
+    ...doc,
+    schemaVersion: 14,
+    story: doc.story ?? { seen: [], since: { act: doc.act, step: tutorial.step, done: tutorial.done } },
+  }
+}
+
+// Missions (ADR 0050): an act already past had its missions done: its overreach sent, its rematch won.
+function v14to15(doc: Doc): Doc {
+  const act = doc.act as number
+  const at = doc.updatedAt as number
+  const missions: Record<string, { result: 'failed' | 'won'; at: number }> = {}
+  for (const [id, m] of Object.entries(defaults.missions.list)) {
+    if (m.act < act) missions[id] = { result: m.kind === 'overreach' ? 'failed' : 'won', at }
+  }
+  return {
+    ...doc,
+    schemaVersion: 15,
+    missions: doc.missions ?? missions,
+    stats: { ...emptyStats(), ...(doc.stats as object) },
+  }
+}
+
+// Rock bottom (ADR 0051): no envelope waiting or opened, Vitya never walks out (matched by the opening pool's
+// name), and a repossession counter.
+function v15to16(doc: Doc): Doc {
+  const stays = new Set(defaults.crew.openingPool.filter((p) => p.stays).map((p) => p.name))
+  const mark = (m: { name: string }) => (stays.has(m.name) ? { ...m, stays: true } : m)
+  const pool = doc.recruitPool as { candidates: { name: string }[] }
+  const stats = doc.stats as { loans?: object }
+  return {
+    ...doc,
+    schemaVersion: 16,
+    rockBottom: doc.rockBottom ?? { pending: false, usedActs: [] },
+    crew: (doc.crew as { name: string }[]).map(mark),
+    recruitPool: { ...pool, candidates: pool.candidates.map(mark) },
+    stats: { ...emptyStats(), ...stats, loans: { ...emptyStats().loans, ...stats.loans } },
+  }
+}
+
+// After the story (ADR 0052): no contracts yet, posted on the next reconcile if the story is already over;
+// no empire history or best yet (the next day start records one); zeroed counters.
+function v16to17(doc: Doc): Doc {
+  const stats = doc.stats as { actClearedAt: Record<number, number | undefined>; after?: object }
+  const over = stats.actClearedAt[defaults.progression.finalAct] !== undefined
+  return {
+    ...doc,
+    schemaVersion: 17,
+    after: doc.after ?? { contracts: { items: [], refreshAt: over ? (doc.updatedAt as number) : 0, refreshCount: 0 }, best: 0, history: [] },
+    stats: { ...emptyStats(), ...stats, after: { ...emptyStats().after, ...stats.after } },
+  }
+}
+
+const STEPS: Record<number, (doc: Doc) => Doc> = {
+  1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7, 7: v7to8, 8: v8to9, 9: v9to10, 10: v10to11, 11: v11to12, 12: v12to13, 13: v13to14, 14: v14to15, 15: v15to16, 16: v16to17,
+}
 
 export function migrate(doc: unknown): PlayerState {
   if (typeof doc !== 'object' || doc === null) throw new Error('Save is not an object')

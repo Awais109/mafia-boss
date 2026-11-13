@@ -100,7 +100,7 @@ describe('the guided opening', () => {
   })
 
   it('with the tutorial off, a new game starts from the quick start', () => {
-    const c = buildConfig('default', { 'tutorial.enabled': false })
+    const c = buildConfig('default', { 'tutorial.enabled': false, 'missions.enabled': false })
     const d = derive(blank('costs', config), config)
     const setup = d.costs.racket.kiosk + d.costs.racket.marketStall + d.costs.racket.tobaccoFactory + d.costs.front.currencyKiosk + 2 * d.costs.recruit
     const s = blank('no-tutorial', c)

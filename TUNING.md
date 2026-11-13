@@ -211,14 +211,219 @@ change), `smuggleRun` needs 3 runs (not 1). Full reasoning and consequences in A
 3 d → 6 d (every seed now needs that long to reach the milestone at all). `sim/baseline.csv` regenerated
 (seed 42, 8 days) to match.
 
+## 2026-09-29 — M8: six acts and Act III's first half (ADRs 0040, 0041)
+
+New config, starting values from the six-act design; the sim now runs 22 days so Act III can clear.
+
+```
+2026-09-29  New config (ADR 0040): Act 1–6; vault.targetHoursByAct 3–6 = 8, 12, 18, 24; rackets.maxTierByAct 3–6 = 6;
+            costs.paybackHoursByAct 3–6 = 24, 30, 36, 36; crew.slotsByAct 3–6 = 6, 8, 10, 12; crew.statBandByAct 3–6 = [45,70],
+            [50,75], [55,80], [55,80]; gold.perActUnlocked 4–6 = 10 each; progression.finalAct 3, acts {2 goals, 3 ★610 (was
+            reputation.actThresholds[3]), 4 ★4,000, 5 ★10,000, 6 ★20,000}. reputation.actThresholds removed.
+2026-09-29  New config (ADR 0041): prosperity {fromAct 3, base 45, step 0.1/h, joints ×0.7–1.3, penalties inspected 10, raid 15 for
+            24 h, shortage 10}; business prosperity: kiosk 2, stall 3, beer tent 3, slot hall 4, café 6, bathhouse 8, video salon −2,
+            taxi rank −1, auto shop −2, petrol −3, cargo bay −4, tobacco factory −2; the Centre {buyout 900, lots 2}; Nightclub
+            {50/h, heat 6, ★620, sells 2.5, share .25, +6}; Card Club {70/h, heat 9, ★660, sells 3, share .3, +12, needs 60};
+            Print Shop {90/h, heat 14, ★900, −6}; Hotel {●500, upkeep 3/h ×1.2, heat 1.5, ★640, +8 a tier}; synergy hotelJoints
+            ×1.15; Cooperative Bank {75%, 500/h, ●1,500, ★700, needs city 55}; City Hall {+400 control, ✦24}; Big Score {8 h, 3
+            crew, diff 60, ◆200, spike 8}; specialization6 greed ×1.4 yield ×1.8 heat, stealth ×1 / ×0.8; investigation incident.
+            Sim (10 seeds, 22 d): Act I 4.64 d, Act II 1.9 d (0/10 in 3–5), Act III 4.2 d (0/10 in 6–8), Act III heat 45.
+2026-09-29  rackets.types.cardClub.minProsperity 60→55
+            A tier-1 hotel (+8) and a nightclub (+6) take the Centre from 45 to 59: at 60 the first hotel never unlocked the club,
+            so the bot had no reason to build it there. Kept.
+2026-09-29  officials.list.cityHall.control 400→900→1100→1300
+            Act III heat 45 at 400: a tier-6 portfolio's exposure (~835) swamps control (~785). 900: Act III heat 39; 1100: 36, run
+            heat 35.2 (2/5 in 25–35); 1300: run heat 33.6 (10/10), Act III length unchanged. Kept 1300.
+2026-09-29  progression.acts.4.rep 4000→7000→8500→9000
+            Rep flattens near ★7,900 by day 13 once the bot owns the whole Centre at tier 6, so Act IV's gate has to sit just under
+            what Act III's content can earn. 7000: Act III 5.6 d. Kept 9000 with the price change below.
+2026-09-29  costs.paybackHoursByAct.3 24→28→32→40
+            28: Act III 5.7 d; 32: 5.9 d; 40 with the gate at ★8,500: 6.4 d (9/10), content now earns ~★10,200. Kept 40.
+2026-09-29  progression.acts.3.rep 610→1000→1200
+            With ★610 as a door rather than the end, Act II ran 1.9 d. 1000: 2.9 d (7/10); 1200: 3.3 d (10/10). Kept 1200.
+2026-09-29  Act III unlock ladder spread above the new gate: Nightclub ★620→1220, Hotel 640→1300, Bank 700→1500, Card Club 660→1700,
+            Print Shop 900→2400 (all sat below ★1,200, so everything opened at once).
+            Final (10 seeds, 22 d): Act I 4.64 d, Act II 3.28 d (10/10), Act III 6.47 d (8/10), heat 33.6 (10/10; Act I ~38, II ~24,
+            III ~37), raids 0, partial 0.50, missed wages 0, front util 0.65, Dirty idle 0.86, wage share 0.02.
+            goldRush: Act I 4.19 d, Act II 3.16 d, Act III 6.36 d, heat 33.4, missed wages 0.
+2026-09-29  tests/sim.test.ts: 8 → 22 days; Act II band 1–2.2 → 3–5 (the manual's own); Act III 6–8 added.
+```
+
+## 2026-09-29 — M9: Act III's consequences (ADR 0042)
+
+```
+2026-09-29  New config: injuries {fromAct 3, 30% on a failed job ≥ half Muscle, 12 h}; Clinic {●600, upkeep 2/h ×1.2, heat 0.5,
+            ★1,400, one per city, injuries ×0.5, +1 loyalty a day}; Loan Desk {●800, upkeep 2/h ×1.2, heat 1, ★1,600, one per city,
+            lends 2 h of yield a tier}; credit {fromAct 3, 2 days of Clean, min ●2,000, 5% a day, 25% of the principal a day,
+            second miss takes 30% of the vault; lending 48 h at 25%, default 25% − 0.3% × the desk's prosperity, min 2%};
+            rivals.tolya.attack {fromAct 3, 15%, 30% once his district is taken, 45% hostile}; incidents attack, collectors,
+            lendingDefault.
+            Sim (10 seeds, 22 d): Act III 6.4 d, heat 34 in the act, but 11–50 attacks a run (the bot takes Kiosk Row), and the
+            bot never built a loan desk (it valued a desk at the risk of an unbuilt one, worst case).
+2026-09-29  rivals.tolya.attack 15/30/45% → 8/15/30% → 5/10/20%; the attack's fight win disposition −10 → −5
+            8/15/30: 6–35 a run; winning fights soured him into the hostile rate. 5/10/20 with a softer win: 3–26 a run, about
+            one a day, more for a hostile Tolya. Kept.
+2026-09-29  Bot fix (not a number): a hotel gets credit for opening a business its street reaches over the hotel's tiers, not only
+            its first. Without it, three seeds never opened the Card Club and stalled at ★8,500, short of Act IV's gate.
+2026-09-29  rackets.types.loanDesk.lendHoursPerTier 2→4; credit.lending.returnPct 0.25→0.3
+            At 2 h and 25% no seed found a premises lot worth giving it once hotels were valued properly. At 4 h and 30% every
+            seed builds one and lends ~180k over a run; Act III length and heat unchanged. Kept.
+            Final (10 seeds, 22 d): Act I 4.64 d, Act II 3.28 d (10/10), Act III 6.39 d (8/10), heat 33.3 (10/10), raids 0,
+            missed wages 0, partial 0.50, front util 0.65, Dirty idle 0.86, wage share 0.02. goldRush: Act III 6.41 d, heat 33.0.
+```
+
+## 2026-09-29 — M10: Act IV, Zastava (ADR 0043)
+
+The sim now runs 34 days so Act IV can clear.
+
+```
+2026-09-29  New config (ADR 0043): premium {fromAct 4, baseCap 30, startingStock 0}; convoys {customs 8% + 0.4% per heat, road 40%,
+            ×1.5 while the Colonel is hostile}; Truck Stop {120/h, heat 12, ★9,200, sells 5, share .3}; Motel {150/h, heat 14,
+            ★9,600, premium 1.5/h, share .5}; Foreign Goods Shop {180/h, heat 15, ★11,000, premium 2/h, share .6}; Freight Yard
+            {280/h, heat 36, ★13,000}; Fuel Depot {360/h, heat 45, ★16,000}; Bonded Warehouse {●5,000, upkeep 20/h ×1.2, heat 3,
+            ★9,400, +60 premium a tier, customs ×0.5 in Zastava}; Convoy Depot {●6,000, upkeep 25/h ×1.2, heat 4, ★10,000, one per
+            city, +15% load a tier, road ×0.5}; Import–Export {80%, 1,500/h, ●20,000, ★9,800, 100 per premium pack}; Customs Chief
+            {+2,000 control, ✦40, customs ×0.5}; Run a Convoy {6 h, 3 crew, diff 60, spike 5, ●800, 60 packs}; Grease the Post
+            {4 h, 2 crew, diff 60, spike 2, ✦3}; Zastava {Colonel, tribute .2, buyout ●15,000, 3 lots}; Zhanna premium lots {20
+            packs, ×4 price}; the Colonel {passage 2 h of yield for 24 h, +5 a passage, −5 pressure, −10 buyout, −25 flip,
+            hostile below −30}; progression.finalAct 3→4.
+2026-09-29  costs.paybackHoursByAct 4–6 = 30, 36, 36 → 40, 40, 40
+            The same payback as Act III (M8), so an Act IV purchase is as long a wait as an Act III one and the act's
+            content can't outrun its gate. Kept.
+2026-09-29  progression.acts.5 {★10,000} → {★30,000, hold Zastava, own the Import–Export Company}
+            Act IV opens at ★9,000, so ★10,000 would have cleared it almost at once. The gate now asks for the act's two
+            decisions as well as Rep. Kept.
+2026-09-29  Bot fixes (not numbers): Zhanna's premium price was multiplied by packs instead of priceMult; convoys were keyed to
+            cigarette stock, so the bot never ran one; the importer waited days for savings, so the bot now borrows to open an
+            unaffordable front. Before them: Act IV 9.8 d (target 8–10), convoys 21–47 a run.
+2026-09-29  premium.baseCap 30→60
+            A convoy lands 60, so at 30 half of every early convoy was wasted before a Bonded Warehouse. 30: Act IV 9.64 d (9/10),
+            heat 31.7. 60: 9.43 d (10/10), heat 32.0. Kept 60.
+            Final (10 seeds, 34 d): Act I 4.64 d, Act II 3.28 d (10/10), Act III 6.44 d (8/10), Act IV 9.43 d (10/10), heat 32.0
+            (10/10), raids 0, partial 0.47, missed wages 0, front util 0.58, Dirty idle 0.87, wage share 0.02.
+            goldRush (at cap 30): Act IV 9.53 d, heat 32.1, missed wages 0.
+2026-09-29  tests/sim.test.ts: 22 → 34 days; Act IV 8–10 added.
+```
+
+## 2026-09-29 — M11: Act V, the Kombinat (ADR 0044)
+
+The sim now runs 50 days so Act V can clear; the pacing guard runs 45.
+
+```
+2026-09-29  New config (ADR 0044): opinion {fromAct 5, base 40, step 0.05/h, inspected −5, raid −10, control ×(1 + 0.5 × opinion/100)};
+            ministry {fromAct 5, 0.012 per Dirty/h of yield, −30 × opinion/100, step 0.05/h, freezes at 80 for 24 h, falls to 40};
+            elections {fromAct 5, every 7 days, base share 0.35, +0.004 per opinion point over 50, +0.005 per campaign point,
+            ±0.05, a point costs 3 h of yield or ✦5, max 30; mayor: perks ×2, +3,000 control}; Palace of Culture {400/h, heat 30,
+            ★31,000, sells 6 (.2) and premium 2 (.2), prosperity 8, opinion 2 a tier}; Construction Trust {600/h, heat 80, ★36,000,
+            opinion ×0.6–1.4}; the Combine {●30,000, upkeep 200/h ×1.2, heat 20, ★31,000, 20 packs and 4 premium an hour, ×1.3 a
+            tier, one per city, Kombinat only}; Newspaper {●12,000, upkeep 60/h, ★32,000, opinion 5 a tier}; TV Station {●25,000,
+            upkeep 120/h, ★38,000, opinion 8 a tier}; Development Fund {90%, 3,000/h, ●60,000, ★33,000, opinion +15 at full
+            use}; Governor {+5,000 control, ✦300, the Ministry −40}; Fix a Tender {6 h, 2 crew, diff 70, spike 4, ◆300}; Deliver
+            the Vote {4 h, 3 crew, diff 70, spike 10, 3 points}; the Kombinat {the state's, auction ●80,000, 3 lots}; progression
+            finalAct 4→5, acts.6 {★20,000 placeholder} → {★80,000, mayor}.
+            Sim (5 seeds, 50 d): Act V 12.3 d (3/5), but the bot never campaigned, never built the media or the Combine (it
+            picked Kombinat lots it couldn't use), and the Ministry froze a front 3–12 times a run.
+2026-09-29  Rule changes (ADR 0044), not numbers: the Kombinat's lots take only the Combine, the Newspaper and the TV Station
+            (`lotsFor`), and the media go only there (`onlyIn`); by Act V every other lot is full. The Governor only takes calls
+            from the mayor (`needsMayor`), as the story bible has it.
+            Bot fixes: premises are placed where racketBlocked allows; it campaigns in the 48 h before a count, before
+            depositing or lending, since the loan desk otherwise holds all its Dirty.
+2026-09-29  rackets.types.combine upkeepPerHr 200→100, makesPerHr 20→30, premiumMakesPerHr 4→6
+            At 200 upkeep the bot valued the Combine at 330 h of payback and never built it. Kept.
+2026-09-29  ministry.perYield 0.012→0.01→0.012
+            0.01 with the Governor on sale from the start: no front ever froze. Back to 0.012 once the Governor needs the
+            mayor: 3–12 freezes a run, mostly after the election. Kept 0.012.
+2026-09-29  elections.baseShare 0.35→0.25
+            With the media taking opinion to 100 in about a week, every election was won without a point of campaign.
+            At 0.25 a full opinion still needs 13 points. Kept.
+2026-09-29  progression.acts.6.rep 80000→96000
+            A first-election win cleared Act V at 8.5 d, on the Rep gate. 96,000 puts it at 10–10.5 d. Kept.
+2026-09-29  elections.everyDays 7→6 (reverted)
+            Every seed lost the first count (its media weren't up by day 6) and cleared at 12.0, one at 18. The first election
+            should be winnable by a player who buys the Kombinat early. Reverted to 7.
+            Final (10 seeds, 50 d): Act I 4.64 d, Act II 3.28 d (10/10), Act III 6.44 d (8/10), Act IV 9.78 d (10/10), Act V
+            12.86 d (10/10; 10–10.5 d on a first-election win, 14.0 on the second), heat 28.2 (10/10), raids 0, partial 0.46,
+            missed wages 0, front util 0.59, Dirty idle 0.90, wage share 0.04.
+            goldRush: Act IV 9.82 d, Act V 13.65 d (10/10), heat 28.5, missed wages 0.
+2026-09-29  tests/sim.test.ts: 34 → 45 days; Act V 10–14 added.
+```
+
+## 2026-09-29 — M12: Act VI, Nagornaya (ADR 0045)
+
+The sim now runs 60 days so an ending can be reached; so does the pacing guard.
+
+```
+2026-09-29  New config (ADR 0045): legalize {fromAct 6, opinion 60, 48 h of tier yield in Clean, legal Clean at 60% of gross};
+            reckoning {fromAct 6, hearing chance 0.1 + 0.5 × the illegal share at each day start; case file 5 a raid, 3 an
+            arrest, 2 a frozen front, 2 a missed payment, max 40; the Empire at 5 hearings won}; the Holding {●150,000,
+            upkeep 300/h ×1.2, +10% a tier on legal businesses, one per city, Nagornaya only}; Nagornaya {yours when Act VI
+            opens, no spots, one lot for the Holding}; the hearing incident {let it run: the busiest front frozen 24 h; settle:
+            6 h of gross yield in Clean; fight: Brains vs 60 + 0.5 × the case file, win ★20 and a hearing}; finalAct 5→6.
+            Sim (5 seeds, 60 d): Act VI 2–4 d, every run on the Holding: the bot legalized everything at once. Heat mean over
+            the run fell to 22, since legal businesses draw none.
+2026-09-29  legalize.hoursOfYield 48→150→250→170
+            150: the Holding in 11.5–15 d (mean 13.3). 250: 21–23 d, and three seeds never finished. Kept 150, then 170 below.
+2026-09-29  Rule fixes (ADR 0045), not numbers: a hearing waits 23 h (`incidents.types.hearing.hours`, new) instead of the
+            8-h incident default: it's filed at midnight and Act VI's player visits once a day, so every hearing had been
+            defaulting before anyone could answer it. The sim report scores heat over the acts before Act VI only.
+2026-09-29  reckoning.empireWins 5→6; the hearing's fight diff 60→70
+            Once the bot could answer, it won every hearing and four seeds in ten reached the Empire in 4.5–9 d (Act VI mean
+            9.6). At 6 wins and difficulty 70 it wins a little over half, and the Empire comes first in one seed of ten. Kept.
+2026-09-29  legalize.hoursOfYield 150→170
+            With the harder court, the Holding landed at 10.0–12.5 d, at the bottom of the range. 170 centres it. Kept.
+            Final (10 seeds, 60 d): Act I 4.64 d, Act II 3.28 d (10/10), Act III 6.44 d (8/10), Act IV 9.78 d (10/10), Act V
+            12.86 d (10/10), Act VI 13.08 d (10/10), heat over Acts I–V 29.4 (10/10), raids 0, partial 0.46, missed wages 0,
+            front util 0.52, Dirty idle 0.90, wage share 0.09.
+            goldRush: Act V 13.65 d, Act VI 13.74 d (10/10), heat 29.6, missed wages 0.
+2026-09-29  tests/sim.test.ts: 45 → 60 days; an ending 10–18 d after Act V added.
+2026-09-30  missions (ADR 0050): new section. Seven boss missions, each act gate after Act I asking for the act
+            before's overreach and rematch. Overreaches: crate 2 h (2 crew, stake 2 h of yield, one hurt 12 h, +10
+            heat), bridge 3 h (1 crew, stake 2 h, +8), truck 4 h (2 crew, stake 2 h, +12), auction 4 h (1 crew,
+            stake 2 h, +5), Governor 8 h (1 crew, stake 2 h, +15). Rematches: Her terms diff 45 (2 crew, 2 h, ★60 and
+            Zhanna +25), The second lunch diff 55 (1 crew, 3 h, ★400 and ✦10); a lost one reopens after 12 h.
+            5 seeds, 60 d: Act I 4.64 d, II 3.73, III 6.53, IV 9.90, V 11.32, VI 12.97, heat 28.4, raids 0. Kept;
+            Act IV at the band's edge.
+2026-09-30  missions: truck 240→180 min, auction 240→120, Governor 480→240
+            Each act now waits for a session to send its overreach; shorter late ones give Act IV room. 5 seeds, 60 d:
+            Act I 4.64 d, II 3.73 (5/5), III 6.49 (4/5), IV 9.76 (5/5), V 12.03 (3/5), VI 12.63 (4/5), heat 28.8,
+            raids 0. Kept.
+2026-09-30  rockBottom (ADR 0051): new section. The envelope waits after a payday missed with Clean under
+            cleanBelowHours 24 of wages, once per act; it holds stakeHours 36 of wages and upkeep, at least
+            ◆60. credit.secondMissVaultPct 0.3 removed; missesToRepossess 2 (the lender takes the middle
+            earner and closes the loan). The bot never goes broke: 5 seeds, 60 d unchanged (Act I 4.64 d, II 3.73,
+            III 6.49, IV 9.76, V 12.03, VI 12.63, heat 28.8, raids 0, missed wages 0). Kept; tested by
+            tests/rockbottom.test.ts, not the sim.
+2026-09-30  after (ADR 0052): new section. extraTiers 4 (tiers 7–10), pastBookCostMult 1.5; contracts: count 3,
+            refreshDays 7, minDayIncome 20000, six kinds at 0.2–0.75 days of income up front, 0.6–1.8 days paid,
+            gold 3–8. 5 seeds, 60 d: pacing to the ending unchanged; after it (from day 44–52) 3–7 contracts,
+            89–99 tiers past the book, every business at tier 10 within 8–16 days. Reverted the tiers: past the
+            book ran out within a week.
+2026-09-30  after: extraTiers 4→14 (tiers 7–20), pastBookCostMult 1.5→2.5
+            Each tier past the book now costs about 3.5× the last for 1.2× the yield. 5 seeds, 60 d: pacing to the
+            ending unchanged (Act I 4.64 d … VI 12.63, heat 28.8, raids 0); after it 3–7 contracts (mean 4.8),
+            56–67 tiers past the book, top tier 12–13, 7–16 new bests, heat about 5, no raids; empire value
+            9.1–10.0M on day 60. (2× reached tier 14 with 64–78 tiers; 2.5 slows sooner.) Kept.
+2026-09-30  incidents (ADR 0054): three new types. frontPage from Act V (buy: 1.5 h gross in Clean, +4 opinion;
+            default −3 opinion), workersAtGate Act V only (pay: 3 h, +5 opinion, +6 attention; listen: +2 opinion,
+            busy 4 h; default −4 opinion), schoolRoof after the story (pay: 3 h, +★180; tar: 0.35 h, busy 6 h;
+            default −2 opinion). Bot: opinionHours 0.5. 5 seeds, 60 d: Act I 4.64 d, II 3.73, III 6.49, IV 9.76,
+            V 12.33 (was 12.03), VI 12.73 (was 12.63, now 5/5 in range), heat 28.6, raids 0, partial 0.46. Kept.
+```
+
 ## Open
 
-- **Front utilization ~59% (target 70–90%) and Dirty idle ~68% (target 20–50%).** The bot keeps a large Dirty reserve and the fronts can wash more than it deposits. Dirty idle rose with M3's bigger Act I, and again with M6's Stash House, whose longer leash makes bigger collections.
-- **Wage share ~4%** (manual 10–25%). Wages are about a quarter of day-1 income but a few percent of late Act II income, and upkeep doesn't change that. No number fixes both ends: raising wages or upkeep enough for Act II breaks the first day. Running costs that scale with the act would be a new rule, which the expansion plan doesn't have.
-- **Shortages are rare** (about 3 h per 8-day run, none in Act I). The plan's M3 gate asks for some shortage in Act I, under 10% of its hours.
-- **Act I clears at 1.89 d** (4/10 seeds inside 1–2): the thresholds were raised twice to keep gold and the opening's head start from shortening it. **Act II clears at 3.07 d**, near the bottom of 3–5.
-- **Gold is a strong early accelerator:** with the goals' bars, spending every bar on quick jobs takes Act I from 1.89 to 1.03 days, right at the gold gate, and Act II in 2.99 days (not gated). Any new source of bars will break it.
-- **Heat mean 34.0**, with Act I around 36 while the bot fills its heat budget.
-- **The bot never builds a Union Office.** Influence buys only officials in Acts I–II, and the bot has bought the Precinct Captain before the office unlocks at ★238. A player can use it to reach the Captain sooner; its lasting use would be an Act III official.
+Whole game, 10 seeds, 60 days (2026-09-29, after M13): Act I 4.64 d, Act II 3.28, Act III 6.44, Act IV 9.78, Act V 12.86, Act VI 13.08; heat over Acts I–V 29.4 (by act about 38, 24, 25, 27, 31; Act VI about 11, since legal businesses draw none); no raids, no missed wages, partial 0.46.
+
+- **Act I clears at 4.64 d** against the manual's 1–2, since it's gated on seven build-out goals (ADR 0039). An owner decision: relax the goals or move the target. Acts II–VI are all in range on 10/10 seeds, except Act III at 8/10.
+- **Front utilization ~52% (target 70–90%) and Dirty idle ~90% (target 20–50%)** over 60 days. Yield outruns laundering from late Act III on, and the loan desk takes one loan at a time. Act V's campaigns are the first large Dirty sink, and in Act VI legal Clean makes laundering matter less, so these metrics mean less the later the act. The importer (Act IV) is capped by premium sales; `coverPerPremiumPack` is the knob to watch.
+- **Wage share ~9%** over 60 days (manual 10–25%): a few percent through Acts II–V, rising in Act VI as legal businesses stop earning Dirty. Running costs that scale with the act would be a new rule, which no plan has.
+- **Act V clears at either ~10 d or 14.0 d**: on the first election won, or the second (ADR 0044). The bot wins the first in about a third of runs; its media come too late for the rest.
+- **The bot rarely reaches the Empire**: it legalizes everything and reaches the Holding first in 9 runs of 10. The Empire path is exercised by tests.
+- **Rep flattens after about day 40** once the bot owns the whole catalogue at max tier; only legalizing and upgrades are left to buy.
+- **Opinion reaches 100 about a week into Act V** once the media and the Palace are up, after which it stops being a choice until Legalize needs it.
+- **The Ministry freezes a front 3–12 times a run**, mostly after the election, when yield outgrows the Governor and a full opinion.
+- **Shortages are rare** (none in Act I). The plan's M3 gate asked for some shortage in Act I, under 10% of its hours.
+- **Gold barely accelerates Act I** (goldRush 4.19 d against 4.64): it speeds up jobs, and Act I is gated on building. Later acts clear within a day of the casual bot.
+- **The Union Office is built in Act III**, not before: City Hall is the first official after the Captain that Influence has to save for.
 - **Zhanna's lots are rare for the bot** (0.3 a run), because stock seldom gets within 12 hours of running out; surplus sales come to about ◆50 a run.
 - **No raids in the sim**, so only the tests exercise the Stash House's raid shield.

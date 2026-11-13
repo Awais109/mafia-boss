@@ -1,9 +1,15 @@
-import { dayMs, derive, RACKET_TYPES, type RacketType } from '../engine'
+import { ACTS, dayMs, derive, RACKET_TYPES, type Act, type RacketType } from '../engine'
 import type { Trace } from './driver'
 
 // Summary table against the dev manual §3 targets, plus the hourly CSV.
 
 export type Check = { name: string; value: number | null; min: number; max: number }
+
+// How long each act should take a casual player, in days after the act before it (Act I from the start).
+// I and II are the dev manual's §3 targets; III–VI are the six-act design's (ADR 0040).
+export const ACT_TARGETS: Record<Act, [number, number]> = { 1: [1, 2], 2: [3, 5], 3: [6, 8], 4: [8, 10], 5: [10, 14], 6: [10, 18] }
+export const ACT_NAMES: Record<Act, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI' }
+export const actCheckName = (a: Act): string => (a === 1 ? 'Act I clear (d)' : `Act ${ACT_NAMES[a]} clear (d after Act ${ACT_NAMES[(a - 1) as Act]})`)
 
 export type Summary = {
   title: string
@@ -12,11 +18,14 @@ export type Summary = {
   // A run over an existing save (the Debug Bot) can start after a clear. Those are shown, not scored.
   actClear1InRun: boolean
   actClear2InRun: boolean
+  actClears: (number | null)[] // [act − 1]: days that act took (Act I from game start); null if not cleared
+  actClearsInRun: boolean[]
+  finalAct: Act
   raids: number
   arrests: number
   missedWages: number
   walkouts: number
-  heatMean: number
+  heatMean: number // over the acts before legalize.fromAct
   heatMin: number
   heatMax: number
   hoursAbove40: number
@@ -65,6 +74,25 @@ const ABBREV: Record<RacketType, string> = {
   bathhouse: 'B',
   petrol: 'P',
   cargoBay: 'CB',
+  nightclub: 'NC',
+  cardClub: 'CC',
+  printShop: 'PS',
+  hotel: 'HO',
+  clinic: 'CL',
+  loanDesk: 'LD',
+  truckStop: 'TS',
+  motel: 'MO',
+  foreignShop: 'FS',
+  freightYard: 'FY',
+  fuelDepot: 'FD',
+  bondedWarehouse: 'BW',
+  convoyDepot: 'CD',
+  palaceOfCulture: 'PC',
+  constructionTrust: 'CT',
+  combine: 'CB',
+  newspaper: 'NP',
+  tvStation: 'TV',
+  holding: 'HD',
 }
 
 const mean = (xs: number[]): number => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : NaN)
@@ -77,7 +105,8 @@ export function summarize(trace: Trace): Summary {
   const clear2 = st.actClearedAt[2]
   const inRun = (t: number | undefined): boolean => t !== undefined && t >= start
 
-  const heats = hours.map((h) => h.heat)
+  // Heat is scored over the acts that run on Dirty: from Act VI legal businesses draw none by design (ADR 0045).
+  const heats = hours.filter((h) => h.act < c.legalize.fromAct).map((h) => h.heat)
   const outcomes = st.opOutcomes
   const opCount = outcomes.full + outcomes.partial + outcomes.fail
   const pct = (n: number) => (opCount ? n / opCount : 0)
@@ -125,6 +154,13 @@ export function summarize(trace: Trace): Summary {
     actClear2: clear1 !== undefined && clear2 !== undefined ? (clear2 - clear1) / D : null,
     actClear1InRun: inRun(clear1),
     actClear2InRun: inRun(clear2),
+    actClears: ACTS.map((a) => {
+      const end = st.actClearedAt[a]
+      const from = a === 1 ? final.createdAt : st.actClearedAt[(a - 1) as Act]
+      return end !== undefined && from !== undefined ? (end - from) / D : null
+    }),
+    actClearsInRun: ACTS.map((a) => inRun(st.actClearedAt[a])),
+    finalAct: c.progression.finalAct,
     raids: st.raids,
     arrests: st.arrests,
     missedWages: st.missedWages,
@@ -162,8 +198,12 @@ export function summarize(trace: Trace): Summary {
     checks: [],
   }
   summary.checks = [
-    { name: 'Act I clear (d)', value: summary.actClear1InRun ? summary.actClear1 : null, min: 1, max: 2 },
-    { name: 'Act II clear (d after Act I)', value: summary.actClear2InRun ? summary.actClear2 : null, min: 3, max: 5 },
+    ...ACTS.filter((a) => a <= summary.finalAct).map((a) => ({
+      name: actCheckName(a),
+      value: summary.actClearsInRun[a - 1] ? summary.actClears[a - 1] : null,
+      min: ACT_TARGETS[a][0],
+      max: ACT_TARGETS[a][1],
+    })),
     { name: 'Vault fill Act I (h)', value: summary.vaultFillAct1, min: 2, max: 3 },
     { name: 'Vault fill Act II, day 4+ (h)', value: summary.vaultFillAct2, min: 4.5, max: 6.5 },
     { name: 'Heat mean', value: summary.heatMean, min: 25, max: 35 },
@@ -192,8 +232,14 @@ export function formatSummary(s: Summary): string {
   const lines = [
     s.title,
     '',
-    actLine('Act I clear', s.actClear1, s.actClear1InRun, '(target 1–2)'),
-    actLine('Act II clear', s.actClear2, s.actClear2InRun, '(3–5 after Act I)'),
+    ...ACTS.filter((a) => a <= s.finalAct).map((a) =>
+      actLine(
+        `Act ${ACT_NAMES[a]} clear`,
+        s.actClears[a - 1],
+        s.actClearsInRun[a - 1],
+        a === 1 ? `(target ${ACT_TARGETS[1][0]}–${ACT_TARGETS[1][1]})` : `(${ACT_TARGETS[a][0]}–${ACT_TARGETS[a][1]} after ${ACT_NAMES[(a - 1) as Act]})`,
+      ),
+    ),
     `${pad('Raids:', 18)}${pad(String(s.raids), 8)}Arrests: ${pad(String(s.arrests), 4)}Missed wages: ${s.missedWages}  Walkouts: ${s.walkouts}   ${ok('Raids')}${ok('Missed wages')}`,
     `${pad('Heat mean:', 18)}${pad(String(Math.round(s.heatMean)), 8)}min ${Math.round(s.heatMin)}  max ${Math.round(s.heatMax)}   hours ≥40: ${s.hoursAbove40}   ${ok('Heat mean')}`,
     `${pad('Front util:', 18)}${pad(pc(s.frontUtil), 8)}Dirty idle @ session end: ${pc(s.dirtyIdlePct)}   ${ok('Front util')}${ok('Dirty idle')}`,

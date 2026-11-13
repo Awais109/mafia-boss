@@ -80,7 +80,8 @@ export function levelUp(state: PlayerState, ctx: Ctx, t: number, m: CrewMember):
   while (m.rank < rank) {
     m.rank++
     emit(ctx, t, { type: 'CREW_RANK_UP', crewId: m.id, name: m.name, rank: m.rank })
-    if (m.rank === 1 || m.rank === 2) filePerkChoice(state, ctx, t, m)
+    // Soldier, Made and Capo each choose a perk (Capo from Act III's design, ADR 0041).
+    filePerkChoice(state, ctx, t, m)
   }
 }
 

@@ -1,9 +1,13 @@
 import { expect } from 'vitest'
 import { apply, buildConfig, newGame, TUTORIAL_STEPS, type Action, type Config, type PlayerState } from '../engine'
 
-export const config: Config = buildConfig('default')
+// Defaults with the boss missions left out of the act gates (ADR 0050), so a test reaches an act the way it
+// always has; tests/missions.test.ts and the sim play with them on (`withMissions`).
+export const config: Config = buildConfig('default', { 'missions.enabled': false })
+export const withMissions: Config = buildConfig('default')
 // Defaults with nothing wearing down or random from Tolya: no condition decay, no hits, no demands.
 export const quiet: Config = buildConfig('default', {
+  'missions.enabled': false,
   'rackets.conditionDecayPerDay': 0,
   'rivals.tolya.pConditionHit': 0,
   'rivals.tolya.pTribute': 0,
