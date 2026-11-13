@@ -8,7 +8,7 @@ import { ledgerDays } from './ledger'
 
 // Credit (ADR 0042), from Act III. Borrowing brings Clean forward: one loan at a time, capped at a few days
 // of the Clean you've been laundering, interest on what's owed and a share of the principal due from Clean
-// at every day start. A missed payment sends the collectors; a second takes a share of the vault. Repaying
+// at every day start. A missed payment sends the collectors; a second in a row takes a business (ADR 0051). Repaying
 // only ever comes from Clean, so a loan is never a way to turn Dirty into Clean.
 // Lending goes the other way: a loan desk puts idle Dirty out for a couple of days at interest. Most
 // borrowers pay; some skip town, fewer on a prosperous street.
@@ -70,7 +70,7 @@ function pay(state: PlayerState, ctx: Ctx, t: number, amount: number): void {
 
 // Day start, after wages and upkeep: interest, then the day's payment from Clean. A payment Clean can't
 // cover is missed: the collectors come. At `missesToRepossess` misses in a row the lender's men take one
-// business and close the loan, so the debt never grows for ever (ADR 0051).
+// business and close the loan, so the debt never grows for ever (ADR 0051). A payment met ends the run.
 export function creditDayBoundary(state: PlayerState, ctx: Ctx, t: number): void {
   const loan = state.loan
   if (!loan) return
@@ -80,6 +80,7 @@ export function creditDayBoundary(state: PlayerState, ctx: Ctx, t: number): void
   state.stats.loans.interest += interest
   const due = Math.min(loan.owed, loan.principal * c.credit.repayPctPerDay + interest)
   if (state.clean >= due - 1e-6) {
+    loan.missed = 0
     pay(state, ctx, t, due)
     return
   }

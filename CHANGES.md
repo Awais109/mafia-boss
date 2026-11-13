@@ -3,6 +3,15 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-14 — Review fixes: misses in a row, previews aren't seen
+
+Branch: `feature/design-v2`. Two bugs found reviewing PR #1, both against what [ADR 0051](docs/decisions/0051-rock-bottom.md) and [ADR 0049](docs/decisions/0049-scenes.md) already say.
+
+- **Repossession is for misses in a row.** `loan.missed` only ever went up, so a second miss at any point in a loan's life took a business. A morning payment met now sets it back to 0. Code: `engine/systems/credit.ts`; [credit.md](docs/systems/credit.md).
+- **A preview no longer counts a scene as seen.** Playing a chapter or an ending from Debug's Preview (or `?preview=`) before its moment recorded it, so the real one never played in that save. `sceneAhead` in `app/scenes.ts` spots such a scene and `store.endScene` doesn't record it. A dossier's Replay and the envelope are unchanged. Code: `app/scenes.ts`, `app/store.ts`; [app.md](docs/app.md).
+- **Tests:** `tests/credit.test.ts` (a payment met between misses starts the count again; fails without the fix), `tests/scenes.test.ts` (`sceneAhead`); [testing.md](docs/testing.md).
+- **Verified:** `npm run check`: 244 tests. No save, config or number change.
+
 ## 2026-09-30 — Next: the boss's arc (D11)
 
 Branch: `feature/design-v2`. The design's arc strip (Home · Act V) on Home's Next, for the missions of [ADR 0050](docs/decisions/0050-boss-missions.md).

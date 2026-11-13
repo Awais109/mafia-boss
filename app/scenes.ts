@@ -286,6 +286,13 @@ export function sceneDue(s: PlayerState, id: SceneId): boolean {
   return triggered(s, id) && !s.story.seen.includes(id) && !passedBefore(s, id)
 }
 
+// Whether the scene's moment is still to come: one of the story's, not yet happened, and not passed before
+// the seen-list began. A scene played ahead of its moment (Debug's Preview, `?preview=`) isn't recorded as
+// seen, or the real one would never play. The envelope isn't in the story's order, so it never is.
+export function sceneAhead(s: PlayerState, id: SceneId): boolean {
+  return ORDER.includes(id) && !s.story.seen.includes(id) && !triggered(s, id) && !passedBefore(s, id)
+}
+
 // The scene to play now, if any.
 export function dueScene(s: PlayerState): Scene | null {
   const id = ORDER.find((x) => sceneDue(s, x))

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { apply, TUTORIAL_STEPS } from '../engine'
-import { dueScene, sceneDue, SCENES, type SceneId } from '../app/scenes'
+import { dueScene, sceneAhead, sceneDue, SCENES, type SceneId } from '../app/scenes'
 import { ART } from '../app/art/scenes'
 import { act, blank, config, fresh, T0 } from './helpers'
 
@@ -81,6 +81,21 @@ describe('scenes', () => {
     s.stats.endings.empire = T0 + 1
     expect(dueScene(s)?.id).toBe('empire')
     expect(SCENES.holding.beats.slice(-2).map((b) => b.kind)).toEqual(['ending', 'credits'])
+  })
+
+  it('knows a scene played ahead of its moment, so a preview doesn’t count it as seen', () => {
+    const s = blank()
+    s.story.seen.push('prologue', 'crew', 'tolya')
+    s.tutorial.done = true
+    s.act = 3
+    expect(sceneAhead(s, 'chapter-6')).toBe(true)
+    expect(sceneAhead(s, 'holding')).toBe(true)
+    expect(sceneAhead(s, 'chapter-3')).toBe(false) // its moment has come
+    expect(sceneAhead(s, 'crew')).toBe(false) // already seen
+    expect(sceneAhead(s, 'envelope')).toBe(false) // played when opened, never due
+    // An old save's past isn't ahead, even if it was never seen.
+    s.story = { seen: [], since: { act: 3, step: s.tutorial.step, done: true } }
+    expect(sceneAhead(s, 'crate')).toBe(false)
   })
 
   it('records a scene once, and refuses an id that isn’t one', () => {

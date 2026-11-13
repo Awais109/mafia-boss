@@ -88,6 +88,24 @@ describe('borrowing', () => {
     // Nothing else is taken: the vault only moves as it would.
     expect(s.vault).toBeGreaterThanOrEqual(vault - 1)
   })
+
+  it('takes a business only for misses in a row: a payment met in between starts the count again (ADR 0051)', () => {
+    let s = act(actThree(), [{ type: 'TAKE_LOAN', amount: 1000 }], T0)
+    s.clean = 0
+    const day = nextDay(T0)
+    s = reconcile(s, day, config).state
+    expect(s.loan!.missed).toBe(1)
+    s.clean = 10_000
+    s = reconcile(s, day + D, config).state
+    expect(s.loan!.missed).toBe(0)
+    s.clean = 0
+    const owned = s.rackets.length
+    s = reconcile(s, day + 2 * D, config).state
+    expect(s.loan).not.toBeNull()
+    expect(s.loan!.missed).toBe(1)
+    expect(s.stats.loans.repossessed).toBe(0)
+    expect(s.rackets).toHaveLength(owned)
+  })
 })
 
 describe('lending', () => {

@@ -23,7 +23,7 @@ import type { LogExport, LogLine } from '../sim/replay'
 import { actMilestones } from './acts'
 import { buildAway, mergeAway, type AwaySummary } from './away'
 import { buildNotices, diffUnlocked, type QueuedNotice, type UnlockedMap } from './notices'
-import { dueScene, type SceneId } from './scenes'
+import { dueScene, sceneAhead, type SceneId } from './scenes'
 import { FILES, storage } from './storage'
 
 // A gap of this many game minutes since the save was last caught up counts as being away, and
@@ -72,6 +72,7 @@ class GameStore {
   private away: AwaySummary | null = null
   private notices: QueuedNotice[] = []
   private scene: SceneId | null = null
+  private scenePreview = false // the playing scene was asked for ahead of its moment, so ending it records nothing
   private lastUnlocked: UnlockedMap | null = null
   private session = { open: false, startedAt: 0, actions: 0 }
   private started = false
@@ -148,16 +149,21 @@ class GameStore {
     this.refresh()
   }
 
-  // Plays a scene now, whether or not it's due (ADR 0049): a dossier's Replay, or Debug's Preview.
+  // Plays a scene now, whether or not it's due (ADR 0049): a dossier's Replay, the envelope, or Debug's Preview.
   playScene = (id: SceneId): void => {
+    const state = this.snapshot?.state ?? this.committed
     this.scene = id
+    this.scenePreview = state ? sceneAhead(state, id) : false
     this.refresh()
   }
 
   // A scene has been watched or skipped: it's recorded as seen, and the next one due (if any) takes its place.
+  // One played ahead of its moment isn't recorded, so the real one still plays when it comes.
   endScene = (id: SceneId): void => {
+    const ahead = this.scenePreview
     this.scene = null
-    if (!this.snapshot?.state.story.seen.includes(id)) this.dispatch({ type: 'SEE_SCENE', sceneId: id })
+    this.scenePreview = false
+    if (!ahead && !this.snapshot?.state.story.seen.includes(id)) this.dispatch({ type: 'SEE_SCENE', sceneId: id })
     else this.refresh()
   }
 
