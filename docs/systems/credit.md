@@ -22,12 +22,12 @@ interest = owed × credit.interestPerDay            owed += interest
 due      = min(owed, principal × credit.repayPctPerDay + interest)
 ```
 
-- **Clean covers it:** paid (`LOAN_PAYMENT { paid, owed }`, or `LOAN_REPAID` once nothing's left).
+- **Clean covers it:** paid (`LOAN_PAYMENT { paid, owed }`, or `LOAN_REPAID` once less than `credit.paidOffBelow` is left).
 - **It doesn't:** missed (`LOAN_MISSED { due, missed }`). The collectors come: a `collectors` incident naming one of your joints or rackets, with `due` as its amount: let them make a point (the default: condition and heat), pay double in Clean, or show them out (a Muscle contest). At `credit.missesToRepossess` misses in a row (`loan.missed`, set back to 0 by any morning payment met) the lender's men take the keys ([ADR 0051](../decisions/0051-rock-bottom.md)): the middle earner of your businesses by yield (a premises only if nothing earns) is gone, whoever minded it comes home, and the loan is closed (`LOAN_REPOSSESSED { racketId, racketType, districtId, owed }`, `stats.loans.repossessed`). The debt never compounds for ever. Saves from before this kept `seized`, the old vault share.
 
 Payments only ever come from Clean. Repaying in Dirty would turn Dirty into Clean at 1:1 less interest, better than any front.
 
-`REPAY_LOAN { amount }` pays down early from Clean. `loanDue` is what the next day start will ask for.
+`REPAY_LOAN { amount }` pays down early from Clean. `loanDue` is what the next day start will ask for; the day start charges it from the same sum (`loanTerms`), so the Credit card can't disagree.
 
 ## Lending
 

@@ -3,6 +3,21 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-14 — Review follow-ups: numbers in config, one way to free crew
+
+Branch: `fix/review-followups`. The rest of PR #1's review: cleanups and two breaks of the "every number in config" rule. Nothing plays differently.
+
+- **Numbers moved into config, at the same values:** `credit.paidOffBelow` (was `EPS` in `engine/systems/credit.ts`) and `rivals.{tolya,zhanna,colonel}.friendlyFrom` (was `FRIENDLY_FROM` in `app/story.ts`), both validated in `engine/config/schema.ts`. [TUNING.md](TUNING.md), [credit.md](docs/systems/credit.md), [districts-and-rivals.md](docs/systems/districts-and-rivals.md), [app.md](docs/app.md).
+- **The arc strip no longer matches engine text.** It called an overreach locked only when `missionBlocked` returned "The rest of the act comes first", so any other reason showed "ready". Now any reason locks it. `app/components/NextCard.tsx`.
+- **One way to free crew from a job:** `freeCrew` moves to `engine/systems/crew.ts`, and contracts, errands and missions use it in place of their own copies. [crew.md](docs/systems/crew.md).
+- **One loan sum:** the day start and `loanDue` share `loanTerms`, so the Credit card and the morning payment can't drift apart.
+- **Dead code:** `opinionControlMult` is gone; `derive` was the one actually used. [politics.md](docs/systems/politics.md).
+- **Not changed:**
+  - **`gameCleared`.** It only calls `storyOver`, three screens use it, and ADR 0052 names it.
+  - **The repeated `derive` each game hour in reconcile.** Each step changes what the next one's derive reads (condition, XP, prosperity, opinion), so sharing one would change outcomes. Measured: the worst catch-up (72 h on a day-60 save, 43 businesses) takes about 19 ms on a laptop.
+- **Tests:** `tests/config.test.ts` rejects a `friendlyFrom` at or below `hostileBelow` and a negative `paidOffBelow`; [testing.md](docs/testing.md).
+- **Verified:** `npm run check`: 245 tests. The 60-day sim over 3 seeds is identical to `main`'s.
+
 ## 2026-11-14 — Review fixes: misses in a row, previews aren't seen
 
 Branch: `feature/design-v2`. Two bugs found reviewing PR #1, both against what [ADR 0051](docs/decisions/0051-rock-bottom.md) and [ADR 0049](docs/decisions/0049-scenes.md) already say.

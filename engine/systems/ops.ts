@@ -5,7 +5,7 @@ import { opRewardMult } from '../core/formulas'
 import type { Rand } from '../core/rng'
 import { dayIndex } from '../core/time'
 import type { CrewMember, OpInstance, PlayerState } from '../model/state'
-import { changeLoyalty, effectiveStat } from './crew'
+import { changeLoyalty, effectiveStat, freeCrew } from './crew'
 import { addPressure } from './districts'
 import { grantXp, hasPerk, jobXp } from './experience'
 import { landConvoy } from './convoys'
@@ -116,15 +116,6 @@ export function opDirtyReward(c: Config, state: PlayerState, type: OpType, outco
 // Minutes a job takes for this team; a Fixer shortens it.
 export function opMinutesFor(c: Config, cfg: OpConfig, team: CrewMember[]): number {
   return cfg.minutes * (hasPerk(team, 'fixer') ? (c.crew.experience.perks.fixer.jobMinutesMult ?? 1) : 1)
-}
-
-function freeCrew(team: CrewMember[], op: OpInstance): void {
-  for (const m of team) {
-    if (m.status === 'on_op' && m.assignedTo === op.id) {
-      m.status = 'idle'
-      delete m.assignedTo
-    }
-  }
 }
 
 export function resolveOp(state: PlayerState, ctx: Ctx, op: OpInstance, t: number): void {

@@ -1,7 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { formulas, surplusRoomToday, zhannaHoldsPort, zhannaHostile } from '../../engine'
 import { fmt, fmtDuration, pct } from '../format'
-import { FRIENDLY_FROM } from '../story'
 import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
 import { Head } from './Portrait'
@@ -14,7 +13,7 @@ export function ZhannaCard({ game }: { game: Snapshot }) {
   const z = s.rival.zhanna
   const zc = c.rivals.zhanna
   const hostile = zhannaHostile(s, c)
-  const mood = hostile ? 'hostile' : z.disposition < 0 ? 'cool' : z.disposition >= FRIENDLY_FROM ? 'friendly' : 'businesslike'
+  const mood = hostile ? 'hostile' : z.disposition < 0 ? 'cool' : z.disposition >= zc.friendlyFrom ? 'friendly' : 'businesslike'
   const price = formulas.shipmentPrice(c, z.disposition)
   const wait = z.nextShipmentAt - now
   const room = surplusRoomToday(s, c, now)

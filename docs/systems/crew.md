@@ -2,7 +2,7 @@
 
 The people who work jobs and mind rackets. They cost wages, their loyalty decides whether they stay, and they get better with work.
 
-**Code:** `engine/systems/crew.ts` (`effectiveStat`, `baseWage`, `crewSlots`, `freshProgress`, `crewFromSeed`, `generateCandidates`, `regeneratePool`, `refreshPoolIfDue`, `releaseJailed`, `unassignEnforcer`, `crewDayBoundary`), `engine/systems/injuries.ts` (`injure`, `maybeInjureTeam`, `releaseInjured`, `injuryMult`, `clinicLoyaltyPerDay`), `engine/systems/experience.ts` (`RANK_NAMES`, `rankFor`, `hasPerk`, `jobXp`, `grantXp`, `levelUp`, `filePerkChoice`, `accrueEnforcerXp`, `crewXpHourBoundary`), the crew handlers in `engine/core/apply.ts`.
+**Code:** `engine/systems/crew.ts` (`freeCrew`, which every kind of job ends with, `effectiveStat`, `baseWage`, `crewSlots`, `freshProgress`, `crewFromSeed`, `generateCandidates`, `regeneratePool`, `refreshPoolIfDue`, `releaseJailed`, `unassignEnforcer`, `crewDayBoundary`), `engine/systems/injuries.ts` (`injure`, `maybeInjureTeam`, `releaseInjured`, `injuryMult`, `clinicLoyaltyPerDay`), `engine/systems/experience.ts` (`RANK_NAMES`, `rankFor`, `hasPerk`, `jobXp`, `grantXp`, `levelUp`, `filePerkChoice`, `accrueEnforcerXp`, `crewXpHourBoundary`), the crew handlers in `engine/core/apply.ts`.
 **Config:** `crew.*`, `rockBottom.*`.
 
 ## A crew member

@@ -2,8 +2,18 @@ import { TRAIT_IDS, type Act, type Config, type CrewSeed, type PerkId, type Stat
 import { emit, type Ctx } from '../core/ctx'
 import type { Rand } from '../core/rng'
 import { dayIndex, hoursToMs } from '../core/time'
-import type { CrewMember, PlayerState } from '../model/state'
+import type { CrewMember, OpInstance, PlayerState } from '../model/state'
 import { clinicLoyaltyPerDay } from './injuries'
+
+// A job is over: whoever is still on it comes home idle. Jobs, missions, contracts and errands all end here.
+export function freeCrew(team: CrewMember[], op: OpInstance): void {
+  for (const m of team) {
+    if (m.status === 'on_op' && m.assignedTo === op.id) {
+      m.status = 'idle'
+      delete m.assignedTo
+    }
+  }
+}
 
 export function effectiveStat(c: Config, m: CrewMember, stat: Stat): number {
   let v = m[stat]

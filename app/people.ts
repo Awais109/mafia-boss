@@ -2,7 +2,7 @@ import { colonelHostile, gameDay, tolyaHostile, TUTORIAL_STEPS, zhannaHostile, t
 import type { HeadId } from './art/heads'
 import type { PersonId } from './art/people'
 import { ACT_NAME } from './acts'
-import { FRIENDLY_FROM, openingCrew, tolyaMood } from './story'
+import { openingCrew, tolyaMood } from './story'
 
 // The cast as the People pages show them (design: Map · People and the dossier; canon: docs/story.md and
 // design/sevgorod-design-brief.md, Part 3). Who each person is, when you've met them, and what they hold,
@@ -107,7 +107,7 @@ export const PEOPLE: Person[] = [
     holds: (s, c) => (holder(s, 'portQuarter') === 'zhanna' ? `The Port Quarter · ${Math.round(c.districts.list.portQuarter.tribute * 100)}% tribute` : 'Her trade, not the Port'),
     mood: (s, c) => {
       const z = s.rival.zhanna.disposition
-      return { words: ['hostile', 'cool', 'businesslike', 'friendly'], at: zhannaHostile(s, c) ? 'hostile' : z < 0 ? 'cool' : z >= FRIENDLY_FROM ? 'friendly' : 'businesslike' }
+      return { words: ['hostile', 'cool', 'businesslike', 'friendly'], at: zhannaHostile(s, c) ? 'hostile' : z < 0 ? 'cool' : z >= c.rivals.zhanna.friendlyFrom ? 'friendly' : 'businesslike' }
     },
   },
   {
@@ -144,7 +144,7 @@ export const PEOPLE: Person[] = [
     holds: (s, c) => (holder(s, 'zastava') === 'colonel' ? `Zastava · ${Math.round(c.districts.list.zastava.tribute * 100)}% tribute` : 'Nothing now: the road is yours'),
     mood: (s, c) => {
       const d = s.rival.colonel.disposition
-      return { words: ['hostile', 'cold', 'correct', 'obliging'], at: colonelHostile(s, c) ? 'hostile' : d < 0 ? 'cold' : d >= FRIENDLY_FROM ? 'obliging' : 'correct' }
+      return { words: ['hostile', 'cold', 'correct', 'obliging'], at: colonelHostile(s, c) ? 'hostile' : d < 0 ? 'cold' : d >= c.rivals.colonel.friendlyFrom ? 'obliging' : 'correct' }
     },
   },
   { id: 'customs', name: 'The Customs Chief', epithet: 'The stamp', line: 'Everything is in order. Now.', about: 'A pension two years away and a rubber stamp.', role: 'Official', head: 'customs', fragment: '…the stamp costs more than the goods', ...official('customsChief') },
