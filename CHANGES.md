@@ -3,6 +3,28 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-14 — Officials' retainers (#7)
+
+Branch: `feature/7-retainers`. Reasoning: [ADR 0064](docs/decisions/0064-officials-retainers.md); the rules: [heat.md](docs/systems/heat.md#officials).
+
+- **What a player sees:**
+  - An official's control lasts while their retainer is paid: every week, a few hours of income in Clean, taken by itself when the Clean is there.
+  - Unpaid, they stop answering, and heat climbs until you pay. The Heat screen shows each retainer and a Pay button, Home raises an alert, and a missed one is a pop-up.
+  - A careful player never notices; a greedy one meets the odd raid.
+- **How:**
+  - `engine/systems/retainers.ts`: `retainerFee`, `retainersDue`, `payRetainer` and `retainersDueWithin`.
+  - Due times are reconcile boundaries. `derive` leaves lapsed officials' control out. `PAY_RETAINER`, `RETAINER_PAID` and `RETAINER_MISSED` are new. Schema 18 (`state.retainers`, `stats.retainers`).
+  - Config: `officials.retainer.everyDays`, and each official's `retainerHours`.
+  - The bot keeps 48 h of retainers back; a new `GREEDY` persona (`--persona greedy`) doesn't.
+- **Numbers (10 seeds, 60 days):**
+  - careful: no raids, heat 28.5;
+  - greedy: 1.9 raids, heat 36.8;
+  - Acts III–VI: 6.59, 9.16, 13.32 and 15.74 d, all in band. Act VI's spread is wider (4/10), to be fixed by #6.
+
+  An Influence-based first version never lapsed, so it was reverted ([TUNING.md](TUNING.md)).
+- **Docs:** [heat.md](docs/systems/heat.md), [architecture.md](docs/architecture.md), [sim.md](docs/sim.md), [app.md](docs/app.md), [testing.md](docs/testing.md).
+- **Verified:** `npm run check`, with `tests/retainers.test.ts` new and a greedy-raids guard in `tests/sim.test.ts`.
+
 ## 2026-11-14 — Opinion's diminishing returns (#8)
 
 Branch: `feature/8-opinion-curve`. Reasoning: [ADR 0063](docs/decisions/0063-opinion-diminishing-returns.md); numbers: [TUNING.md](TUNING.md).

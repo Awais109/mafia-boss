@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native'
-import { influenceRoom, OFFICIAL_IDS } from '../../engine'
+import { influenceRoom, OFFICIAL_IDS, retainerFee } from '../../engine'
 import { ACT_NAME } from '../acts'
 import { Glyph, Icon } from '../components/Glyph'
 import { Head } from '../components/Portrait'
@@ -22,7 +22,9 @@ export function HeatScreen({ game }: ScreenProps) {
   const earners = d.perRacket.filter((r) => r.kind !== 'premises' && !r.legal && !r.closed).length
   const busy = d.perFront.filter((f) => f.suspicion > 0).map((f) => c.fronts.types[f.type].name)
   const heldDistricts = s.districts.filter((x) => x.controller === 'player' && !c.districts.list[x.id].home).map((x) => c.districts.list[x.id].name)
-  const officialsHint = s.officials.map((id) => `${c.officials.list[id].name} ${fmt(c.officials.list[id].control)}`).join(' · ')
+  const officialsHint = s.officials
+    .map((id) => `${c.officials.list[id].name} ${s.retainers[id]?.lapsed ? 'unpaid' : fmt(c.officials.list[id].control)}`)
+    .join(' · ')
   const lines = [
     { key: 'inspect', at: h.inspectThreshold, name: 'Inspections', what: `cut income ${pct(1 - h.inspectYieldMult)}`, color: colors.warn },
     {
@@ -122,7 +124,7 @@ export function HeatScreen({ game }: ScreenProps) {
 
       <Section title="Officials" right={<Note color={colors.influence}>{`${glyph.influence}${fmt(s.influence)} · +${glyph.influence}${fmtRate(d.influencePerHr)}`}</Note>}>
         <Text style={styles.note}>
-          {`Officials are permanent control. Influence comes from jobs (${glyph.influence}${fmt(c.ops.influenceDailyCap - influenceRoom(s, c, now))}/${c.ops.influenceDailyCap} today), from officials already on the payroll, and from a Union Office.`}
+          {`Officials are control while their retainer is paid: a few hours of income in Clean every week, taken by itself when the Clean is there. Unpaid, they stop answering until you pay. Influence comes from jobs (${glyph.influence}${fmt(c.ops.influenceDailyCap - influenceRoom(s, c, now))}/${c.ops.influenceDailyCap} today), from officials already on the payroll, and from a Union Office.`}
         </Text>
         {OFFICIAL_IDS.map((id) => (
           <OfficialCard key={id} game={game} id={id} cooldown={cooldown} />
@@ -189,10 +191,12 @@ function Ledger({ rows, total }: { rows: LedgerRow[]; total: { label: string; va
 }
 
 function OfficialCard({ game, id, cooldown }: { game: Snapshot; id: (typeof OFFICIAL_IDS)[number]; cooldown: number }) {
-  const { state: s, derived: d, config: c } = game
+  const { state: s, derived: d, config: c, now } = game
   const o = c.officials.list[id]
   const person = OFFICIAL_PERSON[id]
   const owned = s.officials.includes(id)
+  const retainer = owned ? s.retainers[id] : undefined
+  const fee = retainerFee(s, c, id, d)
   const open = d.unlocked.official[id]
   const role = `${o.name}${o.act > 1 && !owned ? (o.act > s.act ? ` · Act ${ACT_NAME[o.act]}` : o.act === s.act ? ` · new in Act ${ACT_NAME[o.act]}` : '') : ''}`
   const effects = [
@@ -209,7 +213,13 @@ function OfficialCard({ game, id, cooldown }: { game: Snapshot; id: (typeof OFFI
           <Text style={styles.caps}>{role}</Text>
           <Text style={styles.name}>{person.who}</Text>
         </View>
-        {owned ? <Tag text="on the payroll" color={colors.good} /> : !open && o.act <= s.act ? <Tag text="mayor only" dashed /> : null}
+        {retainer?.lapsed ? (
+          <Tag text="not answering" color={colors.bad} />
+        ) : owned ? (
+          <Tag text="on the payroll" color={colors.good} />
+        ) : !open && o.act <= s.act ? (
+          <Tag text="mayor only" dashed />
+        ) : null}
       </View>
       <View style={styles.chips}>
         {effects.map((e) => (
@@ -218,6 +228,18 @@ function OfficialCard({ game, id, cooldown }: { game: Snapshot; id: (typeof OFFI
           </View>
         ))}
       </View>
+      {retainer && !retainer.lapsed && (
+        <Note>{`Retainer ${glyph.clean}${fmt(fee)} due in ${fmtDuration(retainer.dueAt - now, c)}${s.clean < fee ? ', and there isn’t enough Clean yet' : ''}`}</Note>
+      )}
+      {retainer?.lapsed && (
+        <Btn
+          kind="primary"
+          title={`Pay the retainer ${glyph.clean}${fmt(fee)}`}
+          sub="Their control is back at once"
+          disabled={s.clean < fee}
+          onPress={() => store.dispatch({ type: 'PAY_RETAINER', officialId: id })}
+        />
+      )}
       {!owned && open && (
         <Btn
           kind="primary"

@@ -337,24 +337,25 @@ export const defaults: Config = {
   officials: {
     cooldownDays: 2, // between any two official purchases; puts the Captain ~40% into Act II
     influencePerHrEach: 1 / 8,
+    retainer: { everyDays: 7 }, // ADR 0064: each official's retainerHours of yield in Clean every week, or the control lapses
     list: {
-      wardCop: { name: 'Ward Cop', description: 'A beat cop on the payroll. A small, steady boost to control, plus a trickle of Influence.', control: 6, cost: 4, act: 1 },
+      wardCop: { name: 'Ward Cop', description: 'A beat cop on the payroll. A small, steady boost to control, plus a trickle of Influence.', control: 6, cost: 4, act: 1, retainerHours: 1 },
       // 140 → 240 with the bigger Act I, whose businesses tier to 5 in Act II (TUNING.md, M3).
       precinctCaptain: {
-        name: 'Precinct Captain', description: 'A captain who can make real trouble disappear. A huge, permanent boost to control.',
-        control: 240, cost: 12, act: 2,
+        name: 'Precinct Captain', description: 'A captain who can make real trouble disappear. A huge boost to control, as long as he’s paid.',
+        control: 240, cost: 12, act: 2, retainerHours: 2,
       },
       cityHall: {
         name: 'City Hall', description: 'The deputy mayor for trade, across the bridge. The city looks the other way for you now.',
-        control: 1300, cost: 24, act: 3, // 400 → 1300: a tier-6 portfolio ran Act III at heat 45 (TUNING.md, M8)
+        control: 1300, cost: 24, act: 3, retainerHours: 3, // 400 → 1300: a tier-6 portfolio ran Act III at heat 45 (TUNING.md, M8)
       },
       customsChief: {
         name: 'Customs Chief', description: 'The man who signs off the crossing. More control, and customs take half as many of your convoys.',
-        control: 2000, cost: 40, act: 4, seizureMult: 0.5,
+        control: 2000, cost: 40, act: 4, retainerHours: 3, seizureMult: 0.5,
       },
       governor: {
         name: 'Governor', description: 'The oblast governor, who takes calls from the capital and only from the mayor. Control, and the Ministry’s attention falls.',
-        control: 5000, cost: 300, act: 5, ministryRelief: 40, needsMayor: true,
+        control: 5000, cost: 300, act: 5, retainerHours: 4, ministryRelief: 40, needsMayor: true,
       },
     },
   },

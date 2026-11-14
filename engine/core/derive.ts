@@ -332,7 +332,7 @@ export function derive(state: PlayerState, c: Config): Derived {
   const taken = state.districts.filter((d) => d.controller === 'player' && !c.districts.list[d.id].home).length
   const controlParts = {
     base: c.heat.baseControl,
-    officials: sum(state.officials.map((id) => c.officials.list[id].control)),
+    officials: sum(state.officials.filter((id) => !state.retainers[id]?.lapsed).map((id) => c.officials.list[id].control)), // a lapsed retainer: no control (ADR 0064)
     bribe: state.bribeControl,
     districtMult: 1 + c.heat.districtControlPct * taken,
     mayor: mayor ? c.elections.mayor.control : 0,

@@ -225,8 +225,23 @@ function v16to17(doc: Doc): Doc {
   }
 }
 
+// Retainers (ADR 0064): every official already on the payroll owes their first a period from the save's last
+// moment, so nothing lapses on load; zeroed counters.
+function v17to18(doc: Doc): Doc {
+  const officials = (doc.officials as string[]) ?? []
+  const period = defaults.officials.retainer.everyDays * 24 * defaults.time.hourMs
+  const stats = doc.stats as { retainers?: object }
+  return {
+    ...doc,
+    schemaVersion: 18,
+    retainers: doc.retainers ?? Object.fromEntries(officials.map((id) => [id, { dueAt: (doc.updatedAt as number) + period, lapsed: false }])),
+    stats: { ...emptyStats(), ...stats, retainers: { ...emptyStats().retainers, ...stats.retainers } },
+  }
+}
+
 const STEPS: Record<number, (doc: Doc) => Doc> = {
   1: v1to2, 2: v2to3, 3: v3to4, 4: v4to5, 5: v5to6, 6: v6to7, 7: v7to8, 8: v8to9, 9: v9to10, 10: v10to11, 11: v11to12, 12: v12to13, 13: v13to14, 14: v14to15, 15: v15to16, 16: v16to17,
+  17: v17to18,
 }
 
 export function migrate(doc: unknown): PlayerState {

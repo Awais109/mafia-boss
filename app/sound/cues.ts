@@ -138,6 +138,10 @@ export function eventCue(e: GameEvent): SfxName | null {
     case 'RECRUITED':
     case 'CAMPAIGNED':
       return 'buy'
+    case 'RETAINER_PAID':
+      return e.auto ? null : 'envelope' // paid by itself, quietly; paid by hand, an envelope
+    case 'RETAINER_MISSED':
+      return 'job-fail'
     case 'BRIBED':
     case 'TRIBUTE_PAID':
     case 'TRIBUTE_HAGGLED':

@@ -165,6 +165,17 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
       return { text: 'New faces are asking for work', quiet: true }
     case 'OFFICIAL_BOUGHT':
       return { text: `${c.officials.list[e.officialId].name} is on the payroll (+${fmt(c.officials.list[e.officialId].control)} control)`, color: colors.influence }
+    case 'RETAINER_PAID': {
+      const o = c.officials.list[e.officialId]
+      return e.auto
+        ? { text: `Paid the ${o.name}’s retainer (${glyph.clean}${fmt(e.fee)})`, quiet: true }
+        : { text: `The ${o.name} is back on the payroll (${glyph.clean}${fmt(e.fee)}): +${fmt(o.control)} control`, color: colors.influence }
+    }
+    case 'RETAINER_MISSED':
+      return {
+        text: `The ${c.officials.list[e.officialId].name}’s retainer went unpaid (${glyph.clean}${fmt(e.fee)}): no control from them until it’s paid`,
+        color: colors.warn,
+      }
     case 'BRIBED':
       return { text: `Bribe paid (${d}${fmt(e.cost)}): +${fmt(e.control)} control for ${c.heat.bribe.hours}h`, color: colors.influence }
     case 'BRIBE_EXPIRED':

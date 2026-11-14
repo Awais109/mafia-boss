@@ -459,6 +459,20 @@ Baseline by act: front use I 41%, II 54%, III 73%, IV 59%, V 56%, VI 47%; Dirty 
             Opinion 64–68 in Act V, 73–77 in Act VI (was pinned at 100). Heat in band; pacing test passes. Kept.
 ```
 
+## 2026-11-14 — Officials' retainers (#7, ADR 0064)
+
+10 seeds, 60 days unless noted. A new rule, then its numbers.
+
+```
+2026-11-14  officials.retainer: Influence, 20% of the price a week (first version)
+            Careful bot: 31 paid, 0 missed; greedy (no budget, no bribes): 31 paid, 0 missed, 0 raids. Each official's own
+            Influence (3 a day) covers it many times over, and Influence has little other use before Act V. Reverted.
+2026-11-14  officials.retainer: Clean, retainerHours × yield a week (wardCop 1, precinctCaptain 2, cityHall 3, customsChief 3, governor 4)
+            Careful: 31 paid, 0.7 missed (each paid at once), raids 0, heat 28.5. Greedy: 3.4 missed, 1.9 raids, heat 36.8.
+            Acts: I 4.73, II 3.74, III 6.59 (10/10), IV 9.16 (10/10), V 13.32 (4/10), VI 15.74 (4/10). Kept.
+            Act VI's spread widened (was 9/10 in band): the Clean the retainers take slows Legalize. #6's re-pace tunes it.
+```
+
 ## Open
 
 Whole game, 10 seeds, 60 days (2026-09-29, after M13): Act I 4.64 d, Act II 3.28, Act III 6.44, Act IV 9.78, Act V 12.86, Act VI 13.08; heat over Acts I–V 29.4 (by act about 38, 24, 25, 27, 31; Act VI about 11, since legal businesses draw none); no raids, no missed wages, partial 0.46.
@@ -475,4 +489,4 @@ Whole game, 10 seeds, 60 days (2026-09-29, after M13): Act I 4.64 d, Act II 3.28
 - **Gold barely accelerates Act I** (goldRush 4.19 d against 4.64): it speeds up jobs, and Act I is gated on building. Later acts clear within a day of the casual bot.
 - **The Union Office is built in Act III**, not before: City Hall is the first official after the Captain that Influence has to save for.
 - **Zhanna's lots are rare for the bot** (0.3 a run), because stock seldom gets within 12 hours of running out; surplus sales come to about ◆50 a run.
-- **No raids in the sim**, so only the tests exercise the Stash House's raid shield.
+- **No raids for the careful bot**, but the greedy persona meets about one a run since retainers (ADR 0064), so the Stash House's raid shield gets some use in `--persona greedy` runs.

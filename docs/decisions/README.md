@@ -76,6 +76,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0061](0061-motion.md) | Motion: a page turn, ink over pencil, a stamp landing, money counting; none with reduced motion | Accepted |
 | [0062](0062-empire-by-night.md) | The Empire by night: the dawn art recoloured (moon, lit windows, stars) until drawn night art | Accepted |
 | [0063](0063-opinion-diminishing-returns.md) | Public opinion has diminishing returns: the press nears 100 but never reaches it; elections rebalanced | Accepted |
+| [0064](0064-officials-retainers.md) | Officials keep their control while a weekly retainer in Clean is paid; unpaid, it lapses until paid | Accepted |
 
 ## Template
 

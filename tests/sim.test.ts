@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { simulate } from '../sim/driver'
-import { GOLD_RUSH } from '../sim/persona'
+import { GOLD_RUSH, GREEDY } from '../sim/persona'
 import { summarize, type Summary } from '../sim/report'
 import { withMissions as config } from './helpers'
 
@@ -89,6 +89,16 @@ describe('casual bot pacing on default config', () => {
     const rush = TEN.map((seed) => summarize(simulate({ config, preset: 'default', days: 6, seed, persona: GOLD_RUSH })))
     expect(rush.every((s) => s.goldSpent > 0)).toBe(true)
     expect(meanOf(rush, (s) => s.actClear1)).toBeGreaterThanOrEqual(1)
+  })
+
+  it('lets a greedy player meet the odd raid where the careful bot meets none (ADR 0064)', () => {
+    // No heat budget, no bribes, and retainers left until heat reaches the raid line: officials lapse, heat creeps
+    // back, and some seeds are raided. Not a constant stream: the greedy bot pays up once the raids start.
+    const greedy = SEEDS.map((seed) => summarize(simulate({ config, preset: 'default', days: 45, seed, persona: GREEDY })))
+    const raids = greedy.reduce((sum, s) => sum + s.raids, 0)
+    expect(raids).toBeGreaterThanOrEqual(2)
+    expect(raids / greedy.length).toBeLessThanOrEqual(4)
+    expect(summaries.reduce((sum, s) => sum + s.raids, 0)).toBeLessThan(raids)
   })
 
   it('makes partial success the most common op outcome (40–60%)', () => {

@@ -29,6 +29,7 @@ const EVENT_LOOK: Partial<Record<GameEvent['type'], Look>> = {
   ARREST: { label: 'Arrest', icon: 'blocked', color: colors.bad },
   WALKOUT: { label: 'Walkout', icon: 'walkout', color: colors.bad },
   WAGES_MISSED: { label: 'Payday', icon: 'dirty', color: colors.bad },
+  RETAINER_MISSED: { label: 'The payroll', icon: 'warning', color: colors.warn },
   UPKEEP_MISSED: { label: 'Upkeep', icon: 'dirty', color: colors.warn },
   DISTRICT_FLIPPED: { label: 'Turf', icon: 'flag', color: colors.influence },
   GOAL_DONE: { label: 'Act I goal', icon: 'check', color: colors.good },
@@ -151,7 +152,9 @@ export function EventNoticeModal({ notice, game }: { notice: QueuedNotice; game:
           ? 'It launders nothing and takes no deposits until it thaws.'
           : e.type === 'WALKOUT'
             ? 'Raises keep loyalty up. Your nephew never walks.'
-            : null
+            : e.type === 'RETAINER_MISSED'
+              ? 'Heat will climb without them. Pay it from Heat when you have the Clean.'
+              : null
   return (
     <ModalPanel onRequestClose={store.dismissNotice}>
       <NoticeHead label={look.label} color={look.color} count={count} />

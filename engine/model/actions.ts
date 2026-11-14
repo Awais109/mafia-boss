@@ -14,6 +14,7 @@ export type Action =
   | { type: 'RAISE'; crewId: string }
   | { type: 'BUY_CREW_SLOT' }
   | { type: 'BUY_OFFICIAL'; officialId: OfficialId }
+  | { type: 'PAY_RETAINER'; officialId: OfficialId } // a lapsed official back on the payroll (ADR 0064)
   | { type: 'BRIBE' }
   | { type: 'BUY_DISTRICT'; districtId: DistrictId }
   | { type: 'BUY_FRONT'; frontType: FrontType }

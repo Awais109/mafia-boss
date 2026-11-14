@@ -4,6 +4,7 @@ import type { GameEvent } from '../model/events'
 import type { CrewMember, PlayerState } from '../model/state'
 import { changeLoyalty, crewSlots, regeneratePool, unassignEnforcer } from '../systems/crew'
 import { checkActs } from '../systems/acts'
+import { hireRetainer, payRetainer } from '../systems/retainers'
 import { canPressure, getDistrict, racketBlocked, takeDistrict } from '../systems/districts'
 import { buyPassage } from '../systems/convoys'
 import { legalize } from '../systems/legal'
@@ -315,11 +316,15 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
       if (state.influence < o.cost - EPS) return 'Not enough Influence'
       state.influence -= o.cost
       state.officials.push(a.officialId)
+      hireRetainer(state, c, a.officialId, t)
       state.officialCooldownUntil = t + hoursToMs(c, c.officials.cooldownDays * 24)
       state.stats.officialBoughtAt[a.officialId] = t
       emit(ctx, t, { type: 'OFFICIAL_BOUGHT', officialId: a.officialId, cost: o.cost })
       return null
     }
+
+    case 'PAY_RETAINER':
+      return payRetainer(state, ctx, t, a.officialId)
 
     case 'BRIBE': {
       if (state.bribeControl > 0 && state.bribeUntil > t) return 'A bribe is already working'

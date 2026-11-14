@@ -20,7 +20,7 @@ import type {
 } from '../config/schema'
 import type { GameEvent } from './events'
 
-export const SCHEMA_VERSION = 17
+export const SCHEMA_VERSION = 18
 export const LOG_CAP = 200
 export const LEDGER_ROWS = 8 // 7 closed days plus today's opening snapshot
 export const EMPIRE_DAYS = 8 // the empire value at the last 8 day starts (ADR 0052)
@@ -155,6 +155,9 @@ export type PoliticsState = {
 
 // Borrowed Clean (ADR 0042): one loan at a time, paid down from Clean at each day start.
 export type Loan = { principal: number; owed: number; missed: number }
+
+// An official's retainer (ADR 0064): due every `officials.retainer.everyDays`; unpaid, their control lapses.
+export type Retainer = { dueAt: number; lapsed: boolean }
 // Dirty lent out through a loan desk, due back with interest unless the borrower defaults.
 export type Lending = { id: string; amount: number; dueAt: number }
 
@@ -284,6 +287,7 @@ export type PlaytestStats = {
   contests: { won: number; lost: number }
   missions: { sent: number; won: number; lost: number } // boss missions (ADR 0050): overreaches count as sent
   after: { contracts: number; contractClean: number; contractGold: number; pastBook: number; bests: number } // ADR 0052
+  retainers: { paid: number; missed: number; clean: number } // ADR 0064
   firstRaidAt: number | null
   officialBoughtAt: Partial<Record<OfficialId, number>>
   lastSessionAt: number | null
@@ -322,6 +326,7 @@ export type PlayerState = {
   ops: OpInstance[]
   districts: District[]
   officials: OfficialId[]
+  retainers: Partial<Record<OfficialId, Retainer>> // one per official on the payroll (ADR 0064)
   officialCooldownUntil: number
   bribeUntil: number
   bribeControl: number
@@ -414,6 +419,7 @@ export function emptyStats(): PlaytestStats {
     contests: { won: 0, lost: 0 },
     missions: { sent: 0, won: 0, lost: 0 },
     after: { contracts: 0, contractClean: 0, contractGold: 0, pastBook: 0, bests: 0 },
+    retainers: { paid: 0, missed: 0, clean: 0 },
     firstRaidAt: null,
     officialBoughtAt: {},
     lastSessionAt: null,
