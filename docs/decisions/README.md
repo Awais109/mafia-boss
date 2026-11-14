@@ -72,6 +72,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0057](0057-debug-by-build.md) | Debug belongs to the build: hidden in release builds unless bundled with `EXPO_PUBLIC_DEBUG=1`; the play log shared from Settings | Accepted |
 | [0058](0058-local-notifications.md) | Local notifications, planned by playing the save forward; no push entitlement | Accepted |
 | [0059](0059-the-keys-scene.md) | Scene 16, "The keys", plays at the first repossession; later ones stay a notice | Accepted |
+| [0060](0060-the-last-hearing.md) | Scene 14, "The last hearing", plays at the first ending, before it, with Dima's answer for the road taken | Accepted |
 
 ## Template
 

@@ -3,6 +3,27 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-14 — Scene 14, "The last hearing" (#13)
+
+Branch: `feature/13-scene-hearing`. Reasoning: [ADR 0060](docs/decisions/0060-the-last-hearing.md).
+
+- **What a player sees:** reaching the first ending plays the prosecutor's last hearing just before it:
+  - the old merchant court;
+  - the file, which is a box now;
+  - Dima, in a suit that fits for once, with the answer for the road taken: "Every rouble on this list has a receipt." for the Holding, "The witnesses are no longer available." for the Empire;
+  - "Then there's nothing left to hear." The box closes.
+
+  It plays once, under tension music, and the prosecutor's and Dima's dossiers can replay it. All eighteen of the brief's scenes are now in the game.
+- **How:**
+  - `app/scenes.ts`: `hearing`, an Act VI `ARC` entry due at either ending, ordered before them; a `defence` beat.
+  - `app/story.ts`: `LAST_HEARING`, `firstEndingOf`.
+  - `SCENE_MUSIC`: `tension`.
+  - `PERSON_SCENES`.
+- **Docs:** [story.md](docs/story.md), [endgame.md](docs/systems/endgame.md), [sound.md](docs/sound.md), [testing.md](docs/testing.md).
+- **Verified:**
+  - `npm run check`, with a new test in `tests/scenes.test.ts`;
+  - the web rig (`?preview=hearing&beat=N`) on a save that reached the Empire first: Dima gives the Empire's answer, and the prosecutor's portrait and line.
+
 ## 2026-11-14 — Scene 16, "The keys" (#14)
 
 Branch: `feature/14-scene-keys`. Reasoning: [ADR 0059](docs/decisions/0059-the-keys-scene.md).

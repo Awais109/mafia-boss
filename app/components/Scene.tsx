@@ -10,7 +10,7 @@ import { ACT_NAME } from '../acts'
 import { fmt, pct } from '../format'
 import { PEOPLE } from '../people'
 import { sceneLabel, type Beat, type Crop, type Scene } from '../scenes'
-import { ACT_TITLE, ENVELOPE_NOTES, OPENING_CREW, revealedBy, TOLYA_ASKS, tolyaMood } from '../story'
+import { ACT_TITLE, ENVELOPE_NOTES, firstEndingOf, LAST_HEARING, OPENING_CREW, revealedBy, TOLYA_ASKS, tolyaMood } from '../story'
 import { store, type Snapshot } from '../store'
 import { sound } from '../sound/player'
 import { fonts, paper } from '../theme'
@@ -117,6 +117,8 @@ function BeatView({ game, beat }: { game: Snapshot; beat: Beat }) {
       return <EnvelopePanel game={game} />
     case 'keys':
       return <KeysPanel game={game} />
+    case 'defence':
+      return <FacePanel person="dima" speech={LAST_HEARING[firstEndingOf(game.state) ?? 'holding']} caption="Dima, in a suit that fits for once." />
     case 'hire':
       return <HirePanel game={game} />
     case 'tribute':

@@ -49,7 +49,7 @@ A name is a file: `assets/sounds/sfx/<name>.mp3` (`SFX_NAMES`) or `assets/sounds
 | `theme` | the cover | `city-1` |
 | `city-1` | the game, Acts I–III | |
 | `city-2` | the game from Act IV, and after the story | `city-1` |
-| `tension` | Tolya's scene, every boss arc's scenes, and the keys | `story` |
+| `tension` | Tolya's scene, every boss arc's scenes, the keys and the last hearing | `story` |
 | `story` | the prologue, hiring the crew, the envelope, the chapters | `theme` |
 | `ending-holding`, `ending-empire` | each ending's scene, and the cover after it | `theme`; the Empire's falls back to the Holding's |
 | `sting-failed`, `sting-won` | once, with a mission's stamp | |

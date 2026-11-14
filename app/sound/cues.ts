@@ -194,6 +194,7 @@ export const SCENE_MUSIC: Record<SceneId, MusicName> = {
   governor: 'tension',
   envelope: 'story',
   keys: 'tension',
+  hearing: 'tension',
   'chapter-2': 'story',
   'chapter-3': 'story',
   'chapter-4': 'story',
