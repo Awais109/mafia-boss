@@ -125,7 +125,7 @@ function ArcStrip({ game, go }: { game: Snapshot; go: (tab: TabId) => void }) {
   const payNote = paid ? (pay.mission ? 'won' : 'done') : pay.mission && missionOut(s, pay.mission) ? 'out' : pay.mission && s.missions[pay.mission]?.result === 'lost' ? 'lost' : 'not yet'
   const over = arc.overreach
   const overName = c.missions.list[over].name
-  const overState = missionDone(s, over) ? 'done' : missionOut(s, over) ? 'out' : missionBlocked(s, c, over, now) === 'The rest of the act comes first' ? 'locked' : 'ready'
+  const overState = missionDone(s, over) ? 'done' : missionOut(s, over) ? 'out' : missionBlocked(s, c, over, now) ? 'locked' : 'ready'
   return (
     <Pressable onPress={() => go('ops')} accessibilityRole="button" accessibilityLabel={`${boss?.name}'s arc: ${pay.name} ${payNote}; ${overName} ${overState}`} style={styles.arc}>
       <Face id={arc.boss} size={40} />

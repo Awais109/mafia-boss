@@ -706,6 +706,7 @@ export const defaults: Config = {
       dispositionOnBuyout: -10,
       dispositionOnFlip: -25,
       hostileBelow: -30,
+      friendlyFrom: 20, // the cards' word for a good mood; no rule reads it
       hostileTickMult: 0.5,
       // Pay, haggle or refuse (ADR 0029). One haggle per demand: best idle Nerve + U(±noise) vs diff.
       haggle: { diff: 45, noise: 15, pricePct: 0.5, dispositionOnWin: 5, dispositionOnInsult: -10 },
@@ -721,6 +722,7 @@ export const defaults: Config = {
       dispositionOnBuyout: -10,
       dispositionOnFlip: -25,
       hostileBelow: -30,
+      friendlyFrom: 20, // the cards' word for a good mood; no rule reads it
       seizureDiff: 10,
       premium: { fromAct: 4, packs: 20, priceMult: 4 }, // her premium lots, on the same cooldown
     },
@@ -732,6 +734,7 @@ export const defaults: Config = {
       dispositionOnBuyout: -10,
       dispositionOnFlip: -25,
       hostileBelow: -30,
+      friendlyFrom: 20, // the cards' word for a good mood; no rule reads it
     },
   },
 
@@ -828,6 +831,7 @@ export const defaults: Config = {
     interestPerDay: 0.05,
     repayPctPerDay: 0.25, // of the principal, from Clean, at each day start
     missesToRepossess: 2, // the second miss in a row: a business taken, the loan closed (ADR 0051)
+    paidOffBelow: 0.5, // less than half a Clean left owed: the loan is paid off
     lending: { termHours: 48, returnPct: 0.3, defaultBase: 0.25, defaultPerProsperity: 0.003, minDefault: 0.02 },
   },
 

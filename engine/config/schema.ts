@@ -557,6 +557,7 @@ export type Config = {
       dispositionOnBuyout: number
       dispositionOnFlip: number
       hostileBelow: number
+      friendlyFrom: number // the cards' word: from here the mood reads friendly. No rule reads it
       hostileTickMult: number
       haggle: { diff: number; noise: number; pricePct: number; dispositionOnWin: number; dispositionOnInsult: number }
       // From Act III his boys come for a business (ADR 0042): likelier once he's lost the Row, likelier still when hostile.
@@ -578,6 +579,7 @@ export type Config = {
       dispositionOnBuyout: number
       dispositionOnFlip: number
       hostileBelow: number
+      friendlyFrom: number // the cards' word: from here the mood reads friendly. No rule reads it
       seizureDiff: number // added to smuggling difficulty while she holds the Port
       // From Act IV she also sells premium lots, dearer, on the same cooldown (ADR 0043).
       premium: { fromAct: Act; packs: number; priceMult: number }
@@ -590,6 +592,7 @@ export type Config = {
       dispositionOnBuyout: number
       dispositionOnFlip: number
       hostileBelow: number
+      friendlyFrom: number // the cards' word: from here the mood reads friendly. No rule reads it
     }
   }
   reputation: {
@@ -640,6 +643,7 @@ export type Config = {
     interestPerDay: number // on what's owed, at each day start
     repayPctPerDay: number // of the principal, due from Clean at each day start
     missesToRepossess: number // this many missed payments in a row: the lender takes a business and closes the loan (ADR 0051)
+    paidOffBelow: number // a loan with less than this left owed is paid off
     lending: {
       termHours: number
       returnPct: number
@@ -1117,6 +1121,8 @@ export function validateConfig(c: Config): string[] {
       const col = c.rivals.colonel
       nonNeg(e, 'rivals.colonel.passage.hoursOfYield', col.passage.hoursOfYield)
       positive(e, 'rivals.colonel.passage.hours', col.passage.hours)
+      for (const [name, r] of [['tolya', t], ['zhanna', z], ['colonel', col]] as const)
+        num(e, `rivals.${name}.friendlyFrom`, r.friendlyFrom, (n) => n > r.hostileBelow, '> hostileBelow')
     },
     (e) => {
       const r = c.reputation
@@ -1151,6 +1157,7 @@ export function validateConfig(c: Config): string[] {
       nonNeg(e, 'credit.interestPerDay', cr.interestPerDay)
       rate(e, 'credit.repayPctPerDay', cr.repayPctPerDay)
       int(e, 'credit.missesToRepossess', cr.missesToRepossess, 1)
+      nonNeg(e, 'credit.paidOffBelow', cr.paidOffBelow)
       positive(e, 'credit.lending.termHours', cr.lending.termHours)
       nonNeg(e, 'credit.lending.returnPct', cr.lending.returnPct)
       unit(e, 'credit.lending.defaultBase', cr.lending.defaultBase)

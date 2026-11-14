@@ -134,7 +134,7 @@ price = round(shipment.basePrice
 
 **The Port.** While she holds the Port Quarter, a smuggling run starts `seizureDiff` harder, on top of the heat term ([ops.md](ops.md)). The job's snapshot keeps it, so the odds shown are the odds rolled.
 
-**Disposition** runs from −100 to 100 and starts at 0. Below `hostileBelow` she's hostile and her lots cost `shipment.hostileMarkup` times as much.
+**Disposition** runs from −100 to 100 and starts at 0. Below `hostileBelow` she's hostile and her lots cost `shipment.hostileMarkup` times as much. From `friendlyFrom` her card calls her friendly; that's a word, not a rule, and each rival has one (`rivals.tolya.friendlyFrom`, `rivals.colonel.friendlyFrom`).
 
 | Your move | Disposition change |
 |---|---|

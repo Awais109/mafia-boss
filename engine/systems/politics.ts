@@ -39,11 +39,6 @@ export function ministryTarget(state: PlayerState, c: Config, d: Derived = deriv
   return clamp100(m.perYield * (d.yieldPerHr + d.tributePerHr + d.legalGrossPerHr) - relief - (m.opinionRelief * state.politics.opinion) / 100)
 }
 
-// Control × this: a benefactor's neighbours don't call the police.
-export function opinionControlMult(state: PlayerState, c: Config): number {
-  return politicsOn(state, c) ? 1 + (c.opinion.controlBonus * state.politics.opinion) / 100 : 1
-}
-
 // Whole hour, after the fronts' utilization and the inspection flag it reads: both tracks step, and the
 // Ministry freezes a front when its attention has peaked.
 export function politicsHourBoundary(state: PlayerState, ctx: Ctx, t: number): void {

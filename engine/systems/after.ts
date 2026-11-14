@@ -4,6 +4,7 @@ import { derive, type Derived } from '../core/derive'
 import * as F from '../core/formulas'
 import { hoursToMs } from '../core/time'
 import { EMPIRE_DAYS, type Contract, type CrewMember, type Front, type OpInstance, type PlayerState, type Racket } from '../model/state'
+import { freeCrew } from './crew'
 import { grantGold } from './gold'
 import { spendClean } from './reputation'
 
@@ -148,12 +149,7 @@ export function startContract(state: PlayerState, ctx: Ctx, t: number, contractI
 // A contract always comes back done: its Clean and gold, and it leaves the board.
 export function resolveContract(state: PlayerState, ctx: Ctx, op: OpInstance, t: number): void {
   state.ops = state.ops.filter((o) => o.id !== op.id)
-  for (const m of state.crew) {
-    if (m.status === 'on_op' && m.assignedTo === op.id) {
-      m.status = 'idle'
-      delete m.assignedTo
-    }
-  }
+  freeCrew(state.crew, op)
   const board = state.after.contracts
   const k = board.items.find((x) => x.id === op.contractId)
   if (!k) return

@@ -16,7 +16,7 @@ import { derive } from '../core/derive'
 import { storyOver } from '../core/formulas'
 import { hourIndex, hoursToMs } from '../core/time'
 import type { InboxEffects, InboxItem, InboxOption, OpInstance, PlayerState } from '../model/state'
-import { changeLoyalty, effectiveStat } from './crew'
+import { changeLoyalty, effectiveStat, freeCrew } from './crew'
 import { injure } from './injuries'
 import { gainRep } from './reputation'
 import { changeDisposition } from './rivals'
@@ -302,12 +302,7 @@ function sendOnErrand(state: PlayerState, ctx: Ctx, t: number, item: InboxItem, 
 
 export function resolveErrand(state: PlayerState, ctx: Ctx, op: OpInstance, t: number): void {
   state.ops = state.ops.filter((o) => o.id !== op.id)
-  for (const m of state.crew) {
-    if (m.status === 'on_op' && m.assignedTo === op.id) {
-      m.status = 'idle'
-      delete m.assignedTo
-    }
-  }
+  freeCrew(state.crew, op)
   emit(ctx, t, { type: 'ERRAND_DONE', opId: op.id, crewIds: op.crewIds, name: op.name ?? 'An errand' })
 }
 
