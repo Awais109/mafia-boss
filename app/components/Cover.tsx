@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { SvgXml } from 'react-native-svg'
 import { empireValue, gameCleared, gameDay } from '../../engine'
+import { byNight } from '../art/night'
 import { ART } from '../art/scenes'
 import { ACT_NAME } from '../acts'
 import { fmtShort } from '../format'
@@ -30,8 +31,7 @@ export function Cover({ game, onContinue }: { game: Snapshot; onContinue: () => 
   return (
     <View style={[styles.cover, ending && styles.coverAfter]}>
       <View style={StyleSheet.absoluteFill} accessible accessibilityRole="image" accessibilityLabel={art.label}>
-        <SvgXml xml={art.xml} width="100%" height="100%" preserveAspectRatio="xMidYMin slice" />
-        {ending?.id === 'empire' && <View style={styles.night} />}
+        <SvgXml xml={ending?.id === 'empire' ? byNight('coverHolding') : art.xml} width="100%" height="100%" preserveAspectRatio="xMidYMin slice" />
       </View>
       {ending && (
         <View style={[styles.titleBlock, { paddingTop: insets.top + 36 }]}>
@@ -91,7 +91,6 @@ export function Cover({ game, onContinue }: { game: Snapshot; onContinue: () => 
 const styles = StyleSheet.create({
   cover: { flex: 1, backgroundColor: paper.ink },
   coverAfter: { backgroundColor: paper.paper },
-  night: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(12, 16, 34, 0.58)' },
   titleBlock: { alignItems: 'center', gap: 10 },
   title: { fontFamily: fonts.display900, fontSize: 80, lineHeight: 70, paddingTop: 8, letterSpacing: 1.6, color: paper.ink },
   reached: { fontFamily: fonts.text600, fontSize: 12, letterSpacing: 2.4, color: '#3d372e' },

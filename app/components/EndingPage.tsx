@@ -2,6 +2,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { SvgXml } from 'react-native-svg'
 import { DISTRICT_IDS, empireValue, gameDay, type Ending } from '../../engine'
+import { byNight } from '../art/night'
 import { ART, type ArtId } from '../art/scenes'
 import { fmt } from '../format'
 import { PEOPLE } from '../people'
@@ -15,13 +16,13 @@ import { glyph, rich } from './ui'
 // hills, the rule's last line, Vitya's "Where to?", the ending's name and Back to the city. Then the credits:
 // the cast with their epithets, your numbers, and Keep going. The Empire is the same city at night.
 
-// The Holding at dawn; the Empire the same view by night, under a wash of ink.
+// The Holding at dawn; the Empire the same view by night (ADR 0062: the dawn art recoloured, with a moon, lit
+// windows and stars).
 export function CityArt({ art, ending, style }: { art: ArtId; ending: Ending; style?: object }) {
   const a = ART[art]
   return (
     <View style={[{ width: '100%', aspectRatio: a.width / a.height }, style]} accessible accessibilityRole="image" accessibilityLabel={ending === 'empire' ? `${a.label} By night.` : a.label}>
-      <SvgXml xml={a.xml} width="100%" height="100%" />
-      {ending === 'empire' && <View style={styles.night} />}
+      <SvgXml xml={ending === 'empire' ? byNight(art) : a.xml} width="100%" height="100%" />
     </View>
   )
 }
@@ -139,7 +140,6 @@ function CastLine({ epithet, name, sub, big }: { epithet: string; name: string; 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: paper.paper },
   fill: { flexGrow: 1 },
-  night: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(12, 16, 34, 0.58)' },
   caption: { position: 'absolute', left: 16, width: 226, paddingTop: 10, paddingBottom: 11, paddingHorizontal: 12, backgroundColor: paper.paperLight, borderWidth: 1.5, borderColor: paper.ink },
   captionText: { fontFamily: fonts.caption, fontSize: 14, lineHeight: 19, color: paper.ink },
   bubble: {

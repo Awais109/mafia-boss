@@ -3,6 +3,18 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-14 — The Empire by night (#15, stand-in)
+
+Branch: `feature/15-night-art`. Reasoning: [ADR 0062](docs/decisions/0062-empire-by-night.md).
+
+- **What a player sees:** the Empire's ending page, credits strip and the cover after it are night now, not dawn under a dark wash: night blue, a full moon where the sun was, a silver river, lit windows and stars.
+- **How:** `app/art/night.ts` (`byNight`) recolours the design's dawn panels. Its art has four colours, so the drawing is unchanged. It lights windows (paper groups, or paper paths of small boxes) and adds seeded stars behind the skyline. `CityArt` and `Cover` use it; the wash is gone.
+- **Still open:** #15 wants drawn night art, so an artist's panel would replace this.
+- **Verified:**
+  - `npm run check`, with `tests/night.test.ts` new;
+  - the three panels rendered, then the cover and the ending page through the web rig on a save that reached the Empire;
+  - a first try put every star in a column at the left edge: the width was read from a screentone pattern, so it's now read from the `viewBox`.
+
 ## 2026-11-14 — Motion: page turns, ink, stamps, counters (#18)
 
 Branch: `feature/18-motion`. Reasoning: [ADR 0061](docs/decisions/0061-motion.md); [app.md → Motion](docs/app.md#motion).
