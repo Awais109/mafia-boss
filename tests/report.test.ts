@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { botPlay, simulate } from '../sim/driver'
-import { formatSummary, summarize } from '../sim/report'
+import { formatByAct, formatSummary, summarize } from '../sim/report'
 import { config } from './helpers'
 
 // The Debug Bot plays on top of an existing save, so a run can start after an act was already
@@ -36,3 +36,20 @@ describe('sim report on a bot run over an existing save', () => {
     expect(formatSummary(s2)).not.toMatch(/Act II clear:.*before this run/)
   })
 }, 60_000)
+
+describe('sim report by act (#6, #7)', () => {
+  it('breaks the throttle and heat down for each act the run reached', () => {
+    const s = summarize(simulate({ config, preset: 'default', days: 8, seed: '42' }))
+    expect(s.byAct.map((r) => r.act)).toEqual([...new Set(s.byAct.map((r) => r.act))].sort())
+    expect(s.byAct[0].act).toBe(1)
+    for (const r of s.byAct) {
+      expect(r.frontUtil).toBeGreaterThanOrEqual(0)
+      expect(r.frontUtil).toBeLessThanOrEqual(1)
+      expect(r.heat).toBeGreaterThanOrEqual(0)
+      expect(r.heat).toBeLessThanOrEqual(100)
+    }
+    expect(formatByAct(s.byAct)).toMatch(/^I util \d+% idle (\d+%|—) heat \d+/)
+    expect(formatSummary(s)).toContain('By act:')
+  })
+})
+

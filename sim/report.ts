@@ -31,6 +31,9 @@ export type Summary = {
   hoursAbove40: number
   frontUtil: number
   dirtyIdlePct: number
+  // The throttle and heat act by act: the manual's targets were written for Acts I–II, and a whole-run mean
+  // hides where the late game differs (#6, #7).
+  byAct: { act: Act; frontUtil: number; dirtyIdle: number; heat: number }[]
   vaultFillByDay: (number | null)[]
   vaultFillAct1: number | null
   vaultFillAct2: number | null
@@ -171,6 +174,16 @@ export function summarize(trace: Trace): Summary {
     hoursAbove40: hours.filter((h) => h.heat >= c.heat.inspectThreshold).length,
     frontUtil: mean(hours.map((h) => h.frontUtil)),
     dirtyIdlePct: mean(idle),
+    byAct: ACTS.filter((a) => hours.some((h) => h.act === a)).map((a) => {
+      const inAct = hours.filter((h) => h.act === a)
+      const sessionsInAct = sessions.filter((s) => s.act === a && s.income > 0)
+      return {
+        act: a,
+        frontUtil: mean(inAct.map((h) => h.frontUtil)),
+        dirtyIdle: sessionsInAct.length ? mean(sessionsInAct.map((s) => Math.min(1, s.dirtyAfter / s.income))) : NaN,
+        heat: mean(inAct.map((h) => h.heat)),
+      }
+    }),
     vaultFillByDay,
     vaultFillAct1: act1Fills.length ? mean(act1Fills) : null,
     vaultFillAct2: act2Fills.length ? mean(act2Fills) : null,
@@ -225,6 +238,13 @@ const f1 = (n: number | null) => (n === null || Number.isNaN(n) ? '—' : n.toFi
 const pc = (n: number) => (Number.isNaN(n) ? '—' : `${Math.round(n * 100)}%`)
 const pad = (s: string, n: number) => s.padEnd(n)
 
+// "I util 41% idle 91% heat 39 · II …": the throttle and heat in each act a run reached.
+export function formatByAct(rows: Summary['byAct']): string {
+  return rows
+    .map((r) => `${ACT_NAMES[r.act]} util ${pc(r.frontUtil)} idle ${Number.isNaN(r.dirtyIdle) ? '—' : pc(r.dirtyIdle)} heat ${Math.round(r.heat)}`)
+    .join(' · ')
+}
+
 export function formatSummary(s: Summary): string {
   const ok = (name: string) => mark(checkOk(s.checks.find((ch) => ch.name.startsWith(name))!))
   const actLine = (check: string, value: number | null, inRun: boolean, target: string) =>
@@ -243,6 +263,7 @@ export function formatSummary(s: Summary): string {
     `${pad('Raids:', 18)}${pad(String(s.raids), 8)}Arrests: ${pad(String(s.arrests), 4)}Missed wages: ${s.missedWages}  Walkouts: ${s.walkouts}   ${ok('Raids')}${ok('Missed wages')}`,
     `${pad('Heat mean:', 18)}${pad(String(Math.round(s.heatMean)), 8)}min ${Math.round(s.heatMin)}  max ${Math.round(s.heatMax)}   hours ≥40: ${s.hoursAbove40}   ${ok('Heat mean')}`,
     `${pad('Front util:', 18)}${pad(pc(s.frontUtil), 8)}Dirty idle @ session end: ${pc(s.dirtyIdlePct)}   ${ok('Front util')}${ok('Dirty idle')}`,
+    `${pad('By act:', 18)}${formatByAct(s.byAct)}`,
     `${pad('Vault fill (h):', 18)}${s.vaultFillByDay.map((v, i) => `d${i + 1} ${f1(v)}`).join('  ')}   ${ok('Vault fill Act I')}${ok('Vault fill Act II')}${s.stashHours > 0 ? `   (+${f1(s.stashHours)} h from a Stash House)` : ''}`,
     `${pad('Op outcomes:', 18)}full ${pc(s.opOutcomes.full)}  partial ${pc(s.opOutcomes.partial)}  fail ${pc(s.opOutcomes.fail)}  (${s.opCount} ops)   ${ok('Partial')}`,
     `${pad('Clean/hr by day:', 18)}${s.cleanPerHrByDay.map((v, i) => `d${i + 1} ${Math.round(v)}`).join('  ')}`,

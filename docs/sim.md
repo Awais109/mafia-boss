@@ -91,6 +91,7 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 | hours ≥40 | Hourly rows with heat at or above `heat.inspectThreshold` |
 | Front util | Mean over hours of throughput-weighted smoothed utilization |
 | Dirty idle | Mean over sessions of `min(1, dirtyAfter ÷ income)` |
+| By act | Front util, Dirty idle and heat mean for each act the run reached (`byAct`, `formatByAct`). It isn't scored: the manual's targets were written for Acts I–II, and the whole-run means above hide where the late game differs. `--runs` prints it averaged over the runs that reached each act. |
 | Vault fill | `vaultCapBase ÷ yield` at session end, so a Stash House's extra hours don't count; the report prints the best stash's extra hours beside it ([ADR 0037](decisions/0037-act-ii-premises.md)). Act I uses day-1 sessions; Act II uses day-4+ Act II sessions |
 | Op outcomes | Shares of `stats.opOutcomes` |
 | Tiers | Final businesses, abbreviated (`K5 M4 BT3 VS2 TF2 WH1 A3 ST2 UN1 …`) |
