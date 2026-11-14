@@ -54,7 +54,7 @@ function premisesEffect(c: Config, type: RacketType, tier: number, making = true
     rt.convoyBonusPerTier ? `convoys land +${pct(rt.convoyBonusPerTier * tier)}` : '',
     rt.hijackMult !== undefined ? `road losses ×${rt.hijackMult}` : '',
     rt.premiumMakesPerHr && making ? `makes ${glyph.premium}${fmtRate(formulas.premiumOutput(c, type, tier))}` : '',
-    rt.opinionPerTier ? `public opinion +${fmt(rt.opinionPerTier * tier)}` : '',
+    rt.opinionPerTier ? `press +${fmt(rt.opinionPerTier * tier)} for public opinion (worth less as it nears 100)` : '',
     rt.legalBonusPerTier ? `legal businesses +${pct(rt.legalBonusPerTier * tier)}` : '',
   ]
     .filter(Boolean)

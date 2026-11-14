@@ -446,6 +446,19 @@ Baseline by act: front use I 41%, II 54%, III 73%, IV 59%, V 56%, VI 47%; Dirty 
             already pass 100, and tiers past the book only push it further. Lowering opinionPerTier only delays it.
 ```
 
+## 2026-11-14 — Opinion's diminishing returns (#8, ADR 0063)
+
+10 seeds, 60 days. The formula changed: press → opinion through `base + (100 − base)(1 − e^(−press/saturation))`.
+
+```
+2026-11-14  opinion.saturation: new, 90    Act V 18.83 d (0/10, 5 never cleared: elections lost at the new opinion), VI 8.33. Reverted.
+2026-11-14  opinion.saturation 35 / 50 / 65   Act V 14.18 / 17.30 / 19.30 d. At 35 opinion pins near 98 again; above it the elections are lost. Reverted.
+2026-11-14  opinion.saturation 70 + elections.baseShare 0.25→0.30   Act V 15.98 d (2/10). Reverted.
+2026-11-14  opinion.saturation 70 + elections.baseShare 0.25→0.32   Act V 13.93 d (4/10), VI 12.09 (8/10). Too close to 14. Reverted.
+2026-11-14  opinion.saturation 70 + elections.baseShare 0.25→0.34   Act V 11.73 d (8/10, was 4/10), VI 12.99 (9/10, was 8/10), I–IV unchanged.
+            Opinion 64–68 in Act V, 73–77 in Act VI (was pinned at 100). Heat in band; pacing test passes. Kept.
+```
+
 ## Open
 
 Whole game, 10 seeds, 60 days (2026-09-29, after M13): Act I 4.64 d, Act II 3.28, Act III 6.44, Act IV 9.78, Act V 12.86, Act VI 13.08; heat over Acts I–V 29.4 (by act about 38, 24, 25, 27, 31; Act VI about 11, since legal businesses draw none); no raids, no missed wages, partial 0.46.
@@ -453,10 +466,10 @@ Whole game, 10 seeds, 60 days (2026-09-29, after M13): Act I 4.64 d, Act II 3.28
 - **Act I clears at 4.64 d** against the manual's 1–2, since it's gated on seven build-out goals (ADR 0039). An owner decision: relax the goals or move the target. Acts II–VI are all in range on 10/10 seeds, except Act III at 8/10.
 - **Front utilization ~52% (target 70–90%) and Dirty idle ~90% (target 20–50%)** over 60 days. By act (2026-11-14): Act II is near the manual's targets; from Act IV, Dirty is 97–100% idle, so late Dirty income is worthless and laundering sets the pace (#6, above). Yield outruns laundering from late Act III on, and the loan desk takes one loan at a time. Act V's campaigns are the first large Dirty sink, and in Act VI legal Clean makes laundering matter less, so these metrics mean less the later the act. The importer (Act IV) is capped by premium sales; `coverPerPremiumPack` is the knob to watch.
 - **Wage share ~9%** over 60 days (manual 10–25%): a few percent through Acts II–V, rising in Act VI as legal businesses stop earning Dirty. Running costs that scale with the act would be a new rule, which no plan has.
-- **Act V clears at either ~10 d or 14.0 d**: on the first election won, or the second (ADR 0044). The bot wins the first in about a third of runs; its media come too late for the rest.
+- **Act V clears at either ~10 d or 14.0 d**: on the first election won, or the second (ADR 0044). Since ADR 0063 (base share 0.34) the bot wins the first more often: Act V 11.7 d, 8/10 in band.
 - **The bot rarely reaches the Empire**: it legalizes everything and reaches the Holding first in 9 runs of 10. The Empire path is exercised by tests.
 - **Rep flattens after about day 40** once the bot owns the whole catalogue at max tier; only legalizing and upgrades are left to buy.
-- **Opinion reaches 100 about a week into Act V** once the media and the Palace are up, after which it stops being a choice until Legalize needs it.
+- **Opinion no longer pins at 100** (ADR 0063, 2026-11-14): it climbs to the high 60s in Act V and mid 70s in Act VI. Act V clears at ~11.7 d, 8/10 in band.
 - **The Ministry freezes a front 3–12 times a run**, mostly after the election, when yield outgrows the Governor and a full opinion.
 - **Shortages are rare** (none in Act I). The plan's M3 gate asked for some shortage in Act I, under 10% of its hours.
 - **Gold barely accelerates Act I** (goldRush 4.19 d against 4.64): it speeds up jobs, and Act I is gated on building. Later acts clear within a day of the casual bot.

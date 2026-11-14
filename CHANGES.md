@@ -3,6 +3,25 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-14 — Opinion's diminishing returns (#8)
+
+Branch: `feature/8-opinion-curve`. Reasoning: [ADR 0063](docs/decisions/0063-opinion-diminishing-returns.md); numbers: [TUNING.md](TUNING.md).
+
+- **What a player sees:**
+  - Public opinion no longer pins at 100. The press counts less and less as it nears the top, so it climbs to the high 60s in Act V and the mid 70s in Act VI, and the city's decisions still move it.
+  - Elections are a little easier to win at that level.
+  - The Business screen says "press +N for public opinion (worth less as it nears 100)".
+- **How:**
+  - `engine/systems/politics.ts`: `mediaBonus`, `opinionFromMedia` (the curve) and `mediaSlope`.
+  - `opinion.saturation` = 70 (new), and `elections.baseShare` 0.25 → 0.34.
+  - The bot values a media business by press × slope.
+- **Pacing (10 seeds, 60 days):**
+  - Act V: 13.08 → 11.73 d, 8/10 in band (was 4);
+  - Act VI: 11.94 → 12.99 d, 9/10 in band (was 8);
+  - Acts I–IV unchanged; heat in band.
+- **Docs:** [politics.md](docs/systems/politics.md), [sim.md](docs/sim.md), [testing.md](docs/testing.md).
+- **Verified:** `npm run check`, with `tests/kombinat.test.ts` rewritten for the curve plus a new curve test, and the pacing test passing.
+
 ## 2026-11-14 — Late-game experiments, and the sim report by act (#6, #7, #8)
 
 Branch: `tune/6-8-late-game`. No game change: every experiment was reverted ([TUNING.md](TUNING.md)).

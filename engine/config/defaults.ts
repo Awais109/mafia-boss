@@ -247,12 +247,12 @@ export const defaults: Config = {
   },
 
   // Act V (ADR 0044): what the city thinks of you, what Moscow thinks, and the elections in between.
-  opinion: { fromAct: 5, base: 40, stepPerHr: 0.05, inspectedPenalty: 5, raidPenalty: 10, controlBonus: 0.5 },
+  opinion: { fromAct: 5, base: 40, stepPerHr: 0.05, inspectedPenalty: 5, raidPenalty: 10, controlBonus: 0.5, saturation: 70 }, // saturation: diminishing returns, ADR 0063
   ministry: { fromAct: 5, perYield: 0.012, opinionRelief: 30, stepPerHr: 0.05, freezeAt: 80, afterFreeze: 40, freezeHours: 24 },
   elections: {
     fromAct: 5,
     everyDays: 7,
-    baseShare: 0.25,
+    baseShare: 0.34, // 0.25 → 0.34 with opinion's diminishing returns (ADR 0063): a strong press wins about as often as before
     perOpinion: 0.004,
     perPoint: 0.005,
     noise: 0.05,

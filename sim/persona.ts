@@ -22,6 +22,7 @@ import {
   legalizeBlocked,
   legalizeCost,
   ministryTarget,
+  mediaSlope,
   opinionTarget,
   pointCost,
   pointsRoom,
@@ -784,7 +785,8 @@ export function spendOptions(state: PlayerState, c: Config, d: Derived, p: Perso
   const sup = d.supply
   const atStake = d.perRacket.reduce((sum, r) => sum + r.atStake, 0)
   const v = valuation(state, c, p)
-  const opinionPoint = opinionPointValue(state, c, d, p)
+  // A point of press is worth a point of opinion × the curve's slope now (ADR 0063): less as opinion nears 100.
+  const opinionPoint = opinionPointValue(state, c, d, p) * mediaSlope(state, c)
   // Vault hours past the act's target are worth the overnight loss they save, up to a ten-hour leash (plan (k)).
   const leashRoom = Math.max(0, 10 - c.vault.targetHoursByAct[state.act] - d.stashHours)
   const stashValue = (extraHours: number) => (Math.min(Math.max(0, extraHours), leashRoom) * d.yieldPerHr) / 24

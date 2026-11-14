@@ -19,14 +19,33 @@ export const politicsOn = (state: PlayerState, c: Config): boolean => state.act 
 
 const clamp100 = (n: number) => Math.max(0, Math.min(100, n))
 
-export function opinionTarget(state: PlayerState, c: Config, t: number): number {
-  const o = c.opinion
-  let target = o.base
+// The press behind opinion: what the media businesses and the Fund add, before diminishing returns.
+export function mediaBonus(state: PlayerState, c: Config): number {
+  let bonus = 0
   for (const r of state.rackets) {
     if (r.closedUntil !== undefined) continue
-    target += (c.rackets.types[r.type].opinionPerTier ?? 0) * r.tier * (r.condition / 100)
+    bonus += (c.rackets.types[r.type].opinionPerTier ?? 0) * r.tier * (r.condition / 100)
   }
-  for (const f of state.fronts) target += (c.fronts.types[f.type].opinionAtFullUtil ?? 0) * f.util
+  for (const f of state.fronts) bonus += (c.fronts.types[f.type].opinionAtFullUtil ?? 0) * f.util
+  return bonus
+}
+
+// Diminishing returns (ADR 0063): the first points of press count almost fully, and each counts less as opinion
+// nears 100, which it approaches but never reaches. base + (100 − base) × (1 − e^(−bonus ÷ saturation)).
+export function opinionFromMedia(c: Config, bonus: number): number {
+  const o = c.opinion
+  return o.base + (100 - o.base) * (1 - Math.exp(-Math.max(0, bonus) / o.saturation))
+}
+
+// What one more point of press adds to the target now: the curve's slope.
+export function mediaSlope(state: PlayerState, c: Config): number {
+  const o = c.opinion
+  return ((100 - o.base) / o.saturation) * Math.exp(-Math.max(0, mediaBonus(state, c)) / o.saturation)
+}
+
+export function opinionTarget(state: PlayerState, c: Config, t: number): number {
+  const o = c.opinion
+  let target = opinionFromMedia(c, mediaBonus(state, c))
   if (state.inspected) target -= o.inspectedPenalty
   if (state.raidPenaltyUntil > t) target -= o.raidPenalty
   return clamp100(target)
