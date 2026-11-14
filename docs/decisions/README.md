@@ -68,6 +68,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0053](0053-endings-and-credits.md) | The endings as scenes (the ending page, the credits), and the cover after the story | Accepted |
 | [0054](0054-the-city-story.md) | The city's story: decisions that move opinion and the Ministry and send someone on an errand | Accepted |
 | [0055](0055-sound.md) | Sound: cues from events, music by screen, files listed by a script, Settings | Accepted |
+| [0056](0056-generated-stand-in-sounds.md) | Generated stand-in sounds for every name, replaced as found ones arrive | Accepted |
 
 ## Template
 

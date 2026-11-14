@@ -3,6 +3,30 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-14 — Generated stand-in sounds (`npm run gen-sounds`)
+
+Branch: `feature/sound`. Reasoning: [ADR 0056](docs/decisions/0056-generated-stand-in-sounds.md); how: [sound.md](docs/sound.md#generating-sounds).
+
+- **What a player hears:** the game has all 26 sounds and 10 tracks now. They're synthesized, not recorded: 1993 office foley, and a D minor motif on piano and bayan. Each is a stand-in until a found sound replaces it.
+- **How:** `scripts/gen-sounds/` makes them from scratch in TypeScript, with no dependencies, and every run makes the same files:
+  - `dsp.ts`: modes, filters, reverb, seamless loops;
+  - `sfx.ts`: one recipe per sound;
+  - `music.ts`: instruments and tracks written out note by note.
+
+  `npm run gen-sounds` writes `assets/sounds/generated/` (ignored by git), then runs `npm run sounds`.
+- **Safe to rerun:**
+  - `npm run sounds` uses a generated file only where `raw/` has none of that name, and only over an mp3 that was generated too. The mp3's comment tag `sevgorod-generated` says which it is.
+  - A found sound is never overwritten.
+  - The script lists the stand-ins left to replace.
+- **Cost:** 36 mp3s, about 6 MB (music 5 MB).
+- **Verified:**
+  - Every file: no NaNs, no DC, peaks at −1 dB before preparing.
+  - Spectrograms of all 36 look as each sound should. The abacus has two clacks, the knock three hits, the car five cranks then the putter, the siren two tones, the ratchet speeds up.
+  - Each loop's seam jumps no more than about one typical sample step, so there's no click.
+  - Precedence: a re-run changes nothing; a raw file replaces the stand-in; regenerating never touches it, even with the raw file gone; deleting it brings the stand-in back.
+  - `npm run check`; the iOS export packs all 36.
+  - Not heard on a phone.
+
 ## 2026-11-14 — Sound: the system, Settings, and `npm run sounds`
 
 Branch: `feature/sound`. Reasoning: [ADR 0055](docs/decisions/0055-sound.md); the rules: [sound.md](docs/sound.md).

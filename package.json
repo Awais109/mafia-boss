@@ -47,6 +47,7 @@
     "lint": "eslint .",
     "sim": "tsx sim/run.ts",
     "sounds": "tsx scripts/sounds.ts",
+    "gen-sounds": "tsx scripts/gen-sounds/index.ts && tsx scripts/sounds.ts",
     "check": "npm run typecheck && npm run lint && npm test"
   },
   "private": true

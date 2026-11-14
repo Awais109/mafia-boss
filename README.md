@@ -1,6 +1,6 @@
 # Sevgorod
 
-Fun-test prototype of Sevgorod, all six acts: a post-Soviet crime idle game about laundering Dirty money into Clean faster than the heat catches up. Its screens are dressed as a warm, printed ledger ([ADR 0047](docs/decisions/0047-warm-ledger-design.md)). Sound effects and music are wired in, and play as their files are added ([docs/sound.md](docs/sound.md)). It runs fully offline on a phone.
+Fun-test prototype of Sevgorod, all six acts: a post-Soviet crime idle game about laundering Dirty money into Clean faster than the heat catches up. Its screens are dressed as a warm, printed ledger ([ADR 0047](docs/decisions/0047-warm-ledger-design.md)). Sound effects and music play from generated stand-ins until found sounds replace them ([docs/sound.md](docs/sound.md)). It runs fully offline on a phone.
 
 Design and plan live in [docs/](docs/): the [implementation plan](docs/sevgorod-implementation-plan.md) and the [dev manual](docs/sevgorod-dev-manual.md) for tuning. Why the numbers are what they are is in [TUNING.md](TUNING.md).
 
@@ -33,6 +33,7 @@ The **Debug** tab holds the time skip, a config editor with presets (`fast` runs
 | `npm run sim -- --set heat.baseControl=6` | Try a config change before a human plays it |
 | `npm run sim -- --replay tester-log.json` | Same report over a tester's exported log |
 | `npm run sounds` | Prepares the sound files dropped in `assets/sounds/raw/` and lists them for the app (needs ffmpeg; [docs/sound.md](docs/sound.md)) |
+| `npm run gen-sounds` | Makes every sound and track from scratch as stand-ins, then runs `sounds`; never replaces a sound you added |
 
 `sim/baseline.csv` is the seed-42, 60-day run on the current defaults: every act, through an ending. Diff new runs against it.
 

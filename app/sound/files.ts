@@ -2,6 +2,44 @@
 // add a file and run the script. A sound that isn't listed here plays its fallback, or nothing.
 import type { MusicName, SfxName } from './cues'
 
-export const SFX_FILES: Partial<Record<SfxName, number>> = {}
+export const SFX_FILES: Partial<Record<SfxName, number>> = {
+  'amb-cover': require('../../assets/sounds/sfx/amb-cover.mp3'),
+  away: require('../../assets/sounds/sfx/away.mp3'),
+  buy: require('../../assets/sounds/sfx/buy.mp3'),
+  chapter: require('../../assets/sounds/sfx/chapter.mp3'),
+  collect: require('../../assets/sounds/sfx/collect.mp3'),
+  election: require('../../assets/sounds/sfx/election.mp3'),
+  envelope: require('../../assets/sounds/sfx/envelope.mp3'),
+  gold: require('../../assets/sounds/sfx/gold.mp3'),
+  ink: require('../../assets/sounds/sfx/ink.mp3'),
+  'job-done': require('../../assets/sounds/sfx/job-done.mp3'),
+  'job-fail': require('../../assets/sounds/sfx/job-fail.mp3'),
+  'job-start': require('../../assets/sounds/sfx/job-start.mp3'),
+  keys: require('../../assets/sounds/sfx/keys.mp3'),
+  knock: require('../../assets/sounds/sfx/knock.mp3'),
+  launder: require('../../assets/sounds/sfx/launder.mp3'),
+  page: require('../../assets/sounds/sfx/page.mp3'),
+  panel: require('../../assets/sounds/sfx/panel.mp3'),
+  phone: require('../../assets/sounds/sfx/phone.mp3'),
+  raid: require('../../assets/sounds/sfx/raid.mp3'),
+  'rank-up': require('../../assets/sounds/sfx/rank-up.mp3'),
+  refuse: require('../../assets/sounds/sfx/refuse.mp3'),
+  skip: require('../../assets/sounds/sfx/skip.mp3'),
+  stamp: require('../../assets/sounds/sfx/stamp.mp3'),
+  tap: require('../../assets/sounds/sfx/tap.mp3'),
+  typewriter: require('../../assets/sounds/sfx/typewriter.mp3'),
+  upgrade: require('../../assets/sounds/sfx/upgrade.mp3'),
+}
 
-export const MUSIC_FILES: Partial<Record<MusicName, number>> = {}
+export const MUSIC_FILES: Partial<Record<MusicName, number>> = {
+  'city-1': require('../../assets/sounds/music/city-1.mp3'),
+  'city-2': require('../../assets/sounds/music/city-2.mp3'),
+  'ending-empire': require('../../assets/sounds/music/ending-empire.mp3'),
+  'ending-holding': require('../../assets/sounds/music/ending-holding.mp3'),
+  'sting-chapter': require('../../assets/sounds/music/sting-chapter.mp3'),
+  'sting-failed': require('../../assets/sounds/music/sting-failed.mp3'),
+  'sting-won': require('../../assets/sounds/music/sting-won.mp3'),
+  story: require('../../assets/sounds/music/story.mp3'),
+  tension: require('../../assets/sounds/music/tension.mp3'),
+  theme: require('../../assets/sounds/music/theme.mp3'),
+}

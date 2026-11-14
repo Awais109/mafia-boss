@@ -38,6 +38,7 @@ yarn-error.*
 
 # sound sources before `npm run sounds` prepares them (docs/sound.md)
 assets/sounds/raw/
+assets/sounds/generated/
 
 # generated native folders
 /ios

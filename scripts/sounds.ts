@@ -4,10 +4,13 @@
 //    MUSIC_NAMES in app/sound/cues.ts) is prepared with ffmpeg into assets/sounds/sfx/ or music/ as mp3:
 //    one-shots trimmed of silence at both ends and peaked at PEAK_DB, stings trimmed at the start only,
 //    loops left whole and evened out to a loudness. A raw file older than its mp3 is skipped.
-// 2. app/sound/files.ts is rewritten to list every mp3 there, so the app plays exactly the files it has.
+// 2. Any file in assets/sounds/generated/ (made by `npm run gen-sounds`) is prepared the same way, but only as a
+//    stand-in: where raw/ has no file of that name, and the mp3 is missing or was generated too. The mp3 says
+//    which it is (its comment tag is GENERATED), so a sound you added is never replaced by a generated one.
+// 3. app/sound/files.ts is rewritten to list every mp3 there, so the app plays exactly the files it has.
 //
-// Raw files are ignored by git; the prepared mp3s are committed. A prepared mp3 can also be copied straight
-// into sfx/ or music/, and this only lists it.
+// raw/ and generated/ are ignored by git; the prepared mp3s are committed. A prepared mp3 can also be copied
+// straight into sfx/ or music/, and this only lists it.
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { join, parse } from 'node:path'
@@ -16,6 +19,8 @@ import { MUSIC, MUSIC_NAMES, SFX, SFX_NAMES } from '../app/sound/cues'
 const ROOT = join(__dirname, '..')
 const DIR = join(ROOT, 'assets/sounds')
 const RAW = join(DIR, 'raw')
+const GEN = join(DIR, 'generated')
+const GENERATED = 'sevgorod-generated'
 const OUT = { sfx: join(DIR, 'sfx'), music: join(DIR, 'music') }
 const MANIFEST = join(ROOT, 'app/sound/files.ts')
 const RAW_EXTS = ['.wav', '.mp3', '.m4a', '.aif', '.aiff', '.flac', '.ogg', '.caf']
@@ -49,34 +54,64 @@ function peakDb(input: string, filters: string): number {
 // peak is measured on what gets encoded (a downmix to mono can add a few dB).
 const FORMAT = { mono: 'aformat=sample_rates=44100:channel_layouts=mono', stereo: 'aformat=sample_rates=44100:channel_layouts=stereo' }
 
-function prepare(input: string, name: string, kind: Kind, output: string): string {
+function prepare(input: string, name: string, kind: Kind, output: string, generated: boolean): string {
+  // The source's own tags are dropped; a generated file is marked as one.
+  const tags = ['-map_metadata', '-1', ...(generated ? ['-metadata', `comment=${GENERATED}`] : [])]
   const loop = kind === 'sfx' ? SFX[name as keyof typeof SFX].loop === true : MUSIC[name as keyof typeof MUSIC].loop
   if (loop) {
     const lufs = kind === 'music' ? LOOP_LUFS.music : LOOP_LUFS.ambience
-    ffmpeg(['-y', '-i', input, '-af', `loudnorm=I=${lufs}:TP=-2,${FORMAT.stereo}`, '-b:a', '160k', output])
+    ffmpeg(['-y', '-i', input, '-af', `loudnorm=I=${lufs}:TP=-2,${FORMAT.stereo}`, '-b:a', '160k', ...tags, output])
     return `loop at ${lufs} LUFS`
   }
   // A one-shot is trimmed at both ends; a sting only at the start, so it keeps its tail.
   const chain = kind === 'sfx' ? `${FORMAT.mono},${TRIM_BOTH}` : `${FORMAT.stereo},${TRIM_START}`
   const gain = PEAK_DB - peakDb(input, chain)
-  ffmpeg(['-y', '-i', input, '-af', `${chain},volume=${gain.toFixed(2)}dB`, '-b:a', kind === 'sfx' ? '96k' : '160k', output])
+  ffmpeg(['-y', '-i', input, '-af', `${chain},volume=${gain.toFixed(2)}dB`, '-b:a', kind === 'sfx' ? '96k' : '160k', ...tags, output])
   return `trimmed, peak ${PEAK_DB} dB`
 }
 
-function processRaw(): void {
-  if (!existsSync(RAW)) return
-  for (const file of readdirSync(RAW).sort()) {
+// Whether an mp3 was made from a generated file (its comment tag).
+function isGenerated(mp3: string): boolean {
+  const r = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format_tags=comment', '-of', 'default=nw=1:nk=1', mp3], { encoding: 'utf8' })
+  return r.stdout?.trim() === GENERATED
+}
+
+const mtime = (path: string): number => statSync(path).mtimeMs
+
+// The source files in a folder that are sound names, by name. Of two with one name, the newer.
+function sources(dir: string, label: string): Map<string, string> {
+  const found = new Map<string, string>()
+  if (!existsSync(dir)) return found
+  for (const file of readdirSync(dir).sort()) {
     const { name, ext } = parse(file)
     if (file.startsWith('.') || !RAW_EXTS.includes(ext.toLowerCase())) continue
-    const kind = kindOf(name)
-    if (!kind) {
-      console.warn(`skipped raw/${file}: "${name}" isn't a sound name. Names: ${[...SFX_NAMES, ...MUSIC_NAMES].join(', ')}`)
+    if (!kindOf(name)) {
+      console.warn(`skipped ${label}/${file}: "${name}" isn't a sound name. Names: ${[...SFX_NAMES, ...MUSIC_NAMES].join(', ')}`)
       continue
     }
-    const input = join(RAW, file)
+    const path = join(dir, file)
+    const prev = found.get(name)
+    if (!prev || mtime(path) > mtime(prev)) found.set(name, path)
+  }
+  return found
+}
+
+function processSources(): void {
+  const raw = sources(RAW, 'raw')
+  // Yours: always over a generated mp3, otherwise when newer than the mp3.
+  for (const [name, input] of raw) {
+    const kind = kindOf(name)!
     const output = join(OUT[kind], `${name}.mp3`)
-    if (existsSync(output) && statSync(output).mtimeMs >= statSync(input).mtimeMs) continue
-    console.log(`${kind}/${name}.mp3 ← raw/${file} (${prepare(input, name, kind, output)})`)
+    if (existsSync(output) && !isGenerated(output) && mtime(output) >= mtime(input)) continue
+    console.log(`${kind}/${name}.mp3 ← raw/${parse(input).base} (${prepare(input, name, kind, output, false)})`)
+  }
+  // Generated: only where you have nothing.
+  for (const [name, input] of sources(GEN, 'generated')) {
+    if (raw.has(name)) continue
+    const kind = kindOf(name)!
+    const output = join(OUT[kind], `${name}.mp3`)
+    if (existsSync(output) && (!isGenerated(output) || mtime(output) >= mtime(input))) continue
+    console.log(`${kind}/${name}.mp3 ← generated/${parse(input).base} (${prepare(input, name, kind, output, true)})`)
   }
 }
 
@@ -115,7 +150,7 @@ export const MUSIC_FILES: Partial<Record<MusicName, number>> = ${block('music', 
 function main(): void {
   for (const dir of [RAW, OUT.sfx, OUT.music]) mkdirSync(dir, { recursive: true })
   try {
-    processRaw()
+    processSources()
   } catch (e) {
     console.error((e as Error).message)
     process.exit(1)
@@ -124,7 +159,11 @@ function main(): void {
   const music = present('music')
   writeManifest(sfx, music)
   const missing = [...SFX_NAMES.filter((n) => !sfx.includes(n)), ...MUSIC_NAMES.filter((n) => !music.includes(n))]
+  const standIns = [...sfx.map((n) => ['sfx', n] as const), ...music.map((n) => ['music', n] as const)]
+    .filter(([kind, n]) => isGenerated(join(OUT[kind], `${n}.mp3`)))
+    .map(([, n]) => n)
   console.log(`app/sound/files.ts: ${sfx.length} of ${SFX_NAMES.length} sounds, ${music.length} of ${MUSIC_NAMES.length} tracks.`)
+  if (standIns.length) console.log(`Generated stand-ins (${standIns.length}), to replace with found sounds: ${standIns.join(', ')}`)
   if (missing.length) console.log(`Still missing: ${missing.join(', ')}`)
 }
 
