@@ -11,7 +11,7 @@ Everything you run draws police attention. Heat drifts toward a target set by yo
 exposure = Σ business exposure (economy.md: joints, rackets and premises, with tier-3 specialization; 0 for a legal business)
            + Σ front suspicion (fronts.md, which depends on each front's mode)
 
-control  = (heat.baseControl + Σ owned officials' control + bribeControl + elections.mayor.control once mayor)
+control  = (heat.baseControl + Σ officials' control, those whose retainer is paid + bribeControl + elections.mayor.control once mayor)
            × (1 + heat.districtControlPct × districts taken)      (home turf doesn't count)
            × (1 + opinion.controlBonus × opinion/100)             (from Act V, politics.md)
 
@@ -53,7 +53,7 @@ The bribe lasts `heat.bribe.hours` and then expires. Its cost is added to `stats
 
 ## Officials
 
-Permanent control, bought with Influence. `officials.list` has a Ward Cop (Act I), a Precinct Captain (Act II), City Hall (Act III, [ADR 0041](../decisions/0041-act-iii-the-centre.md)) the Customs Chief (Act IV, [ADR 0043](../decisions/0043-act-iv-zastava.md): besides control, his `seizureMult` scales the chance customs take a convoy, [convoys.md](convoys.md)) and the Governor (Act V, [ADR 0044](../decisions/0044-act-v-kombinat.md): `ministryRelief` off the Ministry's attention, and `needsMayor`: "He only takes calls from the mayor"), each available from its `act`, each with a `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)).
+Control, bought with Influence and kept with a retainer in Clean ([ADR 0064](../decisions/0064-officials-retainers.md); below). `officials.list` has a Ward Cop (Act I), a Precinct Captain (Act II), City Hall (Act III, [ADR 0041](../decisions/0041-act-iii-the-centre.md)) the Customs Chief (Act IV, [ADR 0043](../decisions/0043-act-iv-zastava.md): besides control, his `seizureMult` scales the chance customs take a convoy, [convoys.md](convoys.md)) and the Governor (Act V, [ADR 0044](../decisions/0044-act-v-kombinat.md): `ministryRelief` off the Ministry's attention, and `needsMayor`: "He only takes calls from the mayor"), each available from its `act`, each with a `description` (one plain-language sentence shown when it unlocks or on the How It Works screen, [ADR 0038](../decisions/0038-live-event-notices.md)).
 
 `BUY_OFFICIAL { officialId }` requires:
 - the official's act has been reached, and they aren't already on the payroll;
@@ -61,6 +61,16 @@ Permanent control, bought with Influence. `officials.list` has a Ward Cop (Act I
 - the shared cooldown has passed. Buying any official sets `officialCooldownUntil = now + officials.cooldownDays × 24 h`.
 
 It records `stats.officialBoughtAt` and emits `OFFICIAL_BOUGHT`.
+
+**Retainers** (`engine/systems/retainers.ts`, [ADR 0064](../decisions/0064-officials-retainers.md)). Buying an official starts their retainer (`state.retainers[id] = { dueAt, lapsed }`), due `officials.retainer.everyDays` later:
+- **The fee** (`retainerFee`) is the official's `retainerHours` × the Dirty yield per hour when it falls due, in Clean, so it keeps pace with the city.
+- **When it falls due** (`retainersDue`, in `processDue`; the due time is a reconcile boundary, so a split can't move it):
+  - with the Clean on hand, it's paid by itself, as Clean spent (so it earns Rep). The next falls due a period on (`RETAINER_PAID { auto: true }`);
+  - without it, the official lapses (`RETAINER_MISSED`). Their control leaves `control` (`Derived.controlParts.officials`) until it's paid, and nothing more falls due meanwhile.
+- **`PAY_RETAINER { officialId }`** takes a lapsed official back at once ("Not on the payroll", "Already paid up", "Not enough Clean"). The next retainer falls due a period from then (`RETAINER_PAID { auto: false }`).
+- **Only their control lapses.** A lapsed official still makes Influence, and the Governor still relieves the Ministry.
+
+`stats.retainers { paid, missed, clean }`. In the app, the Heat screen shows each official's next retainer and its fee, and a lapsed one shows "not answering" with **Pay the retainer**. Home raises an alert, and a missed one is a pop-up.
 
 **Influence** comes from three places:
 - Each owned official produces `officials.influencePerHrEach` per hour, continuously.

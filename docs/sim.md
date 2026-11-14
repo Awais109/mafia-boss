@@ -12,7 +12,7 @@
 | `--days <n>` | Days to simulate (default 5; use 8 to see Act II clear) |
 | `--seed <s>` | Seed; the bot's player id is `sim-<seed>` |
 | `--runs <n>` | Run seeds `seed … seed+n−1` and print each target's mean and how many runs were in range |
-| `--persona <name>` | `casual` (default) or `goldRush`, which spends every gold bar finishing jobs |
+| `--persona <name>` | `casual` (default); `goldRush`, which spends every gold bar finishing jobs; or `greedy`, which has no heat budget, never bribes, and leaves lapsed retainers until heat reaches the raid line |
 | `--sessions <n>` | `n` evenly spaced sessions a day (08:00–22:00) instead of the casual schedule |
 | `--set path=value` | Config override, repeatable (`--set heat.baseControl=6`) |
 | `--replay <file>` | Report on a log exported from the app instead of the bot |
@@ -35,7 +35,7 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 4. Tolya: haggle when `haggleOdds` is at least `haggleAbove` (0.6) and Dirty covers the haggled price; otherwise pay the demand if affordable. It never refuses. Repair rackets below 75 condition. From Act II, when stock is within 10% of its cap and production outruns sales, sell Zhanna packs down to 70% of the cap, within her daily limit.
 5. Set each front's dial: lay low while heat is above 55; push when the Dirty waiting to be washed (Dirty above the reserve, plus buffers) exceeds `pushBacklogHours` (6) of the front's base throughput and pushing keeps the heat target within 55; otherwise normal.
 6. Deposit Dirty into fronts, best rate first, up to buffer caps, keeping a reserve of 12 h of wages and upkeep plus one bribe.
-7. Bribe if heat is above 55.
+7. Pay any lapsed official's retainer (careful: at once; greedy: only at the raid line), then bribe if heat is above 55. When spending Clean, the careful bot keeps back the retainers due in the next 48 hours, so none lapses ([ADR 0064](decisions/0064-officials-retainers.md)).
 8. Buy an official if affordable and heat or heat target is above 30.
 9. Buy any unlocked front. Recruit into empty slots (highest stat total); past two crew, only while wages after the hire stay under `maxWageShare` (25%) of yield. Raise anyone under 35 loyalty.
 10. Rock bottom ([ADR 0051](decisions/0051-rock-bottom.md)): open the family's envelope the moment it's there. The casual bot never misses a payday, so this only fires for a broke save.
@@ -62,6 +62,8 @@ A config that fails validation, an unreadable file, or a file that isn't a log e
 **Act V** ([ADR 0044](decisions/0044-act-v-kombinat.md)). An auctioned district is bought as soon as it can be, with a loan when Clean falls short. A point of public opinion is worth `opinionValuePct` (1%) of yield an hour, half once mayor, plus what it adds to the Construction Trust; the media and the Palace of Culture are valued by the opinion they add: their press × `mediaSlope`, so less as opinion nears 100 ([ADR 0063](decisions/0063-opinion-diminishing-returns.md)), the Combine by the premium it makes against the premium shortage risk. In the `campaignWithinHours` (48) before a count, before depositing or lending, it buys campaign points until its chance of winning reaches `campaignTarget` (0.9): Influence first, keeping back what the officials still to come will cost, then Dirty above its reserve. Deliver the Vote is worth the Dirty its points would cost while the election still needs them. It never deposits into a frozen front, and buys the Governor once mayor when the Ministry's attention reaches half the freeze line or its target reaches the line. Premises are placed only where `racketBlocked` allows, so the Kombinat's reserved lots and `onlyIn` hold for the bot too.
 
 **Act VI** ([ADR 0045](decisions/0045-act-vi-nagornaya.md)). It buys every district it can afford, for the Empire. Legalizing is a spend option worth the legal Clean × 2 (the Dirty it gives up mostly sat idle), with the heat it sheds counted as a negative heat gain, so legalizations compete with everything else on gain ÷ cost. The Holding is worth its bonus on the legal Clean, counting half of what isn't legal yet. In decisions, a frozen front costs the Clean the busiest front would have washed × 2, and a hearing won is worth `hearingWinHours` (6) of yield while the Empire still needs wins.
+
+**Retainers** ([ADR 0064](decisions/0064-officials-retainers.md)). `retainers: 'careful'` (the casual bot) keeps the next 48 hours' retainers back from its Clean budget and pays a lapsed one at once. `GREEDY` (`--persona greedy`) has no heat budget, never bribes, keeps nothing back, and pays a lapsed one only at the raid line. The pacing guard checks that it meets the odd raid where the careful bot meets none.
 
 **Gold.** The casual bot never spends gold, so the pacing guard measures the free game. `GOLD_RUSH` (`--persona goldRush`) is the casual bot plus one habit: after dispatching, it rushes every running job it can afford (never a contract), soonest first, and dispatches again ([systems/gold.md](systems/gold.md)).
 

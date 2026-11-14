@@ -232,6 +232,7 @@ export type OfficialConfig = {
   control: number
   cost: number
   act: Act
+  retainerHours: number // the retainer, every `officials.retainer.everyDays`: this many hours of Dirty yield, in Clean (ADR 0064)
   seizureMult?: number // customs seizes convoys × this (ADR 0043)
   ministryRelief?: number // the Ministry's attention target − this (ADR 0044)
   needsMayor?: boolean // only takes calls from the mayor (the Governor)
@@ -481,6 +482,8 @@ export type Config = {
   officials: {
     cooldownDays: number
     influencePerHrEach: number
+    // Every `everyDays` from purchase, each official's `retainerHours` of Dirty yield come due in Clean; unpaid, the control lapses (ADR 0064).
+    retainer: { everyDays: number }
     list: Record<OfficialId, OfficialConfig>
   }
   crew: {
@@ -919,9 +922,11 @@ export function validateConfig(c: Config): string[] {
     (e) => {
       nonNeg(e, 'officials.cooldownDays', c.officials.cooldownDays)
       nonNeg(e, 'officials.influencePerHrEach', c.officials.influencePerHrEach)
+      positive(e, 'officials.retainer.everyDays', c.officials.retainer.everyDays)
       for (const id of OFFICIAL_IDS) {
         nonNeg(e, `officials.list.${id}.control`, c.officials.list[id].control)
         nonNeg(e, `officials.list.${id}.cost`, c.officials.list[id].cost)
+        nonNeg(e, `officials.list.${id}.retainerHours`, c.officials.list[id].retainerHours)
         if (!ACTS.includes(c.officials.list[id].act)) e.push(`officials.list.${id}.act: expected an act`)
         if (c.officials.list[id].seizureMult !== undefined) unit(e, `officials.list.${id}.seizureMult`, c.officials.list[id].seizureMult)
         if (c.officials.list[id].ministryRelief !== undefined) nonNeg(e, `officials.list.${id}.ministryRelief`, c.officials.list[id].ministryRelief)

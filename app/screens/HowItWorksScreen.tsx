@@ -339,7 +339,7 @@ function Officials({ game }: { game: Snapshot }) {
     <PaperRows
       rows={OFFICIAL_IDS.map((id) => {
         const o = c.officials.list[id]
-        return { key: id, label: o.name, value: `${glyph.influence}${fmt(o.cost)}`, text: o.description, yours: s.officials.includes(id), pencil: o.act > s.act ? `Act ${ACT_NAME[o.act]}` : undefined }
+        return { key: id, label: o.name, value: `${glyph.influence}${fmt(o.cost)}`, text: `${o.description} Then ${fmt(o.retainerHours)}h of income in Clean every ${c.officials.retainer.everyDays} days, or they stop answering.`, yours: s.officials.includes(id), pencil: o.act > s.act ? `Act ${ACT_NAME[o.act]}` : undefined }
       })}
     />
   )

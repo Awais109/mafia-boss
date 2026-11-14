@@ -1,6 +1,7 @@
 import type { Config } from '../config/schema'
 import type { GameEvent } from '../model/events'
 import { LOG_CAP, type PlayerState } from '../model/state'
+import { retainersDue } from '../systems/retainers'
 import { afterDayBoundary, refreshContractsIfDue } from '../systems/after'
 import { crewDayBoundary, refreshPoolIfDue, releaseJailed } from '../systems/crew'
 import { creditDayBoundary, lendingDue } from '../systems/credit'
@@ -69,6 +70,7 @@ function nextBoundary(state: PlayerState, c: Config, t: number, now: number): nu
   }
   for (const op of state.ops) consider(op.completesAt)
   if (state.bribeControl > 0) consider(state.bribeUntil)
+  for (const r of Object.values(state.retainers)) if (r && !r.lapsed) consider(r.dueAt)
   consider(state.recruitPool.refreshAt)
   consider(state.offers.refreshAt)
   consider(state.after.contracts.refreshAt)
@@ -142,6 +144,7 @@ export function processDue(state: PlayerState, ctx: Ctx, t: number): void {
     state.bribeControl = 0
     emit(ctx, t, { type: 'BRIBE_EXPIRED' })
   }
+  retainersDue(state, ctx, t)
   releaseJailed(state, ctx, t)
   releaseInjured(state, ctx, t)
   reopenBusinesses(state, ctx, t)

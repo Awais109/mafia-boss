@@ -34,6 +34,8 @@ import {
   influenceRoom,
   jobXp,
   OFFICIAL_IDS,
+  retainerFee,
+  retainersDueWithin,
   openLots,
   openSpots,
   opConfigAt,
@@ -86,6 +88,9 @@ export type PersonaOptions = {
   bribeAboveHeat: number
   officialAboveHeat: number
   heatBudget: number // skip purchases that push heat target past this, unless control is buyable
+  // Officials' retainers (ADR 0064). careful: keep the next two days' back from Clean spending, and pay a lapsed one
+  // at once. greedy: keep nothing back, and pay a lapsed one only once heat reaches the raid line.
+  retainers: 'careful' | 'greedy'
   districtPaybackHours: number // buy a district when tribute over this many hours exceeds the buy-out
   repairBelow: number
   raiseBelow: number
@@ -115,6 +120,7 @@ export const CASUAL: PersonaOptions = {
   bribeAboveHeat: 55,
   officialAboveHeat: 30,
   heatBudget: 55, // lives with inspections, stays clear of raids
+  retainers: 'careful',
   districtPaybackHours: 48,
   repairBelow: 75,
   raiseBelow: 35,
@@ -137,6 +143,10 @@ export const CASUAL: PersonaOptions = {
 
 // Spends every bar it can finishing jobs (plan (t)): how much sooner do acts clear with gold?
 export const GOLD_RUSH: PersonaOptions = { ...CASUAL, name: 'goldRush', rushJobs: true }
+
+// The heat check for ADR 0064: no heat budget, no bribes, and retainers left until the raids come. It should meet
+// the odd raid where the careful bot meets none (tests/sim.test.ts).
+export const GREEDY: PersonaOptions = { ...CASUAL, name: 'greedy', heatBudget: 100, bribeAboveHeat: 101, retainers: 'greedy' }
 
 // N sessions spread evenly between 08:00 and 22:00, for both acts.
 export function withSessions(p: PersonaOptions, n: number): PersonaOptions {
@@ -302,10 +312,8 @@ export function playSession(
     const e = c.elections
     const neededShare = 0.5 - e.noise + 2 * e.noise * p.campaignTarget
     // Influence the officials still to come will need (the Governor, once mayor) stays back.
-    const officialsDue = OFFICIAL_IDS.filter((id) => !state.officials.includes(id) && c.officials.list[id].act <= state.act).reduce(
-      (sum, id) => sum + c.officials.list[id].cost,
-      0,
-    )
+    const officialsDue =
+      OFFICIAL_IDS.filter((id) => !state.officials.includes(id) && c.officials.list[id].act <= state.act).reduce((sum, id) => sum + c.officials.list[id].cost, 0)
     for (const pay of ['influence', 'dirty'] as const) {
       if (winChance(state, c) >= p.campaignTarget) break
       const now = d()
@@ -351,6 +359,12 @@ export function playSession(
     const reserve = (now.wagesPerHr + now.upkeepPerHr) * p.reserveWageHours + now.costs.bribe
     const amount = Math.floor(Math.min(lendCap(state, c), state.dirty - reserve))
     if (amount >= 1) tryAct({ type: 'LEND', amount })
+  }
+
+  // Retainers (ADR 0064): a lapsed official back at once when careful, only at the raid line when greedy.
+  for (const id of state.officials) {
+    if (!state.retainers[id]?.lapsed || state.clean < retainerFee(state, c, id)) continue
+    if (p.retainers === 'careful' || state.heat >= c.heat.raidThreshold) tryAct({ type: 'PAY_RETAINER', officialId: id })
   }
 
   // 3. Bribe when hot
@@ -524,7 +538,8 @@ export function playSession(
   let borrowed = false
   for (let guard = 0; guard < 60; guard++) {
     const now = d()
-    const budget = state.clean - loanDue(state, c)
+    // Careful: the next two days' retainers stay back, so no official lapses (ADR 0064).
+    const budget = state.clean - loanDue(state, c) - (p.retainers === 'careful' ? retainersDueWithin(state, c, t, 48) : 0)
     const controlBuyable = canBuyControl(state, c, now, t)
     const options = spendOptions(state, c, now, p).filter((o) => {
       if (o.cost > budget) return false

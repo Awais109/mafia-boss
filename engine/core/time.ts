@@ -47,6 +47,7 @@ export function shiftTimes(state: PlayerState, delta: number): PlayerState {
     if (m.injuredUntil !== undefined) m.injuredUntil = shift(m.injuredUntil)
   }
   if (s.lending) s.lending.dueAt = shift(s.lending.dueAt)
+  for (const r of Object.values(s.retainers)) if (r) r.dueAt = shift(r.dueAt)
   for (const m of Object.values(s.missions)) {
     if (!m) continue
     m.at = shift(m.at)

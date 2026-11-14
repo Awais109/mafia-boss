@@ -58,7 +58,7 @@ When you change a path on the left, update the doc on the right in the same comm
 | `engine/systems/inbox.ts` | [systems/inbox.md](systems/inbox.md) |
 | `engine/systems/offers.ts` | [systems/ops.md](systems/ops.md) |
 | `engine/systems/fronts.ts` | [systems/fronts.md](systems/fronts.md) |
-| `engine/systems/heat.ts` | [systems/heat.md](systems/heat.md) |
+| `engine/systems/heat.ts`, `engine/systems/retainers.ts` | [systems/heat.md](systems/heat.md) |
 | `engine/systems/crew.ts`, `engine/systems/experience.ts` | [systems/crew.md](systems/crew.md) |
 | `engine/systems/ops.ts` | [systems/ops.md](systems/ops.md) |
 | `engine/systems/districts.ts`, `engine/systems/rivals.ts` | [systems/districts-and-rivals.md](systems/districts-and-rivals.md) |

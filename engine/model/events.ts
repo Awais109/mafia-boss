@@ -115,6 +115,8 @@ export type EventBody =
   | { type: 'CREW_SLOT_BOUGHT'; cost: number; slots: number }
   | { type: 'POOL_REFRESHED' }
   | { type: 'OFFICIAL_BOUGHT'; officialId: OfficialId; cost: number }
+  | { type: 'RETAINER_PAID'; officialId: OfficialId; fee: number; auto: boolean } // ADR 0064
+  | { type: 'RETAINER_MISSED'; officialId: OfficialId; fee: number } // their control lapses until paid
   | { type: 'BRIBED'; cost: number; control: number; until: number }
   | { type: 'BRIBE_EXPIRED' }
   | { type: 'INSPECTION_STARTED'; heat: number }

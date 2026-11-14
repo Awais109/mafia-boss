@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ConfigError, PRESET_NAMES, tryBuildConfig, type Overrides, type PresetName } from '../engine'
 import { simulate, type Trace } from './driver'
-import { CASUAL, GOLD_RUSH, withSessions } from './persona'
+import { CASUAL, GOLD_RUSH, GREEDY, withSessions } from './persona'
 import { isLogExport, replayLog } from './replay'
 import { checkOk, formatByAct, formatSummary, summarize, toCsv, type Summary } from './report'
 
@@ -27,7 +27,7 @@ const USAGE = `Usage: npm run sim -- [options]
   --days <n>          sim days (default: 5)
   --seed <s>          seed (default: 42)
   --sessions <n>      n evenly spaced sessions a day instead of the casual schedule
-  --persona <name>    casual | goldRush (spends every gold bar finishing jobs)
+  --persona <name>    casual | goldRush (spends every gold bar finishing jobs) | greedy (no heat budget, no bribes, retainers left until the raids come)
   --runs <n>          run n seeds (seed, seed+1, …) and print the mean of each target
   --set path=value    override a config value, repeatable (e.g. --set heat.baseControl=6)
   --replay <file>     report on a tester's exported log instead of the bot
@@ -108,7 +108,7 @@ function main() {
     console.error(new ConfigError(errors).message)
     process.exit(1)
   }
-  const personas = { casual: CASUAL, goldRush: GOLD_RUSH } as const
+  const personas = { casual: CASUAL, goldRush: GOLD_RUSH, greedy: GREEDY } as const
   if (!(args.persona in personas)) fail(`unknown persona ${args.persona}`)
   const base = personas[args.persona as keyof typeof personas]
   const persona = args.sessions ? withSessions(base, args.sessions) : base

@@ -1,4 +1,4 @@
-import { contestOdds, dayMs, electionScheduled, RANK_NAMES, winChance, type Config, type IncidentType, type InboxEffects, type InboxItem, type PerkId, type PlayerState } from '../engine'
+import { contestOdds, dayMs, electionScheduled, RANK_NAMES, retainerFee, winChance, type Config, type IncidentType, type InboxEffects, type InboxItem, type PerkId, type PlayerState } from '../engine'
 import type { IconName, Resource } from './components/Glyph'
 import { glyph } from './components/ui'
 import { fmt, fmtDuration, pct } from './format'
@@ -90,6 +90,20 @@ export function homeAlerts(game: Snapshot): HomeAlert[] {
       tone: 'bad',
       tab: 'fronts',
       cta: 'Fronts',
+    })
+  }
+  // An official whose retainer went unpaid gives no control until it's paid (ADR 0064).
+  const lapsed = s.officials.filter((id) => s.retainers[id]?.lapsed)
+  if (lapsed.length) {
+    const fee = lapsed.reduce((sum, id) => sum + retainerFee(s, c, id, d), 0)
+    out.push({
+      key: 'retainer',
+      title: lapsed.length === 1 ? `The ${c.officials.list[lapsed[0]].name} isn’t answering` : `${lapsed.length} officials aren’t answering`,
+      sub: `A retainer went unpaid: no control from ${lapsed.length === 1 ? 'them' : 'any of them'} until you pay ${glyph.clean}${fmt(fee)}`,
+      icon: 'warning',
+      tone: 'bad',
+      tab: 'heat',
+      cta: 'Heat',
     })
   }
   const low = s.crew.filter((m) => !m.nephew && !m.stays && m.loyalty < c.crew.loyalty.lowThreshold)
