@@ -1,4 +1,4 @@
-import { Item, List, Note, PageHead, Screen, Section, Segmented } from '../components/ui'
+import { Btn, Item, List, Note, PageHead, Screen, Section, Segmented } from '../components/ui'
 import { MUSIC_FILES, SFX_FILES } from '../sound/files'
 import { store } from '../store'
 import type { ScreenProps } from './types'
@@ -8,8 +8,8 @@ const ON_OFF = [
   { key: 'off', title: 'Off' },
 ] as const
 
-// Settings (ADR 0055): the player's own preferences, kept with the settings file and never in the save.
-// For now, sound effects and music, each on or off.
+// Settings (ADR 0055): the player's own preferences, kept with the settings file and never in the save: sound
+// effects and music, each on or off. And the play log to share, which testers need without Debug (ADR 0057).
 export function SettingsScreen({ game }: ScreenProps) {
   const a = game.settings.audio
   const noFiles = Object.keys(SFX_FILES).length === 0 && Object.keys(MUSIC_FILES).length === 0
@@ -27,6 +27,10 @@ export function SettingsScreen({ game }: ScreenProps) {
         </List>
         <Note>Both follow the phone’s silent switch, and play alongside anything else you’re listening to.</Note>
         {noFiles && <Note>This build has no sounds in it yet.</Note>}
+      </Section>
+      <Section title="Your play log">
+        <Note>Everything you’ve done and everything that happened, as one file. If you’re testing the game, share it when we ask. Nothing leaves the phone unless you share it.</Note>
+        <Btn title="Share my play log" onPress={() => void store.exportLog()} />
       </Section>
     </Screen>
   )

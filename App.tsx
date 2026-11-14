@@ -58,6 +58,9 @@ const MORE: Tab[] = [
 ]
 const ALL = [...BAR, ...MORE]
 
+// Debug shows only where the build allows it (ADR 0057); a `?tab=debug` without it opens Home.
+const shown = (t: Tab, game: Snapshot): boolean => !t.debugOnly || game.config.debug.enabled
+
 // A dot means something there wants attention.
 function badges(game: Snapshot): Partial<Record<TabId, boolean>> {
   const { state: s, derived: d, config: c } = game
@@ -162,7 +165,7 @@ export default function App() {
             <Header game={game} onGold={() => setSkipping(true)} go={go} />
             <TutorialBanner game={game} go={go} />
             <NoticeBar notice={game.notice} realNow={game.realNow} />
-            <View style={styles.body}>{ALL.find((t) => t.id === tab)?.render({ game, go })}</View>
+            <View style={styles.body}>{(ALL.find((t) => t.id === tab && shown(t, game)) ?? BAR[0]).render({ game, go })}</View>
             <BottomBar tab={tab} game={game} onChange={go} onMore={openMore} />
             {more && <MoreSheet game={game} tab={tab} onChange={go} onClose={() => setMore(false)} />}
             {skipping && <SkipSheet game={game} onClose={() => setSkipping(false)} />}
@@ -223,7 +226,7 @@ function MoreSheet({ game, tab, onChange, onClose }: { game: Snapshot; tab: TabI
             <Icon name="close" size={16} color={colors.muted} />
           </Pressable>
         </View>
-        {MORE.filter((t) => !t.debugOnly || game.config.debug.enabled).map((t) => {
+        {MORE.filter((t) => shown(t, game)).map((t) => {
           const note = moreNote(game, t.id)
           return (
             <Pressable key={t.id} style={styles.sheetRow} onPress={() => onChange(t.id)} accessibilityRole="button">

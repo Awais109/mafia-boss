@@ -22,6 +22,7 @@ import { botPlay, type Trace } from '../sim/driver'
 import type { LogExport, LogLine } from '../sim/replay'
 import { actMilestones } from './acts'
 import { buildAway, mergeAway, type AwaySummary } from './away'
+import { DEBUG_BUILD, forBuild } from './build'
 import { buildNotices, diffUnlocked, type QueuedNotice, type UnlockedMap } from './notices'
 import { dueScene, sceneAhead, type SceneId } from './scenes'
 import { cueForEvents } from './sound/cues'
@@ -68,7 +69,7 @@ class GameStore {
   private committed: PlayerState | null = null
   private snapshot: Snapshot | null = null
   private settings: Settings = DEFAULT_SETTINGS
-  private config: Config = tryBuildConfig('default').config
+  private config: Config = forBuild(tryBuildConfig('default').config, DEBUG_BUILD)
   private configErrors: string[] = []
   private listeners = new Set<() => void>()
   private notice: Notice | null = null
@@ -299,8 +300,9 @@ class GameStore {
   private rebuildConfig(): void {
     const { config, errors } = tryBuildConfig(this.settings.preset, this.settings.overrides)
     this.configErrors = errors
-    // A broken config is loud (shown in Debug) but never bricks the game: fall back to defaults.
-    this.config = errors.length ? tryBuildConfig('default').config : config
+    // A broken config is loud (shown in Debug) but never bricks the game: fall back to defaults. Either way,
+    // Debug only where the build allows it (ADR 0057).
+    this.config = forBuild(errors.length ? tryBuildConfig('default').config : config, DEBUG_BUILD)
   }
 
   private saveSettings(change: { path: string; value: number | boolean | null }): void {

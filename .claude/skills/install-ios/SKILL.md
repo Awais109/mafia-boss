@@ -30,7 +30,7 @@ security find-identity -v -p codesigning 2>/dev/null | tail -4 || true
    - **Several:** Expo takes the first one when run from here, which may be the wrong team. Ask the user which team, then either:
      - have them run `npm run ios:install -- --device "<name>"` once in their own terminal to pick it (Expo saves it as `ios.appleTeamId` in `app.json`), or
      - run `npm run ios:xcode` and have them choose the Team under Signing & Capabilities.
-4. **Build and install in the background:** `npm run ios:install -- --device "<device name or UDID>"`. This generates the git-ignored `ios/` folder, installs pods (the script sets UTF-8), builds the Release configuration with the JavaScript bundled in, and installs the app. The first build is long.
+4. **Build and install in the background:** `npm run ios:install -- --device "<device name or UDID>"`. This generates the git-ignored `ios/` folder, installs pods (the script sets UTF-8), builds the Release configuration with the JavaScript bundled in, and installs the app. The first build is long. A release build hides Debug (ADR 0057). If the user wants it kept, for a tester build that skips time, have them run `EXPO_PUBLIC_DEBUG=1 npm run ios:install -- --device "<name>"` themselves.
 5. **Watch the output** until it installs or errors.
    - Signing errors: go back to step 3, or use `npm run ios:xcode` and press ⌘R in Xcode.
    - After changing `app.json`: `sh scripts/with-native-env.sh npx expo prebuild --platform ios --clean`, then build again.
