@@ -391,6 +391,7 @@ export type Config = {
     inspectedPenalty: number
     raidPenalty: number // while the raid penalty from prosperity runs
     controlBonus: number // control × (1 + this × opinion ÷ 100)
+    saturation: number // the media bonus that brings the target 1 − 1/e of the way from base to 100: diminishing returns (ADR 0063)
   }
   ministry: {
     fromAct: Act
@@ -1176,6 +1177,7 @@ export function validateConfig(c: Config): string[] {
       if (!ACTS.includes(op.fromAct)) e.push('opinion.fromAct: expected an act')
       num(e, 'opinion.base', op.base, (n) => n >= 0 && n <= 100, 'in [0, 100]')
       num(e, 'opinion.stepPerHr', op.stepPerHr, (n) => n > 0 && n <= 1, 'in (0, 1]')
+      positive(e, 'opinion.saturation', op.saturation)
       nonNeg(e, 'opinion.inspectedPenalty', op.inspectedPenalty)
       nonNeg(e, 'opinion.raidPenalty', op.raidPenalty)
       nonNeg(e, 'opinion.controlBonus', op.controlBonus)

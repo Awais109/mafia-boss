@@ -1,18 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  apply,
-  derive,
-  gameCleared,
-  ministryTarget,
-  opinionTarget,
-  pointCost,
-  reconcile,
-  tryBuildConfig,
-  voteShare,
-  winChance,
-  type Config,
-  type PlayerState,
-} from '../engine'
+import { apply, type Config, derive, gameCleared, mediaBonus, ministryTarget, opinionFromMedia, opinionTarget, type PlayerState, pointCost, reconcile, tryBuildConfig, voteShare, winChance } from '../engine'
 import { act, config, fresh, H, T0 } from './helpers'
 
 // Act V, the Kombinat (ADR 0044): the auction, public opinion, the Ministry's attention, and the elections.
@@ -87,14 +74,30 @@ describe('public opinion', () => {
     const s = act(owned(), [{ type: 'BUY_RACKET', racketType: 'newspaper', districtId: 'kombinat' }], T0, steady)
     const before = s.politics.opinion
     const target = opinionTarget(s, steady, T0)
-    expect(target).toBeCloseTo(opinionTarget(actFive(), steady, T0) + types.newspaper.opinionPerTier!)
+    // The Newspaper's press, through the diminishing-returns curve (ADR 0063).
+    expect(mediaBonus(s, steady)).toBeCloseTo(mediaBonus(actFive(), steady) + types.newspaper.opinionPerTier!)
+    expect(target).toBeCloseTo(opinionFromMedia(steady, mediaBonus(s, steady)))
     const hour = Math.ceil(T0 / H) * H
     const r = reconcile(s, hour + 1, steady).state
     expect(r.politics.opinion).toBeCloseTo(before + (target - before) * steady.opinion.stepPerHr)
     // The Development Fund adds its share while it runs.
     const fund = act(r, [{ type: 'BUY_FRONT', frontType: 'developmentFund' }], hour + 1, steady)
     fund.fronts.find((f) => f.type === 'developmentFund')!.util = 0.5
-    expect(opinionTarget(fund, steady, hour + 1)).toBeCloseTo(target + 0.5 * steady.fronts.types.developmentFund.opinionAtFullUtil!)
+    expect(mediaBonus(fund, steady)).toBeCloseTo(mediaBonus(r, steady) + 0.5 * steady.fronts.types.developmentFund.opinionAtFullUtil!)
+    expect(opinionTarget(fund, steady, hour + 1)).toBeCloseTo(opinionFromMedia(steady, mediaBonus(fund, steady)))
+  })
+
+  it('gives the press diminishing returns: it nears 100 but never reaches it (ADR 0063)', () => {
+    const o = steady.opinion
+    expect(opinionFromMedia(steady, 0)).toBe(o.base)
+    expect(opinionFromMedia(steady, o.saturation)).toBeCloseTo(o.base + (100 - o.base) * (1 - Math.exp(-1)))
+    // Each point counts for less the more press there is.
+    const step = (b: number) => opinionFromMedia(steady, b + 10) - opinionFromMedia(steady, b)
+    expect(step(0)).toBeGreaterThan(step(60))
+    expect(step(60)).toBeGreaterThan(step(150))
+    expect(opinionFromMedia(steady, 1000)).toBeLessThan(100)
+    // Two media businesses at tier 6 used to pass 100; now they leave room for the city's decisions.
+    expect(opinionFromMedia(steady, 6 * (types.newspaper.opinionPerTier! + types.tvStation.opinionPerTier!))).toBeLessThan(97)
   })
 
   it('multiplies control, and pays the Construction Trust', () => {

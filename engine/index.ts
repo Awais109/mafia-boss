@@ -36,7 +36,10 @@ export { creditOpen, defaultChance, lendCap, loanCap, loanDue } from './systems/
 export { colonelHolds, colonelHostile, convoyLoad, customsChance, hijackChance, passageActive, passageCost } from './systems/convoys'
 export {
   electionScheduled,
+  mediaBonus,
+  mediaSlope,
   ministryTarget,
+  opinionFromMedia,
   opinionTarget,
   pointCost,
   pointsRoom,

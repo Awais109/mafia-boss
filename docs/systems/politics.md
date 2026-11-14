@@ -2,7 +2,7 @@
 
 From Act V three tracks run beside heat: what the city thinks of you, what the capital thinks of you, and a weekly election that decides whether you run the city outright ([ADR 0044](../decisions/0044-act-v-kombinat.md)).
 
-**Code:** `engine/systems/politics.ts` (`politicsOn`, `opinionTarget`, `ministryTarget`, `politicsHourBoundary`, `thawFronts`, `initPolitics`, `electionScheduled`, `voteShare`, `winChance`, `pointCost`, `pointsRoom`, `campaign`, `addVotes`, `electionDue`); opinion and the mayor in `engine/core/derive.ts` (control, tribute, district perks, the Construction Trust, frozen fronts); the `CAMPAIGN` and `DEBUG_HOLD_ELECTION` handlers and the Governor's check in `BUY_OFFICIAL` in `engine/core/apply.ts`. App: `app/components/PoliticsCard.tsx` on the Map.
+**Code:** `engine/systems/politics.ts` (`politicsOn`, `mediaBonus`, `opinionFromMedia`, `mediaSlope`, `opinionTarget`, `ministryTarget`, `politicsHourBoundary`, `thawFronts`, `initPolitics`, `electionScheduled`, `voteShare`, `winChance`, `pointCost`, `pointsRoom`, `campaign`, `addVotes`, `electionDue`); opinion and the mayor in `engine/core/derive.ts` (control, tribute, district perks, the Construction Trust, frozen fronts); the `CAMPAIGN` and `DEBUG_HOLD_ELECTION` handlers and the Governor's check in `BUY_OFFICIAL` in `engine/core/apply.ts`. App: `app/components/PoliticsCard.tsx` on the Map.
 **Config:** `opinion.*`, `ministry.*`, `elections.*`; on `rackets.types`: `opinionPerTier`, `opinionYield`; on `fronts.types`: `opinionAtFullUtil`; on `officials.list`: `ministryRelief`, `needsMayor`; `ops.list.deliverVote.votes`; `progression.acts[6].mayor`.
 
 State: `politics = { opinion, attention, nextElectionAt, elections, points, mayor }`. Everything switches on at `opinion.fromAct`; `initPolitics` runs when that act opens: opinion starts at its target, attention at 0, and the first election is `elections.everyDays` away.
@@ -12,12 +12,14 @@ State: `politics = { opinion, attention, nextElectionAt, elections, points, mayo
 0–100, city-wide. At each whole hour, after the fronts' utilization and the inspection flag, it moves `opinion.stepPerHr` of the way to its target:
 
 ```
-target = opinion.base
-       + Σ businesses   opinionPerTier × tier × condition/100        (Newspaper, TV Station, Palace of Culture; not while shut)
-       + Σ fronts       opinionAtFullUtil × util                      (the Development Fund)
+press  = Σ businesses   opinionPerTier × tier × condition/100        (Newspaper, TV Station, Palace of Culture; not while shut)
+       + Σ fronts       opinionAtFullUtil × util                      (the Development Fund)              (mediaBonus)
+target = opinion.base + (100 − opinion.base) × (1 − e^(−press ÷ opinion.saturation))                      (opinionFromMedia)
        − opinion.inspectedPenalty   while inspected
        − opinion.raidPenalty        while the raid penalty runs (prosperity's raidPenaltyUntil)
 ```
+
+**Diminishing returns** ([ADR 0063](../decisions/0063-opinion-diminishing-returns.md)): the first points of press count almost fully, then less and less, so the target nears 100 but never reaches it. Two media businesses at tier 6 put it in the high 80s, where the city's decisions still move it. `mediaSlope` is what one more point of press adds now. The Business screen says "press +N", not opinion, since a point of press is worth less near the top.
 
 What it does:
 - **Control** × `1 + opinion.controlBonus × opinion/100` (`Derived.controlParts.opinionMult`, [heat.md](heat.md)).
