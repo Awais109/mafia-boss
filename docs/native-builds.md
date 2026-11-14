@@ -30,6 +30,12 @@ All of them ship inside Expo Go, so Expo Go needs nothing extra. A standalone in
 
 **Web.** `react-native-web`, `react-dom` and `@expo/metro-runtime` are installed only so `npx expo export --platform web` can build screenshots for design checks ([app.md](app.md#checking-screens-against-the-design)). The web build isn't a way to play.
 
+**Keeping Expo current.** Within SDK 57, Expo's own packages must stay on the patch versions the SDK expects:
+- `npx expo install --check` lists any that drift;
+- `npx expo install <packages>` updates them to the right version (last done for `expo`, `expo-sharing` and `@expo/metro-runtime`, #23).
+
+Afterwards, run `npm run check` and an export for each platform, and rebuild any standalone install. Add a package with `npx expo install`, never a bare `npm install`, and check what it pulls in. `expo-audio`'s open peer dependency once installed a newer major `expo-asset` that broke the bundle ([sound.md](sound.md)).
+
 ## Requirements
 
 For Expo SDK 57 and React Native 0.86. Checked on 2026-09-12; `npm run doctor` reads the first and third rows from installed packages, so they follow upgrades.
