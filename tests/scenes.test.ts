@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { apply, TUTORIAL_STEPS, type GameEvent } from '../engine'
 import { buildNotices } from '../app/notices'
+import { firstEndingOf, LAST_HEARING } from '../app/story'
 import { dueScene, sceneAhead, sceneDue, SCENES, type SceneId } from '../app/scenes'
 import { ART } from '../app/art/scenes'
 import { act, blank, config, fresh, T0 } from './helpers'
@@ -117,6 +118,27 @@ describe('scenes', () => {
     expect(dueScene(s)).toBeNull()
     expect(buildNotices(before, s, [taken])).toEqual([{ kind: 'info', event: taken }])
     expect(SCENES.keys.beats.at(-1)?.kind).toBe('keys')
+  })
+
+  it('plays the last hearing at the first ending, just before it, with the answer for that road (ADR 0060)', () => {
+    const s = blank()
+    s.tutorial.done = true
+    s.act = 6
+    s.story.seen.push(...(Object.keys(SCENES) as SceneId[]).filter((id) => !['hearing', 'holding', 'empire'].includes(id)))
+    expect(dueScene(s)).toBeNull()
+    expect(sceneAhead(s, 'hearing')).toBe(true)
+    s.stats.endings.empire = T0
+    expect(dueScene(s)?.id).toBe('hearing')
+    expect(firstEndingOf(s)).toBe('empire')
+    s.story.seen.push('hearing')
+    expect(dueScene(s)?.id).toBe('empire')
+    // The other ending later plays its own scene, not the hearing again, and the first road stays the answer.
+    s.story.seen.push('empire')
+    s.stats.endings.holding = T0 + 1
+    expect(dueScene(s)?.id).toBe('holding')
+    expect(firstEndingOf(s)).toBe('empire')
+    expect(Object.keys(LAST_HEARING).sort()).toEqual(['empire', 'holding'])
+    expect(SCENES.hearing.beats.map((b) => b.kind)).toContain('defence')
   })
 
   it('records a scene once, and refuses an id that isn’t one', () => {

@@ -14,6 +14,7 @@ export type SceneId =
   | 'row' | 'crate' | 'terms' | 'bridge' | 'lunch' | 'truck' | 'road' | 'auction' | 'count' | 'governor'
   | 'envelope'
   | 'keys'
+  | 'hearing'
   | 'holding' | 'empire'
   | `chapter-${LaterAct}`
 
@@ -29,6 +30,7 @@ export type Beat =
   | { kind: 'result'; mission: MissionId } // the stamp: FAILED in red ink with its cost, or WON in brass
   | { kind: 'envelope' } // Lyosha's second envelope: this act's note, and the stake
   | { kind: 'keys' } // the sign coming down, and which business the lender took
+  | { kind: 'defence' } // Dima at the last hearing, with the answer for the road the save took
   | { kind: 'hire' } // the three crew as cards, each with Hire; it waits until two are hired
   | { kind: 'tribute'; art: ArtId; caption: string } // the stare-down with Tolya's demand under it; it waits for an answer
   | { kind: 'title'; act: Act } // VOLUME and the act's title
@@ -223,6 +225,18 @@ export const SCENES: Record<SceneId, Scene> = {
       { kind: 'keys' },
     ],
   },
+  // The last hearing (ADR 0060; Scene 14): the prosecutor's rematch, when the first ending is reached, before it.
+  hearing: {
+    id: 'hearing',
+    number: 14,
+    title: 'The last hearing',
+    beats: [
+      { kind: 'slug', caption: 'The old merchant court. High windows, dust in the light.' },
+      { kind: 'face', person: 'prosecutor', caption: 'The prosecutor, with the file. It’s a box now.' },
+      { kind: 'defence' },
+      { kind: 'face', person: 'prosecutor', speech: 'Then there’s nothing left to hear.', caption: 'The box closes.' },
+    ],
+  },
   // The endings (ADR 0053; Scenes 17 and 18): each plays when it's first reached, then the credits.
   holding: {
     id: 'holding',
@@ -254,10 +268,11 @@ export const SCENES: Record<SceneId, Scene> = {
 }
 
 // The order scenes are checked in: the opening's, then the chapters.
-// A mission's scene plays before the chapter it opens; the keys come before the endings.
+// A mission's scene plays before the chapter it opens; the keys come before the endings, and the last hearing
+// just before the first of them.
 const ORDER: SceneId[] = [
   'prologue', 'crew', 'tolya', 'row', 'crate', 'chapter-2', 'terms', 'bridge', 'chapter-3', 'lunch', 'truck', 'chapter-4',
-  'road', 'auction', 'chapter-5', 'count', 'governor', 'chapter-6', 'keys', 'holding', 'empire',
+  'road', 'auction', 'chapter-5', 'count', 'governor', 'chapter-6', 'keys', 'hearing', 'holding', 'empire',
 ]
 
 // The arcs' scenes: the act each belongs to, and the moment it plays.
@@ -272,6 +287,7 @@ const ARC: Partial<Record<SceneId, { act: Act; happened: (s: PlayerState) => boo
   auction: { act: 4, happened: (s) => s.missions.firstAuction?.result === 'failed' },
   count: { act: 5, happened: (s) => s.politics.mayor },
   governor: { act: 5, happened: (s) => s.missions.overGovernor?.result === 'failed' },
+  hearing: { act: 6, happened: (s) => s.stats.endings.holding !== undefined || s.stats.endings.empire !== undefined },
   holding: { act: 6, happened: (s) => s.stats.endings.holding !== undefined },
   empire: { act: 6, happened: (s) => s.stats.endings.empire !== undefined },
 }

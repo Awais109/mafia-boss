@@ -144,6 +144,19 @@ export const ENVELOPE_NOTES: Record<Act, string> = {
 // After the story (ADR 0052): the endings by name, and what each contract on the board is for.
 export const ENDING_NAME: Record<Ending, string> = { holding: 'the Holding', empire: 'the Empire' }
 
+// Dima's answer at the last hearing (Scene 14, ADR 0060), by the road that reached the first ending.
+export const LAST_HEARING: Record<Ending, string> = {
+  holding: 'Every rouble on this list has a receipt.',
+  empire: 'The witnesses are no longer available.',
+}
+
+// The ending reached first, or null before either.
+export function firstEndingOf(s: PlayerState): Ending | null {
+  const { holding, empire } = s.stats.endings
+  if (holding === undefined) return empire === undefined ? null : 'empire'
+  return empire !== undefined && empire < holding ? 'empire' : 'holding'
+}
+
 // The endings' last caption, over the city from the hills (ADR 0053; Scenes 17 and 18), and the credits' line
 // under Lyosha's name.
 export const ENDING_LINE: Record<Ending, string> = {

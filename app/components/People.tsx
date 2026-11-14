@@ -18,14 +18,14 @@ import { colors, Title } from './ui'
 const PERSON_SCENES: Partial<Record<PersonId, SceneId[]>> = {
   lyosha: ['prologue'],
   vitya: ['prologue', 'crew'],
-  dima: ['crew', 'terms', 'count'],
+  dima: ['crew', 'terms', 'count', 'hearing'],
   sasha: ['crew'],
   tolya: ['tolya', 'row'],
   zhanna: ['crate', 'terms', 'chapter-2'],
   ignatov: ['bridge', 'lunch', 'chapter-3'],
   colonel: ['truck', 'road', 'chapter-4'],
   golovin: ['auction', 'count', 'chapter-5'],
-  prosecutor: ['governor', 'chapter-6'],
+  prosecutor: ['governor', 'chapter-6', 'hearing'],
 }
 
 // People (design: Map · People): everyone you've met as a card on the notebook's page, and everyone not yet
