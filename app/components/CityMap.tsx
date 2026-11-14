@@ -207,9 +207,10 @@ export function CityMap({ game, selected, onSelect }: { game: Snapshot; selected
 
 // The drawing itself, filling its box. `crop` frames one district and its surroundings (the chapter page's
 // "new on the map"); `onSelect` makes districts tappable.
-export function MapDrawing({ game, selected, onSelect, crop }: { game: Snapshot; selected?: DistrictId | null; onSelect?: (id: DistrictId) => void; crop?: DistrictId }) {
+// `pencil`: every district still in pencil, as before anyone showed it (the chapter page's ink comes up over it).
+export function MapDrawing({ game, selected, onSelect, crop, pencil }: { game: Snapshot; selected?: DistrictId | null; onSelect?: (id: DistrictId) => void; crop?: DistrictId; pencil?: boolean }) {
   const { state: s, config: c } = game
-  const known = (id: DistrictId) => revealed(s, c, id)
+  const known = (id: DistrictId) => !pencil && revealed(s, c, id)
   const cityKnown = DISTRICT_IDS.some((id) => !c.districts.list[id].home && known(id))
   const newest = [...REVEAL_ORDER].reverse().find((id) => known(id) && DISTRICT_IDS.includes(id))
   const shared = cityKnown ? { stroke: INK, width: 1 } : { stroke: PENCIL, width: 0.75 }

@@ -153,14 +153,24 @@ The summary is not saved: closing the app loses it, and the Log still has every 
 
 The warm-ledger design ([ADR 0047](decisions/0047-warm-ledger-design.md)) comes from Claude Design. It has three registers:
 - **Data screens** are a printed ledger: warm dark cards, brass section titles over a hairline rule, condensed type, and figures in their resource's colour.
-- **Story scenes** are grown-up crime manga (not built yet).
-- **The map** is Lyosha's notebook (not redrawn yet).
+- **Story scenes** are grown-up crime manga: the cover, the eighteen scenes and the chapter pages ([ADR 0049](decisions/0049-scenes.md)).
+- **The map** is Lyosha's notebook: pencil until someone shows you a district, then ink ([ADR 0048](decisions/0048-notebook-map-and-people.md)).
 
 The design lives in `design/` as an input:
 - `sevgorod-design-brief.md` is the brief Claude Design was given: the world, the cast, and every screen with its states.
 - `Sevgorod Screens.html` is what came back: every frame, the component sheet and the identity page.
 
 Don't edit either; record a deviation in an ADR.
+
+### Motion
+
+The brief asks for restraint, and `app/motion.tsx` has four moves ([ADR 0061](decisions/0061-motion.md)):
+- **A chapter page turns in** from its left edge (`PageTurn`, over the dark so nothing pale shows behind it).
+- **A new district's ink comes up over its pencil** on the chapter page that reveals it (`InkIn`: `MapDrawing` with `pencil` fades out as the inked drawing fades in).
+- **A mission's FAILED or WON stamp lands** (`Stamped`: from 1.7× to its size, fast, no bounce), with the `stamp` sound.
+- **Money counts to its new figure** in the header's Dirty, Clean and Influence cells (`useTicker`). It only animates a jump of more than `MOTION.tickMinShare` of the figure; the per-second accrual just follows.
+
+Durations are in `MOTION`. Like the sound mix, they're presentation, not game numbers. Transforms and opacity run on the native driver. With the phone's reduced-motion setting on (`useReducedMotion`), every move is skipped and things simply appear.
 
 ## Checking screens against the design
 

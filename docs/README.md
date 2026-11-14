@@ -71,6 +71,7 @@ When you change a path on the left, update the doc on the right in the same comm
 | `engine/systems/convoys.ts` | [systems/convoys.md](systems/convoys.md) (the Colonel's disposition and passage also in [systems/districts-and-rivals.md](systems/districts-and-rivals.md)) |
 | `engine/systems/injuries.ts` | [systems/crew.md](systems/crew.md) |
 | `App.tsx`, `app/` | [app.md](app.md) |
+| `app/motion.tsx` | [app.md](app.md#motion) and [ADR 0061](decisions/0061-motion.md) |
 | `app/notify/`, `app/inboxTitle.ts`, `plugins/` | [notifications.md](notifications.md) and [ADR 0058](decisions/0058-local-notifications.md) |
 | `app/sound/`, `scripts/sounds.ts`, `scripts/gen-sounds/`, `assets/sounds/`, `app/screens/SettingsScreen.tsx` | [sound.md](sound.md), and [ADR 0055](decisions/0055-sound.md) for a change to how sound works |
 | `app/theme.ts`, `app/fonts.ts`, `app/components/Glyph.tsx`, `app/components/ui.tsx` | [app.md](app.md#look-and-feel), and [ADR 0047](decisions/0047-warm-ledger-design.md) for a change to the design system itself |

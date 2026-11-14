@@ -6,6 +6,7 @@ import { HEADS } from '../art/heads'
 import { CHAPTER_ART } from '../art/chapters'
 import { DOSSIER_ART, PORTRAITS, type PersonId } from '../art/people'
 import { ACT_NAME, ACT_OPENS } from '../acts'
+import { InkIn, PageTurn } from '../motion'
 import { PEOPLE } from '../people'
 import { ACT_TITLE, ACT_TURN, DISTRICT_STORY, revealedBy } from '../story'
 import type { Snapshot } from '../store'
@@ -33,77 +34,83 @@ export function ChapterPage({ game, act, onTurn }: { game: Snapshot; act: Act; o
   const opens = ACT_OPENS[act]
   return (
     <Modal visible animationType="fade" onRequestClose={onTurn}>
-      <ScrollView style={styles.page} contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
-        <View style={[styles.art, !drawn && styles.artPlain]}>
-          {panel ? (
-            <SvgXml xml={panel} width="100%" height="100%" />
-          ) : (
-            <View style={StyleSheet.absoluteFill}>
-              <Screentone />
-              {head ? (
-                <View style={styles.headWrap}>
-                  <SvgXml xml={head} width="100%" height="100%" />
+      {/* The page turns in over the dark (ADR 0061), so nothing pale shows behind its edge. */}
+      <View style={styles.under}>
+        <PageTurn style={styles.turning}>
+          <ScrollView style={styles.page} contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
+            <View style={[styles.art, !drawn && styles.artPlain]}>
+              {panel ? (
+                <SvgXml xml={panel} width="100%" height="100%" />
+              ) : (
+                <View style={StyleSheet.absoluteFill}>
+                  <Screentone />
+                  {head ? (
+                    <View style={styles.headWrap}>
+                      <SvgXml xml={head} width="100%" height="100%" />
+                    </View>
+                  ) : null}
+                </View>
+              )}
+              {drawn ? (
+                <View style={[styles.volume, { top: insets.top + 18 }]}>
+                  <Text style={styles.volumeLabel}>{`VOLUME ${ACT_NAME[act]}`}</Text>
+                  <Text style={styles.volumeTitle}>{ACT_TITLE[act].toUpperCase()}</Text>
                 </View>
               ) : null}
+              <View style={styles.caption}>
+                <Text style={styles.captionText}>{(ACT_TURN[later] ?? '').replace(/^“|”$/g, '')}</Text>
+              </View>
             </View>
-          )}
-          {drawn ? (
-            <View style={[styles.volume, { top: insets.top + 18 }]}>
-              <Text style={styles.volumeLabel}>{`VOLUME ${ACT_NAME[act]}`}</Text>
-              <Text style={styles.volumeTitle}>{ACT_TITLE[act].toUpperCase()}</Text>
-            </View>
-          ) : null}
-          <View style={styles.caption}>
-            <Text style={styles.captionText}>{(ACT_TURN[later] ?? '').replace(/^“|”$/g, '')}</Text>
-          </View>
-        </View>
-        {!drawn && (
-          <View style={styles.band}>
-            <Text style={[styles.volumeLabel, styles.bandLabel]}>{`VOLUME ${ACT_NAME[act]}`}</Text>
-            <Text style={[styles.volumeTitle, styles.bandTitle]}>{ACT_TITLE[act].toUpperCase()}</Text>
-          </View>
-        )}
+            {!drawn && (
+              <View style={styles.band}>
+                <Text style={[styles.volumeLabel, styles.bandLabel]}>{`VOLUME ${ACT_NAME[act]}`}</Text>
+                <Text style={[styles.volumeTitle, styles.bandTitle]}>{ACT_TITLE[act].toUpperCase()}</Text>
+              </View>
+            )}
 
-        <View style={styles.body}>
-          {boss && (
-            <View style={styles.bossBlock}>
-              <Text style={styles.bossName}>{boss.name.toUpperCase()}</Text>
-              <View style={styles.boss}>
-                <Text style={[styles.caps, styles.bossText]}>{boss.epithet}</Text>
-                {holds ? (
-                <View style={styles.holds}>
-                  <Text style={styles.holdsLabel}>HOLDS</Text>
-                    <Text style={styles.holdsValue}>{holds}</Text>
+            <View style={styles.body}>
+              {boss && (
+                <View style={styles.bossBlock}>
+                  <Text style={styles.bossName}>{boss.name.toUpperCase()}</Text>
+                  <View style={styles.boss}>
+                    <Text style={[styles.caps, styles.bossText]}>{boss.epithet}</Text>
+                    {holds ? (
+                    <View style={styles.holds}>
+                      <Text style={styles.holdsLabel}>HOLDS</Text>
+                        <Text style={styles.holdsValue}>{holds}</Text>
+                      </View>
+                    ) : null}
                   </View>
-                ) : null}
+                </View>
+              )}
+
+              {ids.map((id) => (
+                <View key={id} style={styles.newOnMap}>
+                  {/* Revealed now: its ink comes up over the pencil (ADR 0061). */}
+                  <InkIn style={styles.miniMap} pencil={<MapDrawing game={game} crop={id} pencil />}>
+                    <MapDrawing game={game} crop={id} selected={id} />
+                  </InkIn>
+                  <View style={styles.newText}>
+                    <Text style={styles.caps}>New on the map</Text>
+                    <Text style={styles.district}>{c.districts.list[id].name}</Text>
+                    <Text style={styles.hand}>{DISTRICT_STORY[id].reveal}</Text>
+                  </View>
+                </View>
+              ))}
+
+              <View style={styles.opens}>
+                <Text style={styles.caps}>What opens</Text>
+                <Text style={styles.opensText}>{rich(`${opens.charAt(0).toUpperCase()}${opens.slice(1)}.`, 14, { ink: true })}</Text>
               </View>
+
+              <Pressable onPress={onTurn} accessibilityRole="button" style={({ pressed }) => [styles.turn, pressed && styles.pressed]}>
+                <Text style={styles.turnText}>TURN THE PAGE</Text>
+                <Icon name="page" size={18} color={paper.paper} />
+              </Pressable>
             </View>
-          )}
-
-          {ids.map((id) => (
-            <View key={id} style={styles.newOnMap}>
-              <View style={styles.miniMap}>
-                <MapDrawing game={game} crop={id} selected={id} />
-              </View>
-              <View style={styles.newText}>
-                <Text style={styles.caps}>New on the map</Text>
-                <Text style={styles.district}>{c.districts.list[id].name}</Text>
-                <Text style={styles.hand}>{DISTRICT_STORY[id].reveal}</Text>
-              </View>
-            </View>
-          ))}
-
-          <View style={styles.opens}>
-            <Text style={styles.caps}>What opens</Text>
-            <Text style={styles.opensText}>{rich(`${opens.charAt(0).toUpperCase()}${opens.slice(1)}.`, 14, { ink: true })}</Text>
-          </View>
-
-          <Pressable onPress={onTurn} accessibilityRole="button" style={({ pressed }) => [styles.turn, pressed && styles.pressed]}>
-            <Text style={styles.turnText}>TURN THE PAGE</Text>
-            <Icon name="page" size={18} color={paper.paper} />
-          </Pressable>
-        </View>
-      </ScrollView>
+          </ScrollView>
+        </PageTurn>
+      </View>
     </Modal>
   )
 }
@@ -126,6 +133,8 @@ function Screentone() {
 const INK = paper.ink
 
 const styles = StyleSheet.create({
+  under: { flex: 1, backgroundColor: '#16130f' },
+  turning: { flex: 1 },
   page: { flex: 1, backgroundColor: paper.paper },
   art: { aspectRatio: 390 / 432, backgroundColor: INK, overflow: 'hidden' },
   artPlain: { aspectRatio: 390 / 330 },

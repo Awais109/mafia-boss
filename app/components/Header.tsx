@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { ACT_NAME, actProgress } from '../acts'
 import { fmt, fmtClock, fmtRate, fmtShort } from '../format'
+import { useTicker } from '../motion'
 import type { TabId } from '../screens/types'
 import type { Snapshot } from '../store'
 import { colors, fonts } from '../theme'
@@ -28,6 +29,10 @@ export function Header({ game, onGold, go }: { game: Snapshot; onGold?: () => vo
   const premiumOn = s.act >= c.premium.fromAct
   const toggle = (cell: Cell) => setOpen((o) => (o === cell ? null : cell))
   const empire = progress.cleared ? empireNow(game) : null
+  // Money counts to its new figure when it jumps (ADR 0061).
+  const dirty = useTicker(s.dirty)
+  const clean = useTicker(s.clean)
+  const influence = useTicker(s.influence)
 
   const detail = (() => {
     switch (open) {
@@ -94,9 +99,9 @@ export function Header({ game, onGold, go }: { game: Snapshot; onGold?: () => vo
             </View>
           </Pressable>
         )}
-        <ResCell kind="dirty" label="Dirty" value={fmtShort(s.dirty)} onPress={() => toggle('dirty')} />
-        <ResCell kind="clean" label="Clean" value={fmtShort(s.clean)} onPress={() => toggle('clean')} />
-        <ResCell kind="influence" label="Infl." value={fmtShort(s.influence)} onPress={() => toggle('influence')} />
+        <ResCell kind="dirty" label="Dirty" value={fmtShort(dirty)} onPress={() => toggle('dirty')} />
+        <ResCell kind="clean" label="Clean" value={fmtShort(clean)} onPress={() => toggle('clean')} />
+        <ResCell kind="influence" label="Infl." value={fmtShort(influence)} onPress={() => toggle('influence')} />
         {premiumOn ? (
           // From Act IV the cell holds two stocks side by side, each glyph over its figure; no label fits.
           <Pressable

@@ -3,6 +3,29 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-14 — Motion: page turns, ink, stamps, counters (#18)
+
+Branch: `feature/18-motion`. Reasoning: [ADR 0061](docs/decisions/0061-motion.md); [app.md → Motion](docs/app.md#motion).
+
+- **What a player sees:**
+  - a chapter page turns in from its left edge;
+  - the new district's mini-map on that page fades from pencil to ink;
+  - a mission's FAILED or WON stamp lands;
+  - Dirty, Clean and Influence in the header count to their new figure after a collect or a deposit.
+
+  With the phone's reduced-motion setting on, none of it moves.
+- **How:**
+  - `app/motion.tsx`: `PageTurn`, `InkIn`, `Stamped`, `useTicker`, `useReducedMotion` and `MOTION`, with React Native's `Animated` and the native driver.
+  - `MapDrawing` gains `pencil`.
+- **Docs:**
+  - [app.md](docs/app.md) gains a Motion section. Its Look and feel no longer says the scenes and the map aren't built (they have been since D3 and D5).
+  - [sound.md](docs/sound.md).
+- **Verified:**
+  - `npm run check`.
+  - The end states, through the web rig: the Act III chapter page from an Act III save shows the Centre inked with no pencil fragment underneath, and Crate's FAILED stamp lands at its size.
+  - The first cross-fade let the pencil's fragment show through the ink, so the pencil now fades out as the ink fades in.
+  - The moves themselves need a phone (#17).
+
 ## 2026-11-14 — Scene 14, "The last hearing" (#13)
 
 Branch: `feature/13-scene-hearing`. Reasoning: [ADR 0060](docs/decisions/0060-the-last-hearing.md).
