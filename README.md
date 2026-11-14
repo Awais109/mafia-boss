@@ -27,6 +27,7 @@ The **Debug** tab holds the time skip, a config editor with presets (`fast` runs
 | `npm run doctor` | Checks this machine for running and installing the app, with a fix for each problem |
 | `npm run android:install` | Builds a standalone release and installs it on a connected Android device |
 | `npm run ios:install -- --device "<name>"` | Builds a standalone release and installs it on a connected iPhone (Xcode 26.4+) |
+| `EXPO_PUBLIC_DEBUG=1 npm run ios:install …` | The same, keeping Debug (release builds hide it; [docs/native-builds.md](docs/native-builds.md)) |
 | `npm run ios:xcode` | Generates the iOS project and opens it in Xcode |
 | `npm run sim -- --days 8 --seed 42` | One bot game, summary against the dev manual §3 targets, hourly CSV in `sim/out/` |
 | `npm run sim -- --days 8 --runs 10` | Mean of each target over 10 seeds |

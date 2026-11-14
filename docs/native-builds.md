@@ -12,6 +12,13 @@ How to run Sevgorod on phones, emulators and simulators, what each way needs, an
 
 Expo Go runs the game's JavaScript inside Expo's own app, so nothing is compiled and Metro must keep running. A standalone install compiles the app as a release build with the JavaScript bundled in, so it runs without the laptop.
 
+**Debug in builds** ([ADR 0057](decisions/0057-debug-by-build.md)):
+- Expo Go and development builds show Debug.
+- A release build hides it: it can't grant gold, skip time or edit config, and the store turns `debug.enabled` off.
+- For a tester build that keeps Debug (the plan's compressed Pass 1, which needs time skips), bundle with the flag: `EXPO_PUBLIC_DEBUG=1 npm run ios:install -- --device "<name>"` or `EXPO_PUBLIC_DEBUG=1 npm run android:install`.
+- Both install scripts clear Metro's cache (`$TMPDIR/metro-cache`) first, because Metro caches the inlined flag. Building from Xcode by hand doesn't, so delete that folder yourself when you switch.
+- Testers export their play log from Settings → *Share my play log*.
+
 **Native modules.** The app uses these Expo and community modules:
 - `expo-file-system` and `expo-sharing`;
 - `expo-font` (a config plugin in `app.json`), which loads the ten bundled `@expo-google-fonts/*` files;

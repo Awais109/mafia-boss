@@ -3,6 +3,25 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-14 — Debug only in debug builds; the play log in Settings (#11)
+
+Branch: `fix/11-debug-release`. Reasoning: [ADR 0057](docs/decisions/0057-debug-by-build.md).
+
+- **What a player sees:**
+  - A release build has no Debug under More, so no gold grants, time skips, forced events or config edits.
+  - Settings has **Share my play log**, so a tester can send it without Debug.
+  - Expo Go and development builds keep Debug. So does a release built with `EXPO_PUBLIC_DEBUG=1`, for a playtest that skips time.
+- **How:**
+  - `app/build.ts`: `DEBUG_BUILD` and `forBuild`. The store passes every config through `forBuild`, so the engine itself refuses `DEBUG_*` actions in a release build, whatever the settings file says.
+  - `App.tsx` hides Debug, and a `?tab=debug` without it opens Home.
+  - The release install scripts clear Metro's cache first, since Metro caches the inlined flag.
+- **Docs:** [native-builds.md](docs/native-builds.md), [app.md](docs/app.md), [architecture.md](docs/architecture.md), [testing.md](docs/testing.md), the README, and the install skills.
+- **Verified:**
+  - `npm run check`, with `tests/build.test.ts` new.
+  - The web export without the flag has no Debug in More, and Settings shows the play log.
+  - With `EXPO_PUBLIC_DEBUG=1` and a cleared cache, Debug is back.
+  - Without clearing, the export kept the previous build's setting. That's why the install scripts now clear the cache.
+
 ## 2026-11-14 — Generated stand-in sounds (`npm run gen-sounds`)
 
 Branch: `feature/sound`. Reasoning: [ADR 0056](docs/decisions/0056-generated-stand-in-sounds.md); how: [sound.md](docs/sound.md#generating-sounds).

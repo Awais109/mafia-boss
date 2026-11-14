@@ -47,7 +47,7 @@ Events are appended to `state.log`, a ring buffer of the latest `LOG_CAP` (200) 
 
 ## apply
 
-`engine/core/apply.ts`: clone → reconcile to `now` → act at `t = max(now, updatedAt)`. Every handler validates before it mutates and returns an error string or `null`, so a rejected action leaves only the reconciled state. On success, `stats.actions` increments (except `SESSION_START`, `SESSION_END`, `TUTORIAL_ADVANCE`, `TUTORIAL_SKIP`, `SEE_SCENE`), the tutorial checks whether the action advances it, and the Act I goals are checked. `DEBUG_*` actions are refused unless `debug.enabled`. `DEBUG_RESET_OFFSET` shifts every stored timestamp back by the offset (`shiftTimes` in `engine/core/time.ts`), so resetting never freezes the game. `skippedMs` is a duration and is never shifted.
+`engine/core/apply.ts`: clone → reconcile to `now` → act at `t = max(now, updatedAt)`. Every handler validates before it mutates and returns an error string or `null`, so a rejected action leaves only the reconciled state. On success, `stats.actions` increments (except `SESSION_START`, `SESSION_END`, `TUTORIAL_ADVANCE`, `TUTORIAL_SKIP`, `SEE_SCENE`), the tutorial checks whether the action advances it, and the Act I goals are checked. `DEBUG_*` actions are refused unless `debug.enabled`, which the app turns off in release builds ([ADR 0057](decisions/0057-debug-by-build.md)). `DEBUG_RESET_OFFSET` shifts every stored timestamp back by the offset (`shiftTimes` in `engine/core/time.ts`), so resetting never freezes the game. `skippedMs` is a duration and is never shifted.
 
 Actions are listed in `engine/model/actions.ts`, events in `engine/model/events.ts`; each system doc lists its own.
 

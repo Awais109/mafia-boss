@@ -25,7 +25,7 @@ sh scripts/with-native-env.sh adb devices -l 2>/dev/null || echo "adb not found"
    - With exactly one target connected: `npm run android:install`.
    - With several: add `-- --device "<name>"`, or disconnect the others. Expo can't answer a device picker non-interactively.
 
-   This generates the git-ignored `android/` folder, builds the release variant (the game's JavaScript is bundled in), installs it, and opens it.
+   This generates the git-ignored `android/` folder, builds the release variant (the game's JavaScript is bundled in), installs it, and opens it. A release build hides Debug (ADR 0057). If the user wants it kept, have them run `EXPO_PUBLIC_DEBUG=1 npm run android:install` themselves.
 4. **Watch the output** until it installs or errors.
    - Missing SDK parts: install them in Android Studio and retry.
    - Java version errors: `npm run doctor -- android`.
