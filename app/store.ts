@@ -24,6 +24,8 @@ import { actMilestones } from './acts'
 import { buildAway, mergeAway, type AwaySummary } from './away'
 import { DEBUG_BUILD, forBuild } from './build'
 import { buildNotices, diffUnlocked, type QueuedNotice, type UnlockedMap } from './notices'
+import { notifier, type NotifyPrefs } from './notify/notifier'
+import { planNotifications } from './notify/plan'
 import { dueScene, sceneAhead, type SceneId } from './scenes'
 import { cueForEvents } from './sound/cues'
 import { sound, type AudioPrefs } from './sound/player'
@@ -39,7 +41,7 @@ const AWAY_MIN_GAME_MINUTES = 15
 // something actually happened.
 
 // The config the game runs on (Debug's preset and overrides), and the player's own preferences (ADR 0055).
-export type Settings = { preset: PresetName; overrides: Overrides; audio: AudioPrefs }
+export type Settings = { preset: PresetName; overrides: Overrides; audio: AudioPrefs; notify: NotifyPrefs }
 
 export type Notice = { text: string; kind: 'error' | 'info'; at: number }
 
@@ -57,7 +59,7 @@ export type Snapshot = {
   scene: SceneId | null // the scene playing (ADR 0049): latched when one falls due, or asked for by hand, until it ends
 }
 
-const DEFAULT_SETTINGS: Settings = { preset: 'default', overrides: {}, audio: { sound: true, music: true } }
+const DEFAULT_SETTINGS: Settings = { preset: 'default', overrides: {}, audio: { sound: true, music: true }, notify: { on: true, asked: false } }
 
 function newPlayerId(): string {
   const cryptoApi = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto
@@ -214,6 +216,20 @@ class GameStore {
     this.refresh()
   }
 
+  // Notifications on or off (ADR 0058). Off cancels anything scheduled.
+  setNotify(change: Partial<NotifyPrefs>): void {
+    this.settings = { ...this.settings, notify: { ...this.settings.notify, ...change } }
+    storage.write(FILES.settings, JSON.stringify(this.settings))
+    if (!this.settings.notify.on) void notifier.clear()
+    this.refresh()
+  }
+
+  // The phone's permission prompt: once the opening is done, or when the player turns notifications on.
+  async askNotifications(): Promise<boolean> {
+    if (!this.settings.notify.asked) this.setNotify({ asked: true })
+    return notifier.ask()
+  }
+
   presetConfig(): Config {
     return tryBuildConfig(this.settings.preset).config
   }
@@ -288,8 +304,13 @@ class GameStore {
     try {
       const raw = storage.read(FILES.settings)
       const saved = raw ? (JSON.parse(raw) as Partial<Settings>) : {}
-      // A settings file from before Settings had audio gets the defaults for it.
-      this.settings = { ...DEFAULT_SETTINGS, ...saved, audio: { ...DEFAULT_SETTINGS.audio, ...saved.audio } }
+      // A settings file from before Settings had audio or notifications gets the defaults for them.
+      this.settings = {
+        ...DEFAULT_SETTINGS,
+        ...saved,
+        audio: { ...DEFAULT_SETTINGS.audio, ...saved.audio },
+        notify: { ...DEFAULT_SETTINGS.notify, ...saved.notify },
+      }
     } catch {
       this.settings = DEFAULT_SETTINGS
     }
@@ -419,8 +440,27 @@ class GameStore {
   }
 
   private onAppState(status: AppStateStatus): void {
-    if (status === 'active') this.beginSession()
-    else if (status === 'background') this.endSession()
+    if (status === 'active') {
+      void notifier.clear()
+      this.beginSession()
+    } else if (status === 'background') {
+      this.endSession()
+      this.scheduleNotifications()
+    }
+  }
+
+  // Going to the background: what will happen while the player is away, as notifications (ADR 0058).
+  private scheduleNotifications(): void {
+    if (!this.committed) return
+    try {
+      const now = this.gameNow()
+      const plan = this.settings.notify.on
+        ? planNotifications(this.committed, this.config, now, { offsetMs: now - Date.now(), tzOffsetMin: new Date().getTimezoneOffset() })
+        : []
+      void notifier.schedule(plan)
+    } catch {
+      // A plan that can't be made is a missed reminder, not a broken game.
+    }
   }
 
   private async share(name: string): Promise<void> {

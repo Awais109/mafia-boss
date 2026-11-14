@@ -34,7 +34,15 @@
           "microphonePermission": false
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "./plugins/withoutPushEntitlement",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#c9a86a"
+        }
+      ]
     ]
   }
 }

@@ -93,6 +93,7 @@ Persistence lives in the app ([app.md](app.md)): the save, settings, and a JSON-
 | `package.json` scripts | `start`/`android`/`ios`/`web` (Expo Go), `doctor`, `android:install`/`ios:install`/`ios:xcode` (native builds), `test`, `typecheck`, `lint`, `check` (all three), `sim`, `sounds`, `gen-sounds` |
 | `scripts/doctor.ts` | Environment doctor ([native-builds.md](native-builds.md)) |
 | `scripts/sounds.ts` | Prepares sound files with ffmpeg and writes `app/sound/files.ts` ([sound.md](sound.md)) |
+| `plugins/withoutPushEntitlement.js` | A config plugin that removes the iOS push entitlement `expo-notifications` adds ([notifications.md](notifications.md)) |
 | `scripts/gen-sounds/` | Makes every sound and track from scratch as stand-ins ([sound.md](sound.md#generating-sounds)) |
 | `scripts/with-native-env.sh` | Runs a command with JDK 17, the Android SDK and a UTF-8 locale; used by the native npm scripts |
 | `eslint.config.js` | `eslint-config-expo` plus the engine boundary rules |

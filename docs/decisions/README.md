@@ -70,6 +70,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0055](0055-sound.md) | Sound: cues from events, music by screen, files listed by a script, Settings | Accepted |
 | [0056](0056-generated-stand-in-sounds.md) | Generated stand-in sounds for every name, replaced as found ones arrive | Accepted |
 | [0057](0057-debug-by-build.md) | Debug belongs to the build: hidden in release builds unless bundled with `EXPO_PUBLIC_DEBUG=1`; the play log shared from Settings | Accepted |
+| [0058](0058-local-notifications.md) | Local notifications, planned by playing the save forward; no push entitlement | Accepted |
 
 ## Template
 

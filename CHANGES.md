@@ -3,6 +3,47 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-14 — Local notifications while away (#10)
+
+Branch: `feature/10-notifications`. Reasoning: [ADR 0058](docs/decisions/0058-local-notifications.md); the rules: [notifications.md](docs/notifications.md).
+
+### What changed, for a player
+
+- **While you're away, the phone tells you when:**
+  - the vault fills;
+  - the crew are back (with their report, if any);
+  - a payday will come up short;
+  - Tolya is at the door;
+  - an incident wants a decision;
+  - a decision is an hour from taking its default.
+- **Never at night:** those wait for 08:00. At most four, and only the most urgent of any that land together.
+- **The prompt comes once the opening is done,** not at first launch.
+- **Settings → Notifications** turns them off. If the phone has them blocked, there's a way to its settings.
+- **Coming back** clears them, and the away summary takes over.
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| Plan (pure, tested) | `app/notify/plan.ts`: reconciles the save 24 h ahead with nobody acting and reads the events. `settle` handles the quiet hours, the urgency merge and the cap |
+| Phone | `app/notify/notifier.ts` over `expo-notifications`: a channel, permission, date triggers, clearing |
+| Wiring | `app/store.ts` (schedule on background, clear on foreground; `setNotify`, `askNotifications`; `notify` in settings), `App.tsx` (start, the prompt after the opening), `app/screens/SettingsScreen.tsx` |
+| Shared | `app/inboxTitle.ts`: `itemTitle`, moved out of `app/inbox.ts` so the plan can use it |
+| Native | `expo-notifications` 57.0.25. Its plugin in `app.json` (Android icon and colour); `plugins/withoutPushEntitlement.js` removes the iOS push entitlement it always adds, which a free Apple ID can't sign |
+| Tests | `tests/notify.test.ts` (new) |
+| Docs | [notifications.md](docs/notifications.md) (new), [ADR 0058](docs/decisions/0058-local-notifications.md), [app.md](docs/app.md), [native-builds.md](docs/native-builds.md), [architecture.md](docs/architecture.md), [testing.md](docs/testing.md), the README |
+
+No save or config change; the settings file gains `notify`. A standalone install has to be rebuilt; Expo Go has the module.
+
+### Verified
+
+- `npm run check`.
+- The plan on bot saves at days 3, 20 and 45: sensible lines, under 10 ms.
+- `npx expo config --type introspect`: no `aps-environment`.
+- `npx expo export --clear` for iOS, Android and web.
+- Settings screenshot at phone width.
+- Not yet on a phone: the prompt, delivery, and clearing on return need a device (#17's build).
+
 ## 2026-11-14 — Expo packages on SDK 57's latest patches (#23)
 
 Branch: `chore/23-expo-patches`.

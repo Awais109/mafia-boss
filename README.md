@@ -70,6 +70,7 @@ The plan and manual leave some mechanics open. These are the choices made here; 
 - **Cigarettes are the one product**: tobacco factories make them, joints need them for part of their income, warehouses store the surplus, smuggling runs bring in a batch for Clean, and from Act II Zhanna sells lots for Dirty and buys the surplus.
 - **Act II premises**: a Stash House lengthens the vault leash and hides part of a raid, in proportion to the yield in its district; a Union Office makes Influence.
 - **Gold bars buy time and nothing else**: 10 to start, 5 more when Act II opens and one for each Act I goal; a bar skips an hour ahead or finishes a job now. Rewarded ads and purchases aren't built.
+- **Notifications while away** ([ADR 0058](docs/decisions/0058-local-notifications.md)): the vault full, the crew back, a short payday, Tolya at the door, a decision waiting. Planned by playing the save forward, never at night, at most four, and switchable in Settings.
 - **Sound and music** ([ADR 0055](docs/decisions/0055-sound.md)): one sound per thing that happens, music by screen and act, Sound and Music switches under More → Settings, and `npm run sounds` to add files.
 - **Fronts have a dial** (push, normal, lay low) and a capacity upgrade beside the rate upgrade; the upgrade to tier 3 asks for greed or stealth.
 
