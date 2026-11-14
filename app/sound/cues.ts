@@ -193,6 +193,7 @@ export const SCENE_MUSIC: Record<SceneId, MusicName> = {
   count: 'tension',
   governor: 'tension',
   envelope: 'story',
+  keys: 'tension',
   'chapter-2': 'story',
   'chapter-3': 'story',
   'chapter-4': 'story',

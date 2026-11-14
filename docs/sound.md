@@ -37,7 +37,7 @@ A name is a file: `assets/sounds/sfx/<name>.mp3` (`SFX_NAMES`) or `assets/sounds
 | `ink` | a district bought or flipped; the notebook map in the Empire's scene | |
 | `typewriter` | a live notice comes up | |
 | `envelope` | a bribe, tribute paid or haggled, the family's envelope, a loan taken or repaid, money lent, a raise | `buy` |
-| `keys` | `LOAN_REPOSSESSED` | `job-fail` |
+| `keys` | `LOAN_REPOSSESSED`, and the last beat of Scene 16 | `job-fail` |
 | `rank-up` | `CREW_RANK_UP`, `GOAL_DONE`, `EMPIRE_BEST` | `upgrade` |
 | `election` | `ELECTION_HELD` | `stamp` |
 | `skip` | a skip ahead with gold | `gold` |
@@ -49,7 +49,7 @@ A name is a file: `assets/sounds/sfx/<name>.mp3` (`SFX_NAMES`) or `assets/sounds
 | `theme` | the cover | `city-1` |
 | `city-1` | the game, Acts I–III | |
 | `city-2` | the game from Act IV, and after the story | `city-1` |
-| `tension` | Tolya's scene and every boss arc's scenes | `story` |
+| `tension` | Tolya's scene, every boss arc's scenes, and the keys | `story` |
 | `story` | the prologue, hiring the crew, the envelope, the chapters | `theme` |
 | `ending-holding`, `ending-empire` | each ending's scene, and the cover after it | `theme`; the Empire's falls back to the Holding's |
 | `sting-failed`, `sting-won` | once, with a mission's stamp | |

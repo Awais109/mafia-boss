@@ -3,6 +3,26 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-14 — Scene 16, "The keys" (#14)
+
+Branch: `feature/14-scene-keys`. Reasoning: [ADR 0059](docs/decisions/0059-the-keys-scene.md).
+
+- **What a player sees:** the first time the lender takes a business, it plays as a scene instead of a pop-up:
+  - closing time, and two polite men with a clipboard;
+  - "Two payments missed. We'll take the keys. The debt is closed.";
+  - the sign coming down, naming which business went: "They took the Market Stall in Zarechye. It wasn't the worst thing you owned. They're not stupid."
+
+  Under tension music, with the keys sound on the last beat. If it happens while you're away, it plays when you're back. Later repossessions are the pop-up, as before.
+- **How:**
+  - `app/scenes.ts`: `keys`, due once `stats.loans.repossessed` is above zero, after the last chapter and before the endings; a `MEN` crop; a `keys` beat.
+  - `app/components/Scene.tsx`: `KeysPanel`, which reads the latest `LOAN_REPOSSESSED` from the log.
+  - `app/notices.ts`: skips the pop-up while the scene is due.
+  - `SCENE_MUSIC`: `tension`.
+- **Docs:** [story.md](docs/story.md), [app.md](docs/app.md), [sound.md](docs/sound.md), [testing.md](docs/testing.md).
+- **Verified:**
+  - `npm run check`, with a new test in `tests/scenes.test.ts`;
+  - the speech beat and the last beat, screenshot through the web rig (`?preview=keys&beat=N`), with the crop adjusted so both faces sit below the bubble.
+
 ## 2026-11-14 — Local notifications while away (#10)
 
 Branch: `feature/10-notifications`. Reasoning: [ADR 0058](docs/decisions/0058-local-notifications.md); the rules: [notifications.md](docs/notifications.md).

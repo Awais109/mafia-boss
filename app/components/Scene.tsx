@@ -46,6 +46,7 @@ export function SceneViewer({ game, scene }: { game: Snapshot; scene: Scene }) {
       sound.play('stamp')
       sound.sting(missionKind === 'overreach' ? 'sting-failed' : 'sting-won')
     } else if (beat.kind === 'map') sound.play('ink')
+    else if (beat.kind === 'keys') sound.play('keys')
     else if (at > 0) sound.play('panel')
   }, [at, beat.kind, missionKind])
 
@@ -114,6 +115,8 @@ function BeatView({ game, beat }: { game: Snapshot; beat: Beat }) {
       return <ResultPanel game={game} mission={beat.mission} />
     case 'envelope':
       return <EnvelopePanel game={game} />
+    case 'keys':
+      return <KeysPanel game={game} />
     case 'hire':
       return <HirePanel game={game} />
     case 'tribute':
@@ -280,6 +283,27 @@ function EnvelopePanel({ game }: { game: Snapshot }) {
         <Text style={styles.envelopeNote}>{ENVELOPE_NOTES[s.act]}</Text>
         <View style={styles.captionInline}>
           <Text style={styles.captionText}>{rich(`It isn’t much. It’s enough. ${glyph.dirty}${fmt(stake)}`, 14.5, { ink: true })}</Text>
+        </View>
+      </View>
+    </View>
+  )
+}
+
+// The keys (ADR 0059): the sign coming down, and which business they took (the latest repossession in the log).
+function KeysPanel({ game }: { game: Snapshot }) {
+  const { state: s, config: c } = game
+  const taken = [...s.log].reverse().find((e) => e.type === 'LOAN_REPOSSESSED')
+  const what =
+    taken?.type === 'LOAN_REPOSSESSED' ? `They took the ${c.rackets.types[taken.racketType].name} in ${c.districts.list[taken.districtId].name}.` : 'They took one of your businesses.'
+  const a = ART.repossession
+  return (
+    <View style={[styles.panel, { backgroundColor: paper.paper }]}>
+      <View style={{ width: '100%', aspectRatio: a.width / a.height }} accessible accessibilityRole="image" accessibilityLabel={a.label}>
+        <SvgXml xml={a.xml} width="100%" height="100%" />
+      </View>
+      <View style={styles.envelopeText}>
+        <View style={styles.captionInline}>
+          <Text style={styles.captionText}>{`${what} It wasn’t the worst thing you owned. They’re not stupid.`}</Text>
         </View>
       </View>
     </View>

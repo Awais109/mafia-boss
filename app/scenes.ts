@@ -13,6 +13,7 @@ export type SceneId =
   | 'prologue' | 'crew' | 'tolya'
   | 'row' | 'crate' | 'terms' | 'bridge' | 'lunch' | 'truck' | 'road' | 'auction' | 'count' | 'governor'
   | 'envelope'
+  | 'keys'
   | 'holding' | 'empire'
   | `chapter-${LaterAct}`
 
@@ -27,6 +28,7 @@ export type Beat =
   | { kind: 'slug'; caption: string } // a panel of words alone: a place and a time, a wordless beat
   | { kind: 'result'; mission: MissionId } // the stamp: FAILED in red ink with its cost, or WON in brass
   | { kind: 'envelope' } // Lyosha's second envelope: this act's note, and the stake
+  | { kind: 'keys' } // the sign coming down, and which business the lender took
   | { kind: 'hire' } // the three crew as cards, each with Hire; it waits until two are hired
   | { kind: 'tribute'; art: ArtId; caption: string } // the stare-down with Tolya's demand under it; it waits for an answer
   | { kind: 'title'; act: Act } // VOLUME and the act's title
@@ -40,6 +42,8 @@ export type Scene = { id: SceneId; number?: number; title: string; beats: Beat[]
 const stepIndex = (id: TutorialStepId) => TUTORIAL_STEPS.findIndex((st) => st.id === id)
 const TOP: Crop = { top: 0, height: 0.52 }
 const TABLE: Crop = { top: 0.52, height: 0.48 }
+// The lender's two men from the chest up, with the clipboard (the repossession panel).
+const MEN: Crop = { top: 0.18, height: 0.62 }
 
 export const SCENES: Record<SceneId, Scene> = {
   prologue: {
@@ -207,6 +211,18 @@ export const SCENES: Record<SceneId, Scene> = {
       { kind: 'envelope' },
     ],
   },
+  // The keys (ADR 0059; Scene 16): the first time the lender repossesses a business. Later ones are a notice.
+  keys: {
+    id: 'keys',
+    number: 16,
+    title: 'The keys',
+    beats: [
+      { kind: 'slug', caption: 'One of your businesses, at closing time.' },
+      { kind: 'slug', caption: 'Two polite men with a clipboard.' },
+      { kind: 'art', art: 'repossession', crop: MEN, speech: 'Two payments missed. We’ll take the keys. The debt is closed.' },
+      { kind: 'keys' },
+    ],
+  },
   // The endings (ADR 0053; Scenes 17 and 18): each plays when it's first reached, then the credits.
   holding: {
     id: 'holding',
@@ -238,10 +254,10 @@ export const SCENES: Record<SceneId, Scene> = {
 }
 
 // The order scenes are checked in: the opening's, then the chapters.
-// A mission's scene plays before the chapter it opens.
+// A mission's scene plays before the chapter it opens; the keys come before the endings.
 const ORDER: SceneId[] = [
   'prologue', 'crew', 'tolya', 'row', 'crate', 'chapter-2', 'terms', 'bridge', 'chapter-3', 'lunch', 'truck', 'chapter-4',
-  'road', 'auction', 'chapter-5', 'count', 'governor', 'chapter-6', 'holding', 'empire',
+  'road', 'auction', 'chapter-5', 'count', 'governor', 'chapter-6', 'keys', 'holding', 'empire',
 ]
 
 // The arcs' scenes: the act each belongs to, and the moment it plays.
@@ -266,6 +282,7 @@ function passedBefore(s: PlayerState, id: SceneId): boolean {
   const arc = ARC[id]
   if (arc) return since.act > arc.act
   if (id.startsWith('chapter-')) return since.act >= Number(id.slice('chapter-'.length))
+  if (id === 'keys') return false // a save from before kept no seen-list for it: the first repossession plays once
   const at = id === 'prologue' ? 0 : id === 'crew' ? stepIndex('hire') : stepIndex('tolya')
   return since.done || since.act > 1 || since.step > at
 }
@@ -275,6 +292,7 @@ function triggered(s: PlayerState, id: SceneId): boolean {
   const arc = ARC[id]
   if (arc) return arc.happened(s)
   if (id.startsWith('chapter-')) return s.act >= Number(id.slice('chapter-'.length))
+  if (id === 'keys') return s.stats.loans.repossessed > 0
   if (s.tutorial.done) return false
   const step = currentTutorialStep(s)
   if (id === 'prologue') return s.tutorial.step === 0
