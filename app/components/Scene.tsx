@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Circle, Defs, Path, Pattern, Rect, SvgXml } from 'react-native-svg'
@@ -12,6 +12,7 @@ import { PEOPLE } from '../people'
 import { sceneLabel, type Beat, type Crop, type Scene } from '../scenes'
 import { ACT_TITLE, ENVELOPE_NOTES, OPENING_CREW, revealedBy, TOLYA_ASKS, tolyaMood } from '../story'
 import { store, type Snapshot } from '../store'
+import { sound } from '../sound/player'
 import { fonts, paper } from '../theme'
 import { webParam } from '../webParams'
 import { ChapterPage } from './ChapterPage'
@@ -34,6 +35,19 @@ export function SceneViewer({ game, scene }: { game: Snapshot; scene: Scene }) {
   const done = () => store.endScene(scene.id)
   const next = () => (at + 1 < scene.beats.length ? setAt(at + 1) : done())
   const waiting = beatWaits(game, beat)
+  // Each beat's sound (ADR 0055): a chapter's page and its sting, a mission's stamp and its sting, ink on the
+  // map, and a page turned for the rest. The first beat makes none: the scene's music is its entrance.
+  const missionKind = beat.kind === 'result' ? game.config.missions.list[beat.mission].kind : null
+  useEffect(() => {
+    if (beat.kind === 'chapter') {
+      sound.play('chapter')
+      sound.sting('sting-chapter')
+    } else if (missionKind) {
+      sound.play('stamp')
+      sound.sting(missionKind === 'overreach' ? 'sting-failed' : 'sting-won')
+    } else if (beat.kind === 'map') sound.play('ink')
+    else if (at > 0) sound.play('panel')
+  }, [at, beat.kind, missionKind])
 
   if (beat.kind === 'chapter') return <ChapterPage game={game} act={beat.act} onTurn={done} />
   if (beat.kind === 'ending') return <EndingPage ending={beat.ending} onBack={next} />

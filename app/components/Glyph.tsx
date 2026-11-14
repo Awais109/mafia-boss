@@ -46,7 +46,7 @@ export function Glyph({ kind, size = 10, color }: { kind: Resource; size?: numbe
 export type IconName =
   | 'home' | 'business' | 'fronts' | 'ops' | 'map' | 'more' | 'crew' | 'heat' | 'stats' | 'help' | 'log' | 'debug'
   | 'close' | 'chevronLeft' | 'chevronRight' | 'chevronDown' | 'chevronUp' | 'done' | 'lock' | 'warning' | 'ministry' | 'election'
-  | 'walkout' | 'frozen' | 'ending' | 'blocked' | 'check' | 'clock' | 'flag' | 'fork' | 'cash' | 'page' | 'arrowRight'
+  | 'walkout' | 'frozen' | 'ending' | 'blocked' | 'check' | 'clock' | 'flag' | 'fork' | 'cash' | 'page' | 'arrowRight' | 'sound'
 
 export function Icon({ name, size = 24, color = colors.muted, strokeWidth = 1.6 }: { name: IconName; size?: number; color?: string; strokeWidth?: number }) {
   const common = { fill: 'none', stroke: color, strokeWidth, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
@@ -96,6 +96,7 @@ export function Icon({ name, size = 24, color = colors.muted, strokeWidth = 1.6 
         </>
       )}
       {name === 'page' && <Path d="M7 3h7l4 4v14H7zM14 3v4h4" {...common} />}
+      {name === 'sound' && <Path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" {...common} />}
       {name === 'flag' && <Path d="M6 21V4M6 4h11l-2.5 4L17 12H6" {...common} />}
       {name === 'fork' && <Path d="M7 4v4a5 5 0 0 0 10 0V4M12 13v8" {...common} />}
       {name === 'cash' && (

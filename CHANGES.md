@@ -3,6 +3,46 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-14 — Sound: the system, Settings, and `npm run sounds`
+
+Branch: `feature/sound`. Reasoning: [ADR 0055](docs/decisions/0055-sound.md); the rules: [sound.md](docs/sound.md).
+
+### What changed, for a player
+
+- **The game can make sounds and play music**, as files are added (none are in yet):
+  - one sound per thing that happens: a buy, a collect, a raid, a phone ringing with a decision, a mission's stamp;
+  - music for the cover, the scenes and the game, which changes from Act IV;
+  - stings on a mission's result and a chapter page.
+- **More → Settings:** Sound effects and Music, each On or Off. Both follow the phone's silent switch and play alongside other audio.
+- **Nothing piles up.** A batch of events makes one sound, and time away makes one sound when the summary comes up.
+
+### What changed, for whoever reads the code next
+
+| Area | Files |
+|---|---|
+| Rules (pure, tested) | `app/sound/cues.ts`: names, mix, fallbacks, `eventCue`/`cueForEvents`, `musicFor` |
+| Player | `app/sound/player.ts` over `expo-audio`; `app/sound/files.ts`, generated |
+| Wiring | `app/store.ts` (a sound per dispatch and live tick; `setAudio`; `audio` in settings), `App.tsx` (music, ambience, `page`, the Settings tab), `app/components/ui.tsx` (taps), `Scene.tsx` (beats), `AwayModal.tsx`, `EventNoticeModal.tsx` |
+| Screens | `app/screens/SettingsScreen.tsx` (new); Debug → Sound, a sound board; the `sound` icon |
+| Files | `scripts/sounds.ts` and `npm run sounds` (ffmpeg); `assets/sounds/` with `CREDITS.md`; `raw/` ignored by git |
+| Native | `expo-audio` and `expo-asset` (pinned to SDK 57: `expo-audio`'s open peer dependency pulled in a major that broke the bundle); the plugin set to no background playback and no microphone |
+| Tests | `tests/sound.test.ts` (new) |
+| Docs | [sound.md](docs/sound.md) (new), [ADR 0055](docs/decisions/0055-sound.md), [app.md](docs/app.md), [native-builds.md](docs/native-builds.md), [architecture.md](docs/architecture.md), [testing.md](docs/testing.md), [README](README.md) |
+
+No save or config change. The settings file gains `audio`, and old files read with both on. A standalone install has to be rebuilt for `expo-audio`; Expo Go has it.
+
+### Verified
+
+- `npm run check`.
+- `npm run sounds` on two generated test tones (removed again):
+  - a one-shot came out mono, trimmed, peaking at −4.1 dB;
+  - a loop came out stereo at −20 LUFS;
+  - a file with a bad name was skipped with the list of names;
+  - a second run skipped both.
+- `npx expo export` for iOS (both mp3s packed), Android and web.
+- The test catches a file added without running the script.
+- Not heard on a device: there are no real files yet.
+
 ## 2026-11-14 — Review fixes: misses in a row, previews aren't seen
 
 Branch: `feature/design-v2`. Two bugs found reviewing PR #1, both against what [ADR 0051](docs/decisions/0051-rock-bottom.md) and [ADR 0049](docs/decisions/0049-scenes.md) already say.

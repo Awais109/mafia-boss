@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { canAffordEffects, type GameEvent } from '../../engine'
 import { ACT_NAME } from '../acts'
@@ -6,6 +7,7 @@ import { fmtDuration } from '../format'
 import { effectsText, itemBody, itemTitle } from '../inbox'
 import { unlockInfo, type QueuedNotice } from '../notices'
 import { ACT_TITLE } from '../story'
+import { sound } from '../sound/player'
 import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
 import { Glyph, Icon, type IconName, type Resource } from './Glyph'
@@ -56,6 +58,8 @@ function Badge({ icon, color }: { icon: IconName | Resource; color: string }) {
 export function EventNoticeModal({ notice, game }: { notice: QueuedNotice; game: Snapshot }) {
   const { state: s, derived: d, config: c, now } = game
   const count = game.notices.length > 1 ? `1 of ${game.notices.length}` : undefined
+  // A keystroke as each notice comes up, unless what it reports just made its own sound (ADR 0055).
+  useEffect(() => sound.play('typewriter'), [notice])
 
   if (notice.kind === 'inbox') {
     const item = notice.item

@@ -26,6 +26,7 @@ What is built, how it works, and why. Written so a person or an LLM new to the r
 | [systems/endgame.md](systems/endgame.md) | Act VI: Legalize, the Holding, the case file and hearings, the two endings |
 | [systems/after.md](systems/after.md) | After the story: tiers past the book, the empire value, the contracts board |
 | [app.md](app.md) | The React Native app: shell, look and feel, store, storage, screens, the map, Debug tab, export, checking screens against the design |
+| [sound.md](sound.md) | Sound effects and music: which event plays what, music by screen, the mix, Settings, adding files with `npm run sounds` |
 | [story.md](story.md) | The story's canon: the world, the cast, the acts and their turns, the notebook map, how the game talks |
 | [sim.md](sim.md) | The headless bot, report metrics, CLI, log replay, baseline |
 | [testing.md](testing.md) | What each test file guards |
@@ -69,6 +70,7 @@ When you change a path on the left, update the doc on the right in the same comm
 | `engine/systems/convoys.ts` | [systems/convoys.md](systems/convoys.md) (the Colonel's disposition and passage also in [systems/districts-and-rivals.md](systems/districts-and-rivals.md)) |
 | `engine/systems/injuries.ts` | [systems/crew.md](systems/crew.md) |
 | `App.tsx`, `app/` | [app.md](app.md) |
+| `app/sound/`, `scripts/sounds.ts`, `assets/sounds/`, `app/screens/SettingsScreen.tsx` | [sound.md](sound.md), and [ADR 0055](decisions/0055-sound.md) for a change to how sound works |
 | `app/theme.ts`, `app/fonts.ts`, `app/components/Glyph.tsx`, `app/components/ui.tsx` | [app.md](app.md#look-and-feel), and [ADR 0047](decisions/0047-warm-ledger-design.md) for a change to the design system itself |
 | `app/story.ts` | [story.md](story.md) and [app.md](app.md) |
 | `app/art/` | [app.md](app.md#look-and-feel) (art extracted from `design/`) |
@@ -80,7 +82,7 @@ When you change a path on the left, update the doc on the right in the same comm
 | `tests/`, `vitest.config.mts` | [testing.md](testing.md) |
 | `eslint.config.js`, `package.json` scripts | [architecture.md](architecture.md) and the root [README](../README.md) |
 | `scripts/`, `app.json`, `.claude/skills/` | [native-builds.md](native-builds.md), [architecture.md](architecture.md) and the root [README](../README.md) |
-| `package.json` dependencies (native modules, fonts) | [native-builds.md](native-builds.md#three-ways-to-run) |
+| `package.json` dependencies (native modules, fonts, audio) | [native-builds.md](native-builds.md#three-ways-to-run) |
 
 ## Writing docs here
 

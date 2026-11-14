@@ -1,6 +1,6 @@
 # Sevgorod
 
-Fun-test prototype of Sevgorod, all six acts: a post-Soviet crime idle game about laundering Dirty money into Clean faster than the heat catches up. Its screens are dressed as a warm, printed ledger ([ADR 0047](docs/decisions/0047-warm-ledger-design.md)); there is no sound. It runs fully offline on a phone.
+Fun-test prototype of Sevgorod, all six acts: a post-Soviet crime idle game about laundering Dirty money into Clean faster than the heat catches up. Its screens are dressed as a warm, printed ledger ([ADR 0047](docs/decisions/0047-warm-ledger-design.md)). Sound effects and music are wired in, and play as their files are added ([docs/sound.md](docs/sound.md)). It runs fully offline on a phone.
 
 Design and plan live in [docs/](docs/): the [implementation plan](docs/sevgorod-implementation-plan.md) and the [dev manual](docs/sevgorod-dev-manual.md) for tuning. Why the numbers are what they are is in [TUNING.md](TUNING.md).
 
@@ -32,6 +32,7 @@ The **Debug** tab holds the time skip, a config editor with presets (`fast` runs
 | `npm run sim -- --days 8 --runs 10` | Mean of each target over 10 seeds |
 | `npm run sim -- --set heat.baseControl=6` | Try a config change before a human plays it |
 | `npm run sim -- --replay tester-log.json` | Same report over a tester's exported log |
+| `npm run sounds` | Prepares the sound files dropped in `assets/sounds/raw/` and lists them for the app (needs ffmpeg; [docs/sound.md](docs/sound.md)) |
 
 `sim/baseline.csv` is the seed-42, 60-day run on the current defaults: every act, through an ending. Diff new runs against it.
 
@@ -67,6 +68,7 @@ The plan and manual leave some mechanics open. These are the choices made here; 
 - **Cigarettes are the one product**: tobacco factories make them, joints need them for part of their income, warehouses store the surplus, smuggling runs bring in a batch for Clean, and from Act II Zhanna sells lots for Dirty and buys the surplus.
 - **Act II premises**: a Stash House lengthens the vault leash and hides part of a raid, in proportion to the yield in its district; a Union Office makes Influence.
 - **Gold bars buy time and nothing else**: 10 to start, 5 more when Act II opens and one for each Act I goal; a bar skips an hour ahead or finishes a job now. Rewarded ads and purchases aren't built.
+- **Sound and music** ([ADR 0055](docs/decisions/0055-sound.md)): one sound per thing that happens, music by screen and act, Sound and Music switches under More → Settings, and `npm run sounds` to add files.
 - **Fronts have a dial** (push, normal, lay low) and a capacity upgrade beside the rate upgrade; the upgrade to tier 3 asks for greed or stealth.
 
 ## Status

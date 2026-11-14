@@ -2,6 +2,7 @@ import { Children, Fragment, isValidElement, type ReactNode } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native'
 import { colors as theme, fonts, paperInk, textFont } from '../theme'
 import { CHAR_RESOURCE, Glyph, Icon, type IconName, type Resource } from './Glyph'
+import { sound } from '../sound/player'
 
 // The ledger kit (design/Sevgorod Screens.html, "Components"): section titles with a hairline rule, cards,
 // rows with the label left and the figure right, bars with marks, tags, buttons. Resource amounts written
@@ -195,7 +196,10 @@ export function Btn({ title, sub, onPress, disabled, kind = 'normal', small, che
       accessibilityRole="button"
       accessibilityState={{ disabled: !!disabled }}
       disabled={disabled}
-      onPress={onPress}
+      onPress={() => {
+        sound.tap()
+        onPress()
+      }}
       style={({ pressed }) => [
         styles.btn,
         small && styles.btnSmall,
@@ -300,7 +304,14 @@ export function Item({ label, hint, value, color, left, strong, muted, plain, on
     </>
   )
   return onPress ? (
-    <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => pressed && styles.btnPressed}>
+    <Pressable
+      onPress={() => {
+        sound.tap()
+        onPress()
+      }}
+      accessibilityRole="button"
+      style={({ pressed }) => pressed && styles.btnPressed}
+    >
       {body}
     </Pressable>
   ) : (
@@ -429,7 +440,17 @@ export function BuyRow({ name, kind, cost, does, why, disabled, onPress }: {
     )
   }
   return (
-    <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" style={({ pressed }) => [styles.buy, disabled && styles.btnDisabled, pressed && !disabled && styles.btnPressed]}>
+    <Pressable
+      onPress={
+        onPress &&
+        (() => {
+          sound.tap()
+          onPress()
+        })
+      }
+      disabled={disabled}
+      accessibilityRole="button"
+      style={({ pressed }) => [styles.buy, disabled && styles.btnDisabled, pressed && !disabled && styles.btnPressed]}>
       <View style={styles.buyTop}>
         {title}
         {cost ? <Text style={styles.buyCost}>{rich(cost, 14)}</Text> : null}
@@ -453,7 +474,11 @@ export function Segmented<K extends string>({ options, value, onChange, label }:
         return (
           <Pressable
             key={o.key}
-            onPress={() => !on && onChange(o.key)}
+            onPress={() => {
+              if (on) return
+              sound.tap()
+              onChange(o.key)
+            }}
             accessibilityRole="radio"
             accessibilityState={{ checked: on }}
             style={[styles.segment, on && styles.segmentOn]}
