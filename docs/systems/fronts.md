@@ -16,7 +16,7 @@ Dirty money can't buy anything. Fronts turn it into Clean at a fixed rate per ho
 ```
 baseThroughput = type.throughput × (1 + upgrade.capacity.step × capacityLevel)
 throughput     = baseThroughput × mode multiplier                 (push, normal = 1, layLow)
-bufferCap      = baseThroughput × fronts.bufferHours              (the dial doesn't resize the buffer)
+bufferCap      = baseThroughput × fronts.bufferHours              (the dial doesn't resize the buffer; sized to last between the late acts' 12–24 h visits, ADR 0065)
 rate           = type.rate + level × fronts.upgrade.rateStep
 ```
 

@@ -77,6 +77,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0062](0062-empire-by-night.md) | The Empire by night: the dawn art recoloured (moon, lit windows, stars) until drawn night art | Accepted |
 | [0063](0063-opinion-diminishing-returns.md) | Public opinion has diminishing returns: the press nears 100 but never reaches it; elections rebalanced | Accepted |
 | [0064](0064-officials-retainers.md) | Officials keep their control while a weekly retainer in Clean is paid; unpaid, it lapses until paid | Accepted |
+| [0065](0065-late-game-repace.md) | The late game re-paced: 20 h front buffers, so laundering keeps up; prices, gates and unlock ladders set the pace | Accepted |
 
 ## Template
 
