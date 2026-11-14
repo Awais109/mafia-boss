@@ -1,4 +1,4 @@
-import { contestOdds, dayMs, electionScheduled, RANK_NAMES, winChance, type Config, type IncidentType, type InboxEffects, type InboxItem, type OpType, type PerkId, type PlayerState } from '../engine'
+import { contestOdds, dayMs, electionScheduled, RANK_NAMES, winChance, type Config, type IncidentType, type InboxEffects, type InboxItem, type PerkId, type PlayerState } from '../engine'
 import type { IconName, Resource } from './components/Glyph'
 import { glyph } from './components/ui'
 import { fmt, fmtDuration, pct } from './format'
@@ -10,11 +10,7 @@ import type { Snapshot } from './store'
 
 const OUTCOME = { full: 'a clean job', partial: 'got some of it', fail: 'it went wrong' } as const
 
-export function itemTitle(item: InboxItem, c: Config): string {
-  if (item.kind === 'incident') return c.incidents.types[item.ref as IncidentType]?.name ?? 'An incident'
-  if (item.kind === 'report') return `${c.ops.list[item.ref as OpType]?.name ?? 'A job'}: the crew reports`
-  return 'A promotion'
-}
+export { itemTitle } from './inboxTitle'
 
 export function itemBody(item: InboxItem, s: PlayerState, c: Config): string {
   const names = (item.crewIds ?? []).map((id) => s.crew.find((m) => m.id === id)?.name ?? 'someone').join(' & ')

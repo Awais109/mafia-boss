@@ -33,6 +33,7 @@ import { TurfScreen } from './app/screens/TurfScreen'
 import type { ScreenProps, TabId } from './app/screens/types'
 import { musicFor, type MusicView } from './app/sound/cues'
 import { sound } from './app/sound/player'
+import { notifier } from './app/notify/notifier'
 import { store, useGame, type Snapshot } from './app/store'
 import { colors, fonts } from './app/theme'
 import { webParam } from './app/webParams'
@@ -113,6 +114,7 @@ function initialTab(): TabId {
 export default function App() {
   useEffect(() => {
     const stopSound = sound.start()
+    notifier.start()
     const stopStore = store.start()
     return () => {
       stopStore()
@@ -145,6 +147,11 @@ export default function App() {
     sound.play('page')
     setMore(true)
   }
+  // Notifications are asked for once the opening is done, not at first launch (ADR 0058).
+  const askNotifications = !!game && game.state.tutorial.done && game.settings.notify.on && !game.settings.notify.asked
+  useEffect(() => {
+    if (askNotifications) void store.askNotifications()
+  }, [askNotifications])
   // The music follows the screen; the cover has its ambience too.
   const track = ready ? musicFor(musicView(game, cover)) : null
   useEffect(() => sound.setMusic(track), [track])

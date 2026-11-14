@@ -24,6 +24,7 @@ Expo Go runs the game's JavaScript inside Expo's own app, so nothing is compiled
 - `expo-font` (a config plugin in `app.json`), which loads the ten bundled `@expo-google-fonts/*` files;
 - `react-native-svg`, for glyphs, icons and art;
 - `expo-audio` (a config plugin in `app.json`, set to no background playback and no microphone), for sound and music, with `expo-asset` at the SDK's version ([sound.md](sound.md));
+- `expo-notifications` (a config plugin in `app.json`: Android's tray icon and colour), for local notifications ([notifications.md](notifications.md)). Its plugin always adds the iOS push entitlement, which a free Apple ID can't sign, so `plugins/withoutPushEntitlement.js`, listed before it, takes it back out. Android gains `POST_NOTIFICATIONS` and `RECEIVE_BOOT_COMPLETED`;
 - `react-native-safe-area-context`.
 
 All of them ship inside Expo Go, so Expo Go needs nothing extra. A standalone install built before a module was added has to be built again.
