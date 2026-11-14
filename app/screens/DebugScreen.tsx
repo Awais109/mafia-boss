@@ -6,12 +6,14 @@ import { formatSummary, summarize } from '../../sim/report'
 import { Btn, BtnRow, Card, colors, Row, Screen, T } from '../components/ui'
 import { fmt, fmtClock, fmtDuration } from '../format'
 import { canPreview, PREVIEWS, showPreview } from '../previews'
+import { MUSIC, MUSIC_NAMES, pickMusic, pickSfx, SFX, SFX_NAMES, type MusicName } from '../sound/cues'
+import { sound } from '../sound/player'
 import { store, type Snapshot } from '../store'
 import type { ScreenProps } from './types'
 
 // Everything behind config.debug.enabled (plan §10): time, state, config, inspect, data, bot.
 
-type Panel = 'time' | 'state' | 'config' | 'inspect' | 'data' | 'bot' | 'preview'
+type Panel = 'time' | 'state' | 'config' | 'inspect' | 'data' | 'bot' | 'preview' | 'sound'
 const PANELS: { id: Panel; title: string }[] = [
   { id: 'time', title: 'Time' },
   { id: 'state', title: 'State' },
@@ -20,6 +22,7 @@ const PANELS: { id: Panel; title: string }[] = [
   { id: 'data', title: 'Save & log' },
   { id: 'bot', title: 'Bot' },
   { id: 'preview', title: 'Preview' },
+  { id: 'sound', title: 'Sound' },
 ]
 
 export function DebugScreen({ game }: ScreenProps) {
@@ -38,6 +41,7 @@ export function DebugScreen({ game }: ScreenProps) {
       {panel === 'data' && <DataPanel game={game} />}
       {panel === 'bot' && <BotPanel />}
       {panel === 'preview' && <PreviewPanel game={game} />}
+      {panel === 'sound' && <SoundPanel game={game} />}
     </Screen>
   )
 }
@@ -381,6 +385,46 @@ function PreviewPanel({ game }: { game: Snapshot }) {
         {PREVIEWS.map((p) => (
           <Btn key={p.name} small title={p.title} disabled={!canPreview(game, p.name)} onPress={() => showPreview(game, p.name)} />
         ))}
+      </BtnRow>
+    </Card>
+  )
+}
+
+// The sound board (ADR 0055): every sound and track by name, whether this build has its file, what plays in its
+// place if not, and a button to hear it. Files come from `npm run sounds` (docs/sound.md).
+function SoundPanel({ game }: { game: Snapshot }) {
+  const [previewing, setPreviewing] = useState<MusicName | null>(null)
+  const have = sound.has()
+  const status = (name: string, file: string | null) => (file === name ? 'file' : file ? `missing → ${file}` : 'missing')
+  const preview = (name: MusicName | null) => {
+    setPreviewing(name)
+    if (name && !MUSIC[name].loop) sound.sting(name)
+    else sound.preview(name)
+  }
+  const { sound: sfxOn, music: musicOn } = game.settings.audio
+  return (
+    <Card>
+      <T small muted>{`Sound effects ${sfxOn ? 'on' : 'off'}, music ${musicOn ? 'on' : 'off'} (Settings). Silent on web.`}</T>
+      <T bold>Sounds</T>
+      {SFX_NAMES.map((name) => {
+        const file = pickSfx(name, have.sfx)
+        return (
+          <Row
+            key={name}
+            label={name}
+            hint={status(name, file)}
+            value={<Btn small title={SFX[name].loop ? 'Loop' : 'Play'} disabled={!file} onPress={() => (SFX[name].loop ? sound.setAmbience(name) : sound.play(name))} />}
+          />
+        )
+      })}
+      <T bold>Music</T>
+      {MUSIC_NAMES.map((name) => {
+        const file = pickMusic(name, have.music)
+        return <Row key={name} label={name} hint={status(name, file)} value={<Btn small title="Play" disabled={!file} onPress={() => preview(name)} />} />
+      })}
+      <BtnRow>
+        <Btn small kind="danger" title="Stop" disabled={!previewing} onPress={() => preview(null)} />
+        <Btn small kind="ghost" title="Stop the ambience" onPress={() => sound.setAmbience(null)} />
       </BtnRow>
     </Card>
   )

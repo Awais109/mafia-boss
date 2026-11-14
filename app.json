@@ -25,7 +25,16 @@
     },
     "plugins": [
       "expo-sharing",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": false,
+          "recordAudioAndroid": false,
+          "microphonePermission": false
+        }
+      ],
+      "expo-asset"
     ]
   }
 }

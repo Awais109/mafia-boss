@@ -3,7 +3,8 @@ import { StatusBar } from 'expo-status-bar'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
-import { gameDay } from './engine'
+import { gameCleared, gameDay } from './engine'
+import { firstEnding } from './app/components/AfterStory'
 import { AwayModal } from './app/components/AwayModal'
 import { Cover } from './app/components/Cover'
 import { EventNoticeModal } from './app/components/EventNoticeModal'
@@ -26,9 +27,12 @@ import { HowItWorksScreen } from './app/screens/HowItWorksScreen'
 import { LogScreen } from './app/screens/LogScreen'
 import { OpsScreen } from './app/screens/OpsScreen'
 import { RacketsScreen } from './app/screens/RacketsScreen'
+import { SettingsScreen } from './app/screens/SettingsScreen'
 import { StatsScreen } from './app/screens/StatsScreen'
 import { TurfScreen } from './app/screens/TurfScreen'
 import type { ScreenProps, TabId } from './app/screens/types'
+import { musicFor, type MusicView } from './app/sound/cues'
+import { sound } from './app/sound/player'
 import { store, useGame, type Snapshot } from './app/store'
 import { colors, fonts } from './app/theme'
 import { webParam } from './app/webParams'
@@ -49,6 +53,7 @@ const MORE: Tab[] = [
   { id: 'stats', title: 'Stats', icon: 'stats', render: (p) => <StatsScreen {...p} /> },
   { id: 'help', title: 'How it works', icon: 'help', render: (p) => <HowItWorksScreen {...p} /> },
   { id: 'log', title: 'Log', icon: 'log', render: (p) => <LogScreen {...p} /> },
+  { id: 'settings', title: 'Settings', icon: 'sound', render: (p) => <SettingsScreen {...p} /> },
   { id: 'debug', title: 'Debug', icon: 'debug', debugOnly: true, render: (p) => <DebugScreen {...p} /> },
 ]
 const ALL = [...BAR, ...MORE]
@@ -80,9 +85,20 @@ function moreNote(game: Snapshot, id: TabId): { text: string; color?: string } {
       return { text: 'the rules' }
     case 'log':
       return { text: 'all events' }
+    case 'settings': {
+      const { sound: sfx, music } = game.settings.audio
+      return { text: `sound ${sfx ? 'on' : 'off'} · music ${music ? 'on' : 'off'}` }
+    }
     default:
       return { text: '' }
   }
+}
+
+// Where the player is, for the music (ADR 0055): the cover, a scene, or the game.
+function musicView(game: Snapshot, cover: boolean): MusicView {
+  if (cover) return { screen: 'cover', ending: gameCleared(game.state, game.config) ? (firstEnding(game)?.id ?? null) : null }
+  if (game.scene) return { screen: 'scene', scene: game.scene }
+  return { screen: 'game', act: game.state.act, storyOver: gameCleared(game.state, game.config) }
 }
 
 // On web, `?tab=ops` opens on a tab: the screenshot rig for design checks uses it (docs/app.md).
@@ -92,7 +108,14 @@ function initialTab(): TabId {
 }
 
 export default function App() {
-  useEffect(() => store.start(), [])
+  useEffect(() => {
+    const stopSound = sound.start()
+    const stopStore = store.start()
+    return () => {
+      stopStore()
+      stopSound()
+    }
+  }, [])
   const [fontsLoaded, fontError] = useFonts(FONT_ASSETS)
   const game = useGame()
   const [tab, setTab] = useState<TabId>(initialTab)
@@ -111,9 +134,18 @@ export default function App() {
     if (name && PREVIEWS.some((p) => p.name === name)) showPreview(game, name as PreviewName)
   }, [game])
   const go = (t: TabId) => {
+    if (t !== tab) sound.play('page')
     setMore(false)
     setTab(t)
   }
+  const openMore = () => {
+    sound.play('page')
+    setMore(true)
+  }
+  // The music follows the screen; the cover has its ambience too.
+  const track = ready ? musicFor(musicView(game, cover)) : null
+  useEffect(() => sound.setMusic(track), [track])
+  useEffect(() => sound.setAmbience(ready && cover ? 'amb-cover' : null), [ready, cover])
 
   return (
     <SafeAreaProvider>
@@ -131,7 +163,7 @@ export default function App() {
             <TutorialBanner game={game} go={go} />
             <NoticeBar notice={game.notice} realNow={game.realNow} />
             <View style={styles.body}>{ALL.find((t) => t.id === tab)?.render({ game, go })}</View>
-            <BottomBar tab={tab} game={game} onChange={go} onMore={() => setMore(true)} />
+            <BottomBar tab={tab} game={game} onChange={go} onMore={openMore} />
             {more && <MoreSheet game={game} tab={tab} onChange={go} onClose={() => setMore(false)} />}
             {skipping && <SkipSheet game={game} onClose={() => setSkipping(false)} />}
             {/* One at a time: what happened while away, then a scene, then live notices. */}

@@ -1,8 +1,10 @@
+import { useEffect } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import type { AwayJob, AwaySummary } from '../away'
 import { describeEvent } from '../eventText'
 import { fmt, fmtClock, fmtDuration } from '../format'
 import type { TabId } from '../screens/types'
+import { sound } from '../sound/player'
 import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
 import { Icon } from './Glyph'
@@ -25,6 +27,8 @@ function gains(j: AwayJob): string {
 
 export function AwayModal({ summary: a, game, onGo }: { summary: AwaySummary; game: Snapshot; onGo?: (tab: TabId) => void }) {
   const { state: s, config: c } = game
+  // The tally, once: what happened while away makes no sounds of its own (ADR 0055).
+  useEffect(() => sound.play('away'), [])
   const d = glyph.dirty
   const cl = glyph.clean
   const notes = a.events.map((e) => ({ e, line: describeEvent(e, s, c) })).filter(({ line }) => !line.quiet)

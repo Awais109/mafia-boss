@@ -24,6 +24,8 @@ import { actMilestones } from './acts'
 import { buildAway, mergeAway, type AwaySummary } from './away'
 import { buildNotices, diffUnlocked, type QueuedNotice, type UnlockedMap } from './notices'
 import { dueScene, sceneAhead, type SceneId } from './scenes'
+import { cueForEvents } from './sound/cues'
+import { sound, type AudioPrefs } from './sound/player'
 import { FILES, storage } from './storage'
 
 // A gap of this many game minutes since the save was last caught up counts as being away, and
@@ -35,7 +37,8 @@ const AWAY_MIN_GAME_MINUTES = 15
 // action, reconcile on foreground, and a 1 s display tick that never writes unless
 // something actually happened.
 
-export type Settings = { preset: PresetName; overrides: Overrides }
+// The config the game runs on (Debug's preset and overrides), and the player's own preferences (ADR 0055).
+export type Settings = { preset: PresetName; overrides: Overrides; audio: AudioPrefs }
 
 export type Notice = { text: string; kind: 'error' | 'info'; at: number }
 
@@ -53,7 +56,7 @@ export type Snapshot = {
   scene: SceneId | null // the scene playing (ADR 0049): latched when one falls due, or asked for by hand, until it ends
 }
 
-const DEFAULT_SETTINGS: Settings = { preset: 'default', overrides: {} }
+const DEFAULT_SETTINGS: Settings = { preset: 'default', overrides: {}, audio: { sound: true, music: true } }
 
 function newPlayerId(): string {
   const cryptoApi = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto
@@ -124,6 +127,8 @@ class GameStore {
     }
     if (!r.error && action.type !== 'SESSION_START' && action.type !== 'SESSION_END') this.session.actions++
     if (r.error) this.notice = { text: r.error, kind: 'error', at: Date.now() }
+    // What the action sounds like (ADR 0055): refused, a skip (not everything it skipped), or its loudest event.
+    sound.play(r.error ? 'refuse' : action.type === 'SKIP_TIME' ? 'skip' : cueForEvents(r.events))
     this.commit(r.state, r.events)
     if (action.type === 'DEBUG_ADD_OFFSET' || action.type === 'DEBUG_RESET_OFFSET') this.tick()
     return r.error ?? null
@@ -131,6 +136,7 @@ class GameStore {
 
   flash(text: string, kind: Notice['kind'] = 'info'): void {
     this.notice = { text, kind, at: Date.now() }
+    if (kind === 'error') sound.play('refuse')
     this.refresh()
   }
 
@@ -195,6 +201,16 @@ class GameStore {
     )
     this.settings = { ...this.settings, overrides }
     this.saveSettings({ path: prefix ? `${prefix}*` : '*', value: null })
+  }
+
+  // ---- the player's preferences (Settings)
+
+  // Sound and Music on or off (ADR 0055). Not config: nothing is logged, and the game doesn't change.
+  setAudio(change: Partial<AudioPrefs>): void {
+    this.settings = { ...this.settings, audio: { ...this.settings.audio, ...change } }
+    storage.write(FILES.settings, JSON.stringify(this.settings))
+    sound.configure(this.settings.audio)
+    this.refresh()
   }
 
   presetConfig(): Config {
@@ -270,10 +286,13 @@ class GameStore {
   private loadSettings(): void {
     try {
       const raw = storage.read(FILES.settings)
-      this.settings = raw ? { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<Settings>) } : DEFAULT_SETTINGS
+      const saved = raw ? (JSON.parse(raw) as Partial<Settings>) : {}
+      // A settings file from before Settings had audio gets the defaults for it.
+      this.settings = { ...DEFAULT_SETTINGS, ...saved, audio: { ...DEFAULT_SETTINGS.audio, ...saved.audio } }
     } catch {
       this.settings = DEFAULT_SETTINGS
     }
+    sound.configure(this.settings.audio)
     this.rebuildConfig()
   }
 
@@ -342,6 +361,7 @@ class GameStore {
       this.away = mergeAway(this.away, buildAway(before, r.state, r.events, this.config, now))
     } else if (r.events.length) {
       this.notices = [...this.notices, ...buildNotices(before, r.state, r.events)]
+      sound.play(cueForEvents(r.events))
     }
     // A gap is committed even without events, or the next tick would summarise it again.
     if (r.events.length || away) this.commit(r.state, r.events)
