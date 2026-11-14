@@ -28,13 +28,16 @@ describe('first session', () => {
 
 describe('fronts', () => {
   it('buffers after the first conversion and launders at throughput', () => {
-    let s = act(fresh(), [{ type: 'DEBUG_GRANT', dirty: 300 }], T0)
+    let s = act(fresh(), [{ type: 'DEBUG_GRANT', dirty: 1000 }], T0)
     const f = s.fronts[0].id
-    s = act(s, [{ type: 'DEPOSIT', frontId: f, amount: 1 }, { type: 'DEPOSIT', frontId: f, amount: 250 }], T0)
+    // The buffer holds fronts.bufferHours of the front's throughput.
+    const { bufferCap, throughput, rate } = derive(s, config).perFront[0]
+    expect(bufferCap).toBeCloseTo(throughput * config.fronts.bufferHours)
+    s = act(s, [{ type: 'DEPOSIT', frontId: f, amount: 1 }, { type: 'DEPOSIT', frontId: f, amount: bufferCap }], T0)
     expect(apply(s, { type: 'DEPOSIT', frontId: f, amount: 1 }, T0, config).error).toMatch(/buffer/)
     const later = reconcile(s, T0 + 2 * H, config).state
-    expect(later.fronts[0].buffer).toBeCloseTo(200)
-    expect(later.clean - s.clean).toBeCloseTo(50 * 0.55)
+    expect(later.fronts[0].buffer).toBeCloseTo(bufferCap - 2 * throughput)
+    expect(later.clean - s.clean).toBeCloseTo(2 * throughput * rate)
   })
 })
 

@@ -54,7 +54,7 @@ What each act changes, beyond its own businesses, fronts, officials, districts a
 | V | the Kombinat: the auction, opinion, the Ministry, elections ([ADR 0044](../decisions/0044-act-v-kombinat.md)) | `progression.acts[5]`: Rep, hold Zastava, own the Import–Export Company, then *The first auction round* | yes |
 | VI | Nagornaya, the hills: Legalize, the Holding, the reckoning ([ADR 0045](../decisions/0045-act-vi-nagornaya.md)) | `progression.acts[6]`: Rep and the mayor's office, then *Over the Governor's head* | yes: an ending clears it ([endgame.md](endgame.md)) |
 
-The unlock ladder (`unlockRep`) sits inside each act: every Act II business opens below Act III's gate, and each later act's businesses spread from just above its own gate. Every non-zero threshold includes the 38 Rep the opening's setup earns ([ADR 0035](../decisions/0035-guided-opening.md)).
+The late gates, prices and ladders were re-paced together when laundering stopped being the late brake ([ADR 0065](../decisions/0065-late-game-repace.md)). The unlock ladder (`unlockRep`) sits inside each act: every Act II business opens below Act III's gate, and each later act's businesses spread from just above its own gate. Every non-zero threshold includes the 38 Rep the opening's setup earns ([ADR 0035](../decisions/0035-guided-opening.md)).
 
 ## New game
 

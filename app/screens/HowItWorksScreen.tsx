@@ -345,7 +345,7 @@ function Officials({ game }: { game: Snapshot }) {
   )
 }
 
-// What a gate asks for, in words: "every Act I goal", "★9,000 and hold Zastava".
+// What a gate asks for, in words: "every Act I goal", "★12,000 and hold Zastava".
 function gateText(c: Config, g: ActGate): string {
   return [
     g.goals ? 'every Act I goal' : '',

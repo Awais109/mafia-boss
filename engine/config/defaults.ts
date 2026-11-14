@@ -159,63 +159,63 @@ export const defaults: Config = {
       // Act IV, Zastava (ADR 0043): the road to the border. Two joints sell premium imported cigarettes.
       truckStop: {
         name: 'Truck Stop', description: 'A diner and fuel pumps on the highway. Drivers smoke, drink coffee and don’t ask what’s in the back.',
-        act: 4, kind: 'joint', baseYield: 120, baseHeat: 12, unlockRep: 9200, sellsPerHr: 5, cigaretteShare: 0.3, prosperity: 3,
+        act: 4, kind: 'joint', baseYield: 120, baseHeat: 12, unlockRep: 12300, sellsPerHr: 5, cigaretteShare: 0.3, prosperity: 3,
       },
       motel: {
         name: 'Motel', description: 'A motel at the crossing with a bar that sells the red-and-white packs. Half its money needs premium stock.',
-        act: 4, kind: 'joint', baseYield: 150, baseHeat: 14, unlockRep: 9600, sellsPerHr: 0, cigaretteShare: 0, premiumSellsPerHr: 1.5, premiumShare: 0.5, prosperity: 4,
+        act: 4, kind: 'joint', baseYield: 150, baseHeat: 14, unlockRep: 12900, sellsPerHr: 0, cigaretteShare: 0, premiumSellsPerHr: 1.5, premiumShare: 0.5, prosperity: 4,
       },
       foreignShop: {
         name: 'Foreign Goods Shop', description: 'Western cigarettes, jeans and whisky by the till. The best joint on the road, and it lives on premium stock.',
-        act: 4, kind: 'joint', baseYield: 180, baseHeat: 15, unlockRep: 11000, sellsPerHr: 0, cigaretteShare: 0, premiumSellsPerHr: 2, premiumShare: 0.6, prosperity: 6,
+        act: 4, kind: 'joint', baseYield: 180, baseHeat: 15, unlockRep: 15100, sellsPerHr: 0, cigaretteShare: 0, premiumSellsPerHr: 2, premiumShare: 0.6, prosperity: 6,
       },
       freightYard: {
         name: 'Freight Yard', description: 'A lorry park that takes a cut of everything that crosses. Earns Dirty directly, and a lot of heat with it.',
-        act: 4, kind: 'racket', baseYield: 280, baseHeat: 36, unlockRep: 13000, prosperity: -4,
+        act: 4, kind: 'racket', baseYield: 280, baseHeat: 36, unlockRep: 18300, prosperity: -4,
       },
       fuelDepot: {
         name: 'Fuel Depot', description: 'Diesel that goes missing from the state tanks. The biggest earner on the road and the hottest.',
-        act: 4, kind: 'racket', baseYield: 360, baseHeat: 45, unlockRep: 16000, prosperity: -5,
+        act: 4, kind: 'racket', baseYield: 360, baseHeat: 45, unlockRep: 23000, prosperity: -5,
       },
       bondedWarehouse: {
         name: 'Bonded Warehouse', description: 'A customs warehouse with a lock that means something: holds premium stock, and in Zastava halves what customs takes.',
-        act: 4, kind: 'premises', baseYield: 0, baseHeat: 3, unlockRep: 9400, prosperity: -2,
+        act: 4, kind: 'premises', baseYield: 0, baseHeat: 3, unlockRep: 12600, prosperity: -2,
         purchase: 5000, upkeepPerHr: 20, upkeepTierMult: 1.2, premiumCapPerTier: 60, seizureMult: 0.5,
       },
       convoyDepot: {
         name: 'Convoy Depot', description: 'Your own lorries and drivers: convoys carry more, and the Colonel’s men find them harder to stop.',
-        act: 4, kind: 'premises', baseYield: 0, baseHeat: 4, unlockRep: 10000, maxInCity: 1, prosperity: -2,
+        act: 4, kind: 'premises', baseYield: 0, baseHeat: 4, unlockRep: 13600, maxInCity: 1, prosperity: -2,
         purchase: 6000, upkeepPerHr: 25, upkeepTierMult: 1.2, convoyBonusPerTier: 0.15, hijackMult: 0.5,
       },
       // Act V, the Kombinat (ADR 0044): the Combine's own town, and the media that make opinion.
       palaceOfCulture: {
         name: 'Palace of Culture', description: 'The Combine’s club: a cinema, a dance hall and a buffet that sells both kinds of cigarettes. People like whoever keeps it open.',
-        act: 5, kind: 'joint', baseYield: 400, baseHeat: 30, unlockRep: 31000, sellsPerHr: 6, cigaretteShare: 0.2, premiumSellsPerHr: 2, premiumShare: 0.2,
+        act: 5, kind: 'joint', baseYield: 400, baseHeat: 30, unlockRep: 47000, sellsPerHr: 6, cigaretteShare: 0.2, premiumSellsPerHr: 2, premiumShare: 0.2,
         prosperity: 8, opinionPerTier: 2,
       },
       constructionTrust: {
         name: 'Construction Trust', description: 'Public contracts: roads, roofs, the new housing. It earns with what the city thinks of you.',
-        act: 5, kind: 'racket', baseYield: 600, baseHeat: 80, unlockRep: 36000, prosperity: -4, opinionYield: [0.6, 1.4],
+        act: 5, kind: 'racket', baseYield: 600, baseHeat: 80, unlockRep: 58000, prosperity: -4, opinionYield: [0.6, 1.4],
       },
       combine: {
         name: 'The Combine', description: 'The tobacco line itself: plain Sever and the premium brands, by the thousand. A payroll, not an upkeep.',
-        act: 5, kind: 'premises', baseYield: 0, baseHeat: 20, unlockRep: 31000, maxInCity: 1, onlyIn: 'kombinat', prosperity: 4,
+        act: 5, kind: 'premises', baseYield: 0, baseHeat: 20, unlockRep: 47000, maxInCity: 1, onlyIn: 'kombinat', prosperity: 4,
         purchase: 30000, upkeepPerHr: 100, upkeepTierMult: 1.2, makesPerHr: 30, premiumMakesPerHr: 6, tierMakeMult: 1.3,
       },
       newspaper: {
         name: 'Newspaper', description: 'The works paper, Sevgorodsky Rabochy, and whatever it prints about you. Raises public opinion.',
-        act: 5, kind: 'premises', baseYield: 0, baseHeat: 2, unlockRep: 32000, maxInCity: 1, onlyIn: 'kombinat',
+        act: 5, kind: 'premises', baseYield: 0, baseHeat: 2, unlockRep: 49500, maxInCity: 1, onlyIn: 'kombinat',
         purchase: 12000, upkeepPerHr: 60, upkeepTierMult: 1.2, opinionPerTier: 5,
       },
       tvStation: {
         name: 'TV Station', description: 'The mast on the hill and the evening news. Raises public opinion more than the paper can.',
-        act: 5, kind: 'premises', baseYield: 0, baseHeat: 3, unlockRep: 38000, maxInCity: 1, onlyIn: 'kombinat',
+        act: 5, kind: 'premises', baseYield: 0, baseHeat: 3, unlockRep: 62500, maxInCity: 1, onlyIn: 'kombinat',
         purchase: 25000, upkeepPerHr: 120, upkeepTierMult: 1.2, opinionPerTier: 8,
       },
       // Act VI, Nagornaya (ADR 0045): a villa on the hill, and the last upgrade track in the game.
       holding: {
         name: 'The Holding', description: 'A holding company in a villa above the city. Every legal business you own earns more for each tier.',
-        act: 6, kind: 'premises', baseYield: 0, baseHeat: 0, unlockRep: 96000, maxInCity: 1, onlyIn: 'nagornaya',
+        act: 6, kind: 'premises', baseYield: 0, baseHeat: 0, unlockRep: 190000, maxInCity: 1, onlyIn: 'nagornaya',
         purchase: 150000, upkeepPerHr: 300, upkeepTierMult: 1.2, legalBonusPerTier: 0.1,
       },
     },
@@ -233,7 +233,7 @@ export const defaults: Config = {
   convoys: { customsBase: 0.08, customsPerHeat: 0.004, hijackChance: 0.4, hijackHostileMult: 1.5 },
 
   // Act VI (ADR 0045): money with a story needs no front; the past keeps its books.
-  legalize: { fromAct: 6, minOpinion: 60, hoursOfYield: 170, cleanShare: 0.6 },
+  legalize: { fromAct: 6, minOpinion: 60, hoursOfYield: 300, cleanShare: 0.6 }, // hoursOfYield 170 → 300 (#6): Act VI's length with more Clean coming in
   reckoning: {
     fromAct: 6,
     base: 0.1,
@@ -265,7 +265,7 @@ export const defaults: Config = {
   costs: {
     // spec §6.2: purchase = baseYield × payback hours for the racket's act
     // Act I 12 → 10: Act I cleared at 2.1 d. Act III 24 → 40: the bot bought the Centre out in four days (TUNING.md).
-    paybackHoursByAct: { 1: 10, 2: 18, 3: 40, 4: 40, 5: 40, 6: 40 },
+    paybackHoursByAct: { 1: 10, 2: 18, 3: 55, 4: 55, 5: 55, 6: 40 }, // 3–5: 40 → 55 with the late re-pace (#6, TUNING.md)
     upgradeBaseFactor: 0.5, // upgrade from tier t = purchase × 0.5 × upgradeTierMult^(t−1)
     upgradeTierMult: 1.4,
     overrides: {}, // { kiosk: { purchase: 40 } } — wins over the formula
@@ -275,7 +275,7 @@ export const defaults: Config = {
     suspicionStartUtil: 0.7, // utilization above this adds exposure
     suspicionFactor: 0.3, // suspicion = factor × throughput × (util − start)
     utilSmoothingHours: 6, // util is a moving average over roughly this many hours
-    bufferHours: 10, // buffer cap = throughput × this
+    bufferHours: 20, // buffer cap = throughput × this. 10 → 20 (#6): from Act IV a visit comes every 12–24 h, and a 10 h buffer ran dry between them
     reserveHours: 12, // "launder all but running costs" keeps this many hours of wages + upkeep in Dirty
     // A dial per front (ADR 0028): push launders faster and draws suspicion sooner; lay low halves it and draws none.
     modes: {
@@ -308,12 +308,12 @@ export const defaults: Config = {
       // Act IV (ADR 0043): an importer can only launder what its imports would plausibly earn.
       importExport: {
         name: 'Import–Export Company', description: 'A trading company at the crossing. A great rate, but it can only wash as much as your premium trade would explain.',
-        act: 4, coverPerPremiumPack: 100, rate: 0.8, throughput: 1500, unlockRep: 9800, cost: 20000,
+        act: 4, coverPerPremiumPack: 100, rate: 0.8, throughput: 1500, unlockRep: 13300, cost: 20000,
       },
       // Act V (ADR 0044): a charity with a Combine-sized budget. What it washes, the city sees it give.
       developmentFund: {
         name: 'Development Fund', description: 'A regional development fund: the best rate there is and the most room, and every rouble through it makes the city think better of you.',
-        act: 5, opinionAtFullUtil: 15, rate: 0.9, throughput: 3000, unlockRep: 33000, cost: 60000,
+        act: 5, opinionAtFullUtil: 15, rate: 0.9, throughput: 3000, unlockRep: 51500, cost: 60000,
       },
     },
   },
@@ -753,9 +753,9 @@ export const defaults: Config = {
     acts: {
       2: { goals: true, missions: ['crateThroughPort'] },
       3: { rep: 1200, missions: ['herTerms', 'acrossTheBridge'] }, // 610 (Act II's old clear) → 1200: Act II ran 1.9 d against the manual's 3–5 (TUNING.md, M8)
-      4: { rep: 9000, missions: ['secondLunch', 'firstTruck'] }, // just under what the Centre's catalogue can earn (~10,200 on the bot)
-      5: { rep: 30000, holds: ['zastava'], fronts: ['importExport'], missions: ['firstAuction'] }, // the border held, the importer running (ADR 0043)
-      6: { rep: 96000, mayor: true, missions: ['overGovernor'] }, // the mayor's office and the Rep to hold it (ADR 0044)
+      4: { rep: 12000, missions: ['secondLunch', 'firstTruck'] }, // 9000 → 12000 with Act III's prices at 55 h (#6): still under what its catalogue earns
+      5: { rep: 45000, holds: ['zastava'], fronts: ['importExport'], missions: ['firstAuction'] }, // the border held, the importer running (ADR 0043); 30000 → 45000 (#6)
+      6: { rep: 190000, mayor: true, missions: ['overGovernor'] }, // the mayor's office and the Rep to hold it (ADR 0044); 96000 → 190000 (#6)
     },
   },
 

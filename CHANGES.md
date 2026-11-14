@@ -3,6 +3,25 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-14 — The late game re-paced (#6)
+
+Branch: `tune/6-repace`. Reasoning: [ADR 0065](docs/decisions/0065-late-game-repace.md); every step: [TUNING.md](TUNING.md).
+
+- **What a player feels:** late Dirty isn't worthless any more. Fronts hold 20 hours, so a deposit lasts until the next visit. The late acts are paced by what things cost and the Rep each gate asks for, and their places still unlock one by one through each act.
+- **Numbers changed** (`engine/config/defaults.ts`):
+  - `fronts.bufferHours` 10 → 20;
+  - `costs.paybackHoursByAct` 3–5: 40 → 55;
+  - gates: Act IV ★9,000 → 12,000, V 30,000 → 45,000, VI 96,000 → 190,000;
+  - `legalize.hoursOfYield` 170 → 300;
+  - Acts IV–VI `unlockRep` ladders stretched across their new spans.
+- **10 seeds, 60 days:**
+  - Acts III–VI: 6.92 / 9.51 / 12.12 / 12.54 d (10/10, 10/10, 10/10, 8/10; were 4/10 in V and VI);
+  - front use 75% (in range, was 54%), idle Dirty 74% (was 88%; III 51%, IV 64%);
+  - wage share in range, heat 30.9, no raids (the greedy bot 0.7).
+- **Still open:** idle Dirty in Act V (85%, fronts near capacity) and Act VI (legal income), noted in TUNING.md.
+- **Docs:** [fronts.md](docs/systems/fronts.md), [progression.md](docs/systems/progression.md), the README (Act IV at ★12,000).
+- **Verified:** `npm run check`; the front buffer test now reads its size from config.
+
 ## 2026-11-14 — Officials' retainers (#7)
 
 Branch: `feature/7-retainers`. Reasoning: [ADR 0064](docs/decisions/0064-officials-retainers.md); the rules: [heat.md](docs/systems/heat.md#officials).

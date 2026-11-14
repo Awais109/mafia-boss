@@ -473,12 +473,31 @@ Baseline by act: front use I 41%, II 54%, III 73%, IV 59%, V 56%, VI 47%; Dirty 
             Act VI's spread widened (was 9/10 in band): the Clean the retainers take slows Legalize. #6's re-pace tunes it.
 ```
 
+## 2026-11-14 — The late game re-paced (#6, ADR 0065)
+
+10 seeds, 60 days, on top of ADRs 0063 and 0064, one step at a time in the game's order. Starting point: Acts III–VI 6.59 / 9.16 / 13.32 / 15.74 d; front use 54%, idle Dirty 88%.
+
+```
+2026-11-14  fronts.bufferHours 10→20                                  III 5.35, IV 6.94, V 7.62, VI 10.19 d; front use III–V 82–94%. Kept, with the steps below.
+2026-11-14  costs.paybackHoursByAct.3 40→55 + progression.acts.4.rep 9000→12000   III 6.92 d (10/10). (60 h + 13000: 7.17.) Kept.
+2026-11-14  costs.paybackHoursByAct.4 40→55 + progression.acts.5.rep 30000→45000  IV 9.51 d (10/10). (60 h + 55000: 11.81, over.) Kept.
+2026-11-14  costs.paybackHoursByAct.5 40→55 + progression.acts.6.rep 96000→190000 V 11.63 d (10/10), but VI 5.04. (150000: V 7.77.) Kept.
+2026-11-14  legalize.hoursOfYield 170→300                              VI 12.74 d (9/10). (420: 15.84, 7/10.) Kept.
+2026-11-14  Act IV–VI unlockRep ladders stretched across the new spans  truckStop 9200→12300, bondedWarehouse 9400→12600,
+            motel 9600→12900, convoyDepot 10000→13600, foreignShop 11000→15100, freightYard 13000→18300, fuelDepot 16000→23000,
+            importExport 9800→13300; palaceOfCulture and combine 31000→47000, newspaper 32000→49500, developmentFund 33000→51500,
+            constructionTrust 36000→58000, tvStation 38000→62500; holding 96000→190000.
+            Without this, six Act IV places unlocked at once on the act's opening. Result: III 6.92 (10/10), IV 9.51 (10/10),
+            V 12.12 (10/10), VI 12.54 (8/10); front use 75% (10/10 in range, was 0/10); idle Dirty 74% (III 51%, IV 64%,
+            V 85%, VI 97%); heat 30.9; wage share 12% (8/10, was 3/10); raids 0; greedy 0.7 raids. Kept.
+```
+
 ## Open
 
 Whole game, 10 seeds, 60 days (2026-09-29, after M13): Act I 4.64 d, Act II 3.28, Act III 6.44, Act IV 9.78, Act V 12.86, Act VI 13.08; heat over Acts I–V 29.4 (by act about 38, 24, 25, 27, 31; Act VI about 11, since legal businesses draw none); no raids, no missed wages, partial 0.46.
 
 - **Act I clears at 4.64 d** against the manual's 1–2, since it's gated on seven build-out goals (ADR 0039). An owner decision: relax the goals or move the target. Acts II–VI are all in range on 10/10 seeds, except Act III at 8/10.
-- **Front utilization ~52% (target 70–90%) and Dirty idle ~90% (target 20–50%)** over 60 days. By act (2026-11-14): Act II is near the manual's targets; from Act IV, Dirty is 97–100% idle, so late Dirty income is worthless and laundering sets the pace (#6, above). Yield outruns laundering from late Act III on, and the loan desk takes one loan at a time. Act V's campaigns are the first large Dirty sink, and in Act VI legal Clean makes laundering matter less, so these metrics mean less the later the act. The importer (Act IV) is capped by premium sales; `coverPerPremiumPack` is the knob to watch.
+- **Front utilization 75% (in range) and Dirty idle 74% (target 20–50%)** over 60 days, since the re-pace (ADR 0065). Idle Dirty by act: III 51%, IV 64%, V 85%, VI 97%. Act V's fronts are near capacity (92%), so the next lever there is front capacity, not the buffer; in Act VI, legal businesses earn Clean without laundering. Yield outruns laundering from late Act III on, and the loan desk takes one loan at a time. Act V's campaigns are the first large Dirty sink, and in Act VI legal Clean makes laundering matter less, so these metrics mean less the later the act. The importer (Act IV) is capped by premium sales; `coverPerPremiumPack` is the knob to watch.
 - **Wage share ~9%** over 60 days (manual 10–25%): a few percent through Acts II–V, rising in Act VI as legal businesses stop earning Dirty. Running costs that scale with the act would be a new rule, which no plan has.
 - **Act V clears at either ~10 d or 14.0 d**: on the first election won, or the second (ADR 0044). Since ADR 0063 (base share 0.34) the bot wins the first more often: Act V 11.7 d, 8/10 in band.
 - **The bot rarely reaches the Empire**: it legalizes everything and reaches the Holding first in 9 runs of 10. The Empire path is exercised by tests.
