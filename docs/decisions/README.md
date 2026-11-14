@@ -73,6 +73,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0058](0058-local-notifications.md) | Local notifications, planned by playing the save forward; no push entitlement | Accepted |
 | [0059](0059-the-keys-scene.md) | Scene 16, "The keys", plays at the first repossession; later ones stay a notice | Accepted |
 | [0060](0060-the-last-hearing.md) | Scene 14, "The last hearing", plays at the first ending, before it, with Dima's answer for the road taken | Accepted |
+| [0061](0061-motion.md) | Motion: a page turn, ink over pencil, a stamp landing, money counting; none with reduced motion | Accepted |
 
 ## Template
 

@@ -138,4 +138,4 @@ The generator writes `assets/sounds/generated/<name>.wav` (ignored by git). `npm
 - No ducking of the music under stings or scenes.
 - No haptics.
 - No sound for a district revealed on the map while you watch: `ink` plays when a district changes hands, and in the Empire's scene.
-- The design brief's motion (a page turn, ink spreading, counters ticking up) isn't built; these sounds stand in for some of it.
+- No sound marks a district revealed on the map outside a chapter page. The motion that goes with these sounds (page turns, ink, stamps, counters) is in `app/motion.tsx` ([app.md](app.md#motion)).

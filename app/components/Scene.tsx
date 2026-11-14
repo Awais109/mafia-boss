@@ -12,6 +12,7 @@ import { PEOPLE } from '../people'
 import { sceneLabel, type Beat, type Crop, type Scene } from '../scenes'
 import { ACT_TITLE, ENVELOPE_NOTES, firstEndingOf, LAST_HEARING, OPENING_CREW, revealedBy, TOLYA_ASKS, tolyaMood } from '../story'
 import { store, type Snapshot } from '../store'
+import { Stamped } from '../motion'
 import { sound } from '../sound/player'
 import { fonts, paper } from '../theme'
 import { webParam } from '../webParams'
@@ -251,11 +252,13 @@ function ResultPanel({ game, mission }: { game: Snapshot; mission: MissionId }) 
     <View style={[styles.panel, styles.paperPanel, styles.result]}>
       <Text style={styles.resultName}>{m.name.toUpperCase()}</Text>
       {failed ? (
-        <View style={styles.resultStamp}>
+        <Stamped style={styles.resultStamp}>
           <SvgXml xml={ART.stampFailed.xml} width="100%" height="100%" />
-        </View>
+        </Stamped>
       ) : (
-        <Stamp text="Won" color={paper.brassInk} big />
+        <Stamped>
+          <Stamp text="Won" color={paper.brassInk} big />
+        </Stamped>
       )}
       {failed ? (
         <>
