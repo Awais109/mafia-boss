@@ -37,7 +37,6 @@ export { colonelHolds, colonelHostile, convoyLoad, customsChance, hijackChance, 
 export {
   electionScheduled,
   ministryTarget,
-  opinionControlMult,
   opinionTarget,
   pointCost,
   pointsRoom,

@@ -35,6 +35,12 @@ describe('config', () => {
     expect(errors.some((e) => e.startsWith('ops.list.shakeDown.minutes'))).toBe(true)
   })
 
+  it('rejects a rival who turns friendly below hostile, and a negative payoff threshold', () => {
+    const { errors } = tryBuildConfig({ rivals: { zhanna: { friendlyFrom: -40 } }, credit: { paidOffBelow: -1 } } as never)
+    expect(errors).toContain('rivals.zhanna.friendlyFrom: -40 must be > hostileBelow')
+    expect(errors.some((e) => e.startsWith('credit.paidOffBelow'))).toBe(true)
+  })
+
   it('keeps premises off district spots', () => {
     const { errors } = tryBuildConfig({ districts: { list: { zarechye: { allows: ['kiosk', 'tobaccoFactory'] } } } } as never)
     expect(errors.some((e) => e.startsWith('districts.list.zarechye.allows') && e.includes('premises'))).toBe(true)

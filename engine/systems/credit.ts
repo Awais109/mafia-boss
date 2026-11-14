@@ -2,7 +2,7 @@ import type { Config } from '../config/schema'
 import { emit, newId, type Ctx } from '../core/ctx'
 import { derive } from '../core/derive'
 import { dayIndex, hoursToMs } from '../core/time'
-import type { PlayerState } from '../model/state'
+import type { Loan, PlayerState } from '../model/state'
 import { raiseIncident } from './inbox'
 import { ledgerDays } from './ledger'
 
@@ -13,8 +13,6 @@ import { ledgerDays } from './ledger'
 // Lending goes the other way: a loan desk puts idle Dirty out for a couple of days at interest. Most
 // borrowers pay; some skip town, fewer on a prosperous street.
 
-const EPS = 0.5 // a loan with less than half a Clean owed is paid off
-
 export const creditOpen = (state: PlayerState, c: Config): boolean => state.act >= c.credit.fromAct
 
 // How much you can borrow: days of the mean daily Clean over the ledger's closed days, at least minCap.
@@ -24,12 +22,15 @@ export function loanCap(state: PlayerState, c: Config): number {
   return Math.max(c.credit.minCap, Math.round(c.credit.maxDaysOfClean * mean))
 }
 
-// What the next day start will ask for: a share of the principal plus the day's interest, never more than is owed.
-export function loanDue(state: PlayerState, c: Config): number {
-  const loan = state.loan
-  if (!loan) return 0
+// The next day start's terms: the day's interest, and what it will ask for (a share of the principal plus that
+// interest, never more than is owed once the interest is on). The Credit card and the day start both read this.
+function loanTerms(loan: Loan, c: Config): { interest: number; due: number } {
   const interest = loan.owed * c.credit.interestPerDay
-  return Math.min(loan.owed + interest, loan.principal * c.credit.repayPctPerDay + interest)
+  return { interest, due: Math.min(loan.owed + interest, loan.principal * c.credit.repayPctPerDay + interest) }
+}
+
+export function loanDue(state: PlayerState, c: Config): number {
+  return state.loan ? loanTerms(state.loan, c).due : 0
 }
 
 export function takeLoan(state: PlayerState, ctx: Ctx, t: number, amount: number): string | null {
@@ -60,7 +61,7 @@ function pay(state: PlayerState, ctx: Ctx, t: number, amount: number): void {
   state.clean -= amount
   loan.owed -= amount
   state.stats.loans.repaid += amount
-  if (loan.owed < EPS) {
+  if (loan.owed < ctx.c.credit.paidOffBelow) {
     state.loan = null
     emit(ctx, t, { type: 'LOAN_REPAID', paid: amount })
   } else {
@@ -75,10 +76,9 @@ export function creditDayBoundary(state: PlayerState, ctx: Ctx, t: number): void
   const loan = state.loan
   if (!loan) return
   const { c } = ctx
-  const interest = loan.owed * c.credit.interestPerDay
+  const { interest, due } = loanTerms(loan, c)
   loan.owed += interest
   state.stats.loans.interest += interest
-  const due = Math.min(loan.owed, loan.principal * c.credit.repayPctPerDay + interest)
   if (state.clean >= due - 1e-6) {
     loan.missed = 0
     pay(state, ctx, t, due)

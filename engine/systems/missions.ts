@@ -5,6 +5,7 @@ import { hoursToMs, minutesToMs } from '../core/time'
 import type { CrewMember, OpInstance, PlayerState } from '../model/state'
 import { checkActs, gateMet } from './acts'
 import { changeColonel } from './convoys'
+import { freeCrew } from './crew'
 import { grantXp, jobXp } from './experience'
 import { injure } from './injuries'
 import { opMinutesFor, rollOp } from './ops'
@@ -96,12 +97,7 @@ export function resolveMission(state: PlayerState, ctx: Ctx, op: OpInstance, t: 
   const m = c.missions.list[id]
   state.ops = state.ops.filter((o) => o.id !== op.id)
   const team = op.crewIds.map((x) => state.crew.find((cm) => cm.id === x)).filter((cm): cm is CrewMember => cm !== undefined)
-  for (const cm of team) {
-    if (cm.status === 'on_op' && cm.assignedTo === op.id) {
-      cm.status = 'idle'
-      delete cm.assignedTo
-    }
-  }
+  freeCrew(team, op)
 
   if (m.kind === 'overreach') {
     // It fails, by design, at a fixed cost: the stake (already paid), the first one sent hurt, heat.

@@ -410,6 +410,17 @@ The sim now runs 60 days so an ending can be reached; so does the pacing guard.
             V 12.33 (was 12.03), VI 12.73 (was 12.63, now 5/5 in range), heat 28.6, raids 0, partial 0.46. Kept.
 ```
 
+## 2026-11-14 — numbers moved into config, values unchanged
+
+Two numbers that were inlined in code now live in `defaults.ts`, at the values they had. Nothing plays differently:
+3 seeds, 60 days, the sim's report is identical to `main`'s line for line.
+
+```
+2026-11-14  credit.paidOffBelow: new, 0.5 (was EPS in engine/systems/credit.ts): less than this owed and the loan is paid off.  Kept.
+2026-11-14  rivals.{tolya,zhanna,colonel}.friendlyFrom: new, 20 (was FRIENDLY_FROM in app/story.ts): where a rival's card
+            calls their mood friendly. A word, not a rule.  Kept.
+```
+
 ## Open
 
 Whole game, 10 seeds, 60 days (2026-09-29, after M13): Act I 4.64 d, Act II 3.28, Act III 6.44, Act IV 9.78, Act V 12.86, Act VI 13.08; heat over Acts I–V 29.4 (by act about 38, 24, 25, 27, 31; Act VI about 11, since legal businesses draw none); no raids, no missed wages, partial 0.46.
