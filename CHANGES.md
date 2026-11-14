@@ -3,6 +3,18 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-14 — Expo packages on SDK 57's latest patches (#23)
+
+Branch: `chore/23-expo-patches`.
+
+- **What changed:** `expo` 57.0.22 → 57.0.33, `expo-sharing` 57.0.19 → 57.0.26, `@expo/metro-runtime` 57.0.16 → 57.0.18, all with `npx expo install`. `npx expo install --check` is now clean.
+- **Players:** nothing changes. Standalone installs need rebuilding anyway, for `expo-audio`.
+- **Docs:** [native-builds.md](docs/native-builds.md), "Keeping Expo current".
+- **Verified:**
+  - `npm run check`: 253 tests;
+  - `npx expo export --clear` for iOS, Android and web, with all 36 sounds packed;
+  - `expo-asset` stays at 57.0.21.
+
 ## 2026-11-14 — Debug only in debug builds; the play log in Settings (#11)
 
 Branch: `fix/11-debug-release`. Reasoning: [ADR 0057](docs/decisions/0057-debug-by-build.md).
