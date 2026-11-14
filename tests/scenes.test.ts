@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { apply, TUTORIAL_STEPS } from '../engine'
+import { apply, TUTORIAL_STEPS, type GameEvent } from '../engine'
+import { buildNotices } from '../app/notices'
 import { dueScene, sceneAhead, sceneDue, SCENES, type SceneId } from '../app/scenes'
 import { ART } from '../app/art/scenes'
 import { act, blank, config, fresh, T0 } from './helpers'
@@ -96,6 +97,26 @@ describe('scenes', () => {
     // An old save's past isn't ahead, even if it was never seen.
     s.story = { seen: [], since: { act: 3, step: s.tutorial.step, done: true } }
     expect(sceneAhead(s, 'crate')).toBe(false)
+  })
+
+  it('plays the keys at the first repossession, in place of its notice, and only once (ADR 0059)', () => {
+    const s = blank()
+    s.tutorial.done = true
+    s.act = 3
+    s.story.seen.push(...(Object.keys(SCENES) as SceneId[]).filter((id) => id !== 'keys' && id !== 'holding' && id !== 'empire'))
+    const before = structuredClone(s)
+    expect(sceneDue(s, 'keys')).toBe(false)
+    expect(sceneAhead(s, 'keys')).toBe(true) // a preview before it happens isn't recorded
+    const taken = { type: 'LOAN_REPOSSESSED', t: T0, racketId: 'r1', racketType: 'kiosk', districtId: 'zarechye', owed: 300 } as GameEvent
+    s.stats.loans.repossessed = 1
+    expect(dueScene(s)?.id).toBe('keys')
+    expect(buildNotices(before, s, [taken])).toEqual([])
+    // Seen, a later repossession is the notice again.
+    s.story.seen.push('keys')
+    s.stats.loans.repossessed = 2
+    expect(dueScene(s)).toBeNull()
+    expect(buildNotices(before, s, [taken])).toEqual([{ kind: 'info', event: taken }])
+    expect(SCENES.keys.beats.at(-1)?.kind).toBe('keys')
   })
 
   it('records a scene once, and refuses an id that isn’t one', () => {

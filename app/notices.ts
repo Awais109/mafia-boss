@@ -1,5 +1,6 @@
 import type { Config, Derived, DistrictId, FrontType, GameEvent, InboxItem, OfficialId, PlayerState, RacketType } from '../engine'
 import { fmt } from './format'
+import { sceneDue } from './scenes'
 
 // What pops up as a modal while the player is actively in the app (ADR 0038), instead of only
 // showing up quietly in the Log or stacked on Home. Diffing `inbox` catches all three decision
@@ -51,6 +52,8 @@ export function buildNotices(before: PlayerState, after: PlayerState, events: Ga
     if (!seen.has(item.id)) notices.push({ kind: 'inbox', item })
   }
   for (const e of events) {
+    // The first repossession plays as Scene 16 instead (ADR 0059).
+    if (e.type === 'LOAN_REPOSSESSED' && sceneDue(after, 'keys')) continue
     if (isNoticeworthy(e)) notices.push({ kind: 'info', event: e })
   }
   return notices
