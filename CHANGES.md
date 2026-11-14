@@ -3,6 +3,18 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-14 — Late-game experiments, and the sim report by act (#6, #7, #8)
+
+Branch: `tune/6-8-late-game`. No game change: every experiment was reverted ([TUNING.md](TUNING.md)).
+
+- **The sim report shows the throttle and heat by act** (`byAct`, `formatByAct` in `sim/report.ts`). The single-run report prints `By act:`, and `--runs` prints it averaged over the runs that reached each act. The manual's targets were written for Acts I–II, and a whole-run mean hid the late game.
+- **What the experiments found:**
+  - **#6:** from Act IV the fronts' 10-hour buffer drains between the bot's 12–24-hour visits, so Dirty sits 97–100% idle. A 20-hour buffer fixes the throttle but makes Acts III–VI clear far too fast. Raising Act IV's gate to compensate stalls Act III, whose catalogue only earns about 10,200 Rep.
+  - **#7:** heat is all or nothing. With the officials it never threatens, even with the bot's caution off. Without them it's 88 in Act I, with a raid every few hours, and Act I is never cleared.
+  - **#8:** opinion reaches 100 within 8–12 days of Act V and stays there, because its target adds uncapped per-tier media bonuses.
+- **Docs:** [sim.md](docs/sim.md), [testing.md](docs/testing.md), [TUNING.md](TUNING.md).
+- **Verified:** `npm run check`, with a new test in `tests/report.test.ts`.
+
 ## 2026-11-14 — The Empire by night (#15, stand-in)
 
 Branch: `feature/15-night-art`. Reasoning: [ADR 0062](docs/decisions/0062-empire-by-night.md).

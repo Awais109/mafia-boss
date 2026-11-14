@@ -4,7 +4,7 @@ import { ConfigError, PRESET_NAMES, tryBuildConfig, type Overrides, type PresetN
 import { simulate, type Trace } from './driver'
 import { CASUAL, GOLD_RUSH, withSessions } from './persona'
 import { isLogExport, replayLog } from './replay'
-import { checkOk, formatSummary, summarize, toCsv, type Summary } from './report'
+import { checkOk, formatByAct, formatSummary, summarize, toCsv, type Summary } from './report'
 
 // npm run sim -- --preset default --days 5 --seed 42 [--sessions 3] [--runs 10] [--set heat.baseControl=6]
 // npm run sim -- --replay path/to/tester-log.json
@@ -144,6 +144,17 @@ function printRuns(summaries: Summary[]) {
         `${ok === null ? '·' : ok ? '✓' : '✗'}  (${passing}/${summaries.length} runs in range${reached < summaries.length ? `, ${summaries.length - reached} not reached` : ''})`,
     )
   }
+  // The throttle and heat by act, averaged over the runs that reached each act.
+  const acts = [...new Set(summaries.flatMap((s) => s.byAct.map((r) => r.act)))].sort()
+  const avgOf = (xs: number[]) => {
+    const ok = xs.filter((x) => !Number.isNaN(x))
+    return ok.length ? ok.reduce((a, b) => a + b, 0) / ok.length : NaN
+  }
+  const rows = acts.map((act) => {
+    const inAct = summaries.flatMap((s) => s.byAct.filter((r) => r.act === act))
+    return { act, frontUtil: avgOf(inAct.map((r) => r.frontUtil)), dirtyIdle: avgOf(inAct.map((r) => r.dirtyIdle)), heat: avgOf(inAct.map((r) => r.heat)) }
+  })
+  console.log(`\n${'By act (mean of runs)'.padEnd(32)} ${formatByAct(rows)}`)
 }
 
 main()

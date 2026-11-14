@@ -421,12 +421,37 @@ Two numbers that were inlined in code now live in `defaults.ts`, at the values t
             calls their mood friendly. A word, not a rule.  Kept.
 ```
 
+## 2026-11-14 — Late-game experiments (#6, #7, #8): nothing kept
+
+10 seeds, 60 days, casual bot unless noted. Every number below was tried and reverted. The sim report now prints the throttle and heat by act (`By act`), which is how these were read.
+
+Baseline by act: front use I 41%, II 54%, III 73%, IV 59%, V 56%, VI 47%; Dirty idle I 91%, II 33%, III 88%, IV 97%, V 100%, VI 100%; heat 39, 25, 26, 27, 31, 10.
+
+```
+2026-11-14  fronts.bufferHours 10→16 / 20 / 24 (#6)
+            Symptom: from Act IV the bot visits every 12–24 h, but a buffer drains in 10 h, so fronts idle and Dirty piles up (idle 97–100%).
+            Sim (20 h): front use III 83%, IV 95%, V 89%, VI 61%; Dirty idle III 50%, IV 54%, V 82%, VI 88%; wage share into range (18%).
+            But more Clean is more Rep: Act III 6.35→5.40 d, IV 9.81→6.26, V 13.08→7.62, VI 11.94→8.89, all below their bands. Reverted.
+2026-11-14  fronts.bufferHours 20 + progression.acts.4.rep 9000→11500 (#6)
+            To win Act III's length back. Act III stalls: 4 of 10 never clear (the Centre's catalogue earns ~10,200 Rep). Reverted.
+            A late-game re-pace would need prices and gates moved together, act by act: a design decision, not a knob (#6).
+2026-11-14  persona heatBudget 55→100, bribeAboveHeat 55→never (#7, the bot's caution off)
+            Heat by act unchanged (39 25 25 27 30 11), raids 0. The budget isn't what keeps heat down: officials are.
+2026-11-14  persona as above + officialAboveHeat 30→never (#7, no officials)
+            Heat 88 in Act I, 135 raids and 146 arrests a run, Act I never cleared. Heat is all or nothing: with the officials
+            it never threatens, without them the game can't be won. No middle where a greedy player meets the odd raid.
+2026-11-14  (measurement only) opinion by day, seeds 42–44 (#8)
+            Opinion sits at its base 40 until Act V, then reaches 95–100 within 8–12 days and stays there to day 60.
+            Its target is base + uncapped per-tier media bonuses (TV 8, newspaper 5 a tier), so two media businesses at tier 6
+            already pass 100, and tiers past the book only push it further. Lowering opinionPerTier only delays it.
+```
+
 ## Open
 
 Whole game, 10 seeds, 60 days (2026-09-29, after M13): Act I 4.64 d, Act II 3.28, Act III 6.44, Act IV 9.78, Act V 12.86, Act VI 13.08; heat over Acts I–V 29.4 (by act about 38, 24, 25, 27, 31; Act VI about 11, since legal businesses draw none); no raids, no missed wages, partial 0.46.
 
 - **Act I clears at 4.64 d** against the manual's 1–2, since it's gated on seven build-out goals (ADR 0039). An owner decision: relax the goals or move the target. Acts II–VI are all in range on 10/10 seeds, except Act III at 8/10.
-- **Front utilization ~52% (target 70–90%) and Dirty idle ~90% (target 20–50%)** over 60 days. Yield outruns laundering from late Act III on, and the loan desk takes one loan at a time. Act V's campaigns are the first large Dirty sink, and in Act VI legal Clean makes laundering matter less, so these metrics mean less the later the act. The importer (Act IV) is capped by premium sales; `coverPerPremiumPack` is the knob to watch.
+- **Front utilization ~52% (target 70–90%) and Dirty idle ~90% (target 20–50%)** over 60 days. By act (2026-11-14): Act II is near the manual's targets; from Act IV, Dirty is 97–100% idle, so late Dirty income is worthless and laundering sets the pace (#6, above). Yield outruns laundering from late Act III on, and the loan desk takes one loan at a time. Act V's campaigns are the first large Dirty sink, and in Act VI legal Clean makes laundering matter less, so these metrics mean less the later the act. The importer (Act IV) is capped by premium sales; `coverPerPremiumPack` is the knob to watch.
 - **Wage share ~9%** over 60 days (manual 10–25%): a few percent through Acts II–V, rising in Act VI as legal businesses stop earning Dirty. Running costs that scale with the act would be a new rule, which no plan has.
 - **Act V clears at either ~10 d or 14.0 d**: on the first election won, or the second (ADR 0044). The bot wins the first in about a third of runs; its media come too late for the rest.
 - **The bot rarely reaches the Empire**: it legalizes everything and reaches the Holding first in 9 runs of 10. The Empire path is exercised by tests.
