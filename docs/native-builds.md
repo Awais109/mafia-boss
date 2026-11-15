@@ -15,7 +15,8 @@ Expo Go runs the game's JavaScript inside Expo's own app, so nothing is compiled
 **Debug in builds** ([ADR 0057](decisions/0057-debug-by-build.md)):
 - Expo Go and development builds show Debug.
 - A release build hides it: it can't grant gold, skip time or edit config, and the store turns `debug.enabled` off.
-- For a tester build that keeps Debug (the plan's compressed Pass 1, which needs time skips), bundle with the flag: `EXPO_PUBLIC_DEBUG=1 npm run ios:install -- --device "<name>"` or `EXPO_PUBLIC_DEBUG=1 npm run android:install`.
+- **For the test phase, the repo's `.env` sets `EXPO_PUBLIC_DEBUG=1`,** so every build keeps Debug, release ones included (Expo loads `.env` for every build). Delete that line, or set it to `0`, before building for players.
+- Otherwise, a tester build that keeps Debug (the plan's compressed Pass 1, which needs time skips) is bundled with the flag: `EXPO_PUBLIC_DEBUG=1 npm run ios:install -- --device "<name>"` or `EXPO_PUBLIC_DEBUG=1 npm run android:install`.
 - Both install scripts clear Metro's cache (`$TMPDIR/metro-cache`) first, because Metro caches the inlined flag. Building from Xcode by hand doesn't, so delete that folder yourself when you switch.
 - Testers export their play log from Settings → *Share my play log*.
 

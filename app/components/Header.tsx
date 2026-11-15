@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { ACT_NAME, actProgress } from '../acts'
+import { ACT_NAME, actProgress, nextStep } from '../acts'
 import { fmt, fmtClock, fmtRate, fmtShort } from '../format'
 import { useTicker } from '../motion'
 import type { TabId } from '../screens/types'
@@ -21,6 +21,8 @@ export function Header({ game, onGold, go }: { game: Snapshot; onGold?: () => vo
   const { state: s, derived: d, config: c, now } = game
   const [open, setOpen] = useState<Cell | null>(null)
   const progress = actProgress(s, c)
+  // Rep met, something else left (a boss mission): name it rather than "+2 more".
+  const step = nextStep(s, c, now)
   const vaultFull = s.vault >= d.vaultCap - 1e-6
   const vaultPct = d.vaultCap > 0 ? Math.min(1, s.vault / d.vaultCap) : 0
   const heat = Math.round(s.heat)
@@ -157,7 +159,7 @@ export function Header({ game, onGold, go }: { game: Snapshot; onGold?: () => vo
             <Text style={styles.repText}>Rep {fmt(s.reputation)}</Text>
           </View>
           <Text style={styles.repNote} numberOfLines={1}>
-            {progress.note}
+            {step && progress.nextAct ? `${step.short} for Act ${ACT_NAME[progress.nextAct]}` : progress.note}
           </Text>
         </View>
         <RepBar progress={progress} />
