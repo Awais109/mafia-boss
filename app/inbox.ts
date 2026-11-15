@@ -1,4 +1,5 @@
 import { contestOdds, dayMs, electionScheduled, RANK_NAMES, retainerFee, winChance, type Config, type IncidentType, type InboxEffects, type InboxItem, type PerkId, type PlayerState } from '../engine'
+import { nextStep } from './acts'
 import type { IconName, Resource } from './components/Glyph'
 import { glyph } from './components/ui'
 import { fmt, fmtDuration, pct } from './format'
@@ -92,6 +93,9 @@ export function homeAlerts(game: Snapshot): HomeAlert[] {
       cta: 'Fronts',
     })
   }
+  // The next act waits on something other than Rep: a boss mission, most often (ADR 0050).
+  const step = nextStep(s, c, now)
+  if (step && !step.waiting) out.push({ key: 'next', title: step.title, sub: step.sub, icon: 'flag', tone: 'warn', tab: step.tab, cta: 'Go' })
   // An official whose retainer went unpaid gives no control until it's paid (ADR 0064).
   const lapsed = s.officials.filter((id) => s.retainers[id]?.lapsed)
   if (lapsed.length) {

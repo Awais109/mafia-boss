@@ -1,5 +1,6 @@
 import { ACTS, gameCleared, missionDone, missionOut, nextGate, TUTORIAL_STEPS, type Act, type Config, type PlayerState } from '../engine'
-import { fmt } from './format'
+import { fmt, fmtDuration } from './format'
+import type { TabId } from './screens/types'
 
 // The six acts as the app shows them (ADR 0040): numerals, what the next act asks for, and what it opens.
 
@@ -134,5 +135,46 @@ export function actMilestones(s: PlayerState, c: Config): { label: string; t: nu
     out.push({ label: opened ? `Act ${ACT_NAME[(a + 1) as Act]} reached` : `Act ${ACT_NAME[a]} cleared`, t })
   }
   return out
+}
+
+// What the next act waits on once its Rep is in hand: the first condition left, in words, with where to do it.
+// Home raises it as an alert and the header names it, so a player whose Rep is met isn't left with a ticked
+// box and nothing to do (the boss missions, ADR 0050, used to show only as chips on Next). Null while Rep is
+// still the thing to earn (or goals, in Act I), or once nothing is left. `waiting`: nothing to do but wait.
+export type NextStep = { short: string; title: string; sub: string; tab: TabId; waiting: boolean }
+
+export function nextStep(s: PlayerState, c: Config, now: number): NextStep | null {
+  const next = nextGate(s, c)
+  if (!next || next.act > c.progression.finalAct) return null
+  const g = next.gate
+  if (g.goals || (g.rep ?? 0) > s.reputation) return null
+  const act = `Act ${ACT_NAME[next.act]}`
+  for (const id of g.holds ?? []) {
+    if (s.districts.find((d) => d.id === id)?.controller === 'player') continue
+    const name = c.districts.list[id].name
+    return { short: `hold ${name}`, title: `${act} waits on ${name}`, sub: `Take ${name} to open it.`, tab: 'turf', waiting: false }
+  }
+  for (const f of g.fronts ?? []) {
+    if (s.fronts.some((x) => x.type === f)) continue
+    const name = c.fronts.types[f].name
+    return { short: `own the ${name}`, title: `${act} waits on the ${name}`, sub: `Buy the ${name} on Fronts to open it.`, tab: 'fronts', waiting: false }
+  }
+  if (g.mayor && !s.politics.mayor) {
+    return { short: 'win an election', title: `${act} waits on the election`, sub: 'Win a count to become mayor: opinion and a campaign do it.', tab: 'turf', waiting: false }
+  }
+  for (const id of c.missions.enabled ? (g.missions ?? []) : []) {
+    if (missionDone(s, id)) continue
+    const m = c.missions.list[id]
+    if (missionOut(s, id)) return { short: `${m.name}: under way`, title: `${act}: ${m.name} is under way`, sub: 'The crew is on it. What comes back decides the way on.', tab: 'ops', waiting: true }
+    const r = s.missions[id]
+    if (r?.result === 'lost' && r.retryAt !== undefined && r.retryAt > now) {
+      const wait = fmtDuration(r.retryAt - now, c)
+      return { short: `${m.name} again in ${wait}`, title: `${act} waits on ${m.name}`, sub: `Lost last time. It can be tried again in ${wait}.`, tab: 'ops', waiting: true }
+    }
+    return m.kind === 'rematch'
+      ? { short: `win ${m.name}`, title: `${act} waits on ${m.name}`, sub: `Win it on Ops, under Unfinished business. Then the act's last step opens.`, tab: 'ops', waiting: false }
+      : { short: `send ${m.name}`, title: `${act} waits on ${m.name}`, sub: `The act's last step: send it from Ops. It doesn't have to succeed.`, tab: 'ops', waiting: false }
+  }
+  return null
 }
 

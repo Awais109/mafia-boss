@@ -3,6 +3,28 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-15 — What the next act waits on; Debug back for the test phase
+
+Branch: `fix/act-gate-next-step`. From tester feedback: "in Act II with 1,200+ Rep there's no goal and Act III isn't unlocked."
+
+- **Why:**
+  - The engine was right. Act III also asks for Zhanna's rematch, *Her terms*, won and the overreach, *Across the bridge*, sent (ADR 0050).
+  - But Home showed those only as chips at the foot of Next, and the header said "(+2 more)". With Rep ticked, nothing said what to do.
+- **What a player sees now:** once the next act's Rep is in hand,
+  - Home raises an alert at the top, "Act III waits on Her terms: win it on Ops, under Unfinished business", with a button to Ops;
+  - the header's Rep line says "win Her terms for Act III";
+  - the arc chip says "win it on Ops".
+
+  The same covers holding Zastava, the Import–Export Company and the election in later acts, and it waits quietly while a mission is under way or retrying after a loss.
+- **Debug is back for testing:** the repo's `.env` sets `EXPO_PUBLIC_DEBUG=1`, so every build keeps Debug, release ones included. Delete that line before building for players ([native-builds.md](docs/native-builds.md)).
+- **How:**
+  - `nextStep` in `app/acts.ts` (pure), read by `homeAlerts` (`app/inbox.ts`) and `Header`;
+  - `NextCard`'s chip.
+- **Verified:**
+  - `npm run check`, with `tests/nextstep.test.ts` new;
+  - the tester's state reproduced (Act II, ★1,300, missions untouched): the web export shows the alert and the header line;
+  - a production web export loads `.env` and shows Debug under More.
+
 ## 2026-11-14 — The late game re-paced (#6)
 
 Branch: `tune/6-repace`. Reasoning: [ADR 0065](docs/decisions/0065-late-game-repace.md); every step: [TUNING.md](TUNING.md).

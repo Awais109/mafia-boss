@@ -122,7 +122,7 @@ function ArcStrip({ game, go }: { game: Snapshot; go: (tab: TabId) => void }) {
   const boss = PEOPLE.find((p) => p.id === arc.boss)
   const pay = arc.payoff
   const paid = pay.mission ? missionDone(s, pay.mission) : (pay.done?.(s) ?? false)
-  const payNote = paid ? (pay.mission ? 'won' : 'done') : pay.mission && missionOut(s, pay.mission) ? 'out' : pay.mission && s.missions[pay.mission]?.result === 'lost' ? 'lost' : 'not yet'
+  const payNote = paid ? (pay.mission ? 'won' : 'done') : pay.mission && missionOut(s, pay.mission) ? 'out' : pay.mission && s.missions[pay.mission]?.result === 'lost' ? 'lost' : pay.mission ? 'win it on Ops' : 'not yet'
   const over = arc.overreach
   const overName = c.missions.list[over].name
   const overState = missionDone(s, over) ? 'done' : missionOut(s, over) ? 'out' : missionBlocked(s, c, over, now) ? 'locked' : 'ready'
