@@ -3,6 +3,7 @@ import { dailyOffer } from '../../engine'
 import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
 import { Btn, Card, colors, glyph, rich } from './ui'
+import { spoken } from '../a11y'
 
 // Today's gold (ADR 0069): at the top of Home until it's claimed, with the streak it makes.
 export function DailyCard({ game }: { game: Snapshot }) {
@@ -21,7 +22,7 @@ export function DailyCard({ game }: { game: Snapshot }) {
       <View style={styles.row}>
         <View style={styles.text}>
           <Text style={styles.title}>Today’s gold</Text>
-          <Text style={styles.sub}>{rich(sub, 13)}</Text>
+          <Text style={styles.sub} accessibilityLabel={spoken(sub)}>{rich(sub, 13)}</Text>
         </View>
         <Btn small kind="primary" title={`Claim ${glyph.gold}${offer.gold}`} onPress={() => store.dispatch({ type: 'CLAIM_DAILY' })} />
       </View>

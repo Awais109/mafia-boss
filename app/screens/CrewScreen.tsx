@@ -9,6 +9,7 @@ import { openingCrew } from '../story'
 import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
 import type { ScreenProps } from './types'
+import { spoken } from '../a11y'
 
 // Crew (design: Crew): slots and wages, then each member as a card (portrait for the opening's three, rank,
 // tags, each stat against its ceiling with XP under it, loyalty against the walkout line, and what you can
@@ -83,7 +84,7 @@ export function CrewScreen({ game }: ScreenProps) {
               <Stats c={c} m={m} />
             </View>
             <View style={styles.recruitFoot}>
-              <Text style={styles.wage}>{rich(`wage ${glyph.dirty}${fmtRate(baseWage(c, m) * d.wageMult)}`, 13)}</Text>
+              <Text style={styles.wage} accessibilityLabel={spoken(`wage ${glyph.dirty}${fmtRate(baseWage(c, m) * d.wageMult)}`)}>{rich(`wage ${glyph.dirty}${fmtRate(baseWage(c, m) * d.wageMult)}`, 13)}</Text>
               <Btn
                 title={`Hire ${glyph.clean}${fmt(d.costs.recruit)}`}
                 disabled={slotsFree <= 0 || s.clean < d.costs.recruit}
@@ -199,7 +200,7 @@ function MemberCard({ game, m }: { game: Snapshot; m: CrewMember }) {
         </View>
         <View style={styles.statLine}>
           <Text style={styles.small}>{m.nephew || m.stays ? 'Never walks out' : `Below the red line at ${low}, ${first(m.name)} might walk out`}</Text>
-          <Text style={styles.small}>{rich(`wage ${glyph.dirty}${fmtRate(baseWage(c, m) * d.wageMult)}`, 12)}</Text>
+          <Text style={styles.small} accessibilityLabel={spoken(`wage ${glyph.dirty}${fmtRate(baseWage(c, m) * d.wageMult)}`)}>{rich(`wage ${glyph.dirty}${fmtRate(baseWage(c, m) * d.wageMult)}`, 12)}</Text>
         </View>
       </View>
 

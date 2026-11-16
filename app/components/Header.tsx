@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { FONT_CAP, spoken } from '../a11y'
 import { ACT_NAME, actProgress, nextStep } from '../acts'
 import { fmt, fmtClock, fmtRate, fmtShort } from '../format'
 import { useTicker } from '../motion'
@@ -58,9 +59,9 @@ export function Header({ game, onGold, go }: { game: Snapshot; onGold?: () => vo
   return (
     <View style={styles.wrap}>
       <View style={styles.top}>
-        <Text style={styles.wordmark}>SEVGOROD</Text>
+        <Text maxFontSizeMultiplier={FONT_CAP.dense} style={styles.wordmark}>SEVGOROD</Text>
         <View style={styles.topRight}>
-          <Text style={styles.clock} numberOfLines={1}>
+          <Text maxFontSizeMultiplier={FONT_CAP.dense} style={styles.clock} numberOfLines={1}>
             {fmtClock(now, s.createdAt, c)} · {progress.cleared ? 'cleared' : `Act ${ACT_NAME[s.act]}`}
             {s.skippedMs > 0 ? ` · +${fmt(s.skippedMs / c.time.hourMs)}h` : ''}
             {c.meta.name !== 'default' ? ` · ${c.meta.name}` : ''}
@@ -68,7 +69,7 @@ export function Header({ game, onGold, go }: { game: Snapshot; onGold?: () => vo
           <Pressable onPress={onGold} style={styles.goldHit} accessibilityRole="button" accessibilityLabel={`Gold ${s.gold}: skip ahead`}>
             <View style={styles.goldChip}>
               <Glyph kind="gold" size={13} />
-              <Text style={styles.goldText}>{fmt(s.gold)}</Text>
+              <Text maxFontSizeMultiplier={FONT_CAP.dense} style={styles.goldText}>{fmt(s.gold)}</Text>
             </View>
           </Pressable>
         </View>
@@ -76,79 +77,80 @@ export function Header({ game, onGold, go }: { game: Snapshot; onGold?: () => vo
 
       <View style={styles.cells}>
         {empire ? (
-          <Pressable style={[styles.cell, styles.vaultCell, styles.empireCell]} onPress={() => toggle('empire')} accessibilityLabel={`Empire value ${fmt(empire.value.total)}, best ${fmt(empire.best)}`}>
+          <Pressable style={[styles.cell, styles.vaultCell, styles.empireCell]} onPress={() => toggle('empire')} accessibilityRole="button" accessibilityLabel={`Empire value ${fmt(empire.value.total)}, best ${fmt(empire.best)}`}>
             <View style={styles.vaultLabel}>
-              <Text style={styles.cellLabel}>Empire</Text>
-              <Text style={[styles.cellLabel, { color: empire.change >= 0 ? colors.good : colors.bad }]}>{`${empire.change >= 0 ? '+' : '−'}${Math.abs(empire.pct * 100).toFixed(1)}%`}</Text>
+              <Text maxFontSizeMultiplier={FONT_CAP.dense} style={styles.cellLabel}>Empire</Text>
+              <Text maxFontSizeMultiplier={FONT_CAP.dense} style={[styles.cellLabel, { color: empire.change >= 0 ? colors.good : colors.bad }]}>{`${empire.change >= 0 ? '+' : '−'}${Math.abs(empire.pct * 100).toFixed(1)}%`}</Text>
             </View>
-            <Text style={styles.cellValue} numberOfLines={1}>
+            <Text maxFontSizeMultiplier={FONT_CAP.dense} style={styles.cellValue} numberOfLines={1}>
               {fmtShort(empire.value.total)}
             </Text>
-            <Text style={styles.empireBest}>{`best ${fmtShort(empire.best)}`}</Text>
+            <Text maxFontSizeMultiplier={FONT_CAP.dense} style={styles.empireBest}>{`best ${fmtShort(empire.best)}`}</Text>
           </Pressable>
         ) : (
-          <Pressable style={[styles.cell, styles.vaultCell]} onPress={() => toggle('vault')} accessibilityLabel={`Vault ${fmt(s.vault)} of ${fmt(d.vaultCap)}`}>
+          <Pressable style={[styles.cell, styles.vaultCell]} onPress={() => toggle('vault')} accessibilityRole="button" accessibilityLabel={`Vault ${fmt(s.vault)} of ${fmt(d.vaultCap)} Dirty${vaultFull ? ', full' : ''}`}>
             <View style={styles.vaultLabel}>
-              <Text style={[styles.cellLabel, vaultFull && { color: colors.bad }]}>{vaultFull ? 'Vault full' : 'Vault'}</Text>
-              {!vaultFull && <Text style={styles.cellLabel}>{Math.round(vaultPct * 100)}%</Text>}
+              <Text maxFontSizeMultiplier={FONT_CAP.dense} style={[styles.cellLabel, vaultFull && { color: colors.bad }]}>{vaultFull ? 'Vault full' : 'Vault'}</Text>
+              {!vaultFull && <Text maxFontSizeMultiplier={FONT_CAP.dense} style={styles.cellLabel}>{Math.round(vaultPct * 100)}%</Text>}
             </View>
-            <Text style={[styles.cellValue, { color: vaultFull ? colors.bad : colors.text }]} numberOfLines={1}>
+            <Text maxFontSizeMultiplier={FONT_CAP.dense} style={[styles.cellValue, { color: vaultFull ? colors.bad : colors.text }]} numberOfLines={1}>
               {fmtShort(s.vault)}
-              <Text style={styles.cellOf}>/{fmtShort(d.vaultCap)}</Text>
+              <Text maxFontSizeMultiplier={FONT_CAP.dense} style={styles.cellOf}>/{fmtShort(d.vaultCap)}</Text>
             </Text>
             <View style={styles.vaultTrack}>
               <View style={[styles.vaultFill, { width: `${vaultPct * 100}%`, backgroundColor: vaultFull ? colors.bad : colors.dirty }]} />
             </View>
           </Pressable>
         )}
-        <ResCell kind="dirty" label="Dirty" value={fmtShort(dirty)} onPress={() => toggle('dirty')} />
-        <ResCell kind="clean" label="Clean" value={fmtShort(clean)} onPress={() => toggle('clean')} />
-        <ResCell kind="influence" label="Infl." value={fmtShort(influence)} onPress={() => toggle('influence')} />
+        <ResCell kind="dirty" label="Dirty" name="Dirty" full={dirty} value={fmtShort(dirty)} onPress={() => toggle('dirty')} />
+        <ResCell kind="clean" label="Clean" name="Clean" full={clean} value={fmtShort(clean)} onPress={() => toggle('clean')} />
+        <ResCell kind="influence" label="Infl." name="Influence" full={influence} value={fmtShort(influence)} onPress={() => toggle('influence')} />
         {premiumOn ? (
           // From Act IV the cell holds two stocks side by side, each glyph over its figure; no label fits.
           <Pressable
             style={[styles.cell, styles.stockCell]}
             onPress={() => toggle('packs')}
+            accessibilityRole="button"
             accessibilityLabel={`Packs ${fmt(s.inventory.cigarettes)}, premium ${fmt(s.inventory.premium)}`}
           >
             <View style={styles.stock}>
               <Glyph kind="packs" size={9} />
-              <Text style={[styles.stockValue, { color: s.stockEmpty ? colors.bad : colors.packs }]} numberOfLines={1}>
+              <Text maxFontSizeMultiplier={FONT_CAP.dense} style={[styles.stockValue, { color: s.stockEmpty ? colors.bad : colors.packs }]} numberOfLines={1}>
                 {fmtShort(s.inventory.cigarettes)}
               </Text>
             </View>
             <View style={styles.stock}>
               <Glyph kind="premium" size={9} />
-              <Text style={[styles.stockValue, { color: s.premiumEmpty ? colors.bad : colors.premium }]} numberOfLines={1}>
+              <Text maxFontSizeMultiplier={FONT_CAP.dense} style={[styles.stockValue, { color: s.premiumEmpty ? colors.bad : colors.premium }]} numberOfLines={1}>
                 {fmtShort(s.inventory.premium)}
               </Text>
             </View>
           </Pressable>
         ) : (
-          <Pressable style={styles.cell} onPress={() => toggle('packs')} accessibilityLabel={`Packs ${fmt(s.inventory.cigarettes)}`}>
+          <Pressable style={styles.cell} onPress={() => toggle('packs')} accessibilityRole="button" accessibilityLabel={`Packs ${fmt(s.inventory.cigarettes)}${s.stockEmpty ? ', out' : ''}`}>
             <View style={styles.cellHead}>
               <Glyph kind="packs" size={9} />
-              <Text style={styles.cellLabel}>Packs</Text>
+              <Text maxFontSizeMultiplier={FONT_CAP.dense} style={styles.cellLabel}>Packs</Text>
             </View>
-            <Text style={[styles.cellValue, { color: s.stockEmpty ? colors.bad : colors.packs }]} numberOfLines={1}>
+            <Text maxFontSizeMultiplier={FONT_CAP.dense} style={[styles.cellValue, { color: s.stockEmpty ? colors.bad : colors.packs }]} numberOfLines={1}>
               {fmtShort(s.inventory.cigarettes)}
             </Text>
-            {s.stockEmpty && <Text style={[styles.cellSub, { color: colors.bad }]}>out</Text>}
+            {s.stockEmpty && <Text maxFontSizeMultiplier={FONT_CAP.dense} style={[styles.cellSub, { color: colors.bad }]}>out</Text>}
           </Pressable>
         )}
-        <Pressable style={styles.cell} onPress={() => go?.('heat')} accessibilityLabel={`Heat ${heat}`}>
+        <Pressable style={styles.cell} onPress={() => go?.('heat')} accessibilityRole="button" accessibilityLabel={`Heat ${heat}${heatLine ? `, ${heatLine}` : ''}`} accessibilityHint="Opens Heat">
           <View style={styles.cellHead}>
             <Glyph kind="heat" size={9} />
-            <Text style={styles.cellLabel}>Heat</Text>
+            <Text maxFontSizeMultiplier={FONT_CAP.dense} style={styles.cellLabel}>Heat</Text>
           </View>
-          <Text style={[styles.cellValue, { color: heatColor }]}>{heat}</Text>
-          {heatLine && <Text style={[styles.cellSub, { color: heatColor }]}>{heatLine}</Text>}
+          <Text maxFontSizeMultiplier={FONT_CAP.dense} style={[styles.cellValue, { color: heatColor }]}>{heat}</Text>
+          {heatLine && <Text maxFontSizeMultiplier={FONT_CAP.dense} style={[styles.cellSub, { color: heatColor }]}>{heatLine}</Text>}
         </Pressable>
       </View>
 
       {detail && (
-        <Pressable style={styles.detail} onPress={() => setOpen(null)}>
-          <Text style={styles.detailText}>{rich(detail, 13)}</Text>
+        <Pressable style={styles.detail} onPress={() => setOpen(null)} accessibilityRole="button" accessibilityLabel={spoken(detail)} accessibilityHint="Closes">
+          <Text style={styles.detailText} maxFontSizeMultiplier={FONT_CAP.compact} accessibilityLabel={spoken(detail)}>{rich(detail, 13)}</Text>
         </Pressable>
       )}
 
@@ -156,9 +158,9 @@ export function Header({ game, onGold, go }: { game: Snapshot; onGold?: () => vo
         <View style={styles.repLine}>
           <View style={styles.repLeft}>
             <Glyph kind="rep" size={12} />
-            <Text style={styles.repText}>Rep {fmt(s.reputation)}</Text>
+            <Text maxFontSizeMultiplier={FONT_CAP.dense} style={styles.repText}>Rep {fmt(s.reputation)}</Text>
           </View>
-          <Text style={styles.repNote} numberOfLines={1}>
+          <Text maxFontSizeMultiplier={FONT_CAP.dense} style={styles.repNote} numberOfLines={1}>
             {step && progress.nextAct ? `${step.short} for Act ${ACT_NAME[progress.nextAct]}` : progress.note}
           </Text>
         </View>
@@ -168,14 +170,14 @@ export function Header({ game, onGold, go }: { game: Snapshot; onGold?: () => vo
   )
 }
 
-function ResCell({ kind, label, value, onPress }: { kind: Resource; label: string; value: string; onPress: () => void }) {
+function ResCell({ kind, label, name, full, value, onPress }: { kind: Resource; label: string; name: string; full: number; value: string; onPress: () => void }) {
   return (
-    <Pressable style={styles.cell} onPress={onPress} accessibilityLabel={`${label} ${value}`}>
+    <Pressable style={styles.cell} onPress={onPress} accessibilityRole="button" accessibilityLabel={`${name} ${fmt(Math.floor(full))}`}>
       <View style={styles.cellHead}>
         <Glyph kind={kind} size={9} />
-        <Text style={styles.cellLabel}>{label}</Text>
+        <Text maxFontSizeMultiplier={FONT_CAP.dense} style={styles.cellLabel}>{label}</Text>
       </View>
-      <Text style={[styles.cellValue, { color: colors[kind] }]} numberOfLines={1}>
+      <Text maxFontSizeMultiplier={FONT_CAP.dense} style={[styles.cellValue, { color: colors[kind] }]} numberOfLines={1}>
         {value}
       </Text>
     </Pressable>

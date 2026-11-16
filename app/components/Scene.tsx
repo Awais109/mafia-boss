@@ -22,6 +22,7 @@ import { CreditsPage, EndingPage } from './EndingPage'
 import { Icon } from './Glyph'
 import { Stamp } from './MissionCard'
 import { colors, glyph, rich } from './ui'
+import { spoken } from '../a11y'
 
 // The scene viewer (ADR 0049; design: Scene viewer, Scenes 2 and 3): a scene's beats full screen, one at a
 // time. Progress along the top with Skip; tap to go on. A beat that asks something of you (hiring, Tolya's
@@ -153,7 +154,7 @@ function ArtPanel({ art, crop, caption, speech, fill }: { art: ArtId; crop?: Cro
       ) : null}
       {caption ? (
         <View style={speech ? styles.captionLow : styles.caption}>
-          <Text style={styles.captionText}>{rich(caption, 14.5, { ink: true })}</Text>
+          <Text style={styles.captionText} accessibilityLabel={spoken(caption)}>{rich(caption, 14.5, { ink: true })}</Text>
         </View>
       ) : null}
     </View>
@@ -262,11 +263,11 @@ function ResultPanel({ game, mission }: { game: Snapshot; mission: MissionId }) 
       )}
       {failed ? (
         <>
-          <Text style={styles.resultLine}>{rich(costs.join(' · ') || 'It cost little.', 15, { ink: true })}</Text>
+          <Text style={styles.resultLine} accessibilityLabel={spoken(costs.join(' · ') || 'It cost little.')}>{rich(costs.join(' · ') || 'It cost little.', 15, { ink: true })}</Text>
           <Text style={styles.resultOpened}>{`Act ${ACT_NAME[opened]}${districts.length ? ` · ${districts.join(', ')}` : ''}`}</Text>
         </>
       ) : (
-        <Text style={styles.resultLine}>{rich(gains.join(' · ') || 'Paid off.', 15, { ink: true })}</Text>
+        <Text style={styles.resultLine} accessibilityLabel={spoken(gains.join(' · ') || 'Paid off.')}>{rich(gains.join(' · ') || 'Paid off.', 15, { ink: true })}</Text>
       )}
     </View>
   )
@@ -287,7 +288,7 @@ function EnvelopePanel({ game }: { game: Snapshot }) {
       <View style={styles.envelopeText}>
         <Text style={styles.envelopeNote}>{ENVELOPE_NOTES[s.act]}</Text>
         <View style={styles.captionInline}>
-          <Text style={styles.captionText}>{rich(`It isn’t much. It’s enough. ${glyph.dirty}${fmt(stake)}`, 14.5, { ink: true })}</Text>
+          <Text style={styles.captionText} accessibilityLabel={spoken(`It isn’t much. It’s enough. ${glyph.dirty}${fmt(stake)}`)}>{rich(`It isn’t much. It’s enough. ${glyph.dirty}${fmt(stake)}`, 14.5, { ink: true })}</Text>
         </View>
       </View>
     </View>
@@ -449,7 +450,7 @@ function TributePanel({ game, art, caption }: { game: Snapshot; art: ArtId; capt
             <View style={styles.demandRule} />
             <Text style={styles.demandMood}>{`mood · ${mood}`}</Text>
           </View>
-          <Text style={styles.demandAsk}>{rich(`“${TOLYA_ASKS[mood].replace('{amount}', `${glyph.dirty}${fmt(demand)}`)}”`, 15)}</Text>
+          <Text style={styles.demandAsk} accessibilityLabel={spoken(`“${TOLYA_ASKS[mood].replace('{amount}', `${glyph.dirty}${fmt(demand)}`)}”`)}>{rich(`“${TOLYA_ASKS[mood].replace('{amount}', `${glyph.dirty}${fmt(demand)}`)}”`, 15)}</Text>
           <Answer title={`Pay ${glyph.dirty}${fmt(demand)}`} sub="He goes, and remembers you paid." right={`−${glyph.dirty}${fmt(demand)}`} disabled={s.dirty < demand} onPress={() => store.dispatch({ type: 'PAY_TRIBUTE' })} />
           <Answer
             title={talker ? `Haggle · ${talker.name.split(' ')[0]} talks` : 'Haggle · nobody free'}
@@ -469,10 +470,10 @@ function Answer({ title, sub, right, danger, disabled, onPress }: { title: strin
   return (
     <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" style={({ pressed }) => [styles.answer, danger && styles.answerDanger, disabled && styles.off, pressed && styles.pressed]}>
       <View style={styles.answerText}>
-        <Text style={[styles.answerTitle, danger && { color: colors.bad }]}>{rich(title, 15)}</Text>
-        <Text style={styles.answerSub}>{rich(sub, 12.5)}</Text>
+        <Text style={[styles.answerTitle, danger && { color: colors.bad }]} accessibilityLabel={spoken(title)}>{rich(title, 15)}</Text>
+        <Text style={styles.answerSub} accessibilityLabel={spoken(sub)}>{rich(sub, 12.5)}</Text>
       </View>
-      <Text style={[styles.answerRight, danger && { color: colors.bad }]}>{rich(right, 14)}</Text>
+      <Text style={[styles.answerRight, danger && { color: colors.bad }]} accessibilityLabel={spoken(right)}>{rich(right, 14)}</Text>
     </Pressable>
   )
 }

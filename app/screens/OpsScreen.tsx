@@ -38,6 +38,7 @@ import { fmt, fmtDuration, pct } from '../format'
 import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
 import type { ScreenProps } from './types'
+import { spoken } from '../a11y'
 
 // Ops (design: Ops): who's out and when they're back, the crew you're sending, the board's offers, training,
 // and every job with what it pays, the XP and the odds for the crew you picked.
@@ -120,7 +121,7 @@ export function OpsScreen({ game }: ScreenProps) {
                     accessibilityLabel={`Finish now for ${cost} gold`}
                     style={({ pressed }) => [styles.rush, s.gold < cost && styles.off, pressed && styles.pressed]}
                   >
-                    <Text style={styles.rushText}>{rich(`Finish now ${glyph.gold}${cost}`, 14, { plain: true })}</Text>
+                    <Text style={styles.rushText} accessibilityLabel={spoken(`Finish now ${glyph.gold}${cost}`)}>{rich(`Finish now ${glyph.gold}${cost}`, 14, { plain: true })}</Text>
                   </Pressable>
                 )}
               </View>
@@ -263,8 +264,8 @@ function OfferRow({ game, offer, team, onStart }: { game: Snapshot; offer: Offer
         <Text style={styles.jobName}>{cfg.name}</Text>
         <Text style={styles.gone}>{`gone in ${fmtDuration(offer.expiresAt - now, c)}`}</Text>
       </View>
-      <Text style={styles.meta}>{rich(`${c.ops.list[offer.opType].name}, better paid · ${meta(game, cfg, team)}`, 12.5, { plain: true })}</Text>
-      {cfg.costClean ? <Text style={styles.meta}>{rich(`costs ${glyph.clean}${fmt(cfg.costClean)} up front`, 12.5)}</Text> : null}
+      <Text style={styles.meta} accessibilityLabel={spoken(`${c.ops.list[offer.opType].name}, better paid · ${meta(game, cfg, team)}`)}>{rich(`${c.ops.list[offer.opType].name}, better paid · ${meta(game, cfg, team)}`, 12.5, { plain: true })}</Text>
+      {cfg.costClean ? <Text style={styles.meta} accessibilityLabel={spoken(`costs ${glyph.clean}${fmt(cfg.costClean)} up front`)}>{rich(`costs ${glyph.clean}${fmt(cfg.costClean)} up front`, 12.5)}</Text> : null}
       <View style={styles.offerFoot}>
         <View style={styles.offerPays}>
           <Text style={styles.pays}>
@@ -307,7 +308,7 @@ function JobCard({ game, type, cfg, team, onStart, children }: {
           <Text style={styles.jobName}>{cfg.name}</Text>
           <Tag text={`${fmtDuration((minutes / 60) * c.time.hourMs, c)} · ${cfg.crew} crew`} />
         </View>
-        <Text style={styles.needs}>{rich(`Needs ${meta} · +${glyph.heat}${fmt(cfg.spike)} heat`, 13, { plain: true })}</Text>
+        <Text style={styles.needs} accessibilityLabel={spoken(`Needs ${meta} · +${glyph.heat}${fmt(cfg.spike)} heat`)}>{rich(`Needs ${meta} · +${glyph.heat}${fmt(cfg.spike)} heat`, 13, { plain: true })}</Text>
       </View>
       <List style={styles.flush}>
         {cfg.costClean ? <Item label="Costs up front" hint="paid when you send; no Rep, and gone if it fails" value={`−${glyph.clean}${fmt(cfg.costClean)}`} color={colors.clean} /> : null}
@@ -318,7 +319,7 @@ function JobCard({ game, type, cfg, team, onStart, children }: {
             value={<Text style={styles.border}>{`road ${pct(hijackChance(s, c, now))} · customs ${pct(customsChance(s, c))}`}</Text>}
           />
         ) : null}
-        <Item label="Pays" hint={`on a clean job, ${pct(c.ops.partialRewardPct)} if partial`} value={<Text style={styles.paysValue}>{rich(rewards(game, cfg, ready ? team : []), 15)}</Text>} />
+        <Item label="Pays" hint={`on a clean job, ${pct(c.ops.partialRewardPct)} if partial`} value={<Text style={styles.paysValue} accessibilityLabel={spoken(rewards(game, cfg, ready ? team : []))}>{rich(rewards(game, cfg, ready ? team : []), 15)}</Text>} />
         {xp ? <Item label="XP" hint="on a clean job" value={<Text style={styles.xp}>{xp}</Text>} /> : null}
       </List>
       {children ? <View style={styles.children}>{children}</View> : null}

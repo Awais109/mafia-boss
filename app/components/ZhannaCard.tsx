@@ -5,6 +5,7 @@ import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
 import { Head } from './Portrait'
 import { Btn, Card, colors, glyph, rich, Title } from './ui'
+import { spoken } from '../a11y'
 
 // Zhanna (ADR 0036; design: Map · Zhanna): lots of cigarettes for Dirty, and a buyer for what the joints
 // can't sell. From Act II.
@@ -42,8 +43,8 @@ export function ZhannaCard({ game }: { game: Snapshot }) {
       <View style={styles.lot}>
         <View style={styles.lotText}>
           <Text style={styles.caps}>{`Her next lot · ${wait > 0 ? fmtDuration(wait, c) : 'ready'}`}</Text>
-          <Text style={styles.lotValue}>{rich(`${p}${zc.shipment.cigarettes} for ${d}${fmt(price)}`, 16)}</Text>
-          {premium && <Text style={styles.sub}>{rich(`or ${glyph.premium}${zc.premium.packs} for ${d}${fmt(premiumPrice)}`, 12.5)}</Text>}
+          <Text style={styles.lotValue} accessibilityLabel={spoken(`${p}${zc.shipment.cigarettes} for ${d}${fmt(price)}`)}>{rich(`${p}${zc.shipment.cigarettes} for ${d}${fmt(price)}`, 16)}</Text>
+          {premium && <Text style={styles.sub} accessibilityLabel={spoken(`or ${glyph.premium}${zc.premium.packs} for ${d}${fmt(premiumPrice)}`)}>{rich(`or ${glyph.premium}${zc.premium.packs} for ${d}${fmt(premiumPrice)}`, 12.5)}</Text>}
         </View>
         <View style={styles.lotButtons}>
           <Btn small title="Buy" disabled={wait > 0 || s.dirty < price} onPress={() => store.dispatch({ type: 'BUY_SHIPMENT' })} />

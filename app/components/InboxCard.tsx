@@ -6,6 +6,7 @@ import { effectsText, itemBody, itemTitle } from '../inbox'
 import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
 import { Card, colors, rich } from './ui'
+import { spoken } from '../a11y'
 
 // One pending decision (design: Home · Waiting for you). Every option shows exactly what it does; the
 // default is marked, because it's what happens if the player doesn't answer in time.
@@ -19,7 +20,7 @@ export function InboxCard({ item, game }: { item: InboxItem; game: Snapshot }) {
           <Text style={styles.title}>{itemTitle(item, c)}</Text>
           <Text style={[styles.left, left < c.time.hourMs && { color: colors.bad }]}>{`${fmtDuration(left, c)} left`}</Text>
         </View>
-        <Text style={styles.body}>{rich(itemBody(item, s, c), 13)}</Text>
+        <Text style={styles.body} accessibilityLabel={spoken(itemBody(item, s, c))}>{rich(itemBody(item, s, c), 13)}</Text>
       </View>
       <View style={styles.options}>
         {item.options.map((o) => (
@@ -71,7 +72,7 @@ export function Choice({ name, effects, isDefault, disabled, onPress }: {
     >
       <View style={styles.choiceMain}>
         <View style={styles.nameLine}>
-          <Text style={styles.name}>{rich(name, 14)}</Text>
+          <Text style={styles.name} accessibilityLabel={spoken(name)}>{rich(name, 14)}</Text>
           {isDefault && (
             <View style={styles.defaultTag}>
               <Text style={styles.defaultText}>default</Text>

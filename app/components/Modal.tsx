@@ -21,7 +21,7 @@ export function Sheet({ children, onRequestClose }: { children: ReactNode; onReq
   const insets = useSafeAreaInsets()
   return (
     <RNModal transparent animationType="slide" visible onRequestClose={onRequestClose}>
-      <Pressable style={styles.scrim} onPress={onRequestClose} accessibilityLabel="Close" />
+      <Pressable style={styles.scrim} onPress={onRequestClose} accessibilityRole="button" accessibilityLabel="Close" />
       <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
         <View style={styles.grabber} />
         {children}

@@ -14,6 +14,7 @@ import { fonts, paper } from '../theme'
 import { MapDrawing } from './CityMap'
 import { Icon } from './Glyph'
 import { rich } from './ui'
+import { spoken } from '../a11y'
 
 // An act opens as a chapter (ADR 0046's act page; design: Chapter · Act IV): the volume and its title over
 // the act's panel, the turn that brought you here in a caption, the boss who holds the new ground, each
@@ -100,7 +101,7 @@ export function ChapterPage({ game, act, onTurn }: { game: Snapshot; act: Act; o
 
               <View style={styles.opens}>
                 <Text style={styles.caps}>What opens</Text>
-                <Text style={styles.opensText}>{rich(`${opens.charAt(0).toUpperCase()}${opens.slice(1)}.`, 14, { ink: true })}</Text>
+                <Text style={styles.opensText} accessibilityLabel={spoken(`${opens.charAt(0).toUpperCase()}${opens.slice(1)}.`)}>{rich(`${opens.charAt(0).toUpperCase()}${opens.slice(1)}.`, 14, { ink: true })}</Text>
               </View>
 
               <Pressable onPress={onTurn} accessibilityRole="button" style={({ pressed }) => [styles.turn, pressed && styles.pressed]}>

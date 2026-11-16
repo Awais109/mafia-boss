@@ -3,6 +3,7 @@ import { fmt, fmtRate, pct } from '../format'
 import type { Snapshot } from '../store'
 import { fonts } from '../theme'
 import { colors, glyph, Item, List, rich, Strip } from './ui'
+import { spoken } from '../a11y'
 
 // The Dirty/Clean rule as a ledger (ADR 0026; design: Home · Money flow): what comes in, what running the
 // operation costs, what the fronts are washing, and what's on hand under a brass rule. Read from `derive`.
@@ -55,11 +56,11 @@ export function MoneyFlow({ game }: { game: Snapshot }) {
             <Text style={styles.totalLabel}>Dirty on hand</Text>
             {legal.length === earners.length && earners.length > 0 && <Text style={styles.totalHint}>sitting idle · pays the running costs</Text>}
           </View>
-          <Text style={[styles.totalValue, { color: colors.dirty }]}>{rich(`${d$}${fmt(s.dirty)}`, 17)}</Text>
+          <Text style={[styles.totalValue, { color: colors.dirty }]} accessibilityLabel={spoken(`${d$}${fmt(s.dirty)}`)}>{rich(`${d$}${fmt(s.dirty)}`, 17)}</Text>
         </View>
         <View style={styles.total}>
           <Text style={styles.totalLabel}>Clean on hand</Text>
-          <Text style={[styles.totalValue, { color: colors.clean }]}>{rich(`${cl}${fmt(s.clean)}`, 17)}</Text>
+          <Text style={[styles.totalValue, { color: colors.clean }]} accessibilityLabel={spoken(`${cl}${fmt(s.clean)}`)}>{rich(`${cl}${fmt(s.clean)}`, 17)}</Text>
         </View>
         <View style={styles.doubleRule} />
         {short && <Strip>{`Dirty on hand won’t cover what’s owed plus ${c.fronts.reserveHours}h of running costs (${d$}${fmt(reserve)}). Keep some back when you launder.`}</Strip>}

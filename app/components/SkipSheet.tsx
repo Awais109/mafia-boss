@@ -6,6 +6,7 @@ import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
 import { Sheet } from './Modal'
 import { Btn, colors, glyph, Item, List, rich, Strip, Title } from './ui'
+import { spoken } from '../a11y'
 
 // Skip ahead (ADR 0034; design: Pop-ups · Skip ahead): pay bars and let the hours pass now. The estimates
 // read `derive` at today's rates; the skip itself runs the ordinary catch-up, so raids, Tolya and every roll
@@ -47,7 +48,7 @@ export function SkipSheet({ game, onClose }: { game: Snapshot; onClose: () => vo
         </Title>
         <Text style={styles.have}>
           {'you have '}
-          <Text style={styles.gold}>{rich(`${glyph.gold}${fmt(s.gold)}`, 14)}</Text>
+          <Text style={styles.gold} accessibilityLabel={spoken(`${glyph.gold}${fmt(s.gold)}`)}>{rich(`${glyph.gold}${fmt(s.gold)}`, 14)}</Text>
         </Text>
       </View>
       <View style={styles.choices} accessibilityRole="radiogroup" accessibilityLabel="How long to skip">
@@ -64,7 +65,7 @@ export function SkipSheet({ game, onClose }: { game: Snapshot; onClose: () => vo
               style={[styles.choice, on && styles.choiceOn, s.gold < price && styles.off]}
             >
               <Text style={styles.choiceHours}>{`${h}h`}</Text>
-              <Text style={styles.choiceCost}>{rich(`${glyph.gold}${price}`, 12.5)}</Text>
+              <Text style={styles.choiceCost} accessibilityLabel={spoken(`${glyph.gold}${price}`)}>{rich(`${glyph.gold}${price}`, 12.5)}</Text>
             </Pressable>
           )
         })}

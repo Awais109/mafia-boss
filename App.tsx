@@ -38,6 +38,7 @@ import { store, useGame, type Snapshot } from './app/store'
 import { colors, fonts } from './app/theme'
 import { webParam } from './app/webParams'
 import { setCrashScreen } from './app/crash'
+import { FONT_CAP, spoken } from './app/a11y'
 
 type Tab = { id: TabId; title: string; icon: IconName; debugOnly?: boolean; render: (p: ScreenProps) => ReactNode }
 
@@ -212,12 +213,20 @@ function BottomBar({ tab, game, onChange, onMore }: { tab: TabId; game: Snapshot
 function BarItem({ title, icon, active, dot, onPress }: { title: string; icon: IconName; active: boolean; dot: boolean; onPress: () => void }) {
   const color = active ? colors.accent : colors.muted
   return (
-    <Pressable style={[styles.barItem, active && styles.barItemActive]} onPress={onPress} accessibilityRole="tab" accessibilityState={{ selected: active }}>
+    <Pressable
+      style={[styles.barItem, active && styles.barItemActive]}
+      onPress={onPress}
+      accessibilityRole="tab"
+      accessibilityLabel={dot ? `${title}, wants attention` : title}
+      accessibilityState={{ selected: active }}
+    >
       <View>
         <Icon name={icon} size={24} color={color} />
         {dot && <View style={styles.dot} />}
       </View>
-      <Text style={[styles.barText, { color, fontFamily: active ? fonts.text600 : fonts.text500 }]}>{title}</Text>
+      <Text style={[styles.barText, { color, fontFamily: active ? fonts.text600 : fonts.text500 }]} maxFontSizeMultiplier={FONT_CAP.dense}>
+        {title}
+      </Text>
     </Pressable>
   )
 }
@@ -227,19 +236,26 @@ function MoreSheet({ game, tab, onChange, onClose }: { game: Snapshot; tab: TabI
   const dots = badges(game)
   return (
     <Modal transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel="Close More" />
+      <Pressable style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close More" />
       <View style={[styles.sheet, { paddingBottom: insets.bottom + 8 }]}>
         <View style={styles.grabber} />
         <View style={styles.sheetHead}>
           <Text style={styles.sheetTitle}>More</Text>
-          <Pressable onPress={onClose} style={styles.close} accessibilityLabel="Close">
+          <Pressable onPress={onClose} style={styles.close} accessibilityRole="button" accessibilityLabel="Close">
             <Icon name="close" size={16} color={colors.muted} />
           </Pressable>
         </View>
         {MORE.filter((t) => shown(t, game)).map((t) => {
           const note = moreNote(game, t.id)
           return (
-            <Pressable key={t.id} style={styles.sheetRow} onPress={() => onChange(t.id)} accessibilityRole="button">
+            <Pressable
+              key={t.id}
+              style={styles.sheetRow}
+              onPress={() => onChange(t.id)}
+              accessibilityRole="button"
+              accessibilityLabel={spoken(`${t.title}${note.text ? `, ${note.text}` : ''}${dots[t.id] ? ', wants attention' : ''}`)}
+              accessibilityState={{ selected: tab === t.id }}
+            >
               <Icon name={t.icon} size={22} color={tab === t.id ? colors.accent : colors.muted} />
               <View style={styles.sheetLabel}>
                 <Text style={[styles.sheetText, tab === t.id && { color: colors.accent }]}>{t.title}</Text>

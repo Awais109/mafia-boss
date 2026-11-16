@@ -3,6 +3,18 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-16 — Accessibility (#45)
+
+Branch: `fix/45-a11y`. Reasoning: [ADR 0072](docs/decisions/0072-accessibility.md).
+
+- **Screen readers:**
+  - amounts are read as words ("minus 20 Dirty, plus 5 Clean an hour"), through `spoken` (`app/a11y.ts`) in the UI kit and every one-line rich text;
+  - every tappable thing has a role;
+  - the header's cells say the full figure, the bottom bar's tabs say which is selected and which wants attention, and the scrims say Close.
+- **Text size:** it follows the phone's, capped where the room is fixed: the header, the bottom bar and tags at 1.2, and small buttons at 1.4.
+- **A guard:** `tests/a11y.test.ts` fails on a `Pressable` without a role.
+- **Still to check:** every screen at the largest text size, on a phone (#17).
+
 ## 2026-11-16 — Phones only until tablets are checked (#47)
 
 Branch: `fix/47-tablet`. `ios.supportsTablet` was `true` (Expo's template), but no screen had been checked on an iPad.

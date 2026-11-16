@@ -3,6 +3,7 @@ import { store, type Notice } from '../store'
 import { fonts } from '../theme'
 import { Icon } from './Glyph'
 import { colors, rich } from './ui'
+import { spoken } from '../a11y'
 
 const VISIBLE_MS = 4000
 
@@ -14,7 +15,7 @@ export function NoticeBar({ notice, realNow }: { notice: Notice | null; realNow:
   return (
     <Pressable onPress={store.clearNotice} style={[styles.bar, error ? styles.error : styles.info]} accessibilityRole="alert">
       <Icon name={error ? 'blocked' : 'check'} size={16} color={error ? colors.bad : colors.good} />
-      <Text style={styles.text}>{rich(notice.text, 13.5)}</Text>
+      <Text style={styles.text} accessibilityLabel={spoken(notice.text)}>{rich(notice.text, 13.5)}</Text>
     </Pressable>
   )
 }

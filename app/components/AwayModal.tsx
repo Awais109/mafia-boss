@@ -10,6 +10,7 @@ import { fonts } from '../theme'
 import { Icon } from './Glyph'
 import { ModalPanel } from './Modal'
 import { Btn, colors, glyph, rich, Strip, Tile, Title } from './ui'
+import { spoken } from '../a11y'
 
 // While you were away (ADR 0023; design: Pop-ups · While you were away): how long, what's waiting on Home,
 // each job that came back, the money as a ledger with a total, what else moved, and everything else that
@@ -116,7 +117,7 @@ export function AwayModal({ summary: a, game, onGo }: { summary: AwaySummary; ga
             {notes.map(({ e, line }, i) => (
               <View key={i} style={[styles.note, i > 0 && styles.noteRule]}>
                 <Text style={styles.time}>{fmtClock(e.t, s.createdAt, c).split(' · ')[1]}</Text>
-                <Text style={[styles.noteText, line.color ? { color: line.color } : null]}>{rich(line.text, 13.5)}</Text>
+                <Text style={[styles.noteText, line.color ? { color: line.color } : null]} accessibilityLabel={spoken(line.text)}>{rich(line.text, 13.5)}</Text>
               </View>
             ))}
           </>
@@ -144,7 +145,7 @@ function Line({ label, hint, value, color, plain, strong }: { label: string; hin
         {label}
         {hint ? <Text style={styles.hint}>{'  '}{rich(hint, 12)}</Text> : null}
       </Text>
-      <Text style={[styles.value, strong && styles.valueStrong, color ? { color } : null]}>{rich(value, strong ? 17 : 14.5, { plain })}</Text>
+      <Text style={[styles.value, strong && styles.valueStrong, color ? { color } : null]} accessibilityLabel={spoken(value)}>{rich(value, strong ? 17 : 14.5, { plain })}</Text>
     </View>
   )
 }

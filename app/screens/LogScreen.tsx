@@ -8,6 +8,7 @@ import { fmtClock } from '../format'
 import { store } from '../store'
 import { fonts } from '../theme'
 import type { ScreenProps } from './types'
+import { spoken } from '../a11y'
 
 // Log (design: Log): the in-save event log, newest first, grouped by game day, with a filter per kind of
 // event and a switch for the bookkeeping lines Home hides.
@@ -127,7 +128,7 @@ function LogRow({ e, text, color, time }: { e: GameEvent; text: string; color?: 
     <View style={styles.row}>
       <Text style={styles.time}>{time}</Text>
       <View style={[styles.kind, look && { backgroundColor: look.tint }]}>{look && <Icon name={look.icon} size={13} color={look.color} />}</View>
-      <Text style={[styles.text, color ? { color } : null]}>{rich(text, 13.5)}</Text>
+      <Text style={[styles.text, color ? { color } : null]} accessibilityLabel={spoken(text)}>{rich(text, 13.5)}</Text>
     </View>
   )
 }

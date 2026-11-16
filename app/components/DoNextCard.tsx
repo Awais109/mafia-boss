@@ -4,6 +4,7 @@ import type { TabId } from '../screens/types'
 import { store } from '../store'
 import { fonts } from '../theme'
 import { Btn, Card, colors, rich, Section } from './ui'
+import { spoken } from '../a11y'
 
 // Home's first card when nothing waits on you (`doNext`, app/doNext.ts, #38): one suggestion, and a button that
 // does it (collect, deposit) or goes to it.
@@ -16,8 +17,8 @@ export function DoNextCard({ next, go }: { next: DoNext | null; go: (tab: TabId)
       <Card tone="brass">
         <View style={styles.row}>
           <View style={styles.text}>
-            <Text style={styles.title}>{rich(next.title, 16)}</Text>
-            <Text style={styles.sub}>{rich(next.sub, 13)}</Text>
+            <Text style={styles.title} accessibilityLabel={spoken(next.title)}>{rich(next.title, 16)}</Text>
+            <Text style={styles.sub} accessibilityLabel={spoken(next.sub)}>{rich(next.sub, 13)}</Text>
           </View>
           {next.cta && press ? <Btn small kind={actions ? 'primary' : 'outline'} chevron={!actions} title={next.cta} onPress={press} /> : null}
         </View>

@@ -4,6 +4,7 @@ import { fmt, fmtDuration, pct } from '../format'
 import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
 import { Btn, colors, glyph, Item, List, rich, Section } from './ui'
+import { spoken } from '../a11y'
 
 // Credit (ADR 0042; design: Fronts · Credit), from Act III: borrow Clean against your laundering, and lend
 // Dirty out through a loan desk.
@@ -55,7 +56,7 @@ export function CreditCard({ game }: { game: Snapshot }) {
           <View style={styles.pad}>
             <Text style={styles.line}>
               {'They’ll lend up to '}
-              <Text style={styles.value}>{rich(`${cl}${fmt(cap)}`, 14)}</Text>
+              <Text style={styles.value} accessibilityLabel={spoken(`${cl}${fmt(cap)}`)}>{rich(`${cl}${fmt(cap)}`, 14)}</Text>
             </Text>
             <View style={styles.row}>
               {(

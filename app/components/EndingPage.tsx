@@ -11,6 +11,7 @@ import type { Snapshot } from '../store'
 import { fonts, paper } from '../theme'
 import { Icon } from './Glyph'
 import { glyph, rich } from './ui'
+import { spoken } from '../a11y'
 
 // The end of the story (ADR 0053; design: Ending · the Holding, Credits). The ending page: the city from the
 // hills, the rule's last line, Vitya's "Where to?", the ending's name and Back to the city. Then the credits:
@@ -104,7 +105,7 @@ export function CreditsPage({ game, ending, onDone }: { game: Snapshot; ending: 
                   <Text style={styles.rowLabel}>{n.label}</Text>
                   <Text style={styles.rowHint}>{n.hint}</Text>
                 </View>
-                <Text style={styles.rowValue}>{rich(n.value, 17, { ink: true })}</Text>
+                <Text style={styles.rowValue} accessibilityLabel={spoken(n.value)}>{rich(n.value, 17, { ink: true })}</Text>
               </View>
             ))}
             <View style={[styles.row, styles.totalRow]}>

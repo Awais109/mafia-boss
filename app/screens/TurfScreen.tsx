@@ -20,6 +20,7 @@ import { DISTRICT_STORY, revealed, tolyaMood } from '../story'
 import { fonts, paper } from '../theme'
 import { webParam } from '../webParams'
 import type { ScreenProps } from './types'
+import { spoken } from '../a11y'
 
 // The Map (ADR 0046; design: Map and People). The city: Lyosha's notebook drawn as a map, the district you
 // tap with who holds it and what it's worth, and the rivals, newest first. People: everyone you've met, and
@@ -161,7 +162,7 @@ function DistrictCard({ game, go, id }: ScreenProps & { id: DistrictId }) {
               <View style={styles.chips}>
                 {perks.map((p) => (
                   <View key={p} style={styles.chip}>
-                    <Text style={styles.chipText}>{rich(p, 12.5)}</Text>
+                    <Text style={styles.chipText} accessibilityLabel={spoken(p)}>{rich(p, 12.5)}</Text>
                   </View>
                 ))}
               </View>

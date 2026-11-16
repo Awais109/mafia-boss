@@ -5,6 +5,7 @@ import type { TabId } from '../screens/types'
 import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
 import { Btn, colors, glyph, rich } from './ui'
+import { spoken } from '../a11y'
 
 export type Copy = { title: string; body: string; tab?: TabId; cta?: string }
 
@@ -108,7 +109,7 @@ export function TutorialBanner({ game, go }: { game: Snapshot; go: (tab: TabId) 
         </View>
       </View>
       <Text style={styles.title}>{title}</Text>
-      <Text style={styles.body}>{rich(text.body, 13)}</Text>
+      <Text style={styles.body} accessibilityLabel={spoken(text.body)}>{rich(text.body, 13)}</Text>
       <View style={styles.actions}>
         {text.tab && text.cta ? (
           <Btn kind="primary" title={text.cta} onPress={() => go(text.tab!)} style={styles.primary} />

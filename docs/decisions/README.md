@@ -84,6 +84,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0069](0069-daily-reward.md) | Today's gold: a daily claim on a weekly streak, by game day; a missed day takes two off | Accepted |
 | [0070](0070-icon-and-splash.md) | The icon and splash are the game's own mark (a brass seal), generated from the palette and wordmark font | Accepted |
 | [0071](0071-crash-capture.md) | Crashes captured into the play log, local first; "Something went wrong" with Share and Carry on | Accepted |
+| [0072](0072-accessibility.md) | Accessibility: amounts in words, a role on everything tappable, text that grows with the phone (capped where dense) | Accepted |
 
 ## Template
 

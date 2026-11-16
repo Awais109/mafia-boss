@@ -26,6 +26,7 @@ import { fmt, fmtDuration, fmtRate, pct } from '../format'
 import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
 import type { ScreenProps } from './types'
+import { spoken } from '../a11y'
 
 // The Business tab (ADR 0031; design: Business): what everything earns and costs, the stock, then each
 // district as a section you can fold: what it hosts, its prosperity and pairings, a card per business,
@@ -178,8 +179,8 @@ function DistrictSection({ game, id }: { game: Snapshot; id: DistrictId }) {
         <View style={styles.districtRule} />
         <Text style={styles.districtNote}>
           {expanded ? '' : `${spots.length}/${dc.allows.length} · `}
-          {earning > 0 || legalClean === 0 ? <Text style={{ color: colors.dirty }}>{rich(`+${glyph.dirty}${fmtRate(earning)}`, 12)}</Text> : null}
-          {legalClean > 0 ? <Text style={{ color: colors.clean }}>{rich(`${earning > 0 ? ' ' : ''}+${glyph.clean}${fmtRate(legalClean)}`, 12)}</Text> : null}
+          {earning > 0 || legalClean === 0 ? <Text style={{ color: colors.dirty }} accessibilityLabel={spoken(`+${glyph.dirty}${fmtRate(earning)}`)}>{rich(`+${glyph.dirty}${fmtRate(earning)}`, 12)}</Text> : null}
+          {legalClean > 0 ? <Text style={{ color: colors.clean }} accessibilityLabel={spoken(`${earning > 0 ? ' ' : ''}+${glyph.clean}${fmtRate(legalClean)}`)}>{rich(`${earning > 0 ? ' ' : ''}+${glyph.clean}${fmtRate(legalClean)}`, 12)}</Text> : null}
         </Text>
         <Icon name={expanded ? 'chevronUp' : 'chevronDown'} size={14} color={colors.muted} strokeWidth={2} />
       </Pressable>
@@ -411,7 +412,7 @@ function BusinessCard({ game, r, rd }: { game: Snapshot; r: Racket; rd: RacketDe
                       {choice === 'greed' ? 'Greed · ' : 'Stealth · '}
                       {rich(`${glyph.clean}${fmt(cost)}`, 14)}
                     </Text>
-                    <Text style={styles.upgradeGains}>{rich(`+${glyph.dirty}${fmt(dy)}/h · ${dh >= 0 ? '+' : '−'}${glyph.heat}${fmt(Math.abs(dh))}`, 12, { plain: true })}</Text>
+                    <Text style={styles.upgradeGains} accessibilityLabel={spoken(`+${glyph.dirty}${fmt(dy)}/h · ${dh >= 0 ? '+' : '−'}${glyph.heat}${fmt(Math.abs(dh))}`)}>{rich(`+${glyph.dirty}${fmt(dy)}/h · ${dh >= 0 ? '+' : '−'}${glyph.heat}${fmt(Math.abs(dh))}`, 12, { plain: true })}</Text>
                   </Pressable>
                 )
               })}
@@ -484,7 +485,7 @@ function PremisesCard({ game, r, rd }: { game: Snapshot; r: Racket; rd: RacketDe
         )}
         {r.condition < 100 && <RepairBtn game={game} r={r} rd={rd} />}
       </View>
-      {rd.upgradeCost !== null && <Text style={[styles.faintNote, styles.nextTier]}>{rich(`At tier ${r.tier + 1}: ${premisesEffect(c, r.type, r.tier + 1)}`, 12)}</Text>}
+      {rd.upgradeCost !== null && <Text style={[styles.faintNote, styles.nextTier]} accessibilityLabel={spoken(`At tier ${r.tier + 1}: ${premisesEffect(c, r.type, r.tier + 1)}`)}>{rich(`At tier ${r.tier + 1}: ${premisesEffect(c, r.type, r.tier + 1)}`, 12)}</Text>}
     </View>
   )
 }
