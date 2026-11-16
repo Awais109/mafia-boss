@@ -88,6 +88,7 @@ When you change a path on the left, update the doc on the right in the same comm
 | `tests/`, `vitest.config.mts` | [testing.md](testing.md) |
 | `eslint.config.js`, `package.json` scripts | [architecture.md](architecture.md) and the root [README](../README.md) |
 | `scripts/`, `app.json`, `.claude/skills/` | [native-builds.md](native-builds.md), [architecture.md](architecture.md) and the root [README](../README.md) |
+| `PRIVACY.md`, store listing, ratings | [store-listing.md](store-listing.md) |
 | `eas.json` | [native-builds.md](native-builds.md#tester-builds-that-dont-expire-testflight-and-play-internal-testing) |
 | `scripts/gen-icons.ts`, `assets/*.png` | [native-builds.md](native-builds.md#the-icon-and-the-splash) and [ADR 0070](decisions/0070-icon-and-splash.md) |
 | `package.json` dependencies (native modules, fonts, audio) | [native-builds.md](native-builds.md#three-ways-to-run) |
