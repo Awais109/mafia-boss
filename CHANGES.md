@@ -3,6 +3,17 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-16 — Tester builds: TestFlight and Play internal testing, the guide (#49)
+
+Branch: `docs/49-tester-builds`. Installs signed with a free Apple ID expire in about 7 days, which can't serve remote testers.
+
+- **`eas.json`:**
+  - `production` (Debug off: `EXPO_PUBLIC_DEBUG=0` wins over the repo's `.env`, so a store build can't ship Debug by accident);
+  - `tester` (Debug on);
+  - both auto-increment the build number, and send Android to the internal track.
+- **The guide,** in [native-builds.md](docs/native-builds.md#tester-builds-that-dont-expire-testflight-and-play-internal-testing): the accounts, the one-off setup, the two commands for each tester build, and the identifiers to decide before the first upload.
+- **Still to do,** and the owner's: open the Apple Developer and Play Console accounts, `eas init`, and the first upload to each.
+
 ## 2026-11-16 — Accessibility (#45)
 
 Branch: `fix/45-a11y`. Reasoning: [ADR 0072](docs/decisions/0072-accessibility.md).

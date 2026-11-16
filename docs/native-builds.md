@@ -108,6 +108,47 @@ The game is laid out for a phone in portrait (`expo.orientation` `portrait`), an
 
 To support tablets later: check every screen on an iPad and an Android tablet (both orientations, if landscape is allowed), fix what breaks, then set `supportsTablet` to `true`. Turning it on later is fine. Turning it off after a store release isn't, since the App Store won't let an app drop iPad support once it has shipped with it.
 
+## Tester builds that don't expire: TestFlight and Play internal testing
+
+(#49) An iPhone install signed with a free Apple ID lasts about 7 days, and an Android APK has to be sent by hand. For testers who aren't at your desk, the stores' own test channels are better:
+- **TestFlight** builds last 90 days, and testers install them from the TestFlight app.
+- **Play's internal testing** reaches up to 100 testers by email list, in minutes.
+
+**What you need (the owner's to open):**
+- an [Apple Developer Program](https://developer.apple.com/programs/) membership, which is paid yearly;
+- a [Google Play Console](https://play.google.com/console) developer account, a one-off fee;
+- a free [Expo](https://expo.dev) account for EAS, which builds in the cloud. EAS's free tier has a monthly build allowance, so check its current limits.
+
+**`eas.json`** (in the repo) has two build profiles:
+
+| Profile | Debug | For |
+|---|---|---|
+| `production` | off: `EXPO_PUBLIC_DEBUG` is set to `0`, which wins over the repo's `.env` | players, and the stores' review |
+| `tester` | on (`1`) | the test phase, so testers keep Debug |
+
+Both use `autoIncrement` with the build number kept by EAS (`appVersionSource: remote`), so every upload gets a new one, as both stores require. Both submit Android builds to the **internal** track.
+
+**One-off setup:**
+1. `npm install -g eas-cli`, then `eas login` and `eas init` (this links the project and writes its `projectId` into `app.json`; commit that).
+2. **App Store Connect:** under My Apps, add a new app with bundle ID `com.hamzaarshad.sevgorod`, and note its Apple ID (App Information). The first `eas submit` asks for your Apple ID login. An App Store Connect API key (`eas credentials --platform ios`) avoids the prompt.
+3. **Play Console:** Create app, then a Google service account key for EAS ([expo.fyi/creating-google-service-account](https://expo.fyi/creating-google-service-account)), uploaded with `eas credentials --platform android`. EAS creates and keeps the upload key, and Play App Signing holds the app key.
+
+**Each tester build:**
+```
+eas build --platform ios --profile tester --auto-submit       # to App Store Connect, then TestFlight
+eas build --platform android --profile tester --auto-submit   # an AAB to the internal track
+```
+- On iOS, the build shows in TestFlight after Apple's processing (10–15 minutes). Add testers under TestFlight → Internal Testing: up to 100 members of your App Store Connect team, with no review. External testers need a short beta review.
+- On Android, the first release stays a draft until the Play Console's setup tasks are done (content rating, privacy policy link, target audience: see #48). Add testers' emails under Testing → Internal testing, and share the opt-in link.
+
+**For players,** use `--profile production`. Debug is then off whatever `.env` says.
+
+**The identifiers:** `com.hamzaarshad.sevgorod` on both stores. Once a build is uploaded, it can't be changed for that store listing. A new identifier means a new app. Decide before the first upload if it should name a studio rather than a person.
+
+**The name under the icon** is `expo.name`, now `sevgorod` in lower case. It's worth setting to `Sevgorod` before the first store build. That changes the generated native project's folder, so rebuild with `npx expo prebuild --clean`.
+
+The local build scripts (`npm run ios:install`, `android:install`) still work as before for a phone on your desk.
+
 ## App identifiers
 
 `app.json` sets `expo.ios.bundleIdentifier` and `expo.android.package` to `com.hamzaarshad.sevgorod`. Changing either later installs as a separate app on devices. For iOS, the identifier must not already be registered to another Apple team.
