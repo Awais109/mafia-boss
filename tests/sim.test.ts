@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { simulate } from '../sim/driver'
 import { GOLD_RUSH, GREEDY } from '../sim/persona'
 import { summarize, type Summary } from '../sim/report'
+import { LATER_ACTS } from '../engine'
 import { withMissions as config } from './helpers'
 
 // Pacing regression guard: the casual bot on default config must stay on the dev manual §3
@@ -63,6 +64,15 @@ describe('casual bot pacing on default config', () => {
     const actVI = meanOf(summaries, (s) => s.actClears[5])
     expect(actVI).toBeGreaterThanOrEqual(10)
     expect(actVI).toBeLessThanOrEqual(18)
+  })
+
+  it('meets most of each later act’s goals on the way through (ADR 0067)', () => {
+    // They gate nothing, so the bot doesn't chase them: this checks they sit on the path an act's play takes.
+    // It skips Zhanna's lot (it buys only when stock runs short) and sometimes the campaign and the third hearing.
+    for (const a of LATER_ACTS) {
+      const met = mean(traces.map(({ final }) => config.goals.byAct[a].filter((id) => final.goals.done.includes(id)).length))
+      expect(met, `Act ${a}`).toBeGreaterThanOrEqual(config.goals.byAct[a].length - 1)
+    }
   })
 
   it('keeps growing after the story: contracts done, tiers past the book, new bests (ADR 0052)', () => {

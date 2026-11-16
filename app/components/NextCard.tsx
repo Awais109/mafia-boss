@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { gameDay, missionBlocked, missionDone, missionOut, TUTORIAL_STEPS, type Act } from '../../engine'
-import { ACT_NAME, ACT_OPENS, actMilestones, actProgress } from '../acts'
+import { ACT_NAME, ACT_OPENS, actMilestones, actOneGoalsDone, actProgress } from '../acts'
 import type { TabId } from '../screens/types'
 import { PEOPLE } from '../people'
 import { ACT_ARC, ACT_TITLE } from '../story'
@@ -98,7 +98,7 @@ export function NextCard({ game, go }: { game: Snapshot; go: (tab: TabId) => voi
   const arc = c.missions.enabled ? ACT_ARC[s.act] : undefined
   const inArc = new Set(arc ? [...[arc.payoff.mission, arc.overreach].map((id) => (id ? c.missions.list[id].name : '')), arc.payoff.requirement ?? ''] : [])
   const goalsOnly = progress.requirements.length === 1 && progress.segments
-  const note = goalsOnly ? `${s.goals.done.length} of ${c.goals.list.length}` : `${met} of ${progress.requirements.length}`
+  const note = goalsOnly ? `${actOneGoalsDone(s, c)} of ${c.goals.list.length}` : `${met} of ${progress.requirements.length}`
   return (
     <Section title="Next" right={note}>
       <List style={styles.list}>

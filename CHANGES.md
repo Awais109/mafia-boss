@@ -3,6 +3,25 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-16 — Goals in every act (#37)
+
+Branch: `feature/37-act-goals`. Reasoning: [ADR 0067](docs/decisions/0067-act-goals.md). From tester feedback ("in Act II there's no goal") and the game review: each act should have clear goals.
+
+- **What a player sees:**
+  - Home's goals list now follows the act: four goals in each act from II, each teaching something it brings. For example, in Act II: the Precinct Captain, a Stash House, a new district, a lot from Zhanna; in Act VI: a business legalized, fifteen legal, the Holding, three hearings won.
+  - Each pays gold: 2 bars in Acts II–III, 3 in IV–VI.
+  - Each open goal says how far along it is, or where to go: the price against your Influence, the Rep it opens at, the cheapest district, Ops or the Map.
+  - Under the list: they're for gold and to learn the act. The next act still asks only for what's under Next.
+- **Rules:** goals gate nothing. Only the act you're in counts: one met early waits for its act, and one left behind stays undone. Saves don't change.
+- **How:**
+  - `goals.byAct`, `goals.rewardGoldByAct` and three new counts in `goals.need`;
+  - `actGoals`, `allGoals` and the new checks in `engine/systems/goals.ts`;
+  - `goalsView` returns the act's list (`app/goals.ts`), and Home titles it by act;
+  - readers that meant Act I's count use `actOneGoalsDone`.
+- **Tests:**
+  - `tests/goals.test.ts`: the act's gold paid once, counted only in its act, gates unchanged, validation;
+  - `tests/sim.test.ts`: the casual bot meets at least three of each act's four. Over 10 seeds it skips only Zhanna's lot, sometimes the campaign, and the third hearing.
+
 ## 2026-11-16 — Act I in about two days (#5)
 
 Branch: `tune/5-act-one-fast`. Reasoning: [ADR 0066](docs/decisions/0066-act-one-in-two-days.md); every step: [TUNING.md](TUNING.md). From the game review: Act I took 4.7 days and asked for a visit every 2.5 hours.

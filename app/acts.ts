@@ -6,6 +6,9 @@ import type { TabId } from './screens/types'
 
 export const ACT_NAME: Record<Act, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI' }
 
+// Act I's goals done: the count Act II's gate reads (later acts' goals are in the same list, ADR 0067).
+export const actOneGoalsDone = (s: PlayerState, c: Config): number => c.goals.list.filter((id) => s.goals.done.includes(id)).length
+
 // What each act opens, in a line, for Home's "Next" card and the act notice.
 export const ACT_OPENS: Record<Act, string> = {
   1: 'the streets: three districts, a factory, a front and a crew',
@@ -40,7 +43,7 @@ export function actProgress(s: PlayerState, c: Config): ActProgress {
   if (next) {
     const g = next.gate
     if (g.goals) {
-      const done = s.goals.done.length
+      const done = actOneGoalsDone(s, c)
       requirements.push({
         text: `every Act I goal (${done}/${c.goals.list.length})`,
         label: 'Act I goals',
@@ -107,7 +110,7 @@ export function actProgress(s: PlayerState, c: Config): ActProgress {
   const beyond = next.act > c.progression.finalAct
   const target = beyond ? `to clear Act ${ACT_NAME[s.act]}` : `to Act ${ACT_NAME[next.act]}`
   if (next.gate.goals) {
-    const done = s.goals.done.length
+    const done = actOneGoalsDone(s, c)
     const note = `${done}/${c.goals.list.length} goals ${target}`
     return { act: s.act, cleared, nextAct: next.act, label: `${fmt(s.reputation)} · ${note}`, note, value: done, max: c.goals.list.length, segments: c.goals.list.length, requirements }
   }

@@ -1,11 +1,12 @@
-import { DISTRICT_IDS, goalProgress, type Config, type Derived, type GoalId, type PlayerState } from '../engine'
+import { actGoals, DISTRICT_IDS, goalProgress, type Act, type Config, type Derived, type DistrictId, type GoalId, type OfficialId, type PlayerState, type RacketType } from '../engine'
 import { glyph } from './components/ui'
 import { fmt } from './format'
 
-// Act I goals on Home (ADR 0035): what each asks for, in the player's words. Act II opens the
-// moment every one of these is done (ADR 0039).
+// Goals on Home: what each asks for, in the player's words. Act I's (ADR 0035) open Act II the moment every
+// one is done (ADR 0039); each later act's (ADR 0067) walk through what it brings, pay gold, and gate nothing.
 
 export const GOAL_TEXT: Record<GoalId, string> = {
+  // Act I
   secondDistrict: 'Open a business in a second district',
   factoryTier2: 'Upgrade the Tobacco Factory to tier 2',
   thirdCrew: 'Hire a third crew member',
@@ -13,39 +14,110 @@ export const GOAL_TEXT: Record<GoalId, string> = {
   workFront: 'Upgrade a front’s rate to level 2',
   smuggleRun: 'Run three smuggling jobs',
   soldier: 'Get someone promoted to Soldier',
+  // Act II
+  precinctCaptain: 'Put the Precinct Captain on the payroll',
+  stashHouse: 'Build a Stash House',
+  newTurf: 'Take the Port Quarter or the Sovietsky Blocks',
+  zhannaLot: 'Buy a lot of cigarettes from Zhanna',
+  // Act III
+  bigScore: 'Send a crew on the Big Score',
+  cooperativeBank: 'Open the Cooperative Bank',
+  loanDesk: 'Build a Loan Desk',
+  theCentre: 'Take the Centre',
+  // Act IV
+  customsChief: 'Put the Customs Chief on the payroll',
+  firstConvoy: 'Land a convoy over the border',
+  foreignShop: 'Open a Foreign Goods Shop',
+  premiumSold: 'Sell 300 packs of premium goods',
+  // Act V
+  newspaper: 'Buy the Newspaper',
+  campaign: 'Spend on an election campaign',
+  fixTender: 'Fix a tender',
+  governor: 'Put the Governor on the payroll',
+  // Act VI
+  firstLegal: 'Legalize a business',
+  legalBusinesses: 'Run fifteen legal businesses',
+  holding: 'Build the Holding',
+  hearingsWon: 'Win three hearings in court',
 }
 
 export type GoalRow = { id: GoalId; text: string; done: boolean; hint?: string }
+export type GoalsView = { act: Act; gold: number; gates: boolean; rows: GoalRow[] }
 
-// Shown once the opening is over, until every goal is done. Each open goal says how far along it is.
-export function goalsView(s: PlayerState, c: Config, d: Derived): GoalRow[] | null {
+// The act you're in: shown once the opening is over, until every one of its goals is done. Each open goal says
+// how far along it is, or where to go for it. `gates`: Act I's open the next act; later acts' don't.
+export function goalsView(s: PlayerState, c: Config, d: Derived): GoalsView | null {
   if (!c.goals.enabled || !s.tutorial.done) return null
-  const rows = c.goals.list.map((id) => {
+  const { list, gold } = actGoals(c, s.act)
+  const rows = list.map((id) => {
     const done = s.goals.done.includes(id)
     return { id, text: GOAL_TEXT[id], done, hint: done ? undefined : goalHint(s, c, d, id) }
   })
-  return rows.every((r) => r.done) ? null : rows
+  return rows.length === 0 || rows.every((r) => r.done) ? null : { act: s.act, gold, gates: s.act === 1, rows }
 }
 
 function goalHint(s: PlayerState, c: Config, d: Derived, id: GoalId): string | undefined {
   const p = goalProgress(s, c, id)
   const count = p ? `${fmt(p.have)} of ${fmt(p.need)}` : undefined
+  const official = (o: OfficialId) => `needs ${glyph.influence}${fmt(d.costs.official[o])} · you have ${glyph.influence}${fmt(s.influence)} · on Heat`
+  // Not open yet: the Rep it waits on. Open: its price, and where it's bought.
+  const business = (t: RacketType, where: string) =>
+    d.unlocked.racket[t] ? `${glyph.clean}${fmt(d.costs.racket[t])} · ${where}` : `opens at ${glyph.rep}${fmt(c.rackets.types[t].unlockRep)}`
+  // The cheapest of these districts not yours yet.
+  const district = (ids: DistrictId[]) => {
+    const next = ids.filter((x) => d.unlocked.district[x] && s.districts.find((y) => y.id === x)?.controller !== 'player').sort((a, b) => d.costs.district[a] - d.costs.district[b])[0]
+    return next ? `${c.districts.list[next].name} is ${glyph.clean}${fmt(d.costs.district[next])} on the Map` : undefined
+  }
+  const ofAct = (act: Act) => DISTRICT_IDS.filter((x) => c.districts.list[x].act === act)
   switch (id) {
     case 'secondDistrict': {
       // What's next: a district you hold with nothing of yours in it, or the cheapest one open to take.
       const empty = s.districts.find((x) => x.controller === 'player' && !s.rackets.some((r) => r.districtId === x.id))
       if (empty) return `${count} · open a business in ${c.districts.list[empty.id].name}`
-      const next = DISTRICT_IDS.filter((id) => d.unlocked.district[id] && s.districts.find((x) => x.id === id)?.controller !== 'player').sort(
-        (a, b) => d.costs.district[a] - d.costs.district[b],
-      )[0]
-      return next ? `${count} · ${c.districts.list[next].name} is ${glyph.clean}${fmt(d.costs.district[next])} on the Map` : count
+      const next = district([...DISTRICT_IDS])
+      return next ? `${count} · ${next}` : count
     }
     case 'factoryTier2': {
       const factory = s.rackets.find((r) => r.type === 'tobaccoFactory')
       return factory ? `yours is tier ${factory.tier}` : 'no factory yet'
     }
     case 'wardCop':
-      return `needs ${glyph.influence}${fmt(d.costs.official.wardCop)} · you have ${glyph.influence}${fmt(s.influence)}`
+    case 'precinctCaptain':
+    case 'customsChief':
+    case 'governor':
+      return official(id)
+    case 'zhannaLot':
+      return 'her card is on the Map'
+    case 'newTurf':
+      return district(ofAct(2))
+    case 'theCentre':
+      return district(ofAct(3))
+    case 'stashHouse':
+      return business('stashHouse', 'a free lot on Business')
+    case 'foreignShop':
+      return business('foreignShop', 'on Business')
+    case 'newspaper':
+      return business('newspaper', 'on Business')
+    case 'holding':
+      return business('holding', 'Nagornaya’s lot, on Business')
+    case 'loanDesk':
+      return business('loanDesk', 'a free lot on Business')
+    case 'cooperativeBank': {
+      const bank = c.fronts.types.cooperativeBank
+      if (!d.unlocked.front.cooperativeBank) return `opens at ${glyph.rep}${fmt(bank.unlockRep)}`
+      return `${glyph.clean}${fmt(d.costs.front.cooperativeBank)} on Fronts · needs a street at prosperity ${fmt(bank.minProsperity ?? 0)}`
+    }
+    case 'bigScore':
+    case 'fixTender':
+      return 'on Ops'
+    case 'firstConvoy':
+      return 'the Colonel’s passage on the Map, then Run a Convoy on Ops'
+    case 'campaign':
+      return 'on the Map, before the election'
+    case 'firstLegal':
+      return s.politics.opinion >= c.legalize.minOpinion ? 'on Business' : `on Business, from opinion ${fmt(c.legalize.minOpinion)} · it’s ${fmt(Math.floor(s.politics.opinion))}`
+    case 'hearingsWon':
+      return `${count} · fight the next hearing in court`
     case 'soldier':
       return undefined
     default:
