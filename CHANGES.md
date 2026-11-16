@@ -3,6 +3,17 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-16 — Dependency audit (#46)
+
+Branch: `fix/46-audit`. `npm audit --omit=dev` had five warnings, one critical.
+
+- **Fixed with `npm audit fix`,** within each package's range:
+  - `shell-quote` 1.12.0 (critical, through React DevTools, development only);
+  - `source-map-js` 1.2.2 (high, through postcss at build time).
+  - The same run moved dev tools within their ranges, and zod 3 → 4, which only lint tooling uses.
+- **Left, and recorded:** `minimatch` (moderate). It's reached only through Expo's fingerprint tool, config plugins and typescript-eslint, all build or lint tools reading the project's own patterns. npm's only fix downgrades Expo to SDK 52. Details are in [native-builds.md](docs/native-builds.md).
+- **Verified:** `npm run check`; the web, iOS and Android exports; `npx expo install --check` (up to date).
+
 ## 2026-11-16 — Crash capture (#44)
 
 Branch: `feature/44-crash`. Reasoning: [ADR 0071](docs/decisions/0071-crash-capture.md). A tester's crash used to be a white screen or a closed app, with nothing written down.
