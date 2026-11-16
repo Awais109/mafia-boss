@@ -37,6 +37,7 @@ import { notifier } from './app/notify/notifier'
 import { store, useGame, type Snapshot } from './app/store'
 import { colors, fonts } from './app/theme'
 import { webParam } from './app/webParams'
+import { setCrashScreen } from './app/crash'
 
 type Tab = { id: TabId; title: string; icon: IconName; debugOnly?: boolean; render: (p: ScreenProps) => ReactNode }
 
@@ -138,6 +139,8 @@ export default function App() {
     const name = webParam('preview')
     if (name && PREVIEWS.some((p) => p.name === name)) showPreview(game, name as PreviewName)
   }, [game])
+  // A crash line says which screen it was on (ADR 0071).
+  useEffect(() => setCrashScreen(cover ? 'cover' : tab), [cover, tab])
   const go = (t: TabId) => {
     if (t !== tab) sound.play('page')
     setMore(false)

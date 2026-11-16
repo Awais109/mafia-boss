@@ -1,6 +1,7 @@
 import { DISTRICT_IDS, FRONT_TYPES, OFFICIAL_IDS, RACKET_TYPES } from '../engine'
 import type { QueuedNotice } from './notices'
 import { SCENES, type SceneId } from './scenes'
+import { previewCrash } from './crash'
 import { store, type Snapshot } from './store'
 
 // Pop-ups and scenes to look at without waiting for the game to raise them: Debug's Preview panel and, on
@@ -8,13 +9,14 @@ import { store, type Snapshot } from './store'
 // is a real pending one (choosing in it resolves it), and a scene replays without touching what's due.
 
 type NoticePreview = 'decision' | 'unlock' | 'event' | 'keys'
-export type PreviewName = NoticePreview | SceneId
+export type PreviewName = NoticePreview | 'crash' | SceneId
 
 export const PREVIEWS: { name: PreviewName; title: string }[] = [
   { name: 'decision', title: 'A decision' },
   { name: 'unlock', title: 'Just unlocked' },
   { name: 'event', title: 'An event' },
   { name: 'keys', title: 'The keys' },
+  { name: 'crash', title: 'Something went wrong' },
   ...(Object.keys(SCENES) as SceneId[]).map((id) => ({ name: id, title: SCENES[id].title })),
 ]
 
@@ -41,10 +43,11 @@ function previewNotice(game: Snapshot, name: NoticePreview): QueuedNotice | null
 
 // Whether the preview has something to show.
 export function canPreview(game: Snapshot, name: PreviewName): boolean {
-  return name in SCENES || previewNotice(game, name as NoticePreview) !== null
+  return name === 'crash' || name in SCENES || previewNotice(game, name as NoticePreview) !== null
 }
 
 export function showPreview(game: Snapshot, name: PreviewName): void {
+  if (name === 'crash') return previewCrash()
   if (name in SCENES) return store.playScene(name as SceneId)
   const notice = previewNotice(game, name as NoticePreview)
   if (notice) store.previewNotice(notice)

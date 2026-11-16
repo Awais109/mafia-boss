@@ -19,7 +19,7 @@ import {
   type PresetName,
 } from '../engine'
 import { botPlay, type Trace } from '../sim/driver'
-import type { LogExport, LogLine } from '../sim/replay'
+import type { CrashLine, LogExport, LogLine } from '../sim/replay'
 import { actMilestones } from './acts'
 import { buildAway, mergeAway, type AwaySummary } from './away'
 import { DEBUG_BUILD, forBuild } from './build'
@@ -82,6 +82,7 @@ class GameStore {
   private lastUnlocked: UnlockedMap | null = null
   private session = { open: false, startedAt: 0, actions: 0 }
   private started = false
+  private crashCache: CrashLine[] | null = null
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener)
@@ -282,6 +283,22 @@ class GameStore {
     const doc: LogExport = { format: 'sevgorod-log', version: 1, exportedAt: Date.now(), lines: this.readLog() }
     storage.write(FILES.exportLog, JSON.stringify(doc))
     await this.share(FILES.exportLog)
+  }
+
+  // A caught error, into the play log (ADR 0071; app/crash.ts). It must never throw itself.
+  recordCrash(line: CrashLine): void {
+    try {
+      this.appendLog([line])
+      this.crashCache?.push(line)
+    } catch {
+      // nothing more to do: the log is where it would have gone
+    }
+  }
+
+  // The crashes in the play log, newest last: read once, then kept up as they're recorded.
+  crashes(): CrashLine[] {
+    this.crashCache ??= this.readLog().filter((l): l is CrashLine => l.kind === 'crash')
+    return this.crashCache
   }
 
   readLog(): LogLine[] {
