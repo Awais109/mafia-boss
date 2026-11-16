@@ -3,6 +3,13 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-16 — Phones only until tablets are checked (#47)
+
+Branch: `fix/47-tablet`. `ios.supportsTablet` was `true` (Expo's template), but no screen had been checked on an iPad.
+
+- **Now `false`:** an iPad runs the game as an iPhone app in a phone-sized frame, instead of stretching the portrait layout. Android has no switch, so a tablet runs the phone layout.
+- **Why now, before a store build:** the App Store won't let an app drop iPad support once it has shipped with it, but adding it later is fine. What turning it on needs is written down in [native-builds.md](docs/native-builds.md#phones-only-for-now).
+
 ## 2026-11-16 — Dependency audit (#46)
 
 Branch: `fix/46-audit`. `npm audit --omit=dev` had five warnings, one critical.
