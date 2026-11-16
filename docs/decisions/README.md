@@ -80,6 +80,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0065](0065-late-game-repace.md) | The late game re-paced: 20 h front buffers, so laundering keeps up; prices, gates and unlock ladders set the pace | Accepted |
 | [0066](0066-act-one-in-two-days.md) | Act I in about two days: the three slowest goals ask for less, a 4 h vault, five visits a day; gates unchanged | Accepted |
 | [0067](0067-act-goals.md) | Every act has goals: four from Act II on that guide and pay gold, gating nothing; only the act you're in counts | Accepted |
+| [0068](0068-do-this-next.md) | "Do this next": one suggestion with a button leads Home when nothing else waits | Accepted |
 
 ## Template
 

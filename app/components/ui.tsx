@@ -1,5 +1,6 @@
 import { Children, Fragment, isValidElement, type ReactNode } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native'
+import { glyph } from '../glyphs'
 import { colors as theme, fonts, paperInk, textFont } from '../theme'
 import { CHAR_RESOURCE, Glyph, Icon, type IconName, type Resource } from './Glyph'
 import { sound } from '../sound/player'
@@ -12,7 +13,7 @@ import { sound } from '../sound/player'
 export const colors = theme
 
 // Text glyphs are still how strings carry resources; `Rich` turns them into drawn glyphs.
-export const glyph = { dirty: '◆', clean: '●', influence: '✦', rep: '★', heat: '▲', packs: '▮', premium: '▣', gold: '▰' } as const
+export { glyph }
 
 // Heat reads as red text; its glyph keeps the brighter red.
 const textColorOf = (r: Resource) => (r === 'heat' ? theme.bad : theme[r])

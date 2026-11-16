@@ -3,6 +3,27 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-16 — "Do this next" on Home (#38)
+
+Branch: `feature/38-do-next`. Reasoning: [ADR 0068](docs/decisions/0068-do-this-next.md). From the game review: a returning player had to work out what to tap.
+
+- **What a player sees:** when nothing waits at the top of Home (Tolya, a decision, rock bottom), a "Do this next" card leads with one suggestion and a button. It shows the first of:
+  - the vault nearly full: Collect;
+  - idle Dirty the fronts can take: Deposit, keeping payday's wages back;
+  - idle crew: Ops;
+  - what the next act waits on;
+  - the act's first goal you can do, preferring one you can pay for now;
+  - otherwise, "Nothing needs you" and when the vault fills.
+
+  Collect and Deposit act from the card; the rest go to their screen.
+- **How:**
+  - `doNext` in `app/doNext.ts` (pure, tested) and `components/DoNextCard.tsx`;
+  - goals gain `GOAL_TAB`, `locked` and `affordable` (`app/goals.ts`);
+  - the glyphs move to `app/glyphs.ts` so pure modules can be tested.
+- **Verified:**
+  - `npm run check`, with `tests/donext.test.ts` new;
+  - Home in the web export: a full vault on day 1 (Collect), and an Act II goal with its hint.
+
 ## 2026-11-16 — Goals in every act (#37)
 
 Branch: `feature/37-act-goals`. Reasoning: [ADR 0067](docs/decisions/0067-act-goals.md). From tester feedback ("in Act II there's no goal") and the game review: each act should have clear goals.
