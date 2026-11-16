@@ -894,5 +894,9 @@ export const defaults: Config = {
     skipChoices: [1, 2, 4, 8],
   },
 
+  // The daily reward (ADR 0069): a reason to come back each day. 12 bars a week on a full streak, against the 45 the
+  // acts grant over the story; a missed day takes two days off the streak, not all of it.
+  daily: { enabled: true, gold: [1, 1, 1, 2, 2, 2, 3], dropPerMissedDay: 2 },
+
   debug: { enabled: true },
 }

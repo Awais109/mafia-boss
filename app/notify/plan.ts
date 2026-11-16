@@ -1,4 +1,4 @@
-import { hoursToMs, reconcile, type Config, type GameEvent, type PlayerState } from '../../engine'
+import { dailyOffer, dayMs, hoursToMs, reconcile, type Config, type GameEvent, type PlayerState } from '../../engine'
 import { fmt } from '../format'
 import { itemTitle } from '../inboxTitle'
 
@@ -7,7 +7,7 @@ import { itemTitle } from '../inboxTitle'
 // to come: the vault filling, the crew coming back (with their report), a payday missed, Tolya's demand, an
 // incident to decide, or a decision about to take its default. Pure, so it's tested; app/notify/notifier.ts schedules what this returns.
 
-export type NotifyKind = 'payday' | 'tolya' | 'expiring' | 'decision' | 'back' | 'vault'
+export type NotifyKind = 'payday' | 'tolya' | 'expiring' | 'decision' | 'back' | 'vault' | 'daily'
 
 export type Planned = { kind: NotifyKind; at: number; title: string; body: string } // `at` in real ms
 
@@ -17,7 +17,7 @@ export type Planned = { kind: NotifyKind; at: number; title: string; body: strin
 export const NOTIFY = { aheadHours: 24, maxTotal: 4, expiringLeadMinutes: 60, quietFrom: 22, quietTo: 8, minGapMinutes: 20 }
 
 // Most urgent first: when two land together, the earlier in this list is kept.
-const URGENCY: NotifyKind[] = ['payday', 'tolya', 'expiring', 'decision', 'back', 'vault']
+const URGENCY: NotifyKind[] = ['payday', 'tolya', 'expiring', 'decision', 'back', 'vault', 'daily']
 
 const MIN = 60_000
 
@@ -47,6 +47,10 @@ export function planNotifications(state: PlayerState, c: Config, now: number, op
   }
   // Decisions already waiting can expire too.
   for (const item of state.inbox) expiring(item.expiresAt, itemTitle(item, c))
+  // Tomorrow's gold (ADR 0069), from the next game day's start.
+  const tomorrow = (Math.floor(now / dayMs(c)) + 1) * dayMs(c)
+  const daily = dailyOffer(state, c, tomorrow)
+  if (daily) offer('daily', tomorrow, 'Today’s gold is waiting', `▰${daily.gold} for coming by: day ${daily.streak} in a row.`)
   function expiring(expiresAt: number, title: string) {
     offer('expiring', expiresAt - NOTIFY.expiringLeadMinutes * MIN, 'A decision expires within the hour', `${title}. If you don’t choose, the default happens.`)
   }

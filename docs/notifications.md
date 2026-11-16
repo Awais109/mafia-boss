@@ -21,6 +21,7 @@ The engine is deterministic and seeded, so the plan comes from it. `planNotifica
 | `decision` | `INCIDENT_RAISED` | A decision is waiting · the incident's name |
 | `back` | `OP_RESOLVED`, `MISSION_RESOLVED`, `CONTRACT_DONE`, `ERRAND_DONE`, `TRAINING_DONE` | *Name* is back · the job and how it went, and "Their report is waiting" when the job filed one |
 | `vault` | `VAULT_CAPPED` | The vault's full · collect it to get income moving again |
+| `daily` | the next game day's start, when `dailyOffer` has something then ([ADR 0069](decisions/0069-daily-reward.md)) | Today's gold is waiting · the bars and the day of the streak |
 
 The rules:
 - **One of each kind**, the earliest.

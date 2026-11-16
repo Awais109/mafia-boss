@@ -704,6 +704,12 @@ export type Config = {
     maxSkipHours: number
     skipChoices: number[]
   }
+  // The daily reward (ADR 0069): the first claim of each game day pays gold, by day of the streak; the week repeats.
+  daily: {
+    enabled: boolean
+    gold: number[] // by day of the streak, from day 1; past the last, it starts over
+    dropPerMissedDay: number // a missed day takes this many days off the streak, rather than all of it
+  }
   debug: { enabled: boolean }
 }
 
@@ -1265,6 +1271,9 @@ export function validateConfig(c: Config): string[] {
       int(e, 'goals.rewardGold', c.goals.rewardGold, 0)
       for (const g of c.goals.list) if (!GOAL_IDS.includes(g)) e.push(`goals.list: unknown goal ${g}`)
       for (const [k, v] of Object.entries(c.goals.need)) int(e, `goals.need.${k}`, v, 1)
+      if (!c.daily.gold.length) e.push('daily.gold: needs at least one day')
+      c.daily.gold.forEach((g, i) => int(e, `daily.gold.${i}`, g, 0))
+      int(e, 'daily.dropPerMissedDay', c.daily.dropPerMissedDay, 0)
       const seen = new Set<GoalId>(c.goals.list)
       for (const a of LATER_ACTS) {
         int(e, `goals.rewardGoldByAct.${a}`, c.goals.rewardGoldByAct[a], 0)

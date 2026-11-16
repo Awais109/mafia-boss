@@ -47,6 +47,7 @@ export function newGame(c: Config, playerId: string, now: number): PlayerState {
     districts: DISTRICT_IDS.map((id) => ({ id, controller: c.districts.list[id].startsAs, pressureCount: 0, prosperity: c.prosperity.base })),
     officials: [],
     retainers: {},
+    daily: { lastAt: null, streak: 0 },
     officialCooldownUntil: 0,
     bribeUntil: 0,
     bribeControl: 0,

@@ -3,6 +3,24 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-16 — Today's gold (#39)
+
+Branch: `feature/39-daily`. Reasoning: [ADR 0069](docs/decisions/0069-daily-reward.md). From the game review: nothing gave a reason to come back each day.
+
+- **What a player sees:**
+  - "Today's gold" at the top of Home once each game day, with Claim ▰N: 1, 1, 1, 2, 2, 2, 3 by day of the streak, then the week starts over.
+  - A missed day takes two days off the streak, not all of it.
+  - A notification the next morning: "Today's gold is waiting".
+  - Stats shows the daily gold, days claimed and the best streak.
+- **Rules:** game days, as paydays use. A skip costs more than a claim pays, and a device clock moved forward is #21's.
+- **How:**
+  - `engine/systems/daily.ts` (`dailyOffer`, `claimDaily`) and the `CLAIM_DAILY` action;
+  - `state.daily` and `stats.daily`, schema 19 (`v18to19`);
+  - `components/DailyCard.tsx`, and a `daily` kind in `app/notify/plan.ts`;
+  - the bots claim it.
+- **Pacing:** the casual bot is unchanged. The gold-rush persona finishes the story about 2 days sooner.
+- **Verified:** `npm run check`, with `tests/daily.test.ts` new and a reminder test in `tests/notify.test.ts`.
+
 ## 2026-11-16 — "Do this next" on Home (#38)
 
 Branch: `feature/38-do-next`. Reasoning: [ADR 0068](docs/decisions/0068-do-this-next.md). From the game review: a returning player had to work out what to tap.

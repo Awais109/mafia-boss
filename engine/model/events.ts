@@ -19,7 +19,7 @@ import type {
 } from '../config/schema'
 import type { InboxEffects, InboxItem } from './state'
 
-export type GoldSource = 'start' | 'act' | 'goal' | 'contract' | 'debug' | 'ad' | 'purchase'
+export type GoldSource = 'start' | 'act' | 'goal' | 'contract' | 'debug' | 'ad' | 'purchase' | 'daily'
 
 // What happened during a reconcile or apply. Events are the playtest log.
 export type EventBody =
@@ -116,6 +116,7 @@ export type EventBody =
   | { type: 'POOL_REFRESHED' }
   | { type: 'OFFICIAL_BOUGHT'; officialId: OfficialId; cost: number }
   | { type: 'RETAINER_PAID'; officialId: OfficialId; fee: number; auto: boolean } // ADR 0064
+  | { type: 'DAILY_CLAIMED'; streak: number; gold: number } // ADR 0069
   | { type: 'RETAINER_MISSED'; officialId: OfficialId; fee: number } // their control lapses until paid
   | { type: 'BRIBED'; cost: number; control: number; until: number }
   | { type: 'BRIBE_EXPIRED' }

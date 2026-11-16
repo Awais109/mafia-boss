@@ -13,6 +13,7 @@ import {
   contestOdds,
   contractBlocked,
   creditOpen,
+  dailyOffer,
   dayMs,
   lendCap,
   loanCap,
@@ -188,8 +189,9 @@ export function playSession(
   tryAct({ type: 'SESSION_START' })
   if (!state.tutorial.done) tryAct({ type: 'TUTORIAL_SKIP' })
 
-  // 1. Collect
+  // 1. Collect, and the day's gold when it's there (ADR 0069)
   tryAct({ type: 'COLLECT' })
+  if (dailyOffer(state, c, t)) tryAct({ type: 'CLAIM_DAILY' })
 
   // Goal-directed (ADR 0039): Act II needs every Act I goal done, and the bot's normal economic
   // logic doesn't reliably trigger three of them (they only fire on a predicted shortage or high

@@ -10,7 +10,7 @@ export type EventLine = { text: string; color?: string; quiet?: boolean }
 const OUTCOME = { full: 'clean job', partial: 'got some of it', fail: 'went wrong' } as const
 const STAT_NAME = { muscle: 'Muscle', brains: 'Brains', nerve: 'Nerve' } as const
 const MODE_TEXT = { push: 'pushing', normal: 'running normally', layLow: 'lying low' } as const
-const GOLD_SOURCE = { start: 'to start', act: 'for opening a new act', goal: 'for a goal', contract: 'for a contract', debug: 'from Debug', ad: 'for an ad', purchase: 'bought' } as const
+const GOLD_SOURCE = { start: 'to start', act: 'for opening a new act', goal: 'for a goal', contract: 'for a contract', debug: 'from Debug', ad: 'for an ad', purchase: 'bought', daily: 'for coming by today' } as const
 
 // Player-facing line for an event. `quiet` lines are bookkeeping, hidden unless the Log asks.
 export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLine {
@@ -100,7 +100,8 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
     case 'SHORTAGE_ENDED':
       return { text: e.product === 'premium' ? 'Premium packs are back on the shelves' : 'Cigarettes are back on the shelves', color: colors.good }
     case 'GOLD_GRANTED':
-      return { text: `+${glyph.gold}${fmt(e.amount)} ${GOLD_SOURCE[e.source]}`, color: colors.gold }
+      // The daily's own line already says it (DAILY_CLAIMED).
+      return { text: `+${glyph.gold}${fmt(e.amount)} ${GOLD_SOURCE[e.source]}`, color: colors.gold, quiet: e.source === 'daily' }
     case 'TIME_SKIPPED':
       return { text: `Skipped ${e.hours}h for ${glyph.gold}${e.bars}`, color: colors.gold }
     case 'ROCK_BOTTOM':
@@ -165,6 +166,8 @@ export function describeEvent(e: GameEvent, s: PlayerState, c: Config): EventLin
       return { text: 'New faces are asking for work', quiet: true }
     case 'OFFICIAL_BOUGHT':
       return { text: `${c.officials.list[e.officialId].name} is on the payroll (+${fmt(c.officials.list[e.officialId].control)} control)`, color: colors.influence }
+    case 'DAILY_CLAIMED':
+      return { text: `Today’s gold: ${glyph.gold}${e.gold}, day ${e.streak} in a row`, color: colors.gold }
     case 'RETAINER_PAID': {
       const o = c.officials.list[e.officialId]
       return e.auto
