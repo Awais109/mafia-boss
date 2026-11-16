@@ -16,6 +16,7 @@
     "expo-font": "~57.0.4",
     "expo-notifications": "~57.0.25",
     "expo-sharing": "~57.0.26",
+    "expo-splash-screen": "~57.0.11",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -48,6 +49,7 @@
     "lint": "eslint .",
     "sim": "tsx sim/run.ts",
     "sounds": "tsx scripts/sounds.ts",
+    "icons": "tsx scripts/gen-icons.ts",
     "gen-sounds": "tsx scripts/gen-sounds/index.ts && tsx scripts/sounds.ts",
     "check": "npm run typecheck && npm run lint && npm test"
   },

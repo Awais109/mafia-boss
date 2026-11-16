@@ -3,6 +3,23 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-16 — The icon and splash (#43)
+
+Branch: `feature/43-icon`. Reasoning: [ADR 0070](docs/decisions/0070-icon-and-splash.md). The icon, Android's layers, the splash and the favicon were Expo's template.
+
+- **What a tester sees** (on a fresh native build):
+  - a brass seal on the warm-dark ground: a double ring, the wordmark's S, a ◆ above and below;
+  - Android's adaptive and themed icons from the same mark;
+  - a splash of the seal over SEVGOROD on `#16130f`.
+- **How:**
+  - `scripts/gen-icons.ts` (`npm run icons`) draws each image as SVG from the palette and the wordmark font, and renders it with headless Chrome;
+  - the PNGs are committed;
+  - `expo-splash-screen` is added at the SDK's version, with its plugin configured in `app.json`.
+- **Verified:**
+  - Android and iOS prebuild in a scratch copy carry the splash logo, its colour and the icon;
+  - the icon checked at 180, 120 and 60 px and the favicon at 48;
+  - still to check on a phone's home screen.
+
 ## 2026-11-16 — Today's gold (#39)
 
 Branch: `feature/39-daily`. Reasoning: [ADR 0069](docs/decisions/0069-daily-reward.md). From the game review: nothing gave a reason to come back each day.
