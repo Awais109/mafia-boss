@@ -3,6 +3,18 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-16 — Privacy policy, store listing and content rating: drafts (#48)
+
+Branch: `docs/48-store`. Both stores need these before a listing, and Play asks for a privacy policy even for internal testing.
+
+- **[PRIVACY.md](PRIVACY.md):** what's true today. Everything stays on the phone, nothing is sent, a play log or save leaves only through the player's own share sheet, notifications are scheduled on the phone, and there's no account, analytics, ads or purchases.
+- **[docs/store-listing.md](docs/store-listing.md):**
+  - the listing drafts (name, subtitle, short and full description, keywords, category, screenshots);
+  - the App Privacy and Data safety answers;
+  - content-rating notes (violence, crime, tobacco, alcohol, gambling businesses without betting);
+  - where to host the policy.
+- **Still to do (the owner's):** the contact email, hosting the policy, and answering the questionnaires.
+
 ## 2026-11-16 — Tester builds: TestFlight and Play internal testing, the guide (#49)
 
 Branch: `docs/49-tester-builds`. Installs signed with a free Apple ID expire in about 7 days, which can't serve remote testers.
