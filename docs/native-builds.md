@@ -102,6 +102,12 @@ It goes when Expo's packages move past it. Run `npm audit --omit=dev` after each
 
 To use an artist's icon instead, replace the PNGs (same names and sizes) and leave `npm run icons` unrun. A new icon or splash needs a fresh native build, since both are baked in at prebuild. Expo Go shows its own.
 
+## Phones only, for now
+
+The game is laid out for a phone in portrait (`expo.orientation` `portrait`), and no screen has been checked on a tablet. So `expo.ios.supportsTablet` is `false` (#47). An iPad then runs it as an iPhone app, scaled up in a phone-sized frame, rather than stretching the layout across the screen. Android has no such switch: a tablet runs the phone layout at its own width, and nothing has been checked there either.
+
+To support tablets later: check every screen on an iPad and an Android tablet (both orientations, if landscape is allowed), fix what breaks, then set `supportsTablet` to `true`. Turning it on later is fine. Turning it off after a store release isn't, since the App Store won't let an app drop iPad support once it has shipped with it.
+
 ## App identifiers
 
 `app.json` sets `expo.ios.bundleIdentifier` and `expo.android.package` to `com.hamzaarshad.sevgorod`. Changing either later installs as a separate app on devices. For iOS, the identifier must not already be registered to another Apple team.
