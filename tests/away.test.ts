@@ -7,8 +7,8 @@ import { act, config, crewNamed, fresh, H, T0 } from './helpers'
 // after, plus its events (ADR 0023). Its numbers must reconcile with the save's own stats.
 
 describe('away summary', () => {
-  // A first session, then three hours away: collect, launder (the first conversion is instant,
-  // the second buffers), and send both crew out on quick jobs.
+  // A first session, then an hour longer away than the vault holds: collect, launder (the first conversion
+  // is instant, the second buffers), and send both crew out on quick jobs.
   const start = fresh()
   const front = start.fronts[0].id
   const before = act(
@@ -22,7 +22,8 @@ describe('away summary', () => {
     ],
     T0,
   )
-  const to = T0 + 3 * H
+  const hoursAway = config.vault.targetHoursByAct[1] + 1
+  const to = T0 + hoursAway * H
   const r = reconcile(before, to, config)
   const a = buildAway(before, r.state, r.events, config, to)
 
@@ -44,12 +45,11 @@ describe('away summary', () => {
   it('splits Dirty between rackets and jobs, and counts what the full vault lost', () => {
     const jobDirty = a.jobs.reduce((sum, j) => sum + j.dirty, 0)
     expect(a.racketsEarned + jobDirty).toBeCloseTo(r.state.stats.dirtyEarned - before.stats.dirtyEarned, 6)
-    // Three hours of yield into a vault that holds 2.5 h of it: the rest hits the cap. Condition
-    // decays at every whole hour, so the total sits between three hours at the final and the
-    // starting yield.
+    // An hour more of yield than the vault holds: the rest hits the cap. Condition decays at every whole
+    // hour, so the total sits between the hours away at the final and the starting yield.
     const total = a.racketsEarned + a.lostToCap
-    expect(total).toBeGreaterThanOrEqual(derive(r.state, config).yieldPerHr * 3 - 1e-6)
-    expect(total).toBeLessThanOrEqual(derive(before, config).yieldPerHr * 3 + 1e-6)
+    expect(total).toBeGreaterThanOrEqual(derive(r.state, config).yieldPerHr * hoursAway - 1e-6)
+    expect(total).toBeLessThanOrEqual(derive(before, config).yieldPerHr * hoursAway + 1e-6)
     expect(a.lostToCap).toBeGreaterThan(0)
     expect(a.vaultFull).toBe(true)
   })

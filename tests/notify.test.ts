@@ -32,7 +32,8 @@ describe('notifications', () => {
   })
 
   it('warns of a payday that will come up short, at the day start', () => {
-    const s: PlayerState = { ...fresh('n-pay', quiet), clean: 0, dirty: 0 }
+    // More owed than a day's vault can hold, with nothing on hand: the payday can't be met.
+    const s: PlayerState = { ...fresh('n-pay', quiet), clean: 0, dirty: 0, wagesOwed: 10_000 }
     s.fronts = s.fronts.map((f) => ({ ...f, buffer: 0 }))
     const payday = planNotifications(s, quiet, T0, DAYTIME).find((p) => p.kind === 'payday')
     expect(payday?.title).toBe('Payday came up short')

@@ -24,19 +24,20 @@ describe('casual bot pacing on default config', () => {
   const traces = SEEDS.map((seed) => simulate({ config, preset: 'default', days: 60, seed }))
   const summaries = traces.map(summarize)
 
-  it('clears Act I in about 4–5.5 days (goal-gated now, ADR 0039)', () => {
-    // Was ≤2.1 d under the old Rep-threshold gate. Completing every Act I goal — especially fully
-    // building two districts — genuinely takes longer; 4.55 d mean over these 5 seeds (TUNING.md).
+  it('clears Act I in about 2–3 days (ADR 0066)', () => {
+    // Goal-gated (ADR 0039), and the goals sized for about two days with five visits a day on a 4 h leash:
+    // 2.6 d over these 5 seeds, against 4.55 when they asked for two full districts and both fronts (TUNING.md).
     const actI = meanOf(summaries, (s) => s.actClear1)
-    expect(actI).toBeGreaterThanOrEqual(4)
-    expect(actI).toBeLessThanOrEqual(5.5)
+    expect(actI).toBeGreaterThanOrEqual(2)
+    expect(actI).toBeLessThanOrEqual(3)
   })
 
-  it('clears Act II 3–5 days after Act I', () => {
-    // The manual's own target again (M8): Act III's gate moved to ★1,200, so Act II is a full act (TUNING.md).
+  it('clears Act II 4.5–6.5 days after Act I', () => {
+    // Act III's ★1,200 comes at about the same day as before, so the days Act I gave up are Act II's now: 5.7 d
+    // over these 5 seeds, against the manual's 3–5. The gate stays (ADR 0066; TUNING.md has the ★1,000 run).
     const actII = meanOf(summaries, (s) => s.actClear2)
-    expect(actII).toBeGreaterThanOrEqual(3)
-    expect(actII).toBeLessThanOrEqual(5)
+    expect(actII).toBeGreaterThanOrEqual(4.5)
+    expect(actII).toBeLessThanOrEqual(6.5)
   })
 
   it('clears Act III 6–8 days after Act II', () => {
@@ -91,14 +92,21 @@ describe('casual bot pacing on default config', () => {
     expect(meanOf(rush, (s) => s.actClear1)).toBeGreaterThanOrEqual(1)
   })
 
-  it('lets a greedy player meet the odd raid where the careful bot meets none (ADR 0064)', () => {
+  it('takes a greedy player to the raid line, hotter and with more lapsed retainers than the careful bot (ADR 0064)', () => {
     // No heat budget, no bribes, and retainers left until heat reaches the raid line: officials lapse, heat creeps
-    // back, and some seeds are raided. Not a constant stream: the greedy bot pays up once the raids start.
-    const greedy = SEEDS.map((seed) => summarize(simulate({ config, preset: 'default', days: 45, seed, persona: GREEDY })))
+    // back to the line, and the greedy bot pays up there. Whether a raid lands at the line is the dice (0.7 a run
+    // over 60 days before ADR 0066, 0.1 since: TUNING.md), so this checks the risk taken and what it costs, not
+    // the raids. Not a constant stream either.
+    const runs = SEEDS.map((seed) => simulate({ config, preset: 'default', days: 45, seed, persona: GREEDY }))
+    const greedy = runs.map(summarize)
+    const peak = (tr: (typeof traces)[number]) => Math.max(...tr.hours.map((h) => h.heat))
+    const lapsed = (trs: typeof traces) => trs.reduce((sum, tr) => sum + tr.final.stats.retainers.missed, 0)
+    expect(runs.some((tr) => peak(tr) >= config.heat.raidThreshold)).toBe(true)
+    expect(meanOf(greedy, (s) => s.heatMean)).toBeGreaterThan(meanOf(summaries, (s) => s.heatMean) + 2)
+    expect(lapsed(runs)).toBeGreaterThan(lapsed(traces))
     const raids = greedy.reduce((sum, s) => sum + s.raids, 0)
-    expect(raids).toBeGreaterThanOrEqual(2)
     expect(raids / greedy.length).toBeLessThanOrEqual(4)
-    expect(summaries.reduce((sum, s) => sum + s.raids, 0)).toBeLessThan(raids)
+    expect(summaries.reduce((sum, s) => sum + s.raids, 0)).toBeLessThanOrEqual(raids)
   })
 
   it('makes partial success the most common op outcome (40–60%)', () => {

@@ -13,6 +13,7 @@ import {
   contestOdds,
   contractBlocked,
   creditOpen,
+  dayMs,
   lendCap,
   loanCap,
   loanDue,
@@ -36,7 +37,6 @@ import {
   OFFICIAL_IDS,
   retainerFee,
   retainersDueWithin,
-  openLots,
   openSpots,
   opConfigAt,
   opDirtyRewardFor,
@@ -44,11 +44,11 @@ import {
   OP_OUTCOMES,
   MISSION_IDS,
   missionBlocked,
+  missionStake,
   missionOp,
   OP_TYPES,
   outcomeOdds,
   frontBlocked,
-  premisesBlocked,
   prosperityOn,
   prosperityYieldMult,
   racketBlocked,
@@ -113,9 +113,9 @@ export type PersonaOptions = {
 
 export const CASUAL: PersonaOptions = {
   name: 'casual',
-  // Act I checks in on the vault's 2.5 h leash through the day; Act II settles into four sessions; later
+  // Act I checks in five times a day on the vault's 4 h leash (ADR 0066); Act II settles into four sessions; later
   // acts follow their longer leashes down to one visit a day (ADR 0040).
-  sessionHours: { 1: [8, 10.5, 13, 15.5, 18, 20.5, 23], 2: [8, 13, 18, 22], 3: [8, 14, 20], 4: [8, 20], 5: [9, 21], 6: [9] },
+  sessionHours: { 1: [8, 12, 16, 20, 23], 2: [8, 13, 18, 22], 3: [8, 14, 20], 4: [8, 20], 5: [9, 21], 6: [9] },
   reserveWageHours: 12,
   bribeAboveHeat: 55,
   officialAboveHeat: 30,
@@ -212,13 +212,14 @@ export function playSession(
 
   if (dirtyHealthy && !goalDone('workFront')) {
     for (const f of d().perFront) {
+      if (goalDone('workFront')) break // one front at level 2 is enough (ADR 0066)
       const level = state.fronts.find((x) => x.id === f.id)!.level
       if (level >= 2 || f.upgradeCost === null || state.clean < f.upgradeCost) continue
       tryAct({ type: 'UPGRADE_FRONT', frontId: f.id, track: 'rate' })
     }
   }
 
-  if (dirtyHealthy && (state.stats.opsByType.smuggleCigarettes ?? 0) < 3 && opUnlocked(state, c, 'smuggleCigarettes')) {
+  if (dirtyHealthy && !goalDone('smuggleRun') && opUnlocked(state, c, 'smuggleCigarettes')) {
     const op = c.ops.list.smuggleCigarettes
     const idle = state.crew.filter((m) => m.status === 'idle')
     if (idle.length >= op.crew && state.clean >= (op.costClean ?? 0)) {
@@ -228,35 +229,19 @@ export function playSession(
   }
 
   if (dirtyHealthy && !goalDone('secondDistrict')) {
-    // Complete home plus the cheapest other unlocked district: every allows-slot, every premises lot.
-    const home = DISTRICT_IDS.find((id) => c.districts.list[id].home)!
-    const owned = DISTRICT_IDS.filter((id) => controllerOf(state, id) === 'player')
-    let targets = owned.length >= 2 ? owned.slice(0, 2) : [home]
-    if (targets.length < 2) {
-      const buyable = DISTRICT_IDS.filter((id) => d().unlocked.district[id] && controllerOf(state, id) !== 'player').sort(
-        (a, b) => c.districts.list[a].buyout - c.districts.list[b].buyout,
-      )
-      const pick = buyable.find((id) => state.clean >= c.districts.list[id].buyout)
-      if (pick && tryAct({ type: 'BUY_DISTRICT', districtId: pick })) targets = [home, pick]
+    // A second district with a business of yours in it (ADR 0066): one held and still empty, or else the
+    // cheapest open one, then its cheapest business.
+    let target = DISTRICT_IDS.find((id) => controllerOf(state, id) === 'player' && !state.rackets.some((r) => r.districtId === id))
+    if (!target) {
+      const pick = districtToTake(state, c, d())
+      if (pick && state.clean >= d().costs.district[pick] && tryAct({ type: 'BUY_DISTRICT', districtId: pick })) target = pick
     }
-    for (const id of targets) {
-      for (let guard = 0; guard < 10; guard++) {
-        const now = d()
-        const spot = openSpots(state, c, id).find((t) => now.unlocked.racket[t] && state.clean >= now.costs.racket[t])
-        if (spot && tryAct({ type: 'BUY_RACKET', racketType: spot, districtId: id })) continue
-        const lot = openLots(state, c, id) > 0
-        // Cap upkeep relative to yield here too (same spirit as the wage-share guard on hiring below):
-        // completing a district's premises lots is a goal requirement, not a reason to run the upkeep away.
-        const premises = lot
-          ? RACKET_TYPES.find((t) => {
-              if (c.rackets.types[t].kind !== 'premises' || !now.unlocked.racket[t]) return false
-              if (premisesBlocked(state, c, id, t) || state.clean < now.costs.racket[t]) return false
-              return now.upkeepPerHr + formulas.premisesUpkeep(c, t, 1) <= p.maxWageShare * now.yieldPerHr
-            })
-          : undefined
-        if (premises && tryAct({ type: 'BUY_RACKET', racketType: premises, districtId: id })) continue
-        break
-      }
+    if (target) {
+      const now = d()
+      const spot = openSpots(state, c, target)
+        .filter((t) => now.unlocked.racket[t] && state.clean >= now.costs.racket[t])
+        .sort((a, b) => now.costs.racket[a] - now.costs.racket[b])[0]
+      if (spot) tryAct({ type: 'BUY_RACKET', racketType: spot, districtId: target })
     }
   }
 
@@ -317,7 +302,7 @@ export function playSession(
     for (const pay of ['influence', 'dirty'] as const) {
       if (winChance(state, c) >= p.campaignTarget) break
       const now = d()
-      const reserve = pay === 'dirty' ? (now.wagesPerHr + now.upkeepPerHr) * p.reserveWageHours + now.costs.bribe : officialsDue
+      const reserve = pay === 'dirty' ? dirtyReserve(state, c, p, now, t, nextSessionAt) : officialsDue
       const each = pointCost(state, c, pay)
       const afford = Math.floor(((pay === 'dirty' ? state.dirty : state.influence) - reserve) / each)
       const needed = Math.ceil((neededShare - voteShare(state, c)) / e.perPoint)
@@ -328,7 +313,7 @@ export function playSession(
   // Front dial: lie low when hot; push through a backlog when the heat budget allows it.
   {
     const now = d()
-    const reserve = (now.wagesPerHr + now.upkeepPerHr) * p.reserveWageHours + now.costs.bribe
+    const reserve = dirtyReserve(state, c, p, now, t, nextSessionAt)
     const backlog = state.dirty - reserve + state.fronts.reduce((sum, f) => sum + f.buffer, 0)
     for (const f of now.perFront) {
       let mode: FrontMode = 'normal'
@@ -341,10 +326,10 @@ export function playSession(
     }
   }
 
-  // 2. Deposit up to buffer caps, keeping a reserve of running costs × 12 h + one bribe
+  // 2. Deposit up to buffer caps, keeping a reserve of running costs × 12 h + one bribe (or the payday's, if more)
   {
     const now = d()
-    const reserve = (now.wagesPerHr + now.upkeepPerHr) * p.reserveWageHours + now.costs.bribe
+    const reserve = dirtyReserve(state, c, p, now, t, nextSessionAt)
     for (const f of [...now.perFront].sort((a, b) => b.rate - a.rate)) {
       if (f.frozen) continue // the Ministry's (ADR 0044)
       const buffer = state.fronts.find((x) => x.id === f.id)!.buffer
@@ -356,7 +341,7 @@ export function playSession(
   // Idle Dirty goes out through the loan desk, above the running-cost reserve (ADR 0042).
   if (creditOpen(state, c) && !state.lending) {
     const now = d()
-    const reserve = (now.wagesPerHr + now.upkeepPerHr) * p.reserveWageHours + now.costs.bribe
+    const reserve = dirtyReserve(state, c, p, now, t, nextSessionAt)
     const amount = Math.floor(Math.min(lendCap(state, c), state.dirty - reserve))
     if (amount >= 1) tryAct({ type: 'LEND', amount })
   }
@@ -417,6 +402,8 @@ export function playSession(
     const m = c.missions.list[id]
     const idle = state.crew.filter((x) => x.status === 'idle')
     if (idle.length < m.crew) continue
+    // An overreach stakes Dirty: not the wages a payday before the next visit will take.
+    if (state.dirty - missionStake(state, c, id) < paydayDue(state, c, d(), t, nextSessionAt)) continue
     const team = m.kind === 'rematch' ? bestMissionTeam(c, missionOp(c, id), idle) : [...idle].sort((a, b) => statSum(a) - statSum(b)).slice(0, m.crew)
     tryAct({ type: 'START_MISSION', missionId: id, crewIds: team.map((x) => x.id) })
   }
@@ -454,7 +441,7 @@ export function playSession(
   // Anyone still idle trains the stat with the most room to grow, if Dirty covers it above the reserve.
   for (const m of state.crew.filter((x) => x.status === 'idle')) {
     const now = d()
-    const reserve = (now.wagesPerHr + now.upkeepPerHr) * p.reserveWageHours + now.costs.bribe
+    const reserve = dirtyReserve(state, c, p, now, t, nextSessionAt)
     const stat = STATS.reduce((best, st) => (m.potential[st] - m[st] > m.potential[best] - m[best] ? st : best), STATS[0])
     if (m.potential[stat] <= m[stat]) continue
     const type = OP_TYPES.find((ty) => c.ops.list[ty].training === stat)
@@ -467,7 +454,7 @@ export function playSession(
   // Passage before a convoy goes out, when the Colonel still holds the road and premium is running low (ADR 0043).
   {
     const now = d()
-    const reserve = (now.wagesPerHr + now.upkeepPerHr) * p.reserveWageHours + now.costs.bribe
+    const reserve = dirtyReserve(state, c, p, now, t, nextSessionAt)
     const wantConvoy = state.act >= c.premium.fromAct && now.premium.demandPerHr > 0 && now.premium.hoursToEmpty < p.stockReserveHours * 2
     if (wantConvoy && colonelHolds(state) && !passageActive(state, t) && state.dirty - passageCost(state, c) >= reserve) {
       tryAct({ type: 'BUY_PASSAGE' })
@@ -485,7 +472,7 @@ export function playSession(
   {
     const now = d()
     const price = formulas.shipmentPrice(c, state.rival.zhanna.disposition)
-    const reserve = (now.wagesPerHr + now.upkeepPerHr) * p.reserveWageHours + now.costs.bribe
+    const reserve = dirtyReserve(state, c, p, now, t, nextSessionAt)
     const ready = zhannaDeals(state, c) && state.rival.zhanna.nextShipmentAt <= t
     if (ready && now.supply.hoursToEmpty < p.stockReserveHours && state.dirty - price >= reserve) tryAct({ type: 'BUY_SHIPMENT' })
   }
@@ -538,8 +525,11 @@ export function playSession(
   let borrowed = false
   for (let guard = 0; guard < 60; guard++) {
     const now = d()
-    // Careful: the next two days' retainers stay back, so no official lapses (ADR 0064).
-    const budget = state.clean - loanDue(state, c) - (p.retainers === 'careful' ? retainersDueWithin(state, c, t, 48) : 0)
+    // Careful: the next two days' retainers stay back, so no official lapses (ADR 0064). While Act I asks for a
+    // second district, its price stays back too: a player following the goals saves for it (ADR 0066).
+    const take = goalDone('secondDistrict') ? undefined : districtToTake(state, c, now)
+    const saving = take ? now.costs.district[take] : 0
+    const budget = state.clean - loanDue(state, c) - (p.retainers === 'careful' ? retainersDueWithin(state, c, t, 48) : 0) - saving
     const controlBuyable = canBuyControl(state, c, now, t)
     const options = spendOptions(state, c, now, p).filter((o) => {
       if (o.cost > budget) return false
@@ -568,6 +558,27 @@ export function playSession(
 }
 
 const statSum = (m: CrewMember) => m.muscle + m.brains + m.nerve
+
+// The Dirty the next payday needs on hand, when it comes before the next visit: what it asks for (Home's "Dirty
+// won't cover payday"), less what the vault will hold by then, since it's paid from both. 0 with a visit first.
+function paydayDue(state: PlayerState, c: Config, d: Derived, t: number, nextSessionAt: number): number {
+  const payday = (Math.floor(t / dayMs(c)) + 1) * dayMs(c)
+  if (nextSessionAt <= payday) return 0
+  const hours = (payday - t) / c.time.hourMs
+  const due = state.wagesOwed + state.upkeepOwed + (d.wagesPerHr + d.upkeepPerHr) * hours
+  return Math.max(0, due - Math.min(d.vaultCap, state.vault + d.yieldPerHr * hours))
+}
+
+// The Dirty a session keeps back: running costs × reserveWageHours plus a bribe, and never less than that payday.
+function dirtyReserve(state: PlayerState, c: Config, p: PersonaOptions, d: Derived, t: number, nextSessionAt: number): number {
+  return Math.max((d.wagesPerHr + d.upkeepPerHr) * p.reserveWageHours + d.costs.bribe, paydayDue(state, c, d, t, nextSessionAt))
+}
+
+// The cheapest district open to take, unless one held is still empty (the goal needs a business in it, not another).
+function districtToTake(state: PlayerState, c: Config, d: Derived): DistrictId | undefined {
+  if (DISTRICT_IDS.some((id) => controllerOf(state, id) === 'player' && !state.rackets.some((r) => r.districtId === id))) return undefined
+  return DISTRICT_IDS.filter((id) => d.unlocked.district[id] && controllerOf(state, id) !== 'player').sort((a, b) => d.costs.district[a] - d.costs.district[b])[0]
+}
 
 // The team of the job's size with the best chance of a clean or partial result: every pair (or single) of
 // the idle crew, which stays small.

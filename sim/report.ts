@@ -217,7 +217,7 @@ export function summarize(trace: Trace): Summary {
       min: ACT_TARGETS[a][0],
       max: ACT_TARGETS[a][1],
     })),
-    { name: 'Vault fill Act I (h)', value: summary.vaultFillAct1, min: 2, max: 3 },
+    { name: 'Vault fill Act I (h)', value: summary.vaultFillAct1, min: 3.5, max: 4.5 }, // the 4 h leash (ADR 0066)
     { name: 'Vault fill Act II, day 4+ (h)', value: summary.vaultFillAct2, min: 4.5, max: 6.5 },
     { name: 'Heat mean', value: summary.heatMean, min: 25, max: 35 },
     { name: 'Raids', value: summary.raids, min: 0, max: 1 },

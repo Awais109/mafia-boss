@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { GOAL_CHECKS, goalProgress, type Action, type GameEvent, type PlayerState } from '../engine'
+import { buildConfig, GOAL_CHECKS, goalProgress, tryBuildConfig, type Action, type GameEvent, type PlayerState } from '../engine'
 import { act, config, crewNamed, fresh, T0 } from './helpers'
 
 // Act I goals (ADR 0035): each pays its gold once, when its condition first holds after the opening.
@@ -13,32 +13,22 @@ describe('Act I goals', () => {
     s.tutorial.done = true
     Object.assign(s, { clean: 5000, influence: 50, dirty: 500 })
     const gold = s.gold
-    // Rep enough for videoSalon (68) and the Restaurant (133); real purchases satisfy every other goal.
-    s = act(s, [{ type: 'DEBUG_SET_REP', reputation: config.fronts.types.restaurant.unlockRep }], T0)
+    // Real purchases satisfy every goal but the last.
     const steps: Action[] = [
-      // secondDistrict: Zarechye's opening setup already has kiosk + marketStall + a Tobacco Factory —
-      // finish its third allows-slot and second premises lot, then take and fully build Kiosk Row.
-      { type: 'BUY_RACKET', racketType: 'beerTent', districtId: 'zarechye' },
-      { type: 'BUY_RACKET', racketType: 'warehouse', districtId: 'zarechye' },
+      // secondDistrict: Zarechye, the home district, already has the opening's businesses; take Kiosk Row and open one there.
       { type: 'BUY_DISTRICT', districtId: 'kioskRow' },
       { type: 'BUY_RACKET', racketType: 'kiosk', districtId: 'kioskRow' },
-      { type: 'BUY_RACKET', racketType: 'marketStall', districtId: 'kioskRow' },
-      { type: 'BUY_RACKET', racketType: 'videoSalon', districtId: 'kioskRow' },
-      { type: 'BUY_RACKET', racketType: 'tobaccoFactory', districtId: 'kioskRow' },
       // factoryTier2
       { type: 'UPGRADE_RACKET', racketId: s.rackets.find((r) => r.type === 'tobaccoFactory')!.id },
       // thirdCrew
       { type: 'RECRUIT', candidateId: s.recruitPool.candidates[0].id },
       // wardCop
       { type: 'BUY_OFFICIAL', officialId: 'wardCop' },
-      // workFront: both fronts owned, each at rate level 2
-      { type: 'BUY_FRONT', frontType: 'restaurant' },
+      // workFront: one front at rate level 2
       { type: 'UPGRADE_FRONT', frontId: s.fronts[0].id, track: 'rate' },
       { type: 'UPGRADE_FRONT', frontId: s.fronts[0].id, track: 'rate' },
     ]
     s = act(s, steps, T0)
-    const restaurant = s.fronts.find((f) => f.type === 'restaurant')!.id
-    s = act(s, [{ type: 'UPGRADE_FRONT', frontId: restaurant, track: 'rate' }, { type: 'UPGRADE_FRONT', frontId: restaurant, track: 'rate' }], T0)
     // smuggleRun: 3 dispatches, each after the last completes so the same crew frees up.
     const smugglers = [crewNamed(s, 'Vitya').id, crewNamed(s, 'Dima').id]
     const minutes = config.ops.list.smuggleCigarettes.minutes
@@ -76,6 +66,34 @@ describe('Act I goals', () => {
     s = act(s, [{ type: 'TUTORIAL_SKIP' }], T0)
     expect(s.goals.done).toEqual(['wardCop'])
     expect(goalsDone(s)).toEqual(['wardCop'])
+  })
+
+  it('counts a second district once a business of yours is in it, not when it’s bought (ADR 0066)', () => {
+    let s = fresh()
+    s.tutorial.done = true
+    s.clean = 5000
+    s = act(s, [{ type: 'BUY_DISTRICT', districtId: 'kioskRow' }], T0)
+    expect(s.districts.find((d) => d.id === 'kioskRow')?.controller).toBe('player')
+    expect(goalProgress(s, config, 'secondDistrict')).toEqual({ have: 1, need: 2 })
+    expect(s.goals.done).not.toContain('secondDistrict')
+    s = act(s, [{ type: 'BUY_RACKET', racketType: 'kiosk', districtId: 'kioskRow' }], T0)
+    expect(goalProgress(s, config, 'secondDistrict')).toEqual({ have: 2, need: 2 })
+    expect(s.goals.done).toContain('secondDistrict')
+  })
+
+  it('takes one front at rate level 2, and reads what each goal asks for from config (ADR 0066)', () => {
+    let s = fresh()
+    s.tutorial.done = true
+    s.clean = 5000
+    const front = s.fronts[0].id
+    s = act(s, [{ type: 'UPGRADE_FRONT', frontId: front, track: 'rate' }], T0)
+    expect(s.goals.done).not.toContain('workFront')
+    s = act(s, [{ type: 'UPGRADE_FRONT', frontId: front, track: 'rate' }], T0)
+    expect(s.goals.done).toContain('workFront')
+    const stricter = buildConfig('default', { 'missions.enabled': false, 'goals.need.thirdCrew': 4 })
+    expect(goalProgress(s, stricter, 'thirdCrew')).toEqual({ have: s.crew.length, need: 4 })
+    expect(tryBuildConfig('default', { 'goals.need.workFront': 3 }).errors).toContain('goals.need.workFront: Act I has only 2 fronts')
+    expect(tryBuildConfig('default', { 'goals.need.smuggleRun': 0 }).errors.some((e) => e.startsWith('goals.need.smuggleRun'))).toBe(true)
   })
 
   it('counted goals report how far along they are, and their check agrees', () => {

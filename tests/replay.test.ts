@@ -16,7 +16,8 @@ describe('log replay', () => {
       version: 1,
       exportedAt: 0,
       lines: [
-        { kind: 'meta', t: trace.start, playerId: initial.playerId, preset: 'default', overrides: {}, initialState: initial },
+        // The overrides the bot played with (missions off, as `config` has them): the replay builds its config from these.
+        { kind: 'meta', t: trace.start, playerId: initial.playerId, preset: 'default', overrides: { 'missions.enabled': false }, initialState: initial },
         ...trace.actions.map((a) => ({ kind: 'action' as const, t: a.t, action: a.action })),
       ],
     }

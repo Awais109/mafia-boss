@@ -492,20 +492,60 @@ Baseline by act: front use I 41%, II 54%, III 73%, IV 59%, V 56%, VI 47%; Dirty 
             V 85%, VI 97%); heat 30.9; wage share 12% (8/10, was 3/10); raids 0; greedy 0.7 raids. Kept.
 ```
 
+## 2026-11-16 — Act I in about two days (#5, ADR 0066)
+
+10 seeds. The first lines are "when does Act II open" (days from game start) from a goal-by-goal run of the casual bot to
+Act II; the later ones are the full 60-day sim. Starting point: Act II at 4.73 d, the slowest goals `secondDistrict` 4.64,
+`workFront` 3.62, `soldier` 2.14, `thirdCrew` 1.95 (one district fully built took 3.98 on its own; a second held, 1.41).
+
+```
+2026-11-16  goals: secondDistrict = 2 districts with a business of yours (was 2 fully built); workFront = 1 Act I front
+            at rate level 2 (was both); goals.need in config. vault.targetHoursByAct.1 2.5→4; the casual bot's Act I
+            visits 7→5 (08, 12, 16, 20, 23), the review's 3–5 a day.
+            Act II at 3.65 d. Fewer visits slow the job goals: soldier 3.36 (was 2.14), smuggleRun 1.14 (was 0.59),
+            a second district held 2.44 (was 1.41). Kept, with the steps below.
+2026-11-16  crew.experience.ranks.soldier 8→6                              Act II 3.21. Next: secondDistrict 2.77. Kept.
+2026-11-16  sim/persona.ts: while secondDistrict is open, the Clean spend keeps the cheapest district's price back
+            Act I Clean went to racket upgrades (●259 a run) and the bot took its second district by pressure jobs:
+            BUY_DISTRICT was ●15 a run. With the saving: Act II 2.47; secondDistrict 1.65, thirdCrew 2.10, soldier 2.19,
+            wardCop 2.22. Kept.
+2026-11-16  ranks.soldier 5 (2.41), 4 (2.39)                                The third crew and the Ward Cop hold it at
+            ~2.1–2.2 either way. Reverted to 6, the smallest change that takes Soldier off the critical path.
+2026-11-16  sim/persona.ts: the Ward Cop as soon as ✦4 is there, and the third hire past maxWageShare
+            Act II 2.66. The Ward Cop waits on Influence (jobs pay ✦3 a day), not on heat; an early hire spreads the
+            XP and its wages slow everything else. Reverted. (The hire alone, with soldier 5: 2.54. Reverted.)
+2026-11-16  officials.list.wardCop.cost 4→3 (with soldier 5)               Act II 2.36. Not worth a price change. Reverted.
+2026-11-16  vault.targetHoursByAct.1 4→5                                   Act II 2.50, no faster. Reverted to 4.
+2026-11-16  Full sim, 60 days: Act I 2.47, II 5.67, III 6.73, IV 9.34, V 12.27, VI 12.70; missed wages 0.40 (was 0.10)
+            Every miss in Act I, at the midnight payday an hour after the 23:00 visit: the bot kept back 12 h of wages
+            and the payday asks for the day's. One seed's deposit was right and the overreach's stake (◆63) took it.
+2026-11-16  sim/persona.ts: dirtyReserve keeps back the payday's wages when it comes before the next visit, less what
+            the vault holds by then (paydayDue); an overreach won't stake them
+            Missed wages 0.00. Without the vault term the reserve kept back a day's wages in Acts IV–VI, where the vault
+            covers payday, and the greedy bot fell to 0 raids in 10 seeds (29 hours at the raid line, was 80). Kept.
+2026-11-16  progression.acts.3.rep 1200→1000 (tried)                       Act II 5.24 (was 5.70), III 7.10. Act III's
+            businesses unlock from ★1,220, and the overreach after the Rep takes its own time. Reverted: the gate stays.
+2026-11-16  Result: Act I 2.51 (0/10 in the manual's 1–2), II 5.70 (0/10 in 3–5), III 6.52 (10/10), IV 9.29 (10/10),
+            V 11.77 (10/10), VI 13.80 (9/10); the story 49.6 d, as before. Heat 30.65; raids 0; missed wages 0.00;
+            front use 75%; vault fill Act I 4.00 h. goldRush Act I 2.44 d. Greedy: 0.1 raids a run (was 0.7), heat
+            33.8, missed wages 0.00. tests/sim.test.ts: Act I 2–3 d, Act II 4.5–6.5, and the greedy test checks the
+            raid line, the heat and the lapses rather than the raid count. Kept.
+```
+
 ## Open
 
-Whole game, 10 seeds, 60 days (2026-09-29, after M13): Act I 4.64 d, Act II 3.28, Act III 6.44, Act IV 9.78, Act V 12.86, Act VI 13.08; heat over Acts I–V 29.4 (by act about 38, 24, 25, 27, 31; Act VI about 11, since legal businesses draw none); no raids, no missed wages, partial 0.46.
+Whole game, 10 seeds, 60 days (2026-11-16, after ADR 0066): Act I 2.51 d, Act II 5.70, Act III 6.52, Act IV 9.29, Act V 11.77, Act VI 13.80; heat 30.7 (by act about 32, 30, 29, 30, 32; Act VI about 12, since legal businesses draw none); no raids, no missed wages, partial 0.45.
 
-- **Act I clears at 4.64 d** against the manual's 1–2, since it's gated on seven build-out goals (ADR 0039). An owner decision: relax the goals or move the target. Acts II–VI are all in range on 10/10 seeds, except Act III at 8/10.
+- **Act I clears at 2.51 d** against the manual's 1–2 (ADR 0066; was 4.64). The third crew, the Ward Cop and Soldier each land around day 2, each held by something else, so closer to 2 means moving several at once: the playtest (#4) decides. **Act II takes 5.70 d** against 3–5, since Act III's ★1,200 comes at about the same day as before; its own goals (#37) should give it shape. Acts III–VI are in range on 10/10 seeds, except Act VI at 9/10.
 - **Front utilization 75% (in range) and Dirty idle 74% (target 20–50%)** over 60 days, since the re-pace (ADR 0065). Idle Dirty by act: III 51%, IV 64%, V 85%, VI 97%. Act V's fronts are near capacity (92%), so the next lever there is front capacity, not the buffer; in Act VI, legal businesses earn Clean without laundering. Yield outruns laundering from late Act III on, and the loan desk takes one loan at a time. Act V's campaigns are the first large Dirty sink, and in Act VI legal Clean makes laundering matter less, so these metrics mean less the later the act. The importer (Act IV) is capped by premium sales; `coverPerPremiumPack` is the knob to watch.
 - **Wage share ~9%** over 60 days (manual 10–25%): a few percent through Acts II–V, rising in Act VI as legal businesses stop earning Dirty. Running costs that scale with the act would be a new rule, which no plan has.
 - **Act V clears at either ~10 d or 14.0 d**: on the first election won, or the second (ADR 0044). Since ADR 0063 (base share 0.34) the bot wins the first more often: Act V 11.7 d, 8/10 in band.
 - **The bot rarely reaches the Empire**: it legalizes everything and reaches the Holding first in 9 runs of 10. The Empire path is exercised by tests.
-- **Rep flattens after about day 40** once the bot owns the whole catalogue at max tier; only legalizing and upgrades are left to buy.
+- **Rep flattens after about day 40** once the bot owns the whole catalogue at max tier; only legalizing and upgrades are left to buy. Accepted (#9, 2026-11-16): the empire value is the number to grow after the story.
 - **Opinion no longer pins at 100** (ADR 0063, 2026-11-14): it climbs to the high 60s in Act V and mid 70s in Act VI. Act V clears at ~11.7 d, 8/10 in band.
 - **The Ministry freezes a front 3–12 times a run**, mostly after the election, when yield outgrows the Governor and a full opinion.
 - **Shortages are rare** (none in Act I). The plan's M3 gate asked for some shortage in Act I, under 10% of its hours.
-- **Gold barely accelerates Act I** (goldRush 4.19 d against 4.64): it speeds up jobs, and Act I is gated on building. Later acts clear within a day of the casual bot.
+- **Gold barely accelerates Act I** (goldRush 2.44 d against 2.51): it speeds up jobs, and Act I is gated on goals. Later acts clear within a day of the casual bot.
 - **The Union Office is built in Act III**, not before: City Hall is the first official after the Captain that Influence has to save for.
 - **Zhanna's lots are rare for the bot** (0.3 a run), because stock seldom gets within 12 hours of running out; surplus sales come to about ◆50 a run.
-- **No raids for the careful bot**, but the greedy persona meets about one a run since retainers (ADR 0064), so the Stash House's raid shield gets some use in `--persona greedy` runs.
+- **No raids for the careful bot**, and few for the greedy persona: 0.7 a run after retainers (ADR 0064), 0.1 since ADR 0066. It climbs to the raid line and pays up there, so a raid is the dice; the Stash House's raid shield sees little use even in `--persona greedy` runs.
