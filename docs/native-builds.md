@@ -74,6 +74,19 @@ For Expo SDK 57 and React Native 0.86. Checked on 2026-09-12; `npm run doctor` r
 
 The npm scripts `android`, `ios`, `android:install`, `ios:install` and `ios:xcode` all run through it.
 
+**The dependency audit** (#46, 2026-11-16). `npm audit --omit=dev` had five warnings, and `npm audit fix` (never `--force`) cleared the two that mattered most, within each package's declared range:
+- `shell-quote`, critical: 1.10.0 → 1.12.0, through React DevTools, which only a development build connects to;
+- `source-map-js`, high: 1.2.1 → 1.2.2, through postcss in Expo's Metro config, at build time.
+
+The same run moved dev tools within their ranges (Vitest 5.1, Vite 8.3.8, typescript-eslint 8.72, rolldown 1.2.19) and zod 3 → 4. zod is used only by the React Hooks lint plugin and the React Compiler's Babel plugin, and both accept 4. `npm run check` and the web, iOS and Android exports pass after it.
+
+**What's left:** `minimatch` 7–11, moderate: a denial of service from crafted glob patterns. All ten remaining warnings, dev included, are this one:
+- it comes through `@expo/fingerprint` (part of `expo`), Expo's config plugins and typescript-eslint;
+- all of these are build and lint tools that only read patterns this project writes, and none of them is in the app's bundle;
+- npm's only offered fix installs `expo@52`, which isn't an option.
+
+It goes when Expo's packages move past it. Run `npm audit --omit=dev` after each `npx expo install` update, and record anything new here.
+
 ## The icon and the splash
 
 ([ADR 0070](decisions/0070-icon-and-splash.md)) The game's own mark, a brass seal (a double ring as a stamp leaves, the wordmark's S, a ◆ above and below), drawn by `scripts/gen-icons.ts` from the palette (`app/theme.ts`) and the wordmark's font (Fira Sans Extra Condensed ExtraBold). `npm run icons` writes the PNGs in `assets/`, which are committed. It renders each SVG with headless Chrome, found at its usual macOS and Linux paths, or set `CHROME`.
