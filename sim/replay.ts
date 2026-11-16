@@ -22,6 +22,34 @@ export type LogLine =
   | { kind: 'action'; t: number; action: Action }
   | { kind: 'config'; t: number; preset: PresetName; overrides: Overrides }
   | { kind: 'event'; event: GameEvent }
+  | CrashLine
+
+// A JavaScript error the app caught (ADR 0071), when it happened (real time `at`, game time `t` if known),
+// where (a render, or anywhere else), whether it would have closed the app, and the screen it was on.
+// Replays skip it; the report lists it.
+export type CrashLine = {
+  kind: 'crash'
+  at: number
+  t?: number
+  where: 'render' | 'global'
+  fatal: boolean
+  message: string
+  stack?: string
+  componentStack?: string
+  screen?: string
+}
+
+export const crashesIn = (doc: LogExport): CrashLine[] => doc.lines.filter((l): l is CrashLine => l.kind === 'crash')
+
+// For the report: one line each, with the first frame of its stack.
+export function formatCrashes(crashes: CrashLine[]): string {
+  if (!crashes.length) return 'Crashes: none'
+  const lines = crashes.map((c) => {
+    const frame = c.stack?.split('\n').find((l) => /\bat\b|@/.test(l))?.trim()
+    return `  ${new Date(c.at).toISOString().slice(0, 16).replace('T', ' ')}  ${c.where}${c.fatal ? ' (fatal)' : ''}${c.screen ? ` · ${c.screen}` : ''} · ${c.message}${frame ? `\n      ${frame}` : ''}`
+  })
+  return [`Crashes: ${crashes.length}`, ...lines].join('\n')
+}
 
 export type LogExport = { format: 'sevgorod-log'; version: 1; exportedAt: number; lines: LogLine[] }
 

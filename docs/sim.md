@@ -113,9 +113,9 @@ Where the bot stands against the targets, and every number change behind it, is 
 
 ## Replay
 
-`sim/replay.ts` defines the app's log format (`LogLine`: `meta`, `action`, `config`, `event`; `LogExport` wraps the lines) and `replayLog(doc)`:
+`sim/replay.ts` defines the app's log format (`LogLine`: `meta`, `action`, `config`, `event`, `crash`; `LogExport` wraps the lines) and `replayLog(doc)`:
 1. Start from the last `meta` line's snapshot, migrated to the current schema, and its config.
 2. Walk to each `action` line's time and apply it, switching config at `config` lines.
 3. Treat `SESSION_START` and `SESSION_END` as session bounds.
 
-Because the engine is deterministic, the replay reproduces the tester's game; `tests/replay.test.ts` checks this against a bot game. `--replay` prints the same report.
+Because the engine is deterministic, the replay reproduces the tester's game; `tests/replay.test.ts` checks this against a bot game. `--replay` prints the same report, then the errors the app caught (`crashesIn`, `formatCrashes`; [ADR 0071](decisions/0071-crash-capture.md)): when, where, fatal or not, the screen, the message and the stack's first frame. A replay skips crash lines.

@@ -6,7 +6,7 @@ The React Native layer: `App.tsx` and `app/`. It renders state and dispatches ac
 
 ## Entry and shell
 
-- `index.ts` registers `App`.
+- `index.ts` installs the crash handler and registers `App` inside `CrashBoundary` (below).
 - `App.tsx` wraps everything in `SafeAreaProvider`, calls `sound.start()`, `notifier.start()` and `store.start()` once, asks for notifications once the opening is done, sets the music for the screen and the cover's ambience ([sound.md](sound.md)), loads the fonts (`useFonts(FONT_ASSETS)`), and renders a loading spinner until the first snapshot exists and the fonts have loaded or failed. Then the `Cover` until Continue ([ADR 0049](decisions/0049-scenes.md)); then `Header`, `TutorialBanner`, `NoticeBar`, the active screen, the bottom bar, and one overlay at a time: `AwayModal` while a "while you were away" summary is pending, else `SceneViewer` while a scene is playing ([ADR 0049](decisions/0049-scenes.md)), else `EventNoticeModal` while a live notice is queued ([ADR 0038](decisions/0038-live-event-notices.md)), and `SkipSheet` when the header's gold chip is tapped.
 - **The bottom bar** (`BAR` in `App.tsx`) holds five tabs: Home, Business (tab id `rackets`), Fronts, Ops, and Map (tab id `turf`). The active one is brass with a brass rule above it.
 - **More,** the sixth slot, opens `MoreSheet`, a bottom sheet listing the rest (`MORE`): Crew, Heat, Stats, How it works (tab id `help`), Log, Settings, and Debug (only when `debug.enabled`, which a release build turns off: `shown` in `App.tsx`, [ADR 0057](decisions/0057-debug-by-build.md)). Each row carries a one-line status (`moreNote`): crew used and idle, heat and the line it's over, the game day, sound and music on or off. Switching tabs and opening More play `page`. While one of these is open, More is the active slot.
@@ -63,6 +63,21 @@ The React Native layer: `App.tsx` and `app/`. It renders state and dispatches ac
 
 The summary is not saved: closing the app loses it, and the Log still has every event.
 
+## Crashes
+
+([ADR 0071](decisions/0071-crash-capture.md)) Local first: every caught JavaScript error goes into the play log, which a tester shares from Settings. No account or service is needed.
+- `app/crash.ts`:
+  - `installCrashHandler()` sets React Native's global handler (not on web): each uncaught error is recorded;
+  - in development the red box follows. In a release build, a fatal error goes to the boundary's screen rather than closing the app;
+  - `recordCrash(error, where, fatal, componentStack?)` writes the line through `store.recordCrash`;
+  - `setCrashScreen` (from `App.tsx`) says which screen it was on;
+  - `previewCrash()` shows the screen with a sample error and records nothing.
+- `app/crashLine.ts`: `crashLine(error, …)`, the pure line: message (500 characters at most), stack (4,000), component stack (2,000), real and game time, where (`render` or `global`), fatal, and the screen. `CRASH_LIMITS` holds the limits.
+- `components/CrashBoundary.tsx`: an error boundary around the whole app. A render error below it is recorded, and the boundary shows **Something went wrong**: what happened, the error's first line, **Share my play log** (`store.exportLog()`) and **Carry on** (draws the app again). Plain views only, so it doesn't depend on whatever broke.
+- `store.crashes()`: the crash lines in the play log, read once and then kept up. The Log screen lists the last five under "Errors caught".
+- Debug's State panel has **Break this screen** (a render error) and **Throw outside React** (a global one) to try it. Preview has "Something went wrong" (`?preview=crash` on web).
+- Native crashes (a crash in native code, or the OS killing the app) aren't seen from JavaScript, and nor are unhandled promise rejections. A hosted service can come with the backend (#19, #20).
+
 ## Storage
 
 `app/storage.ts`: `read`, `write`, `append`, `remove`, `uri`, using the `File`/`Paths` API from `expo-file-system` in the app's document directory. Web falls back to `localStorage`.
@@ -71,7 +86,7 @@ The summary is not saved: closing the app loses it, and the Log still has every 
 |---|---|
 | `sevgorod-save.json` | The `PlayerState` |
 | `sevgorod-settings.json` | `{ preset, overrides, audio: { sound, music }, notify: { on, asked } }`; a file without `audio` or `notify` reads with the defaults (everything on, not yet asked) |
-| `sevgorod-log.jsonl` | One JSON line per entry: `meta` (game start snapshot and config), `action`, `config`, `event`. Format in `sim/replay.ts` |
+| `sevgorod-log.jsonl` | One JSON line per entry: `meta` (game start snapshot and config), `action`, `config`, `event`, `crash` (ADR 0071). Format in `sim/replay.ts` |
 | `sevgorod-export-save.json`, `sevgorod-export-log.json` | Written just before sharing |
 
 ## Screens

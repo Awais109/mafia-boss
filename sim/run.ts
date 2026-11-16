@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { ConfigError, PRESET_NAMES, tryBuildConfig, type Overrides, type PresetName } from '../engine'
 import { simulate, type Trace } from './driver'
 import { CASUAL, GOLD_RUSH, GREEDY, withSessions } from './persona'
-import { isLogExport, replayLog } from './replay'
+import { crashesIn, formatCrashes, isLogExport, replayLog } from './replay'
 import { checkOk, formatByAct, formatSummary, summarize, toCsv, type Summary } from './report'
 
 // npm run sim -- --preset default --days 5 --seed 42 [--sessions 3] [--runs 10] [--set heat.baseControl=6]
@@ -98,6 +98,7 @@ function main() {
     if (!isLogExport(doc)) fail(`${args.replay} is not a Sevgorod log export (Debug → Save & log → Export log)`)
     const trace = replayLog(doc)
     console.log(formatSummary(summarize(trace)))
+    console.log(formatCrashes(crashesIn(doc)))
     writeCsv(args, trace, `replay-${trace.label.seed}`)
     return
   }

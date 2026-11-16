@@ -87,6 +87,8 @@ function StatePanel({ game }: { game: Snapshot }) {
   const next = nextGate(s, c)
   const [heat, setHeat] = useState('')
   const [rep, setRep] = useState('')
+  const [broken, setBroken] = useState(false)
+  if (broken) throw new Error('Debug: a test render error')
   const d = store.dispatch
   return (
     <>
@@ -124,6 +126,23 @@ function StatePanel({ game }: { game: Snapshot }) {
           <Btn small title="New recruits" onPress={() => d({ type: 'DEBUG_REFRESH_POOL' })} />
           <Btn small title="Incident" onPress={() => d({ type: 'DEBUG_FORCE_INCIDENT' })} />
           <Btn small title="New offers" onPress={() => d({ type: 'DEBUG_REFRESH_OFFERS' })} />
+        </BtnRow>
+      </Card>
+      <Card>
+        <T bold>Crash capture</T>
+        <T>A test error, to see it caught and written to the play log (ADR 0071).</T>
+        <BtnRow>
+          <Btn small kind="danger" title="Break this screen" onPress={() => setBroken(true)} />
+          <Btn
+            small
+            kind="danger"
+            title="Throw outside React"
+            onPress={() =>
+              setTimeout(() => {
+                throw new Error('Debug: a test error outside React')
+              }, 0)
+            }
+          />
         </BtnRow>
       </Card>
     </>

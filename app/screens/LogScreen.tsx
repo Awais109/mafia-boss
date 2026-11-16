@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native'
 import { type EventType, type GameEvent } from '../../engine'
 import { Icon, type IconName } from '../components/Glyph'
-import { colors, List, PageHead, rich, Screen, Section } from '../components/ui'
+import { colors, Item, List, PageHead, rich, Screen, Section } from '../components/ui'
 import { describeEvent } from '../eventText'
 import { fmtClock } from '../format'
+import { store } from '../store'
 import { fonts } from '../theme'
 import type { ScreenProps } from './types'
 
@@ -65,6 +66,8 @@ export function LogScreen({ game }: ScreenProps) {
   return (
     <Screen>
       <PageHead title="Log" note="Everything that happened · newest first" />
+
+      <Crashes />
 
       <View style={styles.filters}>
         {FILTERS.map((f) => {
@@ -147,3 +150,23 @@ const styles = StyleSheet.create({
   emptyIcon: { width: 44, height: 44, borderRadius: 4, borderWidth: 1, borderColor: colors.control, alignItems: 'center', justifyContent: 'center' },
   emptyText: { fontFamily: fonts.text400, fontSize: 15, color: colors.muted },
 })
+
+// Errors the app caught (ADR 0071), newest first: they're in the play log Settings shares.
+function Crashes() {
+  const crashes = store.crashes().slice(-5).reverse()
+  if (!crashes.length) return null
+  return (
+    <Section title={`Errors caught · ${store.crashes().length}`} right="in the play log">
+      <List>
+        {crashes.map((x) => (
+          <Item
+            key={`${x.at}-${x.message}`}
+            label={x.message}
+            hint={`${new Date(x.at).toLocaleString()} · ${x.where === 'render' ? 'drawing' : 'running'}${x.screen ? ` · ${x.screen}` : ''}`}
+            color={colors.bad}
+          />
+        ))}
+      </List>
+    </Section>
+  )
+}

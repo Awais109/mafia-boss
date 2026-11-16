@@ -3,6 +3,20 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-16 — Crash capture (#44)
+
+Branch: `feature/44-crash`. Reasoning: [ADR 0071](docs/decisions/0071-crash-capture.md). A tester's crash used to be a white screen or a closed app, with nothing written down.
+
+- **What a tester sees:** "Something went wrong", with what happened, Share my play log and Carry on. The Log screen lists the errors caught.
+- **What we get:** each error in the play log with its stack, the screen and the time, beside the actions that led there. `npm run sim -- --replay` prints them.
+- **How:**
+  - `CrashBoundary` around the whole app (mounted in `index.ts`);
+  - React Native's global handler (`app/crash.ts`): in a release build a fatal error shows the screen instead of closing the app;
+  - `crashLine` (pure) and a `crash` log line that replays skip.
+- **Try it:** Debug's State panel has Break this screen and Throw outside React; Preview has the screen.
+- **Not covered yet:** native crashes and promise rejections, which wait for a hosted service with the backend.
+- **Verified:** `npm run check`, with `tests/crash.test.ts` new; the screen in the web export.
+
 ## 2026-11-16 — The icon and splash (#43)
 
 Branch: `feature/43-icon`. Reasoning: [ADR 0070](docs/decisions/0070-icon-and-splash.md). The icon, Android's layers, the splash and the favicon were Expo's template.
