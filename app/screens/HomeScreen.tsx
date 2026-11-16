@@ -3,6 +3,7 @@ import { dayMs, gameDay, opName } from '../../engine'
 import { Glyph, Icon } from '../components/Glyph'
 import { InboxCard } from '../components/InboxCard'
 import { MoneyFlow } from '../components/MoneyFlow'
+import { DailyCard } from '../components/DailyCard'
 import { DoNextCard } from '../components/DoNextCard'
 import { NextCard } from '../components/NextCard'
 import { SupplyCard, supplyNote } from '../components/SupplyCard'
@@ -44,6 +45,8 @@ export function HomeScreen({ game, go }: ScreenProps) {
   return (
     <Screen>
       {s.rockBottom.pending && !s.rockBottom.usedActs.includes(s.act) && <RockBottom game={game} />}
+
+      <DailyCard game={game} />
 
       <DoNextCard next={next} go={go} />
 

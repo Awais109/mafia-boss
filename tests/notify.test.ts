@@ -41,6 +41,15 @@ describe('notifications', () => {
     expect(payday!.at).toBe(morningIfQuiet(Math.ceil(T0 / dayMs(quiet)) * dayMs(quiet), DAYTIME.tzOffsetMin))
   })
 
+  it('reminds of tomorrow’s gold at the next game day’s start, with the streak it would make (ADR 0069)', () => {
+    const s: PlayerState = { ...fresh('n-daily', quiet), tutorial: { ...fresh('n-daily', quiet).tutorial, done: true } }
+    const claimed = act(s, [{ type: 'CLAIM_DAILY' }], T0, quiet)
+    const daily = planNotifications(claimed, quiet, T0, DAYTIME).find((p) => p.kind === 'daily')
+    expect(daily?.title).toBe('Today’s gold is waiting')
+    expect(daily!.body).toContain('day 2 in a row')
+    expect(daily!.at).toBe(morningIfQuiet(Math.ceil(T0 / dayMs(quiet)) * dayMs(quiet), DAYTIME.tzOffsetMin))
+  })
+
   it('warns an hour before a waiting decision takes its default', () => {
     const s = act(fresh('n-inbox', quiet), [{ type: 'DEBUG_FORCE_INCIDENT' }], T0, quiet)
     const item = s.inbox[0]

@@ -33,6 +33,7 @@ export { rushCost, skipCost } from './systems/gold'
 export { bestHaggler, canHaggle, haggleOdds, surplusRoomToday, zhannaDeals, zhannaHoldsPort, zhannaHostile } from './systems/rivals'
 export { canAffordEffects, contestFighter, contestOdds, incidentEligible, incidentNeedHolds } from './systems/inbox'
 export { onPayroll, retainerFee, retainersDueWithin } from './systems/retainers'
+export { dailyOffer } from './systems/daily'
 export { creditOpen, defaultChance, lendCap, loanCap, loanDue } from './systems/credit'
 export { colonelHolds, colonelHostile, convoyLoad, customsChance, hijackChance, passageActive, passageCost } from './systems/convoys'
 export {

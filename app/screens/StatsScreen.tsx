@@ -67,6 +67,7 @@ export function StatsScreen({ game }: ScreenProps) {
           <Item label="Clean earned" hint={t.legalClean ? `${glyph.clean}${fmt(t.legalClean)} of it from legal businesses` : 'laundered through fronts'} value={`${glyph.clean}${fmt(t.cleanEarned)}`} color={colors.clean} />
           <Item label="Spent" hint="businesses, upgrades, crew and turf" value={`${glyph.clean}${fmt(t.cleanSpent)}`} plain />
           <Item label="Gold earned" value={`${glyph.gold}${fmt(t.gold.granted)}`} color={colors.gold} />
+          <Item label="Daily gold" hint={`${fmt(t.daily.claims)} days · best streak ${fmt(t.daily.best)}`} value={`${glyph.gold}${fmt(t.daily.gold)}`} plain />
           <Item label="Gold spent" hint={`${fmt(t.gold.hoursSkipped)}h skipped · ${fmt(t.gold.spentRush)} on jobs finished early`} value={`${glyph.gold}${fmt(goldSpent)}`} plain />
           <SubHead>Costs and losses</SubHead>
           {costs.map((x) => (

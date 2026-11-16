@@ -20,7 +20,7 @@ import type {
 } from '../config/schema'
 import type { GameEvent } from './events'
 
-export const SCHEMA_VERSION = 18
+export const SCHEMA_VERSION = 19
 export const LOG_CAP = 200
 export const LEDGER_ROWS = 8 // 7 closed days plus today's opening snapshot
 export const EMPIRE_DAYS = 8 // the empire value at the last 8 day starts (ADR 0052)
@@ -288,6 +288,7 @@ export type PlaytestStats = {
   missions: { sent: number; won: number; lost: number } // boss missions (ADR 0050): overreaches count as sent
   after: { contracts: number; contractClean: number; contractGold: number; pastBook: number; bests: number } // ADR 0052
   retainers: { paid: number; missed: number; clean: number } // ADR 0064
+  daily: { claims: number; gold: number; best: number } // ADR 0069: claims, gold paid, longest streak
   firstRaidAt: number | null
   officialBoughtAt: Partial<Record<OfficialId, number>>
   lastSessionAt: number | null
@@ -327,6 +328,7 @@ export type PlayerState = {
   districts: District[]
   officials: OfficialId[]
   retainers: Partial<Record<OfficialId, Retainer>> // one per official on the payroll (ADR 0064)
+  daily: { lastAt: number | null; streak: number } // the daily reward (ADR 0069): when it was last claimed, the streak then
   officialCooldownUntil: number
   bribeUntil: number
   bribeControl: number
@@ -420,6 +422,7 @@ export function emptyStats(): PlaytestStats {
     missions: { sent: 0, won: 0, lost: 0 },
     after: { contracts: 0, contractClean: 0, contractGold: 0, pastBook: 0, bests: 0 },
     retainers: { paid: 0, missed: 0, clean: 0 },
+    daily: { claims: 0, gold: 0, best: 0 },
     firstRaidAt: null,
     officialBoughtAt: {},
     lastSessionAt: null,

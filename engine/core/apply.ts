@@ -5,6 +5,7 @@ import type { CrewMember, PlayerState } from '../model/state'
 import { changeLoyalty, crewSlots, regeneratePool, unassignEnforcer } from '../systems/crew'
 import { checkActs } from '../systems/acts'
 import { hireRetainer, payRetainer } from '../systems/retainers'
+import { claimDaily } from '../systems/daily'
 import { canPressure, getDistrict, racketBlocked, takeDistrict } from '../systems/districts'
 import { buyPassage } from '../systems/convoys'
 import { legalize } from '../systems/legal'
@@ -325,6 +326,9 @@ function handle(state: PlayerState, ctx: Ctx, a: Action, t: number): string | nu
 
     case 'PAY_RETAINER':
       return payRetainer(state, ctx, t, a.officialId)
+
+    case 'CLAIM_DAILY':
+      return claimDaily(state, ctx, t)
 
     case 'BRIBE': {
       if (state.bribeControl > 0 && state.bribeUntil > t) return 'A bribe is already working'

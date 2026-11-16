@@ -552,6 +552,17 @@ casual bot meets each candidate, in days after its act opens. Picked so an act's
             campaign and the third hearing are the ones it skips).
 ```
 
+## 2026-11-16 — Today's gold (#39, ADR 0069)
+
+New config: `daily.gold` 1, 1, 1, 2, 2, 2, 3 (a week repeats), `daily.dropPerMissedDay` 2. 10 seeds, 60 days.
+
+```
+2026-11-16  daily (every bot claims at its first session of the day)
+            Casual: unchanged, line for line (it never spends gold). goldRush: Act I 2.29 d (2.44 with daily.enabled
+            false), the story 48.08 d (50.38). About 85 bars over a 50-day story on a full streak; holding at 3 a day
+            after the first week would have paid about 150, against the acts' 45. Kept.
+```
+
 ## Open
 
 Whole game, 10 seeds, 60 days (2026-11-16, after ADR 0066): Act I 2.51 d, Act II 5.70, Act III 6.52, Act IV 9.29, Act V 11.77, Act VI 13.80; heat 30.7 (by act about 32, 30, 29, 30, 32; Act VI about 12, since legal businesses draw none); no raids, no missed wages, partial 0.45.

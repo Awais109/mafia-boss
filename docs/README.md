@@ -54,7 +54,7 @@ When you change a path on the left, update the doc on the right in the same comm
 | `engine/newGame.ts` | [systems/progression.md](systems/progression.md) |
 | `engine/systems/rackets.ts`, `engine/systems/ledger.ts` | [systems/economy.md](systems/economy.md) |
 | `engine/systems/supply.ts` | [systems/supply-chain.md](systems/supply-chain.md) |
-| `engine/systems/gold.ts` | [systems/gold.md](systems/gold.md) |
+| `engine/systems/gold.ts`, `engine/systems/daily.ts` | [systems/gold.md](systems/gold.md) |
 | `engine/systems/inbox.ts` | [systems/inbox.md](systems/inbox.md) |
 | `engine/systems/offers.ts` | [systems/ops.md](systems/ops.md) |
 | `engine/systems/fronts.ts` | [systems/fronts.md](systems/fronts.md) |
