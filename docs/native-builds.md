@@ -26,6 +26,7 @@ Expo Go runs the game's JavaScript inside Expo's own app, so nothing is compiled
 - `react-native-svg`, for glyphs, icons and art;
 - `expo-audio` (a config plugin in `app.json`, set to no background playback and no microphone), for sound and music, with `expo-asset` at the SDK's version ([sound.md](sound.md));
 - `expo-notifications` (a config plugin in `app.json`: Android's tray icon and colour), for local notifications ([notifications.md](notifications.md)). Its plugin always adds the iOS push entitlement, which a free Apple ID can't sign, so `plugins/withoutPushEntitlement.js`, listed before it, takes it back out. Android gains `POST_NOTIFICATIONS` and `RECEIVE_BOOT_COMPLETED`;
+- `expo-splash-screen` (a config plugin in `app.json`: the splash image, 200 wide, on the ground colour; see below);
 - `react-native-safe-area-context`.
 
 All of them ship inside Expo Go, so Expo Go needs nothing extra. A standalone install built before a module was added has to be built again.
@@ -72,6 +73,21 @@ For Expo SDK 57 and React Native 0.86. Checked on 2026-09-12; `npm run doctor` r
 - **`LANG` and `LC_ALL`:** set to `en_US.UTF-8` when they aren't already UTF-8.
 
 The npm scripts `android`, `ios`, `android:install`, `ios:install` and `ios:xcode` all run through it.
+
+## The icon and the splash
+
+([ADR 0070](decisions/0070-icon-and-splash.md)) The game's own mark, a brass seal (a double ring as a stamp leaves, the wordmark's S, a ◆ above and below), drawn by `scripts/gen-icons.ts` from the palette (`app/theme.ts`) and the wordmark's font (Fira Sans Extra Condensed ExtraBold). `npm run icons` writes the PNGs in `assets/`, which are committed. It renders each SVG with headless Chrome, found at its usual macOS and Linux paths, or set `CHROME`.
+
+| File | Size | What it is | Where `app.json` uses it |
+|---|---|---|---|
+| `icon.png` | 1024, opaque | the seal on the warm-dark ground | `expo.icon` (iOS; Android before adaptive icons) |
+| `android-icon-foreground.png` | 1024, transparent | the seal inside the adaptive icon's safe circle (66% of the canvas) | `android.adaptiveIcon.foregroundImage` |
+| `android-icon-background.png` | 1024, opaque | the ground | `android.adaptiveIcon.backgroundImage` (`backgroundColor` `#16130f`) |
+| `android-icon-monochrome.png` | 1024, transparent | the seal in white, for themed icons | `android.adaptiveIcon.monochromeImage`, and `expo-notifications`' tray icon |
+| `splash-icon.png` | 1024, transparent | the seal over the wordmark | the `expo-splash-screen` plugin: `imageWidth` 200, `contain`, on `#16130f` |
+| `favicon.png` | 48, opaque | the seal with one bolder ring, which reads at that size | `web.favicon` |
+
+To use an artist's icon instead, replace the PNGs (same names and sizes) and leave `npm run icons` unrun. A new icon or splash needs a fresh native build, since both are baked in at prebuild. Expo Go shows its own.
 
 ## App identifiers
 

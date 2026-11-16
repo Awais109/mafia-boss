@@ -82,6 +82,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0067](0067-act-goals.md) | Every act has goals: four from Act II on that guide and pay gold, gating nothing; only the act you're in counts | Accepted |
 | [0068](0068-do-this-next.md) | "Do this next": one suggestion with a button leads Home when nothing else waits | Accepted |
 | [0069](0069-daily-reward.md) | Today's gold: a daily claim on a weekly streak, by game day; a missed day takes two off | Accepted |
+| [0070](0070-icon-and-splash.md) | The icon and splash are the game's own mark (a brass seal), generated from the palette and wordmark font | Accepted |
 
 ## Template
 

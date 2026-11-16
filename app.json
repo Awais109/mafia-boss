@@ -13,7 +13,7 @@
     "android": {
       "package": "com.hamzaarshad.sevgorod",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#16130f",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -41,6 +41,15 @@
         {
           "icon": "./assets/android-icon-monochrome.png",
           "color": "#c9a86a"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#16130f"
         }
       ]
     ]
