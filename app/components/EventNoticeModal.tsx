@@ -32,7 +32,7 @@ const EVENT_LOOK: Partial<Record<GameEvent['type'], Look>> = {
   RETAINER_MISSED: { label: 'The payroll', icon: 'warning', color: colors.warn },
   UPKEEP_MISSED: { label: 'Upkeep', icon: 'dirty', color: colors.warn },
   DISTRICT_FLIPPED: { label: 'Turf', icon: 'flag', color: colors.influence },
-  GOAL_DONE: { label: 'Act I goal', icon: 'check', color: colors.good },
+  GOAL_DONE: { label: 'Goal', icon: 'check', color: colors.good },
   ACT_CLEARED: { label: 'Act cleared', icon: 'ending', color: colors.good },
   TOLYA_TICK: { label: 'Tolya', icon: 'flag', color: colors.warn },
   CREW_INJURED: { label: 'Hurt', icon: 'crew', color: colors.warn },

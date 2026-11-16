@@ -66,19 +66,23 @@ export function HomeScreen({ game, go }: ScreenProps) {
       )}
 
       {goals && (
-        <Section title={`Act I goals · ${s.goals.done.length}/${c.goals.list.length}`} right={<Note>{`${glyph.gold}${c.goals.rewardGold} each`}</Note>}>
+        <Section
+          title={`Act ${ACT_NAME[goals.act]} goals · ${goals.rows.filter((g) => g.done).length}/${goals.rows.length}`}
+          right={<Note>{`${glyph.gold}${goals.gold} each`}</Note>}
+        >
           <List>
-            {goals.map((g) => (
+            {goals.rows.map((g) => (
               <Item
                 key={g.id}
                 left={<Check state={g.done ? 'done' : 'todo'} />}
                 label={g.text}
                 hint={g.hint}
                 muted={g.done}
-                value={g.done ? <Text style={styles.paid}>paid</Text> : <Text style={styles.reward}>{rich(`${glyph.gold}${c.goals.rewardGold}`, 13)}</Text>}
+                value={g.done ? <Text style={styles.paid}>paid</Text> : <Text style={styles.reward}>{rich(`${glyph.gold}${goals.gold}`, 13)}</Text>}
               />
             ))}
           </List>
+          {!goals.gates && <Note>For gold, and to learn the act. The next act asks only for what’s under Next.</Note>}
         </Section>
       )}
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Platform, StyleSheet, TextInput, View } from 'react-native'
-import { configLeaves, electionScheduled, getPath, nextGate, PRESET_NAMES } from '../../engine'
+import { allGoals, configLeaves, electionScheduled, getPath, nextGate, PRESET_NAMES } from '../../engine'
 import { ACT_NAME } from '../acts'
 import { formatSummary, summarize } from '../../sim/report'
 import { Btn, BtnRow, Card, colors, Row, Screen, T } from '../components/ui'
@@ -276,7 +276,7 @@ function InspectPanel({ game }: { game: Snapshot }) {
     ['act / rep', `${s.act} / ${n(s.reputation)}`],
     ['inbox / offers', `${s.inbox.length} / ${s.offers.items.length} (refresh #${s.offers.refreshCount})`],
     ['gold / skipped', `${s.gold} / ${n(s.skippedMs / c.time.hourMs)} h`],
-    ['goals done', `${s.goals.done.length} / ${c.goals.list.length}`],
+    ['goals done', `${s.goals.done.length} / ${allGoals(c).length}`],
   ]
   return (
     <>

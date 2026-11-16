@@ -2,7 +2,7 @@
 
 Reputation is the progress currency: it unlocks bigger businesses, fronts and officials, and opens the acts after Act II. The game has six acts ([ADR 0040](../decisions/0040-six-acts.md)); Act I → Act II is gated by finishing every Act I goal ([ADR 0039](../decisions/0039-goals-gate-act-two.md)). The guided opening walks a new player through buying the starting setup and then the loop; Act I goals give a reason to come back, and decide when Act II opens.
 
-**Code:** `engine/systems/reputation.ts` (`gainRep`, `spendClean`), `engine/systems/acts.ts` (`gateMet`, `nextGate`, `gameCleared`, `checkActs`), `engine/systems/tutorial.ts` (`TUTORIAL_STEPS`, `currentTutorialStep`, `tutorialOnAction`), `engine/systems/goals.ts` (`GOAL_CHECKS`, `goalProgress`, `checkGoals`), `engine/newGame.ts`, the quick start in `engine/core/apply.ts` (`applyQuickStart`). The copy lives in `app/components/TutorialBanner.tsx`, `app/goals.ts` and `app/acts.ts`.
+**Code:** `engine/systems/reputation.ts` (`gainRep`, `spendClean`), `engine/systems/acts.ts` (`gateMet`, `nextGate`, `gameCleared`, `checkActs`), `engine/systems/tutorial.ts` (`TUTORIAL_STEPS`, `currentTutorialStep`, `tutorialOnAction`), `engine/systems/goals.ts` (`GOAL_CHECKS`, `goalProgress`, `actGoals`, `allGoals`, `checkGoals`), `engine/newGame.ts`, the quick start in `engine/core/apply.ts` (`applyQuickStart`). The copy lives in `app/components/TutorialBanner.tsx`, `app/goals.ts` and `app/acts.ts`.
 **Config:** `reputation.*`, `progression.*`, the `unlockRep` and `act` fields in `rackets.types`, `fronts.types` and `officials.list`, the `*ByAct` records, `tutorial.*`, `opening.quickStart`, `crew.openingPool`, `goals.*`, and the `vault.starting*` fields.
 
 ## Reputation
@@ -118,6 +118,35 @@ The opening's hire step plays Scene 2, where the three can be hired, and Tolya's
 | `soldier` | anyone reached Soldier (`crew.experience.ranks.soldier`, 6 stat points) |
 
 There used to be an eighth goal, `actII` ("Reach Act II") — removed under ADR 0039, since it checked `state.act >= 2`, which can't hold before Act II opens once Act II requires every goal done. From ADR 0039 to ADR 0066, `secondDistrict` asked for two districts fully built (every slot and premises lot) and `workFront` for both Act I fronts at level 2, which held Act I at about 4.7 days.
+
+## Later acts' goals
+
+([ADR 0067](../decisions/0067-act-goals.md)) `goals.byAct`: four goals for each act from II, that walk through what the act brings, spread through it, none of them what its gate asks for. They're checked with Act I's (`checkGoals`), but only the act you're in counts: one met early waits for its act, and one left when the act moves on stays undone. Each pays `goals.rewardGoldByAct[act]` once (`GOAL_DONE`, a `goal` grant). They gate nothing. Home lists the act's goals until all are done, with a line saying so ([app.md](../app.md)).
+
+| Act | Goal | Done when | Casual bot (10 seeds): met, days into the act |
+|---|---|---|---|
+| II | `precinctCaptain` | the Precinct Captain is on the payroll | 10/10, 1.9 |
+| | `stashHouse` | you own a Stash House | 10/10, 3.4 |
+| | `newTurf` | you hold an Act II district (the Port Quarter or the Sovietsky Blocks) | 10/10, 5.1 |
+| | `zhannaLot` | you've bought a lot from Zhanna (`stats.shipmentsPaid`) | 0/10: the bot buys only when stock runs short |
+| III | `bigScore` | a crew has gone on the Big Score | 10/10, 0.4 |
+| | `cooperativeBank` | you own the Cooperative Bank (it needs a street at prosperity 55) | 10/10, 1.6 |
+| | `loanDesk` | you own a Loan Desk | 10/10, 2.7 |
+| | `theCentre` | you hold the Centre | 10/10, 4.5 |
+| IV | `customsChief` | the Customs Chief is on the payroll | 10/10, 0.2 |
+| | `firstConvoy` | a convoy has landed | 10/10, 3.4 |
+| | `foreignShop` | you own a Foreign Goods Shop | 10/10, 3.5 |
+| | `premiumSold` | `goals.need.premiumSold` (300) premium packs sold | 10/10, 6.9 |
+| V | `newspaper` | you own the Newspaper | 10/10, 3.9 |
+| | `campaign` | you've spent on a campaign (`stats.campaignPaid`) | 4/10, 5.5 |
+| | `fixTender` | a crew has fixed a tender | 10/10, 7.6 |
+| | `governor` | the Governor is on the payroll | 10/10, 7.5 |
+| VI | `firstLegal` | a business is legal | 10/10, 0.3 |
+| | `legalBusinesses` | `goals.need.legalBusinesses` (15) businesses are legal | 10/10, 1.9 |
+| | `holding` | you own the Holding | 10/10, 6.6 |
+| | `hearingsWon` | `goals.need.hearingsWon` (3) hearings won in court (the Empire needs `reckoning.empireWins`) | 8/10, 7.0 |
+
+`actGoals(config, act)` gives an act's list and gold; `allGoals(config)` every goal in act order (Debug's count). Config validation keeps every goal in at most one act's list.
 
 ## Playtest stats
 

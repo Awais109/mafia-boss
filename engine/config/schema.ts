@@ -89,9 +89,24 @@ export type Ending = 'holding' | 'empire'
 export const ENDINGS: readonly Ending[] = ['holding', 'empire']
 export type IncidentNeed = 'idleCrew' | 'joint' | 'factory' | 'inspected' | 'printShop' | 'afterStory'
 
-// Act I goals (ADR 0035, gate ADR 0039), each paying gold once. All of them must be done to open Act II.
-export type GoalId = 'secondDistrict' | 'factoryTier2' | 'thirdCrew' | 'wardCop' | 'workFront' | 'smuggleRun' | 'soldier'
-export const GOAL_IDS: readonly GoalId[] = ['secondDistrict', 'factoryTier2', 'thirdCrew', 'wardCop', 'workFront', 'smuggleRun', 'soldier']
+// Goals, each paying gold once. Act I's (ADR 0035) must all be done to open Act II (ADR 0039); each later act's
+// (ADR 0067) guide and gate nothing.
+export type ActOneGoalId = 'secondDistrict' | 'factoryTier2' | 'thirdCrew' | 'wardCop' | 'workFront' | 'smuggleRun' | 'soldier'
+export type LaterGoalId =
+  | 'zhannaLot' | 'newTurf' | 'stashHouse' | 'precinctCaptain'
+  | 'bigScore' | 'cooperativeBank' | 'loanDesk' | 'theCentre'
+  | 'customsChief' | 'firstConvoy' | 'foreignShop' | 'premiumSold'
+  | 'newspaper' | 'campaign' | 'fixTender' | 'governor'
+  | 'firstLegal' | 'legalBusinesses' | 'holding' | 'hearingsWon'
+export type GoalId = ActOneGoalId | LaterGoalId
+export const GOAL_IDS: readonly GoalId[] = [
+  'secondDistrict', 'factoryTier2', 'thirdCrew', 'wardCop', 'workFront', 'smuggleRun', 'soldier',
+  'zhannaLot', 'newTurf', 'stashHouse', 'precinctCaptain',
+  'bigScore', 'cooperativeBank', 'loanDesk', 'theCentre',
+  'customsChief', 'firstConvoy', 'foreignShop', 'premiumSold',
+  'newspaper', 'campaign', 'fixTender', 'governor',
+  'firstLegal', 'legalBusinesses', 'holding', 'hearingsWon',
+]
 
 // What an option does, before it's materialized into the save (ChoiceConfig without its id and name).
 export type ChoiceEffectsConfig = {
@@ -676,8 +691,10 @@ export type Config = {
     enabled: boolean
     rewardGold: number
     list: GoalId[]
-    // What the goals that count something ask for (ADR 0066).
-    need: { secondDistrict: number; thirdCrew: number; workFront: number; smuggleRun: number }
+    // What the goals that count something ask for (ADR 0066, 0067).
+    need: { secondDistrict: number; thirdCrew: number; workFront: number; smuggleRun: number; premiumSold: number; legalBusinesses: number; hearingsWon: number }
+    byAct: Record<LaterAct, LaterGoalId[]> // each later act's goals (ADR 0067): only the act you're in counts
+    rewardGoldByAct: Record<LaterAct, number>
   }
   // Gold bars buy time and nothing else (ADR 0034).
   gold: {
@@ -1248,6 +1265,15 @@ export function validateConfig(c: Config): string[] {
       int(e, 'goals.rewardGold', c.goals.rewardGold, 0)
       for (const g of c.goals.list) if (!GOAL_IDS.includes(g)) e.push(`goals.list: unknown goal ${g}`)
       for (const [k, v] of Object.entries(c.goals.need)) int(e, `goals.need.${k}`, v, 1)
+      const seen = new Set<GoalId>(c.goals.list)
+      for (const a of LATER_ACTS) {
+        int(e, `goals.rewardGoldByAct.${a}`, c.goals.rewardGoldByAct[a], 0)
+        for (const g of c.goals.byAct[a] ?? []) {
+          if (!GOAL_IDS.includes(g)) e.push(`goals.byAct.${a}: unknown goal ${g}`)
+          else if (seen.has(g)) e.push(`goals.byAct.${a}: ${g} is in another act's goals`)
+          seen.add(g)
+        }
+      }
       const actOneFronts = FRONT_TYPES.filter((t) => c.fronts.types[t].act === 1).length
       if (c.goals.need.workFront > actOneFronts) e.push(`goals.need.workFront: Act I has only ${actOneFronts} fronts`)
       if (c.goals.need.secondDistrict > DISTRICT_IDS.length) e.push('goals.need.secondDistrict: more than there are districts')

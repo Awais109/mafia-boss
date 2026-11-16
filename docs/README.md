@@ -19,7 +19,7 @@ What is built, how it works, and why. Written so a person or an LLM new to the r
 | [systems/ops.md](systems/ops.md) | Jobs, training, resolution formula, rewards, district pressure, the opportunities board |
 | [systems/inbox.md](systems/inbox.md) | Pending decisions: crew reports, incidents (rolled and filed), contests, perk choices, defaults and expiry |
 | [systems/districts-and-rivals.md](systems/districts-and-rivals.md) | Districts, tribute, buy-outs and flips, the Kombinat's auction, Tolya and answering his demands, Zhanna's lots and surplus trade, the Colonel and passage |
-| [systems/progression.md](systems/progression.md) | Reputation, the six acts and their gates, the unlock ladder, the guided opening, Act I goals |
+| [systems/progression.md](systems/progression.md) | Reputation, the six acts and their gates, the unlock ladder, the guided opening, each act's goals |
 | [systems/prosperity.md](systems/prosperity.md) | Act III: each district's prosperity, what raises and lowers it, what it pays and unlocks |
 | [systems/credit.md](systems/credit.md) | Act III: borrowing Clean and paying it back, the collectors and repossession, lending Dirty through a loan desk |
 | [systems/politics.md](systems/politics.md) | Act V: public opinion, the Ministry's attention and frozen fronts, elections, campaigning, the mayor |

@@ -870,8 +870,19 @@ export const defaults: Config = {
     rewardGold: 1,
     list: ['secondDistrict', 'factoryTier2', 'thirdCrew', 'wardCop', 'workFront', 'smuggleRun', 'soldier'],
     // Sized for an Act I of about two days (ADR 0066): districts held with a business of yours in them, crew,
-    // Act I fronts at rate level 2, smuggling jobs sent.
-    need: { secondDistrict: 2, thirdCrew: 3, workFront: 1, smuggleRun: 3 },
+    // Act I fronts at rate level 2, smuggling jobs sent. Then Act IV's premium packs sold, and Act VI's legal
+    // businesses and hearings won (the Empire needs reckoning.empireWins), each landing well into its act (ADR 0067).
+    need: { secondDistrict: 2, thirdCrew: 3, workFront: 1, smuggleRun: 3, premiumSold: 300, legalBusinesses: 15, hearingsWon: 3 },
+    // Each later act's goals (ADR 0067): four that walk through what the act brings, spread through it, none of
+    // them what its gate asks for. They pay gold and gate nothing, and only the act you're in counts.
+    byAct: {
+      2: ['precinctCaptain', 'stashHouse', 'newTurf', 'zhannaLot'],
+      3: ['bigScore', 'cooperativeBank', 'loanDesk', 'theCentre'],
+      4: ['customsChief', 'firstConvoy', 'foreignShop', 'premiumSold'],
+      5: ['newspaper', 'campaign', 'fixTender', 'governor'],
+      6: ['firstLegal', 'legalBusinesses', 'holding', 'hearingsWon'],
+    },
+    rewardGoldByAct: { 2: 2, 3: 2, 4: 3, 5: 3, 6: 3 },
   },
 
   // Gold bars (ADR 0034): each buys an hour of waiting. You start with some and get more when an act opens.

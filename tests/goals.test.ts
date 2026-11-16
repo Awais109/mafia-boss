@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildConfig, GOAL_CHECKS, goalProgress, tryBuildConfig, type Action, type GameEvent, type PlayerState } from '../engine'
+import { allGoals, buildConfig, GOAL_CHECKS, goalProgress, LATER_ACTS, tryBuildConfig, type Action, type GameEvent, type PlayerState } from '../engine'
 import { act, config, crewNamed, fresh, T0 } from './helpers'
 
 // Act I goals (ADR 0035): each pays its gold once, when its condition first holds after the opening.
@@ -107,5 +107,60 @@ describe('Act I goals', () => {
       const p = goalProgress(s, config, id)!
       expect(GOAL_CHECKS[id](s, config)).toBe(p.have >= p.need)
     }
+  })
+})
+
+// Later acts' goals (ADR 0067): four an act, paying that act's gold, gating nothing, and only the act you're in counts.
+describe('later acts’ goals', () => {
+  const actTwo = () => {
+    const s = fresh('later-goals')
+    s.tutorial.done = true // goals wait for the opening to end
+    return act(s, [{ type: 'DEBUG_COMPLETE_GOALS' }], T0)
+  }
+
+  it('pay the act’s gold once, when their condition first holds in that act', () => {
+    let s = actTwo()
+    expect(s.act).toBe(2)
+    const gold = s.gold
+    s = act(s, [{ type: 'DEBUG_GRANT', influence: 100 }, { type: 'BUY_OFFICIAL', officialId: 'precinctCaptain' }], T0)
+    expect(goalsDone(s)).toContain('precinctCaptain')
+    expect(s.gold).toBe(gold + config.goals.rewardGoldByAct[2])
+    s = act(s, [{ type: 'DEBUG_GRANT', influence: 0 }], T0) // checked again: paid once
+    expect(goalsDone(s).filter((id) => id === 'precinctCaptain')).toHaveLength(1)
+  })
+
+  it('count only in their own act: not before it opens, not after it moves on', () => {
+    let s = actTwo()
+    s.stats.opsByType.bigScore = 1 // Act III's, met early
+    s = act(s, [{ type: 'DEBUG_GRANT', influence: 0 }], T0)
+    expect(s.goals.done).not.toContain('bigScore')
+    // Act III opens on its Rep (missions are off here) with Act II's goals still open: they gate nothing.
+    expect(config.goals.byAct[2].some((id) => s.goals.done.includes(id))).toBe(false)
+    s = act(s, [{ type: 'DEBUG_SET_REP', reputation: config.progression.acts[3].rep! }], T0)
+    expect(s.act).toBe(3)
+    expect(s.goals.done).toContain('bigScore')
+    // Act II's left undone stay undone: a Stash House built now pays nothing.
+    s.rackets.push({ ...s.rackets[0], id: 'stash', type: 'stashHouse' })
+    s = act(s, [{ type: 'DEBUG_GRANT', influence: 0 }], T0)
+    expect(s.goals.done).not.toContain('stashHouse')
+  })
+
+  it('every later act has its goals, each with its text and a check; validation catches repeats and strays', () => {
+    for (const a of LATER_ACTS) {
+      expect(config.goals.byAct[a].length).toBeGreaterThanOrEqual(3)
+      for (const id of config.goals.byAct[a]) expect(typeof GOAL_CHECKS[id]).toBe('function')
+    }
+    expect(allGoals(config)).toHaveLength(new Set(allGoals(config)).size)
+    expect(tryBuildConfig({ goals: { byAct: { 3: ['stashHouse'] } } } as never).errors).toContain("goals.byAct.3: stashHouse is in another act's goals")
+    expect(tryBuildConfig({ goals: { byAct: { 4: ['nope'] } } } as never).errors).toContain('goals.byAct.4: unknown goal nope')
+  })
+
+  it('counted ones report their count, from goals.need', () => {
+    const s = fresh()
+    s.stats.premiumSold = 120.6
+    s.stats.hearings.won = 2
+    expect(goalProgress(s, config, 'premiumSold')).toEqual({ have: 120, need: config.goals.need.premiumSold })
+    expect(goalProgress(s, config, 'hearingsWon')).toEqual({ have: 2, need: config.goals.need.hearingsWon })
+    expect(goalProgress(s, config, 'legalBusinesses')).toEqual({ have: 0, need: config.goals.need.legalBusinesses })
   })
 })

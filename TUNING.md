@@ -532,6 +532,26 @@ Act II; the later ones are the full 60-day sim. Starting point: Act II at 4.73 d
             raid line, the heat and the lapses rather than the raid count. Kept.
 ```
 
+## 2026-11-16 — Goals for every act (#37, ADR 0067)
+
+New config, no pacing change (the goals gate nothing, and the casual bot never spends gold). 10 seeds, 60 days: when the
+casual bot meets each candidate, in days after its act opens. Picked so an act's four land at different points.
+
+```
+2026-11-16  goals.byAct, first pick: II precinctCaptain 1.9, stashHouse 3.4, newTurf 5.1, zhannaLot never (0/10).
+            III cityHall 0.1, tierSix 0.1, bigScore 0.4, theCentre 4.5 — three on the act's first day.
+            IV customsChief 0.2, firstConvoy 3.4, foreignShop 3.5, premiumSold (100) 4.5 — nothing in the act's second half.
+            V newspaper 3.9, campaign 5.5 (4/10), fixTender 7.6, governor 7.5.
+            VI firstLegal 0.3, legalBusinesses (5) 0.5, hearing won 1.6, holding 6.6.
+2026-11-16  Candidates: III cooperativeBank 1.6, loanDesk 2.7, cardClub 3.1, printShop 3.6, Made 3.4, hotel 0.7.
+            IV motel 2.0, freightYard 2.6, fuelDepot 4.3, 3 convoys 4.7, 5 convoys 6.3; premium sold 300 at 6.9, 600 1/10.
+            VI 10 legal 0.9, 15 legal 1.9, 2 hearings won 4.2 (9/10), 3 won 7.0 (8/10).
+2026-11-16  Kept: III bigScore, cooperativeBank, loanDesk, theCentre (0.4, 1.6, 2.7, 4.5); goals.need.premiumSold 300 (6.9);
+            VI firstLegal, legalBusinesses 15, holding, hearingsWon 3 (0.3, 1.9, 6.6, 7.0). II, IV's others and V as first
+            picked. goals.rewardGoldByAct 2, 2, 3, 3, 3. The bot meets 18 of 20 on most seeds (Zhanna's lot, the
+            campaign and the third hearing are the ones it skips).
+```
+
 ## Open
 
 Whole game, 10 seeds, 60 days (2026-11-16, after ADR 0066): Act I 2.51 d, Act II 5.70, Act III 6.52, Act IV 9.29, Act V 11.77, Act VI 13.80; heat 30.7 (by act about 32, 30, 29, 30, 32; Act VI about 12, since legal businesses draw none); no raids, no missed wages, partial 0.45.
