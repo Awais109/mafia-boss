@@ -1,6 +1,7 @@
 import { actGoals, DISTRICT_IDS, goalProgress, type Act, type Config, type Derived, type DistrictId, type GoalId, type OfficialId, type PlayerState, type RacketType } from '../engine'
-import { glyph } from './components/ui'
+import { glyph } from './glyphs'
 import { fmt } from './format'
+import type { TabId } from './screens/types'
 
 // Goals on Home: what each asks for, in the player's words. Act I's (ADR 0035) open Act II the moment every
 // one is done (ADR 0039); each later act's (ADR 0067) walk through what it brings, pay gold, and gate nothing.
@@ -41,7 +42,48 @@ export const GOAL_TEXT: Record<GoalId, string> = {
   hearingsWon: 'Win three hearings in court',
 }
 
-export type GoalRow = { id: GoalId; text: string; done: boolean; hint?: string }
+// Where each goal is done, for the next-step card's button.
+export const GOAL_TAB: Record<GoalId, TabId> = {
+  secondDistrict: 'turf', factoryTier2: 'rackets', thirdCrew: 'crew', wardCop: 'heat', workFront: 'fronts', smuggleRun: 'ops', soldier: 'ops',
+  precinctCaptain: 'heat', stashHouse: 'rackets', newTurf: 'turf', zhannaLot: 'turf',
+  bigScore: 'ops', cooperativeBank: 'fronts', loanDesk: 'rackets', theCentre: 'turf',
+  customsChief: 'heat', firstConvoy: 'ops', foreignShop: 'rackets', premiumSold: 'rackets',
+  newspaper: 'rackets', campaign: 'turf', fixTender: 'ops', governor: 'heat',
+  firstLegal: 'rackets', legalBusinesses: 'rackets', holding: 'rackets', hearingsWon: 'home',
+}
+
+// The business, front or official a goal is bought with, while it's still waiting on Rep or its act.
+const RACKET_GOALS: Partial<Record<GoalId, RacketType>> = { stashHouse: 'stashHouse', loanDesk: 'loanDesk', foreignShop: 'foreignShop', newspaper: 'newspaper', holding: 'holding' }
+const OFFICIAL_GOALS: Partial<Record<GoalId, OfficialId>> = { wardCop: 'wardCop', precinctCaptain: 'precinctCaptain', customsChief: 'customsChief', governor: 'governor' }
+function goalLocked(d: Derived, id: GoalId): boolean {
+  const racket = RACKET_GOALS[id]
+  const official = OFFICIAL_GOALS[id]
+  if (racket) return !d.unlocked.racket[racket]
+  if (official) return !d.unlocked.official[official]
+  if (id === 'cooperativeBank') return !d.unlocked.front.cooperativeBank
+  return false
+}
+
+// Whether what it's bought with is in hand: the Influence for an official, the Clean for a business, a front or
+// the cheapest district. Goals that aren't a purchase count as affordable.
+function goalAffordable(s: PlayerState, c: Config, d: Derived, id: GoalId): boolean {
+  const racket = RACKET_GOALS[id]
+  const official = OFFICIAL_GOALS[id]
+  if (racket) return s.clean >= d.costs.racket[racket]
+  if (official) return s.influence >= d.costs.official[official]
+  if (id === 'cooperativeBank') return s.clean >= d.costs.front.cooperativeBank
+  const districtAct: Partial<Record<GoalId, Act | undefined>> = { secondDistrict: undefined, newTurf: 2, theCentre: 3 }
+  if (id in districtAct) {
+    if (id === 'secondDistrict' && s.districts.some((x) => x.controller === 'player' && !s.rackets.some((r) => r.districtId === x.id))) return true
+    const act = districtAct[id]
+    const open = DISTRICT_IDS.filter((x) => (act === undefined || c.districts.list[x].act === act) && d.unlocked.district[x] && s.districts.find((y) => y.id === x)?.controller !== 'player')
+    return open.some((x) => s.clean >= d.costs.district[x])
+  }
+  return true
+}
+
+// `locked`: it can't be done yet (it waits on Rep or its act). `affordable`: what it's bought with is in hand.
+export type GoalRow = { id: GoalId; text: string; done: boolean; locked: boolean; affordable: boolean; hint?: string }
 export type GoalsView = { act: Act; gold: number; gates: boolean; rows: GoalRow[] }
 
 // The act you're in: shown once the opening is over, until every one of its goals is done. Each open goal says
@@ -51,7 +93,7 @@ export function goalsView(s: PlayerState, c: Config, d: Derived): GoalsView | nu
   const { list, gold } = actGoals(c, s.act)
   const rows = list.map((id) => {
     const done = s.goals.done.includes(id)
-    return { id, text: GOAL_TEXT[id], done, hint: done ? undefined : goalHint(s, c, d, id) }
+    return { id, text: GOAL_TEXT[id], done, locked: !done && goalLocked(d, id), affordable: !done && goalAffordable(s, c, d, id), hint: done ? undefined : goalHint(s, c, d, id) }
   })
   return rows.length === 0 || rows.every((r) => r.done) ? null : { act: s.act, gold, gates: s.act === 1, rows }
 }

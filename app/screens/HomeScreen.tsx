@@ -3,11 +3,13 @@ import { dayMs, gameDay, opName } from '../../engine'
 import { Glyph, Icon } from '../components/Glyph'
 import { InboxCard } from '../components/InboxCard'
 import { MoneyFlow } from '../components/MoneyFlow'
+import { DoNextCard } from '../components/DoNextCard'
 import { NextCard } from '../components/NextCard'
 import { SupplyCard, supplyNote } from '../components/SupplyCard'
 import { TributeCard } from '../components/TributeCard'
 import { AlertRow, BigFigure, Btn, Card, Check, colors, Empty, glyph, Item, List, Meter, Note, rich, Screen, Section, SectionLink } from '../components/ui'
 import { WeekCard } from '../components/WeekCard'
+import { doNext } from '../doNext'
 import { describeEvent } from '../eventText'
 import { fmt, fmtDuration, fmtRate, fmtStamp } from '../format'
 import { ACT_NAME } from '../acts'
@@ -18,15 +20,17 @@ import { store } from '../store'
 import { fonts } from '../theme'
 import type { ScreenProps } from './types'
 
-// Home (design: Home, and its opening and Act V variants): what needs you first (Tolya, decisions, alerts,
-// Act I's goals), then the money (the vault, the flow, the stock), the operation, the week, what's next,
+// Home (design: Home, and its opening and Act V variants): what needs you first (the next-step card when nothing
+// else waits, Tolya, decisions, alerts, the act's goals), then the money (the vault, the flow, the stock), the operation, the week, what's next,
 // and the latest lines.
 export function HomeScreen({ game, go }: ScreenProps) {
   const { state: s, derived: d, config: c, now } = game
   const opening = !s.tutorial.done
   const inbox = sortedInbox(s)
   const goals = goalsView(s, c, d)
-  const alerts = homeAlerts(game).filter((a) => a.key !== 'vault')
+  // The vault has its own card, and the next act's step leads as the next-step card when that card shows it.
+  const next = doNext(game)
+  const alerts = homeAlerts(game).filter((a) => a.key !== 'vault' && !(a.key === 'next' && next?.key === 'next'))
   const today = gameDay(c, s, now)
   const cigarettes = supplyNote(game)
   const premium = supplyNote(game, 'premium')
@@ -40,6 +44,8 @@ export function HomeScreen({ game, go }: ScreenProps) {
   return (
     <Screen>
       {s.rockBottom.pending && !s.rockBottom.usedActs.includes(s.act) && <RockBottom game={game} />}
+
+      <DoNextCard next={next} go={go} />
 
       {s.rival.tolya.demand !== null && (
         <Section title="Tolya’s demand" right={`back in ${fmtDuration(s.rival.tolya.nextTickAt - now, c)}`}>
