@@ -1,4 +1,4 @@
-import { goalProgress, openLots, openSpots, type Config, type Derived, type GoalId, type PlayerState } from '../engine'
+import { DISTRICT_IDS, goalProgress, type Config, type Derived, type GoalId, type PlayerState } from '../engine'
 import { glyph } from './components/ui'
 import { fmt } from './format'
 
@@ -6,11 +6,11 @@ import { fmt } from './format'
 // moment every one of these is done (ADR 0039).
 
 export const GOAL_TEXT: Record<GoalId, string> = {
-  secondDistrict: 'Fully build out two districts',
+  secondDistrict: 'Open a business in a second district',
   factoryTier2: 'Upgrade the Tobacco Factory to tier 2',
   thirdCrew: 'Hire a third crew member',
   wardCop: 'Put the Ward Cop on the payroll',
-  workFront: 'Get two fronts to rate level 2',
+  workFront: 'Upgrade a front’s rate to level 2',
   smuggleRun: 'Run three smuggling jobs',
   soldier: 'Get someone promoted to Soldier',
 }
@@ -32,14 +32,13 @@ function goalHint(s: PlayerState, c: Config, d: Derived, id: GoalId): string | u
   const count = p ? `${fmt(p.have)} of ${fmt(p.need)}` : undefined
   switch (id) {
     case 'secondDistrict': {
-      // The nearest district to full: one you hold with room left.
-      const room = s.districts
-        .filter((x) => x.controller === 'player')
-        .map((x) => ({ name: c.districts.list[x.id].name, spots: openSpots(s, c, x.id).length, lots: openLots(s, c, x.id) }))
-        .find((x) => x.spots + x.lots > 0)
-      if (!room) return count
-      const free = [room.spots ? `${room.spots} free spot${room.spots === 1 ? '' : 's'}` : '', room.lots ? `${room.lots} free lot${room.lots === 1 ? '' : 's'}` : '']
-      return `${count} · ${room.name} has ${free.filter(Boolean).join(' and ')}`
+      // What's next: a district you hold with nothing of yours in it, or the cheapest one open to take.
+      const empty = s.districts.find((x) => x.controller === 'player' && !s.rackets.some((r) => r.districtId === x.id))
+      if (empty) return `${count} · open a business in ${c.districts.list[empty.id].name}`
+      const next = DISTRICT_IDS.filter((id) => d.unlocked.district[id] && s.districts.find((x) => x.id === id)?.controller !== 'player').sort(
+        (a, b) => d.costs.district[a] - d.costs.district[b],
+      )[0]
+      return next ? `${count} · ${c.districts.list[next].name} is ${glyph.clean}${fmt(d.costs.district[next])} on the Map` : count
     }
     case 'factoryTier2': {
       const factory = s.rackets.find((r) => r.type === 'tobaccoFactory')

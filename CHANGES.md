@@ -3,6 +3,28 @@
 One entry per notable commit: what changed, why, and where to look. Day-to-day mechanics live in
 [docs/](docs/); this is a running log of what landed and when, for anyone picking the branch back up.
 
+## 2026-11-16 — Act I in about two days (#5)
+
+Branch: `tune/5-act-one-fast`. Reasoning: [ADR 0066](docs/decisions/0066-act-one-in-two-days.md); every step: [TUNING.md](TUNING.md). From the game review: Act I took 4.7 days and asked for a visit every 2.5 hours.
+
+- **What a player sees:**
+  - Act I's goals ask for less. "Open a business in a second district" replaces fully building two, and "Upgrade a front's rate to level 2" replaces both fronts. Soldier comes at 6 stat points, not 8.
+  - Home's hint for the district goal names the empty district, or the cheapest one to take and its price.
+  - Act I's vault holds 4 hours, so five visits a day lose nothing.
+  - All seven goals still open Act II, and every other gate stays.
+- **Pace (10 seeds, 60 days):**
+  - Act I 2.51 d (was 4.73); Act II 5.70 (was 3.76), since Act III's ★1,200 comes at about the same day; Acts III–VI in range;
+  - the story still takes 49.6 days;
+  - missed wages 0 (was 0.1).
+- **How:**
+  - `goals.need` in config, read by `goalProgress` (`engine/systems/goals.ts`), with `districtsWorked`;
+  - `vault.targetHoursByAct[1]` 4; `crew.experience.ranks.soldier` 6;
+  - the casual bot visits five times a day in Act I. It saves for the district goal, and keeps a payday's wages back when the payday comes before its next visit (`sim/persona.ts`).
+- **Tests:**
+  - `tests/goals.test.ts` covers an empty district not counting, one front being enough, and `goals.need` being read and validated;
+  - `tests/sim.test.ts` guards Act I at 2–3 days and Act II at 4.5–6.5, and its greedy test checks the raid line rather than the raid count;
+  - the away, notify and replay tests no longer depend on a 2.5 h vault or a slow Act I. The replay's log now carries the overrides the bot played with.
+
 ## 2026-11-15 — What the next act waits on; Debug back for the test phase
 
 Branch: `fix/act-gate-next-step`. From tester feedback: "in Act II with 1,200+ Rep there's no goal and Act III isn't unlocked."

@@ -16,7 +16,7 @@ export const defaults: Config = {
   vault: {
     floorCap: 40, // vault cap never drops below this
     // vault cap = yield × this — the session leash (manual §4 Cadence). Later acts ask for fewer, longer visits (ADR 0040).
-    targetHoursByAct: { 1: 2.5, 2: 5.5, 3: 8, 4: 12, 5: 18, 6: 24 },
+    targetHoursByAct: { 1: 4, 2: 5.5, 3: 8, 4: 12, 5: 18, 6: 24 },
     startingDirty: 0, // vault starts empty: nothing has been earned yet at launch
     startingDirtyOnHand: 120, // ready for the first wages and Tolya's first visit (ADR 0035); absorbs the 30 that used to sit pre-filled in the vault
     startingClean: 440, // Uncle Lyosha's money: the opening's setup costs ●380, leaving ●60 as the old start did (ADR 0035)
@@ -396,7 +396,7 @@ export const defaults: Config = {
       potentialRoll: [5, 20],
       mentorBonus: 0.5,
       enforcerXpPerHr: 0.15,
-      ranks: { soldier: 8, made: 20, capo: 36 }, // stat points gained; Soldier and Made each choose a perk
+      ranks: { soldier: 6, made: 20, capo: 36 }, // stat points gained; Soldier and Made each choose a perk. Soldier 8 → 6 for a two-day Act I (ADR 0066)
       perkChoices: 2,
       perks: {
         earner: { name: 'Earner', text: 'jobs pay 15% more Dirty', jobDirtyMult: 1.15 },
@@ -869,6 +869,9 @@ export const defaults: Config = {
     enabled: true,
     rewardGold: 1,
     list: ['secondDistrict', 'factoryTier2', 'thirdCrew', 'wardCop', 'workFront', 'smuggleRun', 'soldier'],
+    // Sized for an Act I of about two days (ADR 0066): districts held with a business of yours in them, crew,
+    // Act I fronts at rate level 2, smuggling jobs sent.
+    need: { secondDistrict: 2, thirdCrew: 3, workFront: 1, smuggleRun: 3 },
   },
 
   // Gold bars (ADR 0034): each buys an hour of waiting. You start with some and get more when an act opens.

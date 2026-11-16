@@ -248,7 +248,7 @@ function Operation({ game }: { game: ScreenProps['game'] }) {
 }
 
 const styles = StyleSheet.create({
-  paid: { fontFamily: fonts.text400, fontSize: 12, color: colors.faint },
+  paid: { fontFamily: fonts.text400, fontSize: 12, color: colors.faint, flexShrink: 0 },
   rock: { gap: 10, marginHorizontal: -16, marginTop: -18, paddingHorizontal: 16, paddingVertical: 16, backgroundColor: '#2a1712', borderBottomWidth: 1, borderBottomColor: '#6b3127' },
   rockHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rockLabel: { flex: 1, fontFamily: fonts.text600, fontSize: 11, letterSpacing: 1.8, color: colors.bad },
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   rockFootText: { fontFamily: fonts.text400, fontSize: 12, color: colors.muted },
   rockAvailable: { fontFamily: fonts.text600, color: colors.text },
   rockNote: { fontFamily: fonts.text400, fontSize: 12, lineHeight: 17, color: colors.faint },
-  reward: { fontFamily: fonts.text600, fontSize: 13, color: colors.gold },
+  reward: { fontFamily: fonts.text600, fontSize: 13, color: colors.gold, flexShrink: 0 }, // a long goal wraps, not its reward
   vault: { gap: 12 },
   vaultTop: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 },
   vaultNote: { fontFamily: fonts.text400, fontSize: 13, color: colors.muted, flexShrink: 1, textAlign: 'right' },

@@ -672,7 +672,13 @@ export type Config = {
   opening: {
     quickStart: { rackets: { type: RacketType; districtId: DistrictId }[]; fronts: FrontType[]; recruits: string[] }
   }
-  goals: { enabled: boolean; rewardGold: number; list: GoalId[] }
+  goals: {
+    enabled: boolean
+    rewardGold: number
+    list: GoalId[]
+    // What the goals that count something ask for (ADR 0066).
+    need: { secondDistrict: number; thirdCrew: number; workFront: number; smuggleRun: number }
+  }
   // Gold bars buy time and nothing else (ADR 0034).
   gold: {
     starting: number
@@ -1241,6 +1247,10 @@ export function validateConfig(c: Config): string[] {
       positive(e, 'tutorial.tolyaAfterMinutes', c.tutorial.tolyaAfterMinutes)
       int(e, 'goals.rewardGold', c.goals.rewardGold, 0)
       for (const g of c.goals.list) if (!GOAL_IDS.includes(g)) e.push(`goals.list: unknown goal ${g}`)
+      for (const [k, v] of Object.entries(c.goals.need)) int(e, `goals.need.${k}`, v, 1)
+      const actOneFronts = FRONT_TYPES.filter((t) => c.fronts.types[t].act === 1).length
+      if (c.goals.need.workFront > actOneFronts) e.push(`goals.need.workFront: Act I has only ${actOneFronts} fronts`)
+      if (c.goals.need.secondDistrict > DISTRICT_IDS.length) e.push('goals.need.secondDistrict: more than there are districts')
     },
   ]
   for (const check of checks) {

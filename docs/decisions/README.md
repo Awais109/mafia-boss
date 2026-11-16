@@ -51,7 +51,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0036](0036-zhanna-and-the-port.md) | Zhanna sells lots of cigarettes, buys the surplus, and makes smuggling past her Port harder | Accepted |
 | [0037](0037-act-ii-premises.md) | Act II premises: the Stash House and the Union Office, and their synergies | Accepted |
 | [0038](0038-live-event-notices.md) | Live event and unlock notices, queued one at a time; a `description` field on every business/front/district/official | Superseded in part by [0049](0049-scenes.md) (the act opening) |
-| [0039](0039-goals-gate-act-two.md) | Act II is gated by Act I goals, not Reputation; three goals redefined, `actII` removed | Accepted |
+| [0039](0039-goals-gate-act-two.md) | Act II is gated by Act I goals, not Reputation; three goals redefined, `actII` removed | Accepted; the harder `secondDistrict` and `workFront` superseded by 0066 |
 | [0040](0040-six-acts.md) | Six acts, each opened by a gate; the last built act is cleared, not left | Accepted |
 | [0041](0041-act-iii-the-centre.md) | Act III, the Centre: prosperity, the Card Club, Print Shop, hotels, the Bank, City Hall, tier 6 | Accepted |
 | [0042](0042-act-iii-credit-and-consequences.md) | Act III's consequences: contests in the inbox, injuries and the Clinic, Tolya's attacks, loans and the loan desk | Superseded in part by [0051](0051-rock-bottom.md) (the second missed payment) |
@@ -78,6 +78,7 @@ One record per design or technical decision: what was decided, why, and what it 
 | [0063](0063-opinion-diminishing-returns.md) | Public opinion has diminishing returns: the press nears 100 but never reaches it; elections rebalanced | Accepted |
 | [0064](0064-officials-retainers.md) | Officials keep their control while a weekly retainer in Clean is paid; unpaid, it lapses until paid | Accepted |
 | [0065](0065-late-game-repace.md) | The late game re-paced: 20 h front buffers, so laundering keeps up; prices, gates and unlock ladders set the pace | Accepted |
+| [0066](0066-act-one-in-two-days.md) | Act I in about two days: the three slowest goals ask for less, a 4 h vault, five visits a day; gates unchanged | Accepted |
 
 ## Template
 

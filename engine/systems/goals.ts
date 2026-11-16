@@ -1,36 +1,36 @@
-import { DISTRICT_IDS, FRONT_TYPES, type Config, type GoalId } from '../config/schema'
+import { FRONT_TYPES, type Config, type GoalId } from '../config/schema'
 import { emit, type Ctx } from '../core/ctx'
 import type { PlayerState } from '../model/state'
 import { checkActs } from './acts'
-import { openLots, openSpots } from './districts'
 import { grantGold } from './gold'
 
 // Act I goals (ADR 0035): a reason to come back after the opening. Each reads state and stats only
 // and pays its gold once. They wait for the tutorial to end, and are checked after every action and
 // at every reconcile boundary, which is where any of these conditions can change.
-// Every one of them must be done to open Act II (ADR 0039): `progression.acts[2].goals`.
+// Every one of them must be done to open Act II (ADR 0039): `progression.acts[2].goals`. What the counted
+// ones ask for is `goals.need`, sized for an Act I of about two days (ADR 0066).
 
-// A district counts once it's controlled AND has every joint/racket slot and every premises lot filled.
-function districtFull(s: PlayerState, c: Config, id: (typeof DISTRICT_IDS)[number]): boolean {
-  const d = s.districts.find((x) => x.id === id)
-  return d !== undefined && d.controller === 'player' && openSpots(s, c, id).length === 0 && openLots(s, c, id) === 0
+// The districts that count: held, with a business of yours in them (not an empty one bought and left).
+export function districtsWorked(s: PlayerState): number {
+  return s.districts.filter((d) => d.controller === 'player' && s.rackets.some((r) => r.districtId === d.id)).length
 }
 
 // The goals that count something: how many you have against how many it takes. The check is have >= need,
 // and Home shows the count.
 export function goalProgress(s: PlayerState, c: Config, id: GoalId): { have: number; need: number } | null {
+  const need = c.goals.need
   switch (id) {
     case 'secondDistrict':
-      return { have: DISTRICT_IDS.filter((d) => districtFull(s, c, d)).length, need: 2 }
+      return { have: districtsWorked(s), need: need.secondDistrict }
     case 'thirdCrew':
-      return { have: s.crew.length, need: 3 }
+      return { have: s.crew.length, need: need.thirdCrew }
     case 'workFront': {
       // Act I's fronts (ADR 0040): later acts add fronts this goal never asked for.
       const first = FRONT_TYPES.filter((t) => c.fronts.types[t].act === 1)
-      return { have: first.filter((t) => s.fronts.some((f) => f.type === t && f.level >= 2)).length, need: first.length }
+      return { have: first.filter((t) => s.fronts.some((f) => f.type === t && f.level >= 2)).length, need: need.workFront }
     }
     case 'smuggleRun':
-      return { have: s.stats.opsByType.smuggleCigarettes ?? 0, need: 3 }
+      return { have: s.stats.opsByType.smuggleCigarettes ?? 0, need: need.smuggleRun }
     default:
       return null
   }

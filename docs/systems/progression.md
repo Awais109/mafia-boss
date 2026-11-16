@@ -41,7 +41,7 @@ Reputation is the progress currency: it unlocks bigger businesses, fronts and of
 With `finalAct` at 6 there's no gate after it: the first ending clears Act VI ([endgame.md](endgame.md#the-endings)). With a lower `finalAct` (a preset or a test), when the gate after `finalAct` holds, the final act is **cleared** instead: `stats.actClearedAt[finalAct] = t` and `ACT_CLEARED`, once. The game carries on (`gameCleared`, from `formulas.storyOver`), and the app says so in words ([ADR 0022](../decisions/0022-end-of-prototype-state.md)); after the story there's still growth ([after.md](after.md)).
 
 What each act changes, beyond its own businesses, fronts, officials, districts and jobs (tagged `act` in config):
-- the vault leash `vault.targetHoursByAct`, the max tier `rackets.maxTierByAct` (6 from Act III), the price of a business `costs.paybackHoursByAct`;
+- the vault leash `vault.targetHoursByAct` (4 h in Act I, [ADR 0066](../decisions/0066-act-one-in-two-days.md); 5.5, 8, 12, 18, 24 after), the max tier `rackets.maxTierByAct` (6 from Act III), the price of a business `costs.paybackHoursByAct`;
 - crew slots `crew.slotsByAct` and recruits from `crew.statBandByAct`;
 - recruit and raise costs scaled by act, and job Dirty × `act^ops.rewardActScaling`.
 
@@ -105,19 +105,19 @@ The opening's hire step plays Scene 2, where the three can be hired, and Tolya's
 
 ## Act I goals
 
-([ADR 0035](../decisions/0035-guided-opening.md), gate [ADR 0039](../decisions/0039-goals-gate-act-two.md)) `goals.list`, checked by `checkGoals` after every action and at every reconcile boundary once the opening is over, so each is dated to the boundary where its condition first held. Each pays `goals.rewardGold` gold once (`GOAL_DONE { goalId, gold }`, a `goal` grant; [gold.md](gold.md)) and is kept in `state.goals.done`. Home lists them until all are done — and once all are, Act II opens (see Acts, above). The goals that count something (two full districts, three crew, Act I's fronts at rate level 2, three smuggling runs) report `goalProgress(state, config, id)` → `{ have, need }`, and their check is `have >= need`, so Home's "1 of 2" and the check can't disagree.
+([ADR 0035](../decisions/0035-guided-opening.md), gate [ADR 0039](../decisions/0039-goals-gate-act-two.md), sized for about two days by [ADR 0066](../decisions/0066-act-one-in-two-days.md)) `goals.list`, checked by `checkGoals` after every action and at every reconcile boundary once the opening is over, so each is dated to the boundary where its condition first held. Each pays `goals.rewardGold` gold once (`GOAL_DONE { goalId, gold }`, a `goal` grant; [gold.md](gold.md)) and is kept in `state.goals.done`. Home lists them until all are done — and once all are, Act II opens (see Acts, above). The goals that count something (districts with a business of yours, crew, Act I's fronts at rate level 2, smuggling runs) report `goalProgress(state, config, id)` → `{ have, need }`, with `need` from `goals.need`, and their check is `have >= need`, so Home's "1 of 2" and the check can't disagree. Config validation keeps each `need` at 1 or more, `workFront` within the number of Act I fronts, and `secondDistrict` within the number of districts.
 
 | Goal | Done when |
 |---|---|
-| `secondDistrict` | two districts are controlled *and* fully built: every joint/racket slot they allow, and every premises lot, filled |
+| `secondDistrict` | `goals.need.secondDistrict` (2) districts are held with a business of yours in each (`districtsWorked`): a district bought and left empty doesn't count. Home's hint names the empty one, or the cheapest to take and its price |
 | `factoryTier2` | a Tobacco Factory is at tier 2 or more |
-| `thirdCrew` | the crew is 3 |
+| `thirdCrew` | the crew is `goals.need.thirdCrew` (3) |
 | `wardCop` | the Ward Cop is on the payroll |
-| `workFront` | both Act I front types (`fronts.types.*.act` 1) are owned, each at rate level 2 or more |
-| `smuggleRun` | 3 smuggling jobs have been sent |
-| `soldier` | anyone reached Soldier |
+| `workFront` | `goals.need.workFront` (1) of the Act I front types (`fronts.types.*.act` 1) is owned at rate level 2 or more |
+| `smuggleRun` | `goals.need.smuggleRun` (3) smuggling jobs have been sent |
+| `soldier` | anyone reached Soldier (`crew.experience.ranks.soldier`, 6 stat points) |
 
-There used to be an eighth goal, `actII` ("Reach Act II") — removed under ADR 0039, since it checked `state.act >= 2`, which can't hold before Act II opens once Act II requires every goal done.
+There used to be an eighth goal, `actII` ("Reach Act II") — removed under ADR 0039, since it checked `state.act >= 2`, which can't hold before Act II opens once Act II requires every goal done. From ADR 0039 to ADR 0066, `secondDistrict` asked for two districts fully built (every slot and premises lot) and `workFront` for both Act I fronts at level 2, which held Act I at about 4.7 days.
 
 ## Playtest stats
 
