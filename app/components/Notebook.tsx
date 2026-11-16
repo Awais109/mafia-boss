@@ -4,6 +4,7 @@ import Svg, { Defs, Path, Pattern, Rect } from 'react-native-svg'
 import { fonts, paper, paperInk } from '../theme'
 import { Glyph, Icon, type Resource } from './Glyph'
 import { rich } from './ui'
+import { spoken } from '../a11y'
 
 // Lyosha's notebook (design: How it works, the Map): squared paper with a red margin, headings in his hand,
 // ink for what you know and pencil for what's still ahead, and red pencil for your own marks.
@@ -41,7 +42,7 @@ export function PaperTitle({ title, note }: { title: string; note?: string }) {
 
 // Running text in ink; `pencil` greys it for what's not reached yet.
 export function Ink({ children, pencil, size = 15 }: { children: string; pencil?: boolean; size?: number }) {
-  return <Text style={[styles.ink, { fontSize: size, lineHeight: size * 1.55 }, pencil && styles.pencil]}>{rich(children, size, { ink: true })}</Text>
+  return <Text style={[styles.ink, { fontSize: size, lineHeight: size * 1.55 }, pencil && styles.pencil]} accessibilityLabel={spoken(children)}>{rich(children, size, { ink: true })}</Text>
 }
 
 export function PaperCaps({ children }: { children: string }) {
@@ -88,9 +89,9 @@ export function PaperRows({ title, rows }: { title?: string; rows: PaperRow[] })
             {r.glyph ? <Glyph kind={r.glyph} size={12} color={r.pencil ? paper.pencil : paperInk[r.glyph]} /> : null}
             <Text style={[styles.rowLabel, r.pencil ? styles.pencil : null]}>{r.label}</Text>
             {r.yours ? <Text style={styles.yours}>yours</Text> : null}
-            {r.pencil ? <Text style={styles.rowPencil}>{`${r.pencil} · not yet`}</Text> : r.value ? <Text style={styles.rowValue}>{rich(r.value, 15, { ink: true })}</Text> : null}
+            {r.pencil ? <Text style={styles.rowPencil}>{`${r.pencil} · not yet`}</Text> : r.value ? <Text style={styles.rowValue} accessibilityLabel={spoken(r.value)}>{rich(r.value, 15, { ink: true })}</Text> : null}
           </View>
-          {r.text ? <Text style={[styles.rowText, r.glyph ? styles.indent : null, r.pencil ? styles.pencil : null]}>{rich(r.text, 14, { ink: true })}</Text> : null}
+          {r.text ? <Text style={[styles.rowText, r.glyph ? styles.indent : null, r.pencil ? styles.pencil : null]} accessibilityLabel={spoken(r.text)}>{rich(r.text, 14, { ink: true })}</Text> : null}
         </View>
       ))}
     </View>

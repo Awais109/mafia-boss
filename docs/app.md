@@ -190,6 +190,23 @@ The brief asks for restraint, and `app/motion.tsx` has four moves ([ADR 0061](de
 
 Durations are in `MOTION`. Like the sound mix, they're presentation, not game numbers. Transforms and opacity run on the native driver. With the phone's reduced-motion setting on (`useReducedMotion`), every move is skipped and things simply appear.
 
+## Accessibility
+
+([ADR 0072](decisions/0072-accessibility.md)) `app/a11y.ts`:
+- **Amounts read as words.** `spoken(text)` turns the glyph amounts into words for an `accessibilityLabel`: "−◆20 · +●5/h" becomes "minus 20 Dirty, plus 5 Clean an hour", and "◆1.21M" becomes "1.21 million Dirty". The UI kit uses it everywhere text goes through `rich`:
+  - `Btn` (the whole button as one label, title and sub);
+  - `Item` (a tappable row as one sentence; the label, hint and figure each);
+  - `Row`, `Tile` and `AlertRow`;
+  - every one-line `<Text>{rich(…)}</Text>` in the screens.
+- **Every tappable thing has a role:** a button, or a tab with its selected state in the bottom bar. The header's cells say the full figure ("Influence 296", "Heat 41, inspections"), More's rows say their note and whether they want attention, and the scrims say Close. `tests/a11y.test.ts` fails if a `Pressable` lacks `accessibilityRole`.
+- **Text follows the phone's size**, capped where the room is fixed: `FONT_CAP.dense` (1.2) for the header, the bottom bar's labels and tags, and `FONT_CAP.compact` (1.4) for small buttons and the header's detail line. Everything else grows without a cap and wraps.
+- **Tap targets:** buttons are at least 44 pt tall (`btnSmall`'s `minHeight`).
+- **Not by colour alone:**
+  - heat has its line under the figure (inspections, raids);
+  - a full vault says "Vault full";
+  - a goal shows a tick and "paid";
+  - an alert says what's wrong in words.
+
 ## Checking screens against the design
 
 A web build renders the same components, so screens can be screenshot at phone width and set beside the frames in `design/Sevgorod Screens.html`:

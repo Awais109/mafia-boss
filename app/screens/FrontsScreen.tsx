@@ -8,6 +8,7 @@ import { fmt, fmtDuration, fmtRate, pct } from '../format'
 import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
 import type { ScreenProps } from './types'
+import { spoken } from '../a11y'
 
 // Fronts (design: Fronts): what the fronts can wash against what comes in, one button that launders all
 // but running costs, then each front with its dial, rate, throughput and buffer, the fronts still to open,
@@ -65,7 +66,7 @@ export function FrontsScreen({ game }: ScreenProps) {
             {left > 0 && (
               <View style={styles.squeeze}>
                 <Icon name="warning" size={15} color={colors.warn} />
-                <Text style={styles.squeezeText}>{rich(`You make more than your fronts can launder. It piles up: ${glyph.dirty}${fmt(s.dirty)} on hand.`, 13, { mono: colors.warn })}</Text>
+                <Text style={styles.squeezeText} accessibilityLabel={spoken(`You make more than your fronts can launder. It piles up: ${glyph.dirty}${fmt(s.dirty)} on hand.`)}>{rich(`You make more than your fronts can launder. It piles up: ${glyph.dirty}${fmt(s.dirty)} on hand.`, 13, { mono: colors.warn })}</Text>
               </View>
             )}
           </View>
@@ -163,7 +164,7 @@ function FrontCard({ game, f }: { game: Snapshot; f: FrontDerived }) {
           </View>
         </View>
       )}
-      {f.suspicion > 0 && !frozenFor && <Text style={styles.suspicion}>{rich(`Running hot: +${glyph.heat}${fmt(f.suspicion)} exposure until it cools.`, 12.5, { plain: true })}</Text>}
+      {f.suspicion > 0 && !frozenFor && <Text style={styles.suspicion} accessibilityLabel={spoken(`Running hot: +${glyph.heat}${fmt(f.suspicion)} exposure until it cools.`)}>{rich(`Running hot: +${glyph.heat}${fmt(f.suspicion)} exposure until it cools.`, 12.5, { plain: true })}</Text>}
 
       <Segmented label={`Pace, ${ft.name}`} options={MODES} value={f.mode} onChange={(mode) => store.dispatch({ type: 'SET_FRONT_MODE', frontId: f.id, mode })} />
 
@@ -188,7 +189,7 @@ function FrontCard({ game, f }: { game: Snapshot; f: FrontDerived }) {
           <Glyph kind="premium" size={12} />
           <View style={styles.coverText}>
             <Text style={styles.coverTitle}>It only washes what premium sales explain.</Text>
-            <Text style={styles.sub}>{rich(`${glyph.premium}${fmtRate(d.premium.soldPerHr)} sold explains ${glyph.dirty}${fmtRate(cover)}`, 12.5, { plain: true })}</Text>
+            <Text style={styles.sub} accessibilityLabel={spoken(`${glyph.premium}${fmtRate(d.premium.soldPerHr)} sold explains ${glyph.dirty}${fmtRate(cover)}`)}>{rich(`${glyph.premium}${fmtRate(d.premium.soldPerHr)} sold explains ${glyph.dirty}${fmtRate(cover)}`, 12.5, { plain: true })}</Text>
           </View>
         </View>
       )}

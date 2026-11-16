@@ -9,6 +9,7 @@ import { OFFICIAL_PERSON } from '../story'
 import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
 import type { ScreenProps } from './types'
+import { spoken } from '../a11y'
 
 // Heat (design: Heat): the scale with its three lines and where heat is heading, exposure pushing it up
 // and control holding it down as two ledgers, the bribe, and the officials as people.
@@ -61,7 +62,7 @@ export function HeatScreen({ game }: ScreenProps) {
                 value={
                   <View style={styles.from}>
                     {s.heat >= l.at && <Tag text="now" color={l.color} />}
-                    <Text style={styles.fromText}>{rich(`from ${glyph.heat}${l.at}`, 14, { plain: true })}</Text>
+                    <Text style={styles.fromText} accessibilityLabel={spoken(`from ${glyph.heat}${l.at}`)}>{rich(`from ${glyph.heat}${l.at}`, 14, { plain: true })}</Text>
                   </View>
                 }
               />
@@ -176,13 +177,13 @@ function Ledger({ rows, total }: { rows: LedgerRow[]; total: { label: string; va
     <View style={[styles.card, styles.ledger]}>
       <List style={styles.flush}>
         {rows.map((r) => (
-          <Item key={r.label} label={r.faint ? <Text style={styles.faint}>{r.label}</Text> : r.label} hint={r.hint} value={r.faint ? <Text style={styles.faint}>{rich(r.value, 14, { plain: true })}</Text> : r.value} plain />
+          <Item key={r.label} label={r.faint ? <Text style={styles.faint}>{r.label}</Text> : r.label} hint={r.hint} value={r.faint ? <Text style={styles.faint} accessibilityLabel={spoken(r.value)}>{rich(r.value, 14, { plain: true })}</Text> : r.value} plain />
         ))}
       </List>
       <View style={styles.totals}>
         <View style={styles.total}>
           <Text style={styles.totalLabel}>{total.label}</Text>
-          <Text style={[styles.totalValue, total.color ? { color: total.color } : null]}>{rich(total.value, 17, { plain: true })}</Text>
+          <Text style={[styles.totalValue, total.color ? { color: total.color } : null]} accessibilityLabel={spoken(total.value)}>{rich(total.value, 17, { plain: true })}</Text>
         </View>
         <View style={styles.doubleRule} />
       </View>
@@ -224,7 +225,7 @@ function OfficialCard({ game, id, cooldown }: { game: Snapshot; id: (typeof OFFI
       <View style={styles.chips}>
         {effects.map((e) => (
           <View key={e} style={styles.chip}>
-            <Text style={styles.chipText}>{rich(e, 12.5, { plain: true })}</Text>
+            <Text style={styles.chipText} accessibilityLabel={spoken(e)}>{rich(e, 12.5, { plain: true })}</Text>
           </View>
         ))}
       </View>

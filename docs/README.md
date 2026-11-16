@@ -72,6 +72,7 @@ When you change a path on the left, update the doc on the right in the same comm
 | `engine/systems/injuries.ts` | [systems/crew.md](systems/crew.md) |
 | `App.tsx`, `app/` | [app.md](app.md) |
 | `index.ts`, `app/crash.ts`, `app/crashLine.ts`, `app/components/CrashBoundary.tsx` | [app.md](app.md#crashes) and [ADR 0071](decisions/0071-crash-capture.md) |
+| `app/a11y.ts` | [app.md](app.md#accessibility) and [ADR 0072](decisions/0072-accessibility.md) |
 | `app/doNext.ts`, `app/components/DoNextCard.tsx` | [app.md](app.md) (Home) and [ADR 0068](decisions/0068-do-this-next.md) |
 | `app/motion.tsx` | [app.md](app.md#motion) and [ADR 0061](decisions/0061-motion.md) |
 | `app/notify/`, `app/inboxTitle.ts`, `plugins/` | [notifications.md](notifications.md) and [ADR 0058](decisions/0058-local-notifications.md) |

@@ -3,6 +3,7 @@ import { fmt, fmtDuration } from '../format'
 import type { Snapshot } from '../store'
 import { fonts } from '../theme'
 import { BigFigure, Card, colors, Meter, rich, Tile } from './ui'
+import { spoken } from '../a11y'
 
 type Product = 'cigarettes' | 'premium'
 
@@ -53,7 +54,7 @@ export function SupplyCard({ game, product = 'cigarettes' }: { game: Snapshot; p
         <Tile label="Sold" value={`${g}${fmt(sup.soldPerHr)}/h`} sub={soldSub} color={color} subColor={empty ? colors.bad : undefined} />
       </View>
       {atCap && sup.madePerHr > 0 && (
-        <Text style={styles.advice}>{rich(`Full: anything more made is wasted. A ${premium ? 'bonded warehouse' : 'warehouse'} holds more.`, 12.5)}</Text>
+        <Text style={styles.advice} accessibilityLabel={spoken(`Full: anything more made is wasted. A ${premium ? 'bonded warehouse' : 'warehouse'} holds more.`)}>{rich(`Full: anything more made is wasted. A ${premium ? 'bonded warehouse' : 'warehouse'} holds more.`, 12.5)}</Text>
       )}
       {empty && (
         <Text style={[styles.advice, { color: colors.bad }]}>

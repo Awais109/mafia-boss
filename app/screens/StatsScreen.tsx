@@ -6,6 +6,7 @@ import { fmt, fmtClock } from '../format'
 import { ACT_TITLE, revealedBy } from '../story'
 import { fonts } from '../theme'
 import type { ScreenProps } from './types'
+import { spoken } from '../a11y'
 
 // Stats (design: Stats): everything tracked since the game started (`state.stats`), as ledgers with a line
 // under each figure. No new counters: rows for later acts appear once the story reaches them.
@@ -76,7 +77,7 @@ export function StatsScreen({ game }: ScreenProps) {
           <View style={styles.totals}>
             <View style={styles.total}>
               <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalValue}>{rich(`${glyph.dirty}${fmt(costTotal)}`, 17, { plain: true })}</Text>
+              <Text style={styles.totalValue} accessibilityLabel={spoken(`${glyph.dirty}${fmt(costTotal)}`)}>{rich(`${glyph.dirty}${fmt(costTotal)}`, 17, { plain: true })}</Text>
             </View>
             <View style={styles.doubleRule} />
           </View>

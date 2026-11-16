@@ -12,6 +12,7 @@ import { firstEnding } from './AfterStory'
 import { store, type Snapshot } from '../store'
 import { fonts, paper } from '../theme'
 import { colors, glyph, rich } from './ui'
+import { spoken } from '../a11y'
 
 // The cover (ADR 0049; design: Cover): the title over the window on the tram and Lyosha's notebook on the
 // table, shown when the app opens. Continue says where you are; New game asks first, because it overwrites.
@@ -43,7 +44,7 @@ export function Cover({ game, onContinue }: { game: Snapshot; onContinue: () => 
         {ending && (
           <View style={styles.empire}>
             <Text style={styles.empireLabel}>EMPIRE VALUE</Text>
-            <Text style={styles.empireValue}>{rich(`${glyph.clean}${fmtShort(empireValue(s, c, game.derived).total)}`, 28)}</Text>
+            <Text style={styles.empireValue} accessibilityLabel={spoken(`${glyph.clean}${fmtShort(empireValue(s, c, game.derived).total)}`)}>{rich(`${glyph.clean}${fmtShort(empireValue(s, c, game.derived).total)}`, 28)}</Text>
           </View>
         )}
         <Pressable onPress={onContinue} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>

@@ -4,6 +4,7 @@ import { glyph } from '../glyphs'
 import { colors as theme, fonts, paperInk, textFont } from '../theme'
 import { CHAR_RESOURCE, Glyph, Icon, type IconName, type Resource } from './Glyph'
 import { sound } from '../sound/player'
+import { FONT_CAP, spoken } from '../a11y'
 
 // The ledger kit (design/Sevgorod Screens.html, "Components"): section titles with a hairline rule, cards,
 // rows with the label left and the figure right, bars with marks, tags, buttons. Resource amounts written
@@ -110,11 +111,11 @@ export function Row({ label, value, color, hint, strong }: { label: string; valu
   return (
     <View style={styles.row}>
       <View style={styles.rowLeft}>
-        {label ? <Text style={[styles.rowLabel, strong && { fontFamily: fonts.text600 }]}>{rich(label, 14)}</Text> : null}
-        {hint ? <Text style={styles.rowHint}>{rich(hint, 12)}</Text> : null}
+        {label ? <Text style={[styles.rowLabel, strong && { fontFamily: fonts.text600 }]} accessibilityLabel={spoken(label)}>{rich(label, 14)}</Text> : null}
+        {hint ? <Text style={styles.rowHint} accessibilityLabel={spoken(hint)}>{rich(hint, 12)}</Text> : null}
       </View>
       {typeof value === 'string' || typeof value === 'number' ? (
-        <Text style={[styles.rowValue, color ? { color } : null]}>{rich(String(value), 15)}</Text>
+        <Text style={[styles.rowValue, color ? { color } : null]} accessibilityLabel={spoken(String(value))}>{rich(String(value), 15)}</Text>
       ) : (
         value
       )}
@@ -195,6 +196,7 @@ export function Btn({ title, sub, onPress, disabled, kind = 'normal', small, che
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={spoken(sub ? `${title}, ${sub}` : title)}
       accessibilityState={{ disabled: !!disabled }}
       disabled={disabled}
       onPress={() => {
@@ -214,9 +216,9 @@ export function Btn({ title, sub, onPress, disabled, kind = 'normal', small, che
         style,
       ]}
     >
-      <Text style={textStyle}>{rich(title, small ? 13.5 : 15, kind === 'primary' ? { mono: disabled ? theme.faint : '#3a2e18' } : {})}</Text>
+      <Text style={textStyle} accessibilityLabel={spoken(title)} maxFontSizeMultiplier={small ? FONT_CAP.compact : undefined}>{rich(title, small ? 13.5 : 15, kind === 'primary' ? { mono: disabled ? theme.faint : '#3a2e18' } : {})}</Text>
       {chevron ? <Icon name="chevronRight" size={14} color={disabled ? theme.faint : theme.accent} strokeWidth={2} /> : null}
-      {sub ? <Text style={[styles.btnSub, kind === 'primary' && { color: '#3a2e18' }]}>{rich(sub, 11.5)}</Text> : null}
+      {sub ? <Text style={[styles.btnSub, kind === 'primary' && { color: '#3a2e18' }]} accessibilityLabel={spoken(sub)}>{rich(sub, 11.5)}</Text> : null}
     </Pressable>
   )
 }
@@ -244,7 +246,9 @@ export function Bar({ value, max, color, marks, thick }: { value: number; max: n
 export function Tag({ text, color, dashed }: { text: string; color?: string; dashed?: boolean }) {
   return (
     <View style={[styles.tag, color ? { borderColor: color + '70', backgroundColor: color + '18' } : null, dashed && { borderStyle: 'dashed' }]}>
-      <Text style={[styles.tagText, { color: color ?? theme.muted }]}>{text}</Text>
+      <Text style={[styles.tagText, { color: color ?? theme.muted }]} maxFontSizeMultiplier={FONT_CAP.dense}>
+        {text}
+      </Text>
     </View>
   )
 }
@@ -275,6 +279,12 @@ export function List({ children, style }: { children: ReactNode; style?: StylePr
 
 // One row of a List: an optional mark on the left (a Check, an icon), the label with a hint under it, and
 // the figure on the right. Tappable when it has onPress.
+// A row's parts as one sentence for a screen reader, when they're text ("Dirty on hand, 1,208 Dirty").
+function spokenRow(label: ReactNode, hint: ReactNode, value: ReactNode): string | undefined {
+  const parts = [label, value, hint].filter((x) => typeof x === 'string' || typeof x === 'number').map((x) => spoken(String(x)))
+  return parts.length ? parts.join(', ') : undefined
+}
+
 export function Item({ label, hint, value, color, left, strong, muted, plain, onPress, children }: {
   label: ReactNode
   hint?: ReactNode
@@ -292,11 +302,17 @@ export function Item({ label, hint, value, color, left, strong, muted, plain, on
       <View style={styles.item}>
         {left}
         <View style={styles.itemLeft}>
-          <Text style={[styles.rowLabel, strong && { fontFamily: fonts.text600 }, muted && styles.muted]}>{typeof label === 'string' ? rich(label, 14) : label}</Text>
-          {hint ? <Text style={styles.rowHint}>{typeof hint === 'string' ? rich(hint, 12) : hint}</Text> : null}
+          <Text style={[styles.rowLabel, strong && { fontFamily: fonts.text600 }, muted && styles.muted]} accessibilityLabel={typeof label === 'string' ? spoken(label) : undefined}>
+            {typeof label === 'string' ? rich(label, 14) : label}
+          </Text>
+          {hint ? (
+            <Text style={styles.rowHint} accessibilityLabel={typeof hint === 'string' ? spoken(hint) : undefined}>
+              {typeof hint === 'string' ? rich(hint, 12) : hint}
+            </Text>
+          ) : null}
         </View>
         {typeof value === 'string' || typeof value === 'number' ? (
-          <Text style={[styles.rowValue, color ? { color } : null]}>{rich(String(value), 15, { plain })}</Text>
+          <Text style={[styles.rowValue, color ? { color } : null]} accessibilityLabel={spoken(String(value))}>{rich(String(value), 15, { plain })}</Text>
         ) : (
           value
         )}
@@ -311,6 +327,7 @@ export function Item({ label, hint, value, color, left, strong, muted, plain, on
         onPress()
       }}
       accessibilityRole="button"
+      accessibilityLabel={spokenRow(label, hint, value)}
       style={({ pressed }) => pressed && styles.btnPressed}
     >
       {body}
@@ -356,8 +373,8 @@ export function Tile({ label, value, sub, color, subColor }: { label: string; va
   return (
     <View style={styles.tile}>
       <Text style={styles.tileLabel}>{label}</Text>
-      <Text style={[styles.tileValue, color ? { color } : null]}>{rich(value, 16)}</Text>
-      {sub ? <Text style={[styles.rowHint, subColor ? { color: subColor } : null]}>{rich(sub, 12)}</Text> : null}
+      <Text style={[styles.tileValue, color ? { color } : null]} accessibilityLabel={spoken(value)}>{rich(value, 16)}</Text>
+      {sub ? <Text style={[styles.rowHint, subColor ? { color: subColor } : null]} accessibilityLabel={spoken(sub)}>{rich(sub, 12)}</Text> : null}
     </View>
   )
 }
@@ -395,8 +412,8 @@ export function AlertRow({ icon, title, sub, tone = 'warn', cta, onPress }: {
         {isResource ? <Glyph kind={icon as Resource} size={14} /> : <Icon name={icon as IconName} size={18} color={color} />}
       </View>
       <View style={styles.itemLeft}>
-        <Text style={[styles.rowLabel, { fontFamily: fonts.text500 }]}>{rich(title, 14)}</Text>
-        {sub ? <Text style={styles.rowHint}>{rich(sub, 12)}</Text> : null}
+        <Text style={[styles.rowLabel, { fontFamily: fonts.text500 }]} accessibilityLabel={spoken(title)}>{rich(title, 14)}</Text>
+        {sub ? <Text style={styles.rowHint} accessibilityLabel={spoken(sub)}>{rich(sub, 12)}</Text> : null}
       </View>
       {cta && onPress ? <Btn small kind="outline" chevron title={cta} onPress={onPress} /> : null}
     </View>
@@ -410,7 +427,7 @@ export function Strip({ children, tone = 'bad' }: { children: string; tone?: 'ba
   return (
     <View style={[styles.strip, { backgroundColor: tone === 'bad' ? '#2a1712' : '#221c12' }]}>
       <Icon name={tone === 'bad' ? 'blocked' : 'warning'} size={15} color={color} />
-      <Text style={[styles.stripText, { color }]}>{rich(children, 13)}</Text>
+      <Text style={[styles.stripText, { color }]} accessibilityLabel={spoken(children)}>{rich(children, 13)}</Text>
     </View>
   )
 }
@@ -436,7 +453,7 @@ export function BuyRow({ name, kind, cost, does, why, disabled, onPress }: {
     return (
       <View style={styles.buyOff}>
         {title}
-        <Text style={styles.buyWhy}>{rich(why, 12.5)}</Text>
+        <Text style={styles.buyWhy} accessibilityLabel={spoken(why)}>{rich(why, 12.5)}</Text>
       </View>
     )
   }
@@ -454,9 +471,9 @@ export function BuyRow({ name, kind, cost, does, why, disabled, onPress }: {
       style={({ pressed }) => [styles.buy, disabled && styles.btnDisabled, pressed && !disabled && styles.btnPressed]}>
       <View style={styles.buyTop}>
         {title}
-        {cost ? <Text style={styles.buyCost}>{rich(cost, 14)}</Text> : null}
+        {cost ? <Text style={styles.buyCost} accessibilityLabel={spoken(cost)}>{rich(cost, 14)}</Text> : null}
       </View>
-      {does ? <Text style={styles.buyDoes}>{rich(does, 12.5, { plain: true })}</Text> : null}
+      {does ? <Text style={styles.buyDoes} accessibilityLabel={spoken(does)}>{rich(does, 12.5, { plain: true })}</Text> : null}
     </Pressable>
   )
 }
@@ -513,8 +530,8 @@ export function SubHead({ children }: { children: string }) {
 export function Empty({ title, sub, center }: { title: string; sub?: string; center?: boolean }) {
   return (
     <View style={[styles.empty, center && styles.emptyCenter]}>
-      <Text style={[styles.emptyTitle, center && { color: theme.faint, fontFamily: fonts.text600, fontSize: 15, textAlign: 'center' }]}>{rich(title, 14)}</Text>
-      {sub ? <Text style={styles.rowHint}>{rich(sub, 12.5)}</Text> : null}
+      <Text style={[styles.emptyTitle, center && { color: theme.faint, fontFamily: fonts.text600, fontSize: 15, textAlign: 'center' }]} accessibilityLabel={spoken(title)}>{rich(title, 14)}</Text>
+      {sub ? <Text style={styles.rowHint} accessibilityLabel={spoken(sub)}>{rich(sub, 12.5)}</Text> : null}
     </View>
   )
 }
@@ -531,7 +548,7 @@ export function SectionLink({ title, onPress }: { title: string; onPress: () => 
 
 // Right-hand notes on a section rule: plain, or warn/red when it's the point.
 export function Note({ children, color }: { children: string; color?: string }) {
-  return <Text style={[styles.note, color ? { color, fontFamily: fonts.text600 } : null]}>{rich(children, 12)}</Text>
+  return <Text style={[styles.note, color ? { color, fontFamily: fonts.text600 } : null]} accessibilityLabel={spoken(children)}>{rich(children, 12)}</Text>
 }
 
 export function Divider() {

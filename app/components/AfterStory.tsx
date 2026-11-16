@@ -8,6 +8,7 @@ import { CONTRACT_TEXT, ENDING_NAME } from '../story'
 import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
 import { Btn, colors, glyph, Item, List, rich, Section } from './ui'
+import { spoken } from '../a11y'
 
 // After the story (ADR 0052; design: Home after the story). Once an ending clears the final act, Home's Next
 // becomes this: the empire value with its week and best, what it's made of, and the contracts board.
@@ -219,13 +220,13 @@ export function ContractCard({ game, k, onOps, picked, onSent }: { game: Snapsho
           </View>
           <View style={styles.top}>
             <Text style={styles.muted}>{`Under way · ${who}`}</Text>
-            <Text style={styles.bold}>{rich(pays, 13.5)}</Text>
+            <Text style={styles.bold} accessibilityLabel={spoken(pays)}>{rich(pays, 13.5)}</Text>
           </View>
         </>
       ) : picked ? (
         <>
-          <Text style={styles.bold}>{rich(`Pays ${pays}`, 14)}</Text>
-          <Text style={styles.muted}>{rich(terms, 12)}</Text>
+          <Text style={styles.bold} accessibilityLabel={spoken(`Pays ${pays}`)}>{rich(`Pays ${pays}`, 14)}</Text>
+          <Text style={styles.muted} accessibilityLabel={spoken(terms)}>{rich(terms, 12)}</Text>
           <Btn
             kind="primary"
             title={team.length === k.crew ? `Send ${names(team.map((m) => first(m.name)))}` : `Needs ${k.crew} idle crew`}
@@ -237,8 +238,8 @@ export function ContractCard({ game, k, onOps, picked, onSent }: { game: Snapsho
       ) : (
         <View style={styles.top}>
           <View style={styles.grow}>
-            <Text style={styles.bold}>{rich(`Pays ${pays}`, 14)}</Text>
-            <Text style={styles.muted}>{rich(terms, 12)}</Text>
+            <Text style={styles.bold} accessibilityLabel={spoken(`Pays ${pays}`)}>{rich(`Pays ${pays}`, 14)}</Text>
+            <Text style={styles.muted} accessibilityLabel={spoken(terms)}>{rich(terms, 12)}</Text>
           </View>
           {onOps && <Btn small kind="outline" chevron title="Ops" onPress={onOps} />}
         </View>

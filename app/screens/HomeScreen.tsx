@@ -20,6 +20,7 @@ import { ledgerView } from '../ledger'
 import { store } from '../store'
 import { fonts } from '../theme'
 import type { ScreenProps } from './types'
+import { spoken } from '../a11y'
 
 // Home (design: Home, and its opening and Act V variants): what needs you first (the next-step card when nothing
 // else waits, Tolya, decisions, alerts, the act's goals), then the money (the vault, the flow, the stock), the operation, the week, what's next,
@@ -87,7 +88,7 @@ export function HomeScreen({ game, go }: ScreenProps) {
                 label={g.text}
                 hint={g.hint}
                 muted={g.done}
-                value={g.done ? <Text style={styles.paid}>paid</Text> : <Text style={styles.reward}>{rich(`${glyph.gold}${goals.gold}`, 13)}</Text>}
+                value={g.done ? <Text style={styles.paid}>paid</Text> : <Text style={styles.reward} accessibilityLabel={spoken(`${glyph.gold}${goals.gold}`)}>{rich(`${glyph.gold}${goals.gold}`, 13)}</Text>}
               />
             ))}
           </List>
@@ -127,7 +128,7 @@ export function HomeScreen({ game, go }: ScreenProps) {
             {recent.map(({ e, line }, i) => (
               <View key={`${e.t}-${i}`} style={styles.lately}>
                 <Text style={styles.stamp}>{fmtStamp(e.t, now, s.createdAt, c)}</Text>
-                <Text style={[styles.lateText, line.color ? { color: line.color } : null]}>{rich(line.text, 13)}</Text>
+                <Text style={[styles.lateText, line.color ? { color: line.color } : null]} accessibilityLabel={spoken(line.text)}>{rich(line.text, 13)}</Text>
               </View>
             ))}
           </List>

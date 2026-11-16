@@ -16,6 +16,7 @@ import { SvgXml } from 'react-native-svg'
 import { ART } from '../art/scenes'
 import { ModalPanel, NoticeHead } from './Modal'
 import { Btn, colors, rich, Title } from './ui'
+import { spoken } from '../a11y'
 
 // The head of the live-notice queue (ADR 0038; design: Notice · decision, just unlocked, event). A freshly
 // filed decision with its options ("Decide later" leaves it on Home); what just unlocked, each with its
@@ -71,7 +72,7 @@ export function EventNoticeModal({ notice, game }: { notice: QueuedNotice; game:
           {itemTitle(item, c)}
         </Title>
         <Text style={styles.when}>{`${fmtDuration(item.expiresAt - now, c)} to decide`}</Text>
-        <Text style={styles.body}>{rich(itemBody(item, s, c), 14)}</Text>
+        <Text style={styles.body} accessibilityLabel={spoken(itemBody(item, s, c))}>{rich(itemBody(item, s, c), 14)}</Text>
         <View style={styles.options}>
           {item.options.map((o) => (
             <Choice
@@ -112,7 +113,7 @@ export function EventNoticeModal({ notice, game }: { notice: QueuedNotice; game:
                     <Text style={styles.unlockKind}>{`  ${info.kind}`}</Text>
                   </Text>
                   <Text style={styles.unlockDesc}>{info.description}</Text>
-                  <Text style={styles.unlockStats}>{rich(info.stats, 12.5)}</Text>
+                  <Text style={styles.unlockStats} accessibilityLabel={spoken(info.stats)}>{rich(info.stats, 12.5)}</Text>
                 </View>
               </View>
             )
@@ -161,8 +162,8 @@ export function EventNoticeModal({ notice, game }: { notice: QueuedNotice; game:
       <View style={styles.event}>
         <Badge icon={look.icon} color={look.color} />
         <View style={styles.eventText}>
-          <Text style={[styles.eventLine, line.color === colors.heat ? null : line.color ? { color: line.color } : null]}>{rich(line.text, 17)}</Text>
-          {after ? <Text style={styles.after}>{rich(after, 13)}</Text> : null}
+          <Text style={[styles.eventLine, line.color === colors.heat ? null : line.color ? { color: line.color } : null]} accessibilityLabel={spoken(line.text)}>{rich(line.text, 17)}</Text>
+          {after ? <Text style={styles.after} accessibilityLabel={spoken(after)}>{rich(after, 13)}</Text> : null}
         </View>
       </View>
       <Btn kind="primary" title="Got it" onPress={store.dismissNotice} />

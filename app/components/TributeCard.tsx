@@ -6,6 +6,7 @@ import { store, type Snapshot } from '../store'
 import { fonts } from '../theme'
 import { Head } from './Portrait'
 import { Btn, Card, colors, glyph, rich, Title } from './ui'
+import { spoken } from '../a11y'
 
 // Tolya's demand, with the three answers (ADR 0029): pay, haggle once with your best talker, or refuse.
 // Design: Home · Tolya's demand. His face, his mood, the demand in his words, and three buttons.
@@ -30,7 +31,7 @@ export function TributeCard({ game }: { game: Snapshot }) {
             </Title>
             <Text style={[styles.mood, mood === 'hostile' && { color: colors.bad }]}>{`mood · ${mood}`}</Text>
           </View>
-          <Text style={styles.quote}>{rich(`“${ask}”`, 15)}</Text>
+          <Text style={styles.quote} accessibilityLabel={spoken(`“${ask}”`)}>{rich(`“${ask}”`, 15)}</Text>
         </View>
       </View>
       <View style={styles.answers}>

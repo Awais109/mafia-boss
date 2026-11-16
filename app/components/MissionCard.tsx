@@ -9,6 +9,7 @@ import { fonts } from '../theme'
 import { Icon } from './Glyph'
 import { Head } from './Portrait'
 import { Btn, colors, glyph, rich, Title } from './ui'
+import { spoken } from '../a11y'
 
 // A boss mission on Ops (ADR 0050; design: Ops · Unfinished business). A rematch shows its stake and the
 // odds for the team that would go; an overreach shows only what it costs and a line from the crew; one not
@@ -50,7 +51,7 @@ export function MissionCard({ game, id, picked, onSent }: { game: Snapshot; id: 
         <View style={styles.lockedText}>
           <Text style={styles.caps}>{`Overreach · the last step of Act ${ACT_NAME[m.act]}`}</Text>
           <Text style={styles.lockedName}>{m.name}</Text>
-          <Text style={styles.hint}>{rich(`Opens once the rest is done: ${missing.map((r) => (r.value ? `${r.label} ${r.value}` : r.label)).join(' · ')}`, 12.5)}</Text>
+          <Text style={styles.hint} accessibilityLabel={spoken(`Opens once the rest is done: ${missing.map((r) => (r.value ? `${r.label} ${r.value}` : r.label)).join(' · ')}`)}>{rich(`Opens once the rest is done: ${missing.map((r) => (r.value ? `${r.label} ${r.value}` : r.label)).join(' · ')}`, 12.5)}</Text>
         </View>
       </View>
     )
@@ -87,7 +88,7 @@ export function MissionCard({ game, id, picked, onSent }: { game: Snapshot; id: 
       {overreach ? (
         <View style={styles.box}>
           <Text style={styles.caps}>What it can cost</Text>
-          <Text style={styles.boxValue}>{rich(costs.join(' · ') || 'nothing much', 14)}</Text>
+          <Text style={styles.boxValue} accessibilityLabel={spoken(costs.join(' · ') || 'nothing much')}>{rich(costs.join(' · ') || 'nothing much', 14)}</Text>
           <Text style={styles.hint}>It never costs Clean, a business or anyone for good.</Text>
         </View>
       ) : (
